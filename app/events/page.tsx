@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, MapPin, Users, Clock, Plus, Grid, CalendarDays } from "lucide-react"
+import Link from "next/link"
 
 export default function EventsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "calendar">("grid")
 
   const upcomingEvents = [
     {
+      id: "1",
       title: "Drone Safety Training Workshop",
       date: "March 15, 2024",
       time: "9:00 AM - 5:00 PM",
@@ -26,6 +28,7 @@ export default function EventsPage() {
       featured: true,
     },
     {
+      id: "2",
       title: "Agricultural Drone Technology Demo",
       date: "March 20, 2024",
       time: "10:00 AM - 3:00 PM",
@@ -41,6 +44,7 @@ export default function EventsPage() {
       featured: false,
     },
     {
+      id: "3",
       title: "Rwanda Drone Racing Championship",
       date: "March 25, 2024",
       time: "2:00 PM - 6:00 PM",
@@ -55,6 +59,7 @@ export default function EventsPage() {
       featured: true,
     },
     {
+      id: "4",
       title: "Drone Photography Masterclass",
       date: "April 2, 2024",
       time: "1:00 PM - 5:00 PM",
@@ -69,6 +74,7 @@ export default function EventsPage() {
       featured: false,
     },
     {
+      id: "5",
       title: "Drone Mapping for Construction",
       date: "April 8, 2024",
       time: "9:00 AM - 4:00 PM",
@@ -83,6 +89,7 @@ export default function EventsPage() {
       featured: false,
     },
     {
+      id: "6",
       title: "Youth Drone Building Workshop",
       date: "April 12, 2024",
       time: "10:00 AM - 4:00 PM",
@@ -213,9 +220,11 @@ export default function EventsPage() {
                       <div className="flex items-center justify-between pt-2">
                         <div className="font-semibold text-lg">{event.price}</div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            Learn More
-                          </Button>
+                          <Link href={`/events/${event.id}`}>
+                            <Button variant="outline" size="sm">
+                              Learn More
+                            </Button>
+                          </Link>
                           <Button size="sm">Register</Button>
                         </div>
                       </div>
@@ -275,9 +284,11 @@ export default function EventsPage() {
                       <div className="flex flex-col items-end gap-2">
                         <div className="font-semibold text-lg">{event.price}</div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            Details
-                          </Button>
+                          <Link href={`/events/${event.id}`}>
+                            <Button variant="outline" size="sm">
+                              Details
+                            </Button>
+                          </Link>
                           <Button size="sm">Register</Button>
                         </div>
                       </div>
@@ -347,9 +358,11 @@ export default function EventsPage() {
                             <div className="flex flex-col items-end gap-2">
                               <div className="font-semibold">{event.price}</div>
                               <div className="flex gap-2">
-                                <Button variant="outline" size="sm">
-                                  Details
-                                </Button>
+                                <Link href={`/events/${event.id}`}>
+                                  <Button variant="outline" size="sm">
+                                    Details
+                                  </Button>
+                                </Link>
                                 <Button size="sm">Register</Button>
                               </div>
                             </div>

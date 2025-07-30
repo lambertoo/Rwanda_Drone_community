@@ -4,10 +4,12 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Heart, Eye, MessageSquare, Search, Filter, Plus } from "lucide-react"
+import Link from "next/link"
 
 export default function ProjectsPage() {
   const projects = [
     {
+      id: "1",
       title: "Agricultural Monitoring in Musanze",
       author: "AgriDrone_RW",
       category: "Agriculture",
@@ -22,6 +24,7 @@ export default function ProjectsPage() {
       date: "March 10, 2024",
     },
     {
+      id: "2",
       title: "Kigali City Aerial Photography Series",
       author: "SkyView_Photo",
       category: "Photography",
@@ -36,6 +39,7 @@ export default function ProjectsPage() {
       date: "March 8, 2024",
     },
     {
+      id: "3",
       title: "Construction Site Progress Mapping",
       author: "BuildTech_RW",
       category: "Construction",
@@ -50,6 +54,7 @@ export default function ProjectsPage() {
       date: "March 5, 2024",
     },
     {
+      id: "4",
       title: "Wildlife Conservation Monitoring",
       author: "EcoWatch_Rwanda",
       category: "Conservation",
@@ -64,6 +69,7 @@ export default function ProjectsPage() {
       date: "March 3, 2024",
     },
     {
+      id: "5",
       title: "Solar Panel Inspection Project",
       author: "SolarTech_RW",
       category: "Energy",
@@ -78,6 +84,7 @@ export default function ProjectsPage() {
       date: "February 28, 2024",
     },
     {
+      id: "6",
       title: "Disaster Response Mapping",
       author: "EmergencyDrones_RW",
       category: "Emergency",
@@ -186,7 +193,9 @@ export default function ProjectsPage() {
                       <span>{project.date}</span>
                     </div>
 
-                    <Button className="w-full">View Project</Button>
+                    <Link href={`/projects/${project.id}`}>
+                      <Button className="w-full">View Project</Button>
+                    </Link>
                   </CardContent>
                 </Card>
               ))}
@@ -239,9 +248,11 @@ export default function ProjectsPage() {
                         </div>
                       </div>
 
-                      <Button variant="outline" size="sm">
-                        View
-                      </Button>
+                      <Link href={`/projects/${project.id}`}>
+                        <Button variant="outline" size="sm">
+                          View
+                        </Button>
+                      </Link>
                     </div>
                   </CardContent>
                 </Card>
@@ -295,9 +306,11 @@ export default function ProjectsPage() {
                         </div>
                       </div>
 
-                      <Button variant="outline" size="sm">
-                        View
-                      </Button>
+                      <Link href={`/projects/${project.id}`}>
+                        <Button variant="outline" size="sm">
+                          View
+                        </Button>
+                      </Link>
                     </div>
                   </CardContent>
                 </Card>
