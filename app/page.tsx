@@ -14,6 +14,7 @@ export default function HomePage() {
 
   const featuredProjects = [
     {
+      id: "1",
       title: "Agricultural Monitoring in Musanze",
       author: "AgriDrone_RW",
       category: "Agriculture",
@@ -22,6 +23,7 @@ export default function HomePage() {
       views: 234,
     },
     {
+      id: "2",
       title: "Kigali City Aerial Photography",
       author: "SkyView_Photo",
       category: "Photography",
@@ -30,6 +32,7 @@ export default function HomePage() {
       views: 456,
     },
     {
+      id: "3",
       title: "Construction Site Mapping",
       author: "BuildTech_RW",
       category: "Construction",
@@ -41,18 +44,21 @@ export default function HomePage() {
 
   const upcomingEvents = [
     {
+      id: "1",
       title: "Drone Safety Training Workshop",
       date: "March 15, 2024",
       location: "Kigali Convention Centre",
       type: "Training",
     },
     {
+      id: "2",
       title: "Agricultural Drone Demo",
       date: "March 20, 2024",
       location: "Musanze Agricultural Center",
       type: "Demo",
     },
     {
+      id: "3",
       title: "Rwanda Drone Racing Championship",
       date: "March 25, 2024",
       location: "Nyamirambo Stadium",
@@ -139,29 +145,31 @@ export default function HomePage() {
           </div>
           <div className="grid md:grid-cols-2 gap-6">
             {featuredProjects.map((project, index) => (
-              <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="aspect-video bg-gradient-to-r from-blue-100 to-green-100">
-                  <img
-                    src={project.image || "/placeholder.svg"}
-                    alt={project.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <CardContent className="p-4">
-                  <Badge variant="secondary" className="mb-2">
-                    {project.category}
-                  </Badge>
-                  <h3 className="font-semibold mb-2">{project.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-3">by {project.author}</p>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <TrendingUp className="h-4 w-4" />
-                      {project.likes} likes
-                    </span>
-                    <span>{project.views} views</span>
+              <Link key={index} href={`/projects/${project.id}`}>
+                <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                  <div className="aspect-video bg-gradient-to-r from-blue-100 to-green-100">
+                    <img
+                      src={project.image || "/placeholder.svg"}
+                      alt={project.title}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                </CardContent>
-              </Card>
+                  <CardContent className="p-4">
+                    <Badge variant="secondary" className="mb-2">
+                      {project.category}
+                    </Badge>
+                    <h3 className="font-semibold mb-2 hover:text-blue-600 transition-colors">{project.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-3">by {project.author}</p>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <TrendingUp className="h-4 w-4" />
+                        {project.likes} likes
+                      </span>
+                      <span>{project.views} views</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>
@@ -178,14 +186,16 @@ export default function HomePage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {upcomingEvents.map((event, index) => (
-                <div key={index} className="border-l-4 border-blue-500 pl-4">
-                  <h4 className="font-semibold text-sm">{event.title}</h4>
-                  <p className="text-xs text-muted-foreground">{event.date}</p>
-                  <p className="text-xs text-muted-foreground">{event.location}</p>
-                  <Badge variant="outline" className="text-xs mt-1">
-                    {event.type}
-                  </Badge>
-                </div>
+                <Link key={index} href={`/events/${event.id}`}>
+                  <div className="border-l-4 border-blue-500 pl-4 hover:bg-gray-50 p-2 rounded-r cursor-pointer transition-colors">
+                    <h4 className="font-semibold text-sm hover:text-blue-600">{event.title}</h4>
+                    <p className="text-xs text-muted-foreground">{event.date}</p>
+                    <p className="text-xs text-muted-foreground">{event.location}</p>
+                    <Badge variant="outline" className="text-xs mt-1">
+                      {event.type}
+                    </Badge>
+                  </div>
+                </Link>
               ))}
               <Link href="/events">
                 <Button variant="outline" size="sm" className="w-full bg-transparent">

@@ -1,7 +1,22 @@
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, MapPin, Users, ArrowLeft, Globe, Phone, Mail, Star } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Separator } from "@/components/ui/separator"
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  Users,
+  Phone,
+  Mail,
+  Globe,
+  Star,
+  ArrowLeft,
+  Share2,
+  Heart,
+  Bookmark,
+} from "lucide-react"
 import Link from "next/link"
 
 interface PageProps {
@@ -13,134 +28,183 @@ interface PageProps {
 export default function EventDetailsPage({ params }: PageProps) {
   const eventId = params.id
 
-  // Mock event data - in real app, this would come from a database
-  const eventDetails = {
-    "1": {
-      title: "Drone Safety Training Workshop",
-      date: "March 15, 2024",
-      time: "9:00 AM - 5:00 PM",
-      location: "Kigali Convention Centre",
-      address: "KG 2 Roundabout, Kigali, Rwanda",
-      type: "Training",
-      organizer: "Rwanda Drone Academy",
-      attendees: 45,
-      maxAttendees: 60,
-      price: "Free",
-      description:
-        "Comprehensive drone safety training covering RCAA regulations, flight planning, and emergency procedures. This full-day workshop is designed for both beginners and experienced pilots who want to enhance their safety knowledge and compliance with Rwanda's drone regulations.",
-      image: "/placeholder.svg?height=400&width=800&text=Drone+Safety+Training",
-      featured: true,
-      agenda: [
-        { time: "9:00 AM - 9:30 AM", activity: "Registration and Welcome Coffee" },
-        { time: "9:30 AM - 11:00 AM", activity: "RCAA Regulations Overview" },
-        { time: "11:00 AM - 11:15 AM", activity: "Coffee Break" },
-        { time: "11:15 AM - 12:30 PM", activity: "Flight Planning and Risk Assessment" },
-        { time: "12:30 PM - 1:30 PM", activity: "Lunch Break" },
-        { time: "1:30 PM - 3:00 PM", activity: "Emergency Procedures and Safety Protocols" },
-        { time: "3:00 PM - 3:15 PM", activity: "Coffee Break" },
-        { time: "3:15 PM - 4:30 PM", activity: "Practical Safety Demonstrations" },
-        { time: "4:30 PM - 5:00 PM", activity: "Q&A and Certification" },
-      ],
-      requirements: [
-        "Basic understanding of drone operations",
-        "Bring your own drone (if available)",
-        "Valid ID for registration",
-        "Notebook and pen for taking notes",
-      ],
-      organizer_info: {
-        name: "Rwanda Drone Academy",
-        description: "Leading drone training institution in Rwanda, certified by RCAA",
-        website: "www.rwandadroneacademy.rw",
-        email: "info@rwandadroneacademy.rw",
-        phone: "+250 788 123 456",
-      },
-      reviews: [
-        { name: "John Mugisha", rating: 5, comment: "Excellent training! Very comprehensive and practical." },
-        { name: "Sarah Uwimana", rating: 5, comment: "Great instructors and well-organized event." },
-        { name: "David Nkurunziza", rating: 4, comment: "Learned a lot about safety regulations. Highly recommended." },
-      ],
+  // Mock event data - in real app this would come from database
+  const event = {
+    id: eventId,
+    title: "Drone Photography Workshop - Kigali",
+    description:
+      "Join us for an intensive drone photography workshop where you'll learn advanced techniques for capturing stunning aerial photographs and videos. This hands-on workshop is perfect for both beginners and experienced pilots looking to improve their photography skills.",
+    fullDescription: `# About This Workshop
+
+This comprehensive drone photography workshop is designed to take your aerial photography skills to the next level. Whether you're a beginner looking to get started or an experienced pilot wanting to refine your techniques, this workshop offers something for everyone.
+
+## What You'll Learn
+
+### Technical Skills
+- Camera settings and exposure control
+- Composition techniques for aerial photography
+- Understanding lighting conditions
+- Post-processing workflows
+- Equipment selection and maintenance
+
+### Creative Techniques
+- Storytelling through aerial imagery
+- Capturing unique perspectives
+- Working with different weather conditions
+- Planning and executing complex shots
+- Building a professional portfolio
+
+### Legal and Safety
+- RCAA regulations for photography
+- Flight planning and risk assessment
+- Insurance considerations
+- Client communication and contracts
+
+## Workshop Format
+
+The workshop combines theoretical sessions with hands-on flying practice. You'll work in small groups with experienced instructors, ensuring personalized attention and feedback.
+
+### Day 1: Fundamentals
+- Morning: Theory and equipment overview
+- Afternoon: Basic flying and camera operation
+- Evening: Image review and feedback
+
+### Day 2: Advanced Techniques
+- Morning: Advanced composition and lighting
+- Afternoon: Complex flight maneuvers
+- Evening: Post-processing workshop
+
+## Equipment Provided
+
+We provide all necessary equipment for the workshop, including:
+- DJI Air 2S drones
+- Extra batteries and memory cards
+- Tablets for flight control
+- ND filters and accessories
+
+You're welcome to bring your own drone if you prefer to practice with your equipment.`,
+    date: "March 15, 2024",
+    time: "9:00 AM - 5:00 PM",
+    location: "Kigali Convention Centre",
+    address: "KG 2 Roundabout, Kigali, Rwanda",
+    price: "75,000 RWF",
+    capacity: 20,
+    registered: 15,
+    category: "Workshop",
+    level: "All Levels",
+    duration: "2 days",
+    organizer: {
+      name: "Rwanda Drone Academy",
+      avatar: "/placeholder-logo.png",
+      website: "https://rwandadroneacademy.com",
+      email: "info@rwandadroneacademy.com",
+      phone: "+250 788 123 456",
+      description: "Leading drone training institution in Rwanda, certified by RCAA",
     },
-    "2": {
-      title: "Rwanda Drone Racing Championship",
-      date: "March 25, 2024",
-      time: "2:00 PM - 6:00 PM",
-      location: "Nyamirambo Stadium",
-      address: "Nyamirambo, Kigali, Rwanda",
-      type: "Competition",
-      organizer: "Rwanda FPV Racing Club",
-      attendees: 120,
-      maxAttendees: 200,
-      price: "10,000 RWF",
-      description:
-        "Annual drone racing competition featuring the best FPV pilots from across Rwanda. Watch thrilling high-speed races through challenging obstacle courses and cheer for your favorite pilots!",
-      image: "/placeholder.svg?height=400&width=800&text=Drone+Racing+Championship",
-      featured: true,
-      agenda: [
-        { time: "2:00 PM - 2:30 PM", activity: "Registration and Practice Rounds" },
-        { time: "2:30 PM - 3:00 PM", activity: "Opening Ceremony" },
-        { time: "3:00 PM - 4:00 PM", activity: "Qualifying Rounds" },
-        { time: "4:00 PM - 4:15 PM", activity: "Break" },
-        { time: "4:15 PM - 5:30 PM", activity: "Championship Finals" },
-        { time: "5:30 PM - 6:00 PM", activity: "Awards Ceremony" },
-      ],
-      requirements: [
-        "Entry fee: 10,000 RWF",
-        "Own FPV racing drone required for participants",
-        "Spectators welcome",
-        "Age limit: 16+ for participants",
-      ],
-      organizer_info: {
-        name: "Rwanda FPV Racing Club",
-        description: "Premier FPV racing community in Rwanda",
-        website: "www.rwandafpv.com",
-        email: "racing@rwandafpv.com",
-        phone: "+250 788 987 654",
+    instructors: [
+      {
+        name: "Jean Claude Uwimana",
+        role: "Lead Instructor",
+        avatar: "/placeholder-user.jpg",
+        experience: "5+ years",
+        specialization: "Commercial Photography",
       },
-      reviews: [
-        { name: "Alex Kamanzi", rating: 5, comment: "Amazing event! The racing was incredible to watch." },
-        { name: "Grace Mukamana", rating: 5, comment: "Well organized competition with great prizes." },
-      ],
-    },
-  }
-
-  const event = eventDetails[eventId as keyof typeof eventDetails]
-
-  if (!event) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Link href="/events">
-            <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Events
-            </Button>
-          </Link>
-        </div>
-        <Card className="p-8 text-center">
-          <h1 className="text-2xl font-bold mb-2">Event Not Found</h1>
-          <p className="text-muted-foreground">The event you're looking for doesn't exist.</p>
-        </Card>
-      </div>
-    )
-  }
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "Training":
-        return "bg-blue-100 text-blue-800"
-      case "Demo":
-        return "bg-green-100 text-green-800"
-      case "Competition":
-        return "bg-red-100 text-red-800"
-      case "Workshop":
-        return "bg-purple-100 text-purple-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
+      {
+        name: "Sarah Mukamana",
+        role: "Photography Expert",
+        avatar: "/placeholder-user.jpg",
+        experience: "8+ years",
+        specialization: "Landscape & Tourism",
+      },
+    ],
+    agenda: [
+      {
+        time: "9:00 AM",
+        title: "Registration & Welcome",
+        description: "Check-in, equipment distribution, and introductions",
+      },
+      {
+        time: "9:30 AM",
+        title: "Drone Photography Fundamentals",
+        description: "Camera settings, composition basics, and safety protocols",
+      },
+      {
+        time: "11:00 AM",
+        title: "Hands-on Flying Session 1",
+        description: "Basic maneuvers and camera operation practice",
+      },
+      {
+        time: "12:30 PM",
+        title: "Lunch Break",
+        description: "Networking lunch with fellow participants",
+      },
+      {
+        time: "1:30 PM",
+        title: "Advanced Techniques",
+        description: "Complex shots, lighting, and creative composition",
+      },
+      {
+        time: "3:00 PM",
+        title: "Hands-on Flying Session 2",
+        description: "Practice advanced techniques with instructor guidance",
+      },
+      {
+        time: "4:30 PM",
+        title: "Image Review & Feedback",
+        description: "Review captured images and receive professional feedback",
+      },
+      {
+        time: "5:00 PM",
+        title: "Wrap-up & Certificates",
+        description: "Q&A session and certificate presentation",
+      },
+    ],
+    requirements: [
+      "Valid RCAA drone registration (if bringing own drone)",
+      "Basic understanding of photography concepts",
+      "Laptop for post-processing session",
+      "Comfortable outdoor clothing",
+      "Notebook and pen for taking notes",
+    ],
+    included: [
+      "Professional drone equipment",
+      "All batteries and accessories",
+      "Lunch and refreshments",
+      "Course materials and handouts",
+      "Certificate of completion",
+      "Follow-up support via WhatsApp group",
+    ],
+    reviews: [
+      {
+        author: "PhotoDrone_RW",
+        avatar: "/placeholder-user.jpg",
+        rating: 5,
+        comment:
+          "Excellent workshop! The instructors were knowledgeable and the hands-on practice was invaluable. Highly recommended for anyone serious about drone photography.",
+        date: "2 weeks ago",
+      },
+      {
+        author: "AerialArtist",
+        avatar: "/placeholder-user.jpg",
+        rating: 5,
+        comment:
+          "Great balance of theory and practice. Learned techniques I never would have discovered on my own. The small group size allowed for personalized attention.",
+        date: "1 month ago",
+      },
+      {
+        author: "BusinessPilot",
+        avatar: "/placeholder-user.jpg",
+        rating: 4,
+        comment:
+          "Very professional setup and great content. Would have liked more time on post-processing, but overall excellent value for money.",
+        date: "2 months ago",
+      },
+    ],
   }
 
   return (
     <div className="space-y-6">
+      {/* Navigation */}
       <div className="flex items-center gap-4">
         <Link href="/events">
           <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
@@ -148,61 +212,80 @@ export default function EventDetailsPage({ params }: PageProps) {
             Back to Events
           </Button>
         </Link>
-      </div>
-
-      {/* Hero Section */}
-      <Card className="overflow-hidden">
-        <div className="aspect-video bg-gradient-to-r from-blue-100 to-green-100">
-          <img src={event.image || "/placeholder.svg"} alt={event.title} className="w-full h-full object-cover" />
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Link href="/events" className="hover:text-foreground">
+            Events
+          </Link>
+          <span>/</span>
+          <span>Event Details</span>
         </div>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge className={getTypeColor(event.type)}>{event.type}</Badge>
-                {event.featured && <Badge variant="secondary">Featured</Badge>}
-              </div>
-              <CardTitle className="text-3xl mb-2">{event.title}</CardTitle>
-              <CardDescription className="text-lg">Organized by {event.organizer}</CardDescription>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-green-600">{event.price}</div>
-              <div className="text-sm text-muted-foreground">
-                {event.attendees}/{event.maxAttendees} registered
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+      </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Event Details */}
+          {/* Event Header */}
           <Card>
             <CardHeader>
-              <CardTitle>Event Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <div className="font-medium">{event.date}</div>
-                    <div className="text-sm text-muted-foreground">{event.time}</div>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Badge variant="outline">{event.category}</Badge>
+                    <Badge variant="secondary">{event.level}</Badge>
+                  </div>
+                  <h1 className="text-3xl font-bold mb-4">{event.title}</h1>
+                  <p className="text-lg text-muted-foreground mb-4">{event.description}</p>
+
+                  {/* Event Details */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4 text-blue-600" />
+                      <span>{event.date}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="h-4 w-4 text-green-600" />
+                      <span>{event.time}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-red-600" />
+                      <span>{event.location}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Users className="h-4 w-4 text-purple-600" />
+                      <span>
+                        {event.registered}/{event.capacity} registered
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-red-600" />
-                  <div>
-                    <div className="font-medium">{event.location}</div>
-                    <div className="text-sm text-muted-foreground">{event.address}</div>
-                  </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-2">
+                  <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
+                    <Share2 className="h-4 w-4" />
+                    Share
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
+                    <Heart className="h-4 w-4" />
+                    Like
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
+                    <Bookmark className="h-4 w-4" />
+                    Save
+                  </Button>
                 </div>
               </div>
-              <div className="pt-4">
-                <h4 className="font-semibold mb-2">Description</h4>
-                <p className="text-muted-foreground leading-relaxed">{event.description}</p>
+            </CardHeader>
+          </Card>
+
+          {/* Event Description */}
+          <Card>
+            <CardHeader>
+              <CardTitle>About This Event</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="prose prose-sm max-w-none">
+                <div className="whitespace-pre-wrap">{event.fullDescription}</div>
               </div>
             </CardContent>
           </Card>
@@ -213,57 +296,121 @@ export default function EventDetailsPage({ params }: PageProps) {
               <CardTitle>Event Agenda</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {event.agenda.map((item, index) => (
-                  <div key={index} className="flex gap-4 p-3 rounded-lg bg-gray-50">
-                    <div className="font-mono text-sm text-blue-600 min-w-fit">{item.time}</div>
-                    <div className="font-medium">{item.activity}</div>
+                  <div key={index} className="flex gap-4">
+                    <div className="flex-shrink-0 w-20 text-sm font-medium text-blue-600">{item.time}</div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold mb-1">{item.title}</h4>
+                      <p className="text-sm text-muted-foreground">{item.description}</p>
+                    </div>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          {/* Requirements */}
+          {/* Requirements & What's Included */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Requirements</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {event.requirements.map((req, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm">
+                      <span className="text-red-500 mt-1">•</span>
+                      <span>{req}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>What's Included</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {event.included.map((item, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm">
+                      <span className="text-green-500 mt-1">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Instructors */}
           <Card>
             <CardHeader>
-              <CardTitle>Requirements & What to Bring</CardTitle>
+              <CardTitle>Meet Your Instructors</CardTitle>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-2">
-                {event.requirements.map((req, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
-                    <span>{req}</span>
-                  </li>
+              <div className="grid md:grid-cols-2 gap-6">
+                {event.instructors.map((instructor, index) => (
+                  <div key={index} className="flex items-start gap-4">
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage src={instructor.avatar || "/placeholder.svg"} alt={instructor.name} />
+                      <AvatarFallback>
+                        {instructor.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h4 className="font-semibold">{instructor.name}</h4>
+                      <p className="text-sm text-blue-600 mb-1">{instructor.role}</p>
+                      <p className="text-sm text-muted-foreground mb-1">{instructor.experience} experience</p>
+                      <p className="text-sm">{instructor.specialization}</p>
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </CardContent>
           </Card>
 
           {/* Reviews */}
-          {event.reviews.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Reviews from Previous Events</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Reviews from Previous Events</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
                 {event.reviews.map((review, index) => (
-                  <div key={index} className="border-l-4 border-blue-200 pl-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium">{review.name}</span>
-                      <div className="flex">
-                        {[...Array(review.rating)].map((_, i) => (
-                          <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        ))}
+                  <div key={index} className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={review.avatar || "/placeholder.svg"} alt={review.author} />
+                        <AvatarFallback>{review.author.slice(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-semibold">{review.author}</span>
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`h-4 w-4 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm text-muted-foreground">{review.date}</span>
+                        </div>
+                        <p className="text-sm leading-relaxed">{review.comment}</p>
                       </div>
                     </div>
-                    <p className="text-muted-foreground">{review.comment}</p>
+                    {index < event.reviews.length - 1 && <Separator />}
                   </div>
                 ))}
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Sidebar */}
@@ -271,22 +418,32 @@ export default function EventDetailsPage({ params }: PageProps) {
           {/* Registration Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Register for Event</CardTitle>
+              <CardTitle className="text-center">Register Now</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="text-center">
-                <div className="text-3xl font-bold text-green-600 mb-1">{event.price}</div>
-                <div className="text-sm text-muted-foreground mb-4">
-                  {event.maxAttendees - event.attendees} spots remaining
+                <div className="text-3xl font-bold text-green-600">{event.price}</div>
+                <div className="text-sm text-muted-foreground">per person</div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Available spots:</span>
+                  <span className="font-semibold">{event.capacity - event.registered}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Duration:</span>
+                  <span>{event.duration}</span>
                 </div>
               </div>
+
               <Button className="w-full" size="lg">
                 Register Now
               </Button>
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Users className="h-4 w-4" />
-                {event.attendees} people registered
-              </div>
+
+              <p className="text-xs text-center text-muted-foreground">
+                Secure payment • Full refund if cancelled 48h before event
+              </p>
             </CardContent>
           </Card>
 
@@ -295,46 +452,62 @@ export default function EventDetailsPage({ params }: PageProps) {
             <CardHeader>
               <CardTitle>Event Organizer</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <h4 className="font-semibold">{event.organizer_info.name}</h4>
-                <p className="text-sm text-muted-foreground">{event.organizer_info.description}</p>
+            <CardContent className="space-y-4">
+              <div className="flex items-start gap-3">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={event.organizer.avatar || "/placeholder.svg"} alt={event.organizer.name} />
+                  <AvatarFallback>
+                    {event.organizer.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h4 className="font-semibold">{event.organizer.name}</h4>
+                  <p className="text-sm text-muted-foreground">{event.organizer.description}</p>
+                </div>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
                   <Globe className="h-4 w-4" />
-                  <a href={`https://${event.organizer_info.website}`} className="text-blue-600 hover:underline">
-                    {event.organizer_info.website}
+                  <a href={event.organizer.website} className="text-blue-600 hover:underline">
+                    {event.organizer.website}
                   </a>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 text-sm">
                   <Mail className="h-4 w-4" />
-                  <a href={`mailto:${event.organizer_info.email}`} className="text-blue-600 hover:underline">
-                    {event.organizer_info.email}
+                  <a href={`mailto:${event.organizer.email}`} className="text-blue-600 hover:underline">
+                    {event.organizer.email}
                   </a>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 text-sm">
                   <Phone className="h-4 w-4" />
-                  <a href={`tel:${event.organizer_info.phone}`} className="text-blue-600 hover:underline">
-                    {event.organizer_info.phone}
+                  <a href={`tel:${event.organizer.phone}`} className="text-blue-600 hover:underline">
+                    {event.organizer.phone}
                   </a>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Share Event */}
+          {/* Location */}
           <Card>
             <CardHeader>
-              <CardTitle>Share Event</CardTitle>
+              <CardTitle>Location</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full bg-transparent">
-                Share on Social Media
-              </Button>
-              <Button variant="outline" className="w-full bg-transparent">
-                Copy Event Link
-              </Button>
+            <CardContent>
+              <div className="space-y-3">
+                <div>
+                  <h4 className="font-semibold">{event.location}</h4>
+                  <p className="text-sm text-muted-foreground">{event.address}</p>
+                </div>
+                <Button variant="outline" className="w-full bg-transparent">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  View on Map
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
