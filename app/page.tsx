@@ -1,20 +1,68 @@
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Users, MessageSquare, Calendar, Briefcase, BookOpen, Camera } from "lucide-react"
+import { Users, MessageSquare, Calendar, Briefcase, BookOpen, Shield, TrendingUp } from "lucide-react"
+import Link from "next/link"
 
 export default function HomePage() {
   const stats = [
-    { label: "Active Members", value: "1,247", icon: Users },
-    { label: "Forum Posts", value: "3,892", icon: MessageSquare },
-    { label: "Upcoming Events", value: "12", icon: Calendar },
-    { label: "Job Listings", value: "28", icon: Briefcase },
+    { label: "Active Members", value: "1,247", icon: Users, color: "text-blue-600" },
+    { label: "Forum Posts", value: "3,456", icon: MessageSquare, color: "text-green-600" },
+    { label: "Upcoming Events", value: "12", icon: Calendar, color: "text-purple-600" },
+    { label: "Job Listings", value: "28", icon: Briefcase, color: "text-orange-600" },
+  ]
+
+  const featuredProjects = [
+    {
+      title: "Agricultural Monitoring in Musanze",
+      author: "AgriDrone_RW",
+      category: "Agriculture",
+      image: "/placeholder.svg?height=200&width=300&text=Agricultural+Drone+Monitoring",
+      likes: 45,
+      views: 234,
+    },
+    {
+      title: "Kigali City Aerial Photography",
+      author: "SkyView_Photo",
+      category: "Photography",
+      image: "/placeholder.svg?height=200&width=300&text=Kigali+Aerial+Photography",
+      likes: 67,
+      views: 456,
+    },
+    {
+      title: "Construction Site Mapping",
+      author: "BuildTech_RW",
+      category: "Construction",
+      image: "/placeholder.svg?height=200&width=300&text=Construction+Site+Mapping",
+      likes: 32,
+      views: 189,
+    },
+  ]
+
+  const upcomingEvents = [
+    {
+      title: "Drone Safety Training Workshop",
+      date: "March 15, 2024",
+      location: "Kigali Convention Centre",
+      type: "Training",
+    },
+    {
+      title: "Agricultural Drone Demo",
+      date: "March 20, 2024",
+      location: "Musanze Agricultural Center",
+      type: "Demo",
+    },
+    {
+      title: "Rwanda Drone Racing Championship",
+      date: "March 25, 2024",
+      location: "Nyamirambo Stadium",
+      type: "Competition",
+    },
   ]
 
   const recentPosts = [
     {
-      title: "New RCAA Drone Registration Guidelines 2024",
+      title: "RCAA Drone Registration Process - Step by Step Guide",
       author: "DroneExpert_RW",
       category: "Regulations",
       replies: 23,
@@ -28,181 +76,185 @@ export default function HomePage() {
       time: "4 hours ago",
     },
     {
-      title: "Drone Photography Workshop - Kigali",
-      author: "PhotoDrone_RW",
-      category: "Events",
-      replies: 8,
+      title: "Weather Conditions for Flying in Musanze",
+      author: "MountainPilot",
+      category: "Flying Tips",
+      replies: 12,
       time: "6 hours ago",
-    },
-  ]
-
-  const upcomingEvents = [
-    {
-      title: "Drone Safety Training",
-      date: "March 15, 2024",
-      location: "Kigali Convention Centre",
-      type: "Training",
-    },
-    {
-      title: "Agricultural Drone Demo",
-      date: "March 20, 2024",
-      location: "Musanze District",
-      type: "Demo",
-    },
-    {
-      title: "Drone Racing Competition",
-      date: "March 25, 2024",
-      location: "Nyamirambo Stadium",
-      type: "Competition",
     },
   ]
 
   return (
     <div className="space-y-8">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg p-8 md:p-12">
+      <div className="bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg p-8">
         <div className="max-w-4xl">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">Rwanda Drone Community</h1>
-          <p className="text-xl md:text-2xl mb-6 opacity-90">
-            Connecting drone enthusiasts, professionals, and businesses across the Land of a Thousand Hills
+          <h1 className="text-4xl font-bold mb-4">Welcome to Rwanda Drone Community</h1>
+          <p className="text-xl mb-6 opacity-90">
+            Connect with drone enthusiasts, professionals, and businesses across Rwanda. Share knowledge, find services,
+            and stay updated with the latest in drone technology.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Button size="lg" variant="secondary" asChild>
-              <Link href="/register">Join Community</Link>
+          <div className="flex gap-4">
+            <Button size="lg" variant="secondary">
+              Join Community
             </Button>
             <Button
               size="lg"
               variant="outline"
               className="text-white border-white hover:bg-white hover:text-blue-600 bg-transparent"
-              asChild
             >
-              <Link href="/forum">Explore Forum</Link>
+              Explore Services
             </Button>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Stats */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <Card key={index}>
-            <CardContent className="p-6 text-center">
-              <stat.icon className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <div className="text-sm text-muted-foreground">{stat.label}</div>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className={`p-2 rounded-lg bg-gray-100 ${stat.color}`}>
+                  <stat.icon className="h-6 w-6" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <div className="text-sm text-muted-foreground">{stat.label}</div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         ))}
-      </section>
-
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Recent Forum Posts */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              Recent Discussions
-            </CardTitle>
-            <CardDescription>Latest conversations in the community</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {recentPosts.map((post, index) => (
-              <div key={index} className="border-b last:border-b-0 pb-4 last:pb-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <h4 className="font-medium hover:text-blue-600 cursor-pointer">{post.title}</h4>
-                    <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                      <span>by {post.author}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {post.category}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="text-right text-sm text-muted-foreground">
-                    <div>{post.replies} replies</div>
-                    <div>{post.time}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-            <Button variant="outline" className="w-full bg-transparent" asChild>
-              <Link href="/forum">View All Discussions</Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Upcoming Events */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Upcoming Events
-            </CardTitle>
-            <CardDescription>Don't miss these drone community events</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {upcomingEvents.map((event, index) => (
-              <div key={index} className="border-b last:border-b-0 pb-4 last:pb-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <h4 className="font-medium">{event.title}</h4>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      <div>{event.location}</div>
-                      <div>{event.date}</div>
-                    </div>
-                  </div>
-                  <Badge variant="outline">{event.type}</Badge>
-                </div>
-              </div>
-            ))}
-            <Button variant="outline" className="w-full bg-transparent" asChild>
-              <Link href="/events">View All Events</Link>
-            </Button>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Quick Links */}
-      <section>
-        <h2 className="text-2xl font-bold mb-6">Explore the Platform</h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" asChild>
-            <Link href="/services">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5" />
-                  Services Directory
-                </CardTitle>
-                <CardDescription>Find drone service providers across Rwanda</CardDescription>
-              </CardHeader>
-            </Link>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" asChild>
-            <Link href="/resources">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
-                  Resources & Guides
-                </CardTitle>
-                <CardDescription>Regulations, safety guides, and tutorials</CardDescription>
-              </CardHeader>
-            </Link>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" asChild>
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Featured Projects */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Featured Projects</h2>
             <Link href="/projects">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Camera className="h-5 w-5" />
-                  Project Showcase
-                </CardTitle>
-                <CardDescription>Discover amazing drone projects from the community</CardDescription>
-              </CardHeader>
+              <Button variant="outline">View All</Button>
             </Link>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            {featuredProjects.map((project, index) => (
+              <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="aspect-video bg-gradient-to-r from-blue-100 to-green-100">
+                  <img
+                    src={project.image || "/placeholder.svg"}
+                    alt={project.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <CardContent className="p-4">
+                  <Badge variant="secondary" className="mb-2">
+                    {project.category}
+                  </Badge>
+                  <h3 className="font-semibold mb-2">{project.title}</h3>
+                  <p className="text-sm text-muted-foreground mb-3">by {project.author}</p>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <TrendingUp className="h-4 w-4" />
+                      {project.likes} likes
+                    </span>
+                    <span>{project.views} views</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Upcoming Events */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Upcoming Events
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {upcomingEvents.map((event, index) => (
+                <div key={index} className="border-l-4 border-blue-500 pl-4">
+                  <h4 className="font-semibold text-sm">{event.title}</h4>
+                  <p className="text-xs text-muted-foreground">{event.date}</p>
+                  <p className="text-xs text-muted-foreground">{event.location}</p>
+                  <Badge variant="outline" className="text-xs mt-1">
+                    {event.type}
+                  </Badge>
+                </div>
+              ))}
+              <Link href="/events">
+                <Button variant="outline" size="sm" className="w-full bg-transparent">
+                  View All Events
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Recent Forum Posts */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Recent Discussions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {recentPosts.map((post, index) => (
+                <div key={index} className="space-y-1">
+                  <h4 className="font-semibold text-sm line-clamp-2">{post.title}</h4>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>by {post.author}</span>
+                    <span>•</span>
+                    <span>{post.replies} replies</span>
+                    <span>•</span>
+                    <span>{post.time}</span>
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {post.category}
+                  </Badge>
+                </div>
+              ))}
+              <Link href="/forum">
+                <Button variant="outline" size="sm" className="w-full bg-transparent">
+                  Join Discussion
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Quick Links */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Link href="/services">
+                <Button variant="outline" size="sm" className="w-full justify-start bg-transparent">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Find Drone Services
+                </Button>
+              </Link>
+              <Link href="/resources">
+                <Button variant="outline" size="sm" className="w-full justify-start bg-transparent">
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  RCAA Regulations
+                </Button>
+              </Link>
+              <Link href="/jobs">
+                <Button variant="outline" size="sm" className="w-full justify-start bg-transparent">
+                  <Briefcase className="h-4 w-4 mr-2" />
+                  Browse Jobs
+                </Button>
+              </Link>
+            </CardContent>
           </Card>
         </div>
-      </section>
+      </div>
     </div>
   )
 }

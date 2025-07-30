@@ -7,14 +7,54 @@ import { MessageSquare, Eye, ThumbsUp, Search, Plus } from "lucide-react"
 
 export default function ForumPage() {
   const categories = [
-    { name: "Regulations", posts: 156, color: "bg-red-100 text-red-800" },
-    { name: "Repairs & Maintenance", posts: 89, color: "bg-blue-100 text-blue-800" },
-    { name: "Flying Tips", posts: 234, color: "bg-green-100 text-green-800" },
-    { name: "Jobs & Opportunities", posts: 67, color: "bg-purple-100 text-purple-800" },
-    { name: "Events", posts: 45, color: "bg-orange-100 text-orange-800" },
-    { name: "Agriculture", posts: 123, color: "bg-emerald-100 text-emerald-800" },
-    { name: "Photography/Videography", posts: 178, color: "bg-pink-100 text-pink-800" },
-    { name: "General Discussion", posts: 298, color: "bg-gray-100 text-gray-800" },
+    {
+      name: "Regulations",
+      posts: 156,
+      color: "bg-red-100 text-red-800",
+      description: "RCAA regulations, licensing, and legal requirements for drone operations in Rwanda",
+    },
+    {
+      name: "Repairs & Maintenance",
+      posts: 89,
+      color: "bg-blue-100 text-blue-800",
+      description: "Technical support, repair guides, and maintenance tips for your drones",
+    },
+    {
+      name: "Flying Tips",
+      posts: 234,
+      color: "bg-green-100 text-green-800",
+      description: "Flight techniques, weather considerations, and safety practices",
+    },
+    {
+      name: "Jobs & Opportunities",
+      posts: 67,
+      color: "bg-purple-100 text-purple-800",
+      description: "Career opportunities, freelance gigs, and business partnerships",
+    },
+    {
+      name: "Events",
+      posts: 45,
+      color: "bg-orange-100 text-orange-800",
+      description: "Community meetups, workshops, competitions, and training sessions",
+    },
+    {
+      name: "Agriculture",
+      posts: 123,
+      color: "bg-emerald-100 text-emerald-800",
+      description: "Agricultural applications, crop monitoring, and precision farming",
+    },
+    {
+      name: "Photography/Videography",
+      posts: 178,
+      color: "bg-pink-100 text-pink-800",
+      description: "Aerial photography, cinematography techniques, and creative projects",
+    },
+    {
+      name: "General Discussion",
+      posts: 298,
+      color: "bg-gray-100 text-gray-800",
+      description: "Open discussions about drone technology, news, and community topics",
+    },
   ]
 
   const recentPosts = [
@@ -153,7 +193,10 @@ export default function ForumPage() {
                     <span>{category.name}</span>
                     <Badge className={category.color}>{category.posts}</Badge>
                   </CardTitle>
-                  <CardDescription>{category.posts} posts in this category</CardDescription>
+                  <CardDescription className="text-sm">{category.description}</CardDescription>
+                  <CardDescription className="text-xs text-muted-foreground">
+                    {category.posts} posts in this category
+                  </CardDescription>
                 </CardHeader>
               </Card>
             ))}
