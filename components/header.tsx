@@ -2,10 +2,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Bell, Search } from "lucide-react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export function Header() {
   return (
-    <header className="border-b bg-white px-6 py-4">
+    <header className="border-b bg-background px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <SidebarTrigger />
@@ -16,6 +17,7 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           <Button variant="ghost" size="sm">
             <Bell className="h-4 w-4" />
           </Button>

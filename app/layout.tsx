@@ -21,15 +21,15 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <SidebarProvider>
             <div className="flex min-h-screen w-full">
               <AppSidebar />
               <div className="flex-1 flex flex-col">
                 <Header />
-                <main className="flex-1 p-6 bg-gray-50/50">
+                <main className="flex-1 p-6 bg-background">
                   <div className="max-w-7xl mx-auto">{children}</div>
                 </main>
               </div>
