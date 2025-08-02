@@ -1,339 +1,645 @@
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Heart, Eye, MessageSquare, Search, Filter, Plus } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  Search,
+  Filter,
+  Calendar,
+  MapPin,
+  Users,
+  Eye,
+  Heart,
+  MessageSquare,
+  Upload,
+  TrendingUp,
+  Award,
+  Clock,
+} from "lucide-react"
 import Link from "next/link"
 
 export default function ProjectsPage() {
+  // Mock projects data
   const projects = [
     {
       id: "1",
-      title: "Agricultural Monitoring in Musanze",
-      author: "AgriDrone_RW",
-      category: "Agriculture",
+      title: "Agricultural Monitoring System - Musanze District",
       description:
-        "Comprehensive crop monitoring project using multispectral imaging to assess crop health and optimize irrigation in potato farms across Musanze district.",
-      image: "/placeholder.svg?height=300&width=400&text=Agricultural+Monitoring",
-      likes: 45,
-      views: 234,
-      comments: 12,
-      tags: ["Agriculture", "Multispectral", "Crop Health", "Irrigation"],
+        "Comprehensive drone-based crop monitoring and analysis system for smallholder farmers in Musanze District, focusing on potato and maize cultivation optimization.",
+      category: "Agriculture",
+      status: "Completed",
+      location: "Musanze District, Rwanda",
+      duration: "6 months",
+      startDate: "January 2024",
+      endDate: "June 2024",
+      lead: {
+        name: "Dr. Agnes Mukamana",
+        role: "Project Lead",
+        organization: "University of Rwanda - Agriculture",
+        avatar: "/placeholder-user.jpg",
+      },
+      stats: {
+        views: 1234,
+        likes: 89,
+        comments: 23,
+      },
+      technologies: ["DJI Matrice 300", "Multispectral Imaging", "AI Analytics"],
       featured: true,
-      date: "March 10, 2024",
     },
     {
       id: "2",
-      title: "Kigali City Aerial Photography Series",
-      author: "SkyView_Photo",
-      category: "Photography",
+      title: "Emergency Response Drone Network",
       description:
-        "Stunning aerial photography showcasing Kigali's urban development and architectural beauty from unique perspectives.",
-      image: "/placeholder.svg?height=300&width=400&text=Kigali+Aerial+Photography",
-      likes: 67,
-      views: 456,
-      comments: 23,
-      tags: ["Photography", "Urban", "Architecture", "Kigali"],
-      featured: true,
-      date: "March 8, 2024",
+        "Rapid deployment drone system for emergency response and disaster management across Kigali Province.",
+      category: "Emergency Response",
+      status: "In Progress",
+      location: "Kigali Province, Rwanda",
+      duration: "12 months",
+      startDate: "March 2024",
+      endDate: "March 2025",
+      lead: {
+        name: "Jean Claude Niyonzima",
+        role: "Operations Manager",
+        organization: "Rwanda National Police",
+        avatar: "/placeholder-user.jpg",
+      },
+      stats: {
+        views: 856,
+        likes: 67,
+        comments: 15,
+      },
+      technologies: ["DJI Mini 3", "Thermal Cameras", "Real-time Streaming"],
+      featured: false,
     },
     {
       id: "3",
-      title: "Construction Site Progress Mapping",
-      author: "BuildTech_RW",
-      category: "Construction",
+      title: "Wildlife Conservation Monitoring",
       description:
-        "3D mapping and progress monitoring of a major construction project in Kigali using photogrammetry techniques.",
-      image: "/placeholder.svg?height=300&width=400&text=Construction+Mapping",
-      likes: 32,
-      views: 189,
-      comments: 8,
-      tags: ["Construction", "3D Mapping", "Photogrammetry", "Progress Monitoring"],
-      featured: false,
-      date: "March 5, 2024",
+        "Anti-poaching surveillance and wildlife population monitoring in Akagera National Park using advanced drone technology.",
+      category: "Environmental",
+      status: "Completed",
+      location: "Akagera National Park, Rwanda",
+      duration: "8 months",
+      startDate: "June 2023",
+      endDate: "February 2024",
+      lead: {
+        name: "Sarah Uwimana",
+        role: "Conservation Specialist",
+        organization: "Rwanda Development Board",
+        avatar: "/placeholder-user.jpg",
+      },
+      stats: {
+        views: 2156,
+        likes: 145,
+        comments: 34,
+      },
+      technologies: ["Fixed-wing Drones", "Night Vision", "GPS Tracking"],
+      featured: true,
     },
     {
       id: "4",
-      title: "Wildlife Conservation Monitoring",
-      author: "EcoWatch_Rwanda",
-      category: "Conservation",
+      title: "Urban Planning & Mapping Initiative",
       description:
-        "Using thermal imaging drones to monitor wildlife populations in Akagera National Park for conservation efforts.",
-      image: "/placeholder.svg?height=300&width=400&text=Wildlife+Monitoring",
-      likes: 89,
-      views: 567,
-      comments: 34,
-      tags: ["Conservation", "Wildlife", "Thermal Imaging", "Akagera"],
-      featured: true,
-      date: "March 3, 2024",
+        "3D mapping and urban development planning for Kigali's expansion using high-resolution drone surveys.",
+      category: "Mapping",
+      status: "Planning",
+      location: "Kigali City, Rwanda",
+      duration: "10 months",
+      startDate: "May 2024",
+      endDate: "March 2025",
+      lead: {
+        name: "Emmanuel Habimana",
+        role: "Urban Planner",
+        organization: "City of Kigali",
+        avatar: "/placeholder-user.jpg",
+      },
+      stats: {
+        views: 634,
+        likes: 42,
+        comments: 8,
+      },
+      technologies: ["LiDAR", "Photogrammetry", "GIS Integration"],
+      featured: false,
     },
     {
       id: "5",
-      title: "Solar Panel Inspection Project",
-      author: "SolarTech_RW",
-      category: "Energy",
+      title: "Medical Supply Delivery Network",
       description:
-        "Automated inspection of solar panel installations using AI-powered image analysis to detect defects and optimize performance.",
-      image: "/placeholder.svg?height=300&width=400&text=Solar+Panel+Inspection",
-      likes: 28,
-      views: 145,
-      comments: 6,
-      tags: ["Solar Energy", "AI", "Inspection", "Renewable Energy"],
-      featured: false,
-      date: "February 28, 2024",
+        "Last-mile medical supply delivery to remote health centers using autonomous drone delivery systems.",
+      category: "Delivery",
+      status: "In Progress",
+      location: "Northern Province, Rwanda",
+      duration: "18 months",
+      startDate: "January 2024",
+      endDate: "July 2025",
+      lead: {
+        name: "Dr. Marie Uwimana",
+        role: "Health Systems Specialist",
+        organization: "Ministry of Health",
+        avatar: "/placeholder-user.jpg",
+      },
+      stats: {
+        views: 1456,
+        likes: 98,
+        comments: 27,
+      },
+      technologies: ["Cargo Drones", "GPS Navigation", "Cold Chain"],
+      featured: true,
     },
     {
       id: "6",
-      title: "Disaster Response Mapping",
-      author: "EmergencyDrones_RW",
-      category: "Emergency",
-      description: "Rapid response mapping for flood assessment and emergency planning in rural communities.",
-      image: "/placeholder.svg?height=300&width=400&text=Disaster+Response",
-      likes: 56,
-      views: 298,
-      comments: 18,
-      tags: ["Emergency Response", "Flood Mapping", "Disaster Management"],
+      title: "Educational Drone Training Program",
+      description:
+        "Comprehensive drone education and training program for students and professionals across Rwanda's technical schools.",
+      category: "Education",
+      status: "Completed",
+      location: "Multiple Locations, Rwanda",
+      duration: "12 months",
+      startDate: "February 2023",
+      endDate: "February 2024",
+      lead: {
+        name: "Patrick Nkurunziza",
+        role: "Training Coordinator",
+        organization: "Rwanda Polytechnic",
+        avatar: "/placeholder-user.jpg",
+      },
+      stats: {
+        views: 987,
+        likes: 76,
+        comments: 19,
+      },
+      technologies: ["Training Simulators", "Educational Drones", "VR Training"],
       featured: false,
-      date: "February 25, 2024",
     },
   ]
 
-  const categories = ["All", "Agriculture", "Photography", "Construction", "Conservation", "Energy", "Emergency"]
+  const categories = [
+    { value: "all", label: "All Categories", count: projects.length },
+    { value: "agriculture", label: "Agriculture", count: 1 },
+    { value: "emergency", label: "Emergency Response", count: 1 },
+    { value: "environmental", label: "Environmental", count: 1 },
+    { value: "mapping", label: "Mapping & Surveying", count: 1 },
+    { value: "delivery", label: "Delivery & Logistics", count: 1 },
+    { value: "education", label: "Education & Training", count: 1 },
+  ]
+
+  const statusOptions = [
+    { value: "all", label: "All Status" },
+    { value: "planning", label: "Planning" },
+    { value: "in-progress", label: "In Progress" },
+    { value: "completed", label: "Completed" },
+    { value: "on-hold", label: "On Hold" },
+  ]
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+        return "bg-green-100 text-green-800"
+      case "in progress":
+        return "bg-yellow-100 text-yellow-800"
+      case "planning":
+        return "bg-blue-100 text-blue-800"
+      case "on-hold":
+        return "bg-gray-100 text-gray-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getCategoryIcon = (category: string) => {
+    switch (category.toLowerCase()) {
+      case "agriculture":
+        return "🌾"
+      case "emergency response":
+        return "🚨"
+      case "environmental":
+        return "🌍"
+      case "mapping":
+        return "🗺️"
+      case "delivery":
+        return "📦"
+      case "education":
+        return "🎓"
+      default:
+        return "🚁"
+    }
+  }
+
+  const featuredProjects = projects.filter((project) => project.featured)
+  const recentProjects = projects.slice(0, 3)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Project Showcase</h1>
-          <p className="text-muted-foreground">Discover amazing drone projects from the Rwanda community</p>
+          <p className="text-muted-foreground mt-2">Discover innovative drone projects from the Rwanda community</p>
         </div>
-        <Button className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Share Project
-        </Button>
+        <div className="flex gap-2">
+          <Link href="/projects/new">
+            <Button className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              Share Project
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Search and Filter */}
-      <div className="flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search projects..." className="pl-10" />
-        </div>
-        <Button variant="outline" className="flex items-center gap-2 bg-transparent">
-          <Filter className="h-4 w-4" />
-          Filter
-        </Button>
+      {/* Stats Cards */}
+      <div className="grid md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Award className="h-4 w-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{projects.length}</p>
+                <p className="text-sm text-muted-foreground">Total Projects</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <TrendingUp className="h-4 w-4 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{projects.filter((p) => p.status === "Completed").length}</p>
+                <p className="text-sm text-muted-foreground">Completed</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <Clock className="h-4 w-4 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{projects.filter((p) => p.status === "In Progress").length}</p>
+                <p className="text-sm text-muted-foreground">In Progress</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Users className="h-4 w-4 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{new Set(projects.map((p) => p.lead.organization)).size}</p>
+                <p className="text-sm text-muted-foreground">Organizations</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Tabs defaultValue="featured" className="space-y-6">
+      {/* Search and Filters */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input placeholder="Search projects by title, description, or technology..." className="pl-10" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Select defaultValue="all">
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label} ({category.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select defaultValue="all">
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((status) => (
+                    <SelectItem key={status.value} value={status.value}>
+                      {status.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="icon">
+                <Filter className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Content Tabs */}
+      <Tabs defaultValue="all" className="space-y-6">
         <TabsList>
+          <TabsTrigger value="all">All Projects</TabsTrigger>
           <TabsTrigger value="featured">Featured</TabsTrigger>
           <TabsTrigger value="recent">Recent</TabsTrigger>
-          <TabsTrigger value="popular">Popular</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="featured" className="space-y-6">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects
-              .filter((project) => project.featured)
-              .map((project, index) => (
-                <Card
-                  key={index}
-                  className="overflow-hidden hover:shadow-lg transition-shadow border-2 border-blue-200"
-                >
-                  <div className="aspect-video bg-gradient-to-r from-blue-100 to-green-100">
-                    <img
-                      src={project.image || "/placeholder.svg"}
-                      alt={project.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">{project.title}</CardTitle>
-                        <CardDescription className="mt-1">by {project.author}</CardDescription>
+        <TabsContent value="all" className="space-y-6">
+          <div className="grid gap-6">
+            {projects.map((project) => (
+              <Card key={project.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-lg">{getCategoryIcon(project.category)}</span>
+                        <Badge variant="outline">{project.category}</Badge>
+                        <Badge variant="secondary" className={getStatusColor(project.status)}>
+                          {project.status}
+                        </Badge>
+                        {project.featured && (
+                          <Badge variant="default" className="bg-yellow-100 text-yellow-800">
+                            Featured
+                          </Badge>
+                        )}
                       </div>
-                      <Badge variant="secondary">{project.category}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground line-clamp-3">{project.description}</p>
 
-                    <div className="flex flex-wrap gap-1">
-                      {project.tags.slice(0, 3).map((tag, tagIndex) => (
-                        <Badge key={tagIndex} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                      {project.tags.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{project.tags.length - 3}
-                        </Badge>
-                      )}
-                    </div>
+                      <Link href={`/projects/${project.id}`} className="block group">
+                        <h3 className="text-xl font-semibold mb-2 group-hover:text-blue-600 transition-colors">
+                          {project.title}
+                        </h3>
+                      </Link>
 
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1">
-                          <Heart className="h-4 w-4" />
-                          {project.likes}
+                      <p className="text-muted-foreground mb-4 line-clamp-2">{project.description}</p>
+
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {project.technologies.slice(0, 3).map((tech) => (
+                          <Badge key={tech} variant="outline" className="text-xs">
+                            {tech}
+                          </Badge>
+                        ))}
+                        {project.technologies.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{project.technologies.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-blue-600" />
+                          <span>
+                            {project.startDate} - {project.endDate}
+                          </span>
                         </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-red-600" />
+                          <span>{project.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-purple-600" />
+                          <span>Led by {project.lead.name}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-4">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Eye className="h-4 w-4" />
-                          {project.views}
+                          {project.stats.views}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Heart className="h-4 w-4" />
+                          {project.stats.likes}
                         </div>
                         <div className="flex items-center gap-1">
                           <MessageSquare className="h-4 w-4" />
-                          {project.comments}
+                          {project.stats.comments}
                         </div>
                       </div>
-                      <span>{project.date}</span>
-                    </div>
 
-                    <Link href={`/projects/${project.id}`}>
-                      <Button className="w-full">View Project</Button>
-                    </Link>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={project.lead.avatar || "/placeholder.svg"} alt={project.lead.name} />
+                          <AvatarFallback>
+                            {project.lead.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="text-right">
+                          <p className="font-medium text-sm">{project.lead.name}</p>
+                          <p className="text-xs text-muted-foreground">{project.lead.organization}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </TabsContent>
 
-        <TabsContent value="recent" className="space-y-4">
-          <div className="grid gap-4">
-            {projects
-              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-              .map((project, index) => (
-                <Card key={index} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="w-32 h-24 bg-gradient-to-r from-blue-100 to-green-100 rounded-lg flex-shrink-0">
-                        <img
-                          src={project.image || "/placeholder.svg"}
-                          alt={project.title}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
+        <TabsContent value="featured" className="space-y-6">
+          <div className="grid gap-6">
+            {featuredProjects.map((project) => (
+              <Card key={project.id} className="hover:shadow-md transition-shadow border-yellow-200">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-lg">{getCategoryIcon(project.category)}</span>
+                        <Badge variant="outline">{project.category}</Badge>
+                        <Badge variant="secondary" className={getStatusColor(project.status)}>
+                          {project.status}
+                        </Badge>
+                        <Badge variant="default" className="bg-yellow-100 text-yellow-800">
+                          Featured
+                        </Badge>
                       </div>
 
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-lg">{project.title}</h3>
-                            <p className="text-sm text-muted-foreground">by {project.author}</p>
-                          </div>
-                          <Badge variant="outline">{project.category}</Badge>
-                        </div>
-
-                        <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Heart className="h-4 w-4" />
-                              {project.likes}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Eye className="h-4 w-4" />
-                              {project.views}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <MessageSquare className="h-4 w-4" />
-                              {project.comments}
-                            </div>
-                          </div>
-                          <span className="text-sm text-muted-foreground">{project.date}</span>
-                        </div>
-                      </div>
-
-                      <Link href={`/projects/${project.id}`}>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
+                      <Link href={`/projects/${project.id}`} className="block group">
+                        <h3 className="text-xl font-semibold mb-2 group-hover:text-blue-600 transition-colors">
+                          {project.title}
+                        </h3>
                       </Link>
+
+                      <p className="text-muted-foreground mb-4">{project.description}</p>
+
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {project.technologies.map((tech) => (
+                          <Badge key={tech} variant="outline" className="text-xs">
+                            {tech}
+                          </Badge>
+                        ))}
+                      </div>
+
+                      <div className="grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-blue-600" />
+                          <span>
+                            {project.startDate} - {project.endDate}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-red-600" />
+                          <span>{project.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-purple-600" />
+                          <span>Led by {project.lead.name}</span>
+                        </div>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+
+                    <div className="flex flex-col items-end gap-4">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-4 w-4" />
+                          {project.stats.views}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Heart className="h-4 w-4" />
+                          {project.stats.likes}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MessageSquare className="h-4 w-4" />
+                          {project.stats.comments}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={project.lead.avatar || "/placeholder.svg"} alt={project.lead.name} />
+                          <AvatarFallback>
+                            {project.lead.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="text-right">
+                          <p className="font-medium text-sm">{project.lead.name}</p>
+                          <p className="text-xs text-muted-foreground">{project.lead.organization}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </TabsContent>
 
-        <TabsContent value="popular" className="space-y-4">
-          <div className="grid gap-4">
-            {projects
-              .sort((a, b) => b.likes - a.likes)
-              .map((project, index) => (
-                <Card key={index} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="w-32 h-24 bg-gradient-to-r from-blue-100 to-green-100 rounded-lg flex-shrink-0">
-                        <img
-                          src={project.image || "/placeholder.svg"}
-                          alt={project.title}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
+        <TabsContent value="recent" className="space-y-6">
+          <div className="grid gap-6">
+            {recentProjects.map((project) => (
+              <Card key={project.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-lg">{getCategoryIcon(project.category)}</span>
+                        <Badge variant="outline">{project.category}</Badge>
+                        <Badge variant="secondary" className={getStatusColor(project.status)}>
+                          {project.status}
+                        </Badge>
+                        {project.featured && (
+                          <Badge variant="default" className="bg-yellow-100 text-yellow-800">
+                            Featured
+                          </Badge>
+                        )}
                       </div>
 
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-lg">{project.title}</h3>
-                            <p className="text-sm text-muted-foreground">by {project.author}</p>
-                          </div>
-                          <Badge variant="outline">{project.category}</Badge>
-                        </div>
-
-                        <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1 text-red-600">
-                              <Heart className="h-4 w-4" />
-                              {project.likes}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Eye className="h-4 w-4" />
-                              {project.views}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <MessageSquare className="h-4 w-4" />
-                              {project.comments}
-                            </div>
-                          </div>
-                          <span className="text-sm text-muted-foreground">{project.date}</span>
-                        </div>
-                      </div>
-
-                      <Link href={`/projects/${project.id}`}>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
+                      <Link href={`/projects/${project.id}`} className="block group">
+                        <h3 className="text-xl font-semibold mb-2 group-hover:text-blue-600 transition-colors">
+                          {project.title}
+                        </h3>
                       </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-          </div>
-        </TabsContent>
 
-        <TabsContent value="categories" className="space-y-6">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categories.slice(1).map((category, index) => {
-              const categoryProjects = projects.filter((p) => p.category === category)
-              return (
-                <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>{category}</span>
-                      <Badge variant="secondary">{categoryProjects.length}</Badge>
-                    </CardTitle>
-                    <CardDescription>{categoryProjects.length} projects in this category</CardDescription>
-                  </CardHeader>
-                </Card>
-              )
-            })}
+                      <p className="text-muted-foreground mb-4 line-clamp-2">{project.description}</p>
+
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {project.technologies.slice(0, 3).map((tech) => (
+                          <Badge key={tech} variant="outline" className="text-xs">
+                            {tech}
+                          </Badge>
+                        ))}
+                        {project.technologies.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{project.technologies.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-blue-600" />
+                          <span>
+                            {project.startDate} - {project.endDate}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-red-600" />
+                          <span>{project.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-purple-600" />
+                          <span>Led by {project.lead.name}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-4">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-4 w-4" />
+                          {project.stats.views}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Heart className="h-4 w-4" />
+                          {project.stats.likes}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MessageSquare className="h-4 w-4" />
+                          {project.stats.comments}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={project.lead.avatar || "/placeholder.svg"} alt={project.lead.name} />
+                          <AvatarFallback>
+                            {project.lead.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="text-right">
+                          <p className="font-medium text-sm">{project.lead.name}</p>
+                          <p className="text-xs text-muted-foreground">{project.lead.organization}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </TabsContent>
       </Tabs>

@@ -179,10 +179,12 @@ export default function ForumPage() {
           <h1 className="text-3xl font-bold">Community Forum</h1>
           <p className="text-muted-foreground">Connect, learn, and share with the Rwanda drone community</p>
         </div>
-        <Button className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          New Post
-        </Button>
+        <Link href="/forum/new">
+          <Button className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            New Post
+          </Button>
+        </Link>
       </div>
 
       {/* Search */}

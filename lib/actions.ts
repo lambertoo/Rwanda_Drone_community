@@ -1,256 +1,272 @@
 "use server"
 
-import { db, initializeDatabase } from "./db"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { db } from "./db"
 
-// Initialize database on first load
-initializeDatabase()
-
-// Authentication actions
-export async function loginAction(formData: FormData) {
-  const email = formData.get("email") as string
-  const password = formData.get("password") as string
-
-  if (!email || !password) {
-    return { error: "Email and password are required" }
-  }
-
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      return { error: data.error }
-    }
-
-    revalidatePath("/")
-    redirect("/")
-  } catch (error) {
-    return { error: "Login failed. Please try again." }
-  }
-}
-
-export async function registerAction(formData: FormData) {
-  const email = formData.get("email") as string
-  const username = formData.get("username") as string
-  const fullName = formData.get("fullName") as string
-  const password = formData.get("password") as string
-
-  if (!email || !username || !fullName || !password) {
-    return { error: "All fields are required" }
-  }
-
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, username, fullName, password }),
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      return { error: data.error }
-    }
-
-    revalidatePath("/")
-    redirect("/")
-  } catch (error) {
-    return { error: "Registration failed. Please try again." }
-  }
-}
-
-// Forum actions
+// Forum Actions
 export async function createForumPostAction(formData: FormData) {
-  const title = formData.get("title") as string
-  const content = formData.get("content") as string
-  const categoryId = formData.get("categoryId") as string
-  const tags = formData.get("tags") as string
-
-  if (!title || !content || !categoryId) {
-    return { error: "Title, content, and category are required" }
-  }
-
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/forum/posts`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        content,
-        categoryId,
-        tags: tags ? tags.split(",").map((tag) => tag.trim()) : [],
-      }),
-    })
+    const title = formData.get("title") as string
+    const content = formData.get("content") as string
+    const category = formData.get("category") as string
+    const tags = JSON.parse((formData.get("tags") as string) || "[]")
 
-    const data = await response.json()
-
-    if (!response.ok) {
-      return { error: data.error }
+    if (!title || !content || !category) {
+      throw new Error("Missing required fields")
     }
+
+    const post = await db.createForumPost({
+      title,
+      content,
+      category,
+      tags,
+      authorId: "current-user-id", // In real app, get from session
+    })
 
     revalidatePath("/forum")
-    return { success: true }
+    revalidatePath(`/forum/${category}`)
+    redirect(`/forum/${category}/${post.id}`)
   } catch (error) {
-    return { error: "Failed to create post. Please try again." }
+    console.error("Error creating forum post:", error)
+    throw error
   }
 }
 
-export async function createCommentAction(formData: FormData) {
-  const content = formData.get("content") as string
-  const postId = formData.get("postId") as string
-  const parentId = (formData.get("parentId") as string) || undefined
-
-  if (!content || !postId) {
-    return { error: "Content and post are required" }
-  }
-
+export async function createForumCommentAction(formData: FormData) {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/forum/posts/${postId}/comments`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, parentId }),
-      },
-    )
+    const content = formData.get("content") as string
+    const postId = formData.get("postId") as string
+    const parentId = formData.get("parentId") as string | null
 
-    const data = await response.json()
-
-    if (!response.ok) {
-      return { error: data.error }
+    if (!content || !postId) {
+      throw new Error("Missing required fields")
     }
 
-    revalidatePath(`/forum/*/*`)
-    return { success: true }
-  } catch (error) {
-    return { error: "Failed to create comment. Please try again." }
-  }
-}
-
-// Project actions
-export async function createProjectAction(formData: FormData) {
-  const title = formData.get("title") as string
-  const description = formData.get("description") as string
-  const fullDescription = formData.get("fullDescription") as string
-  const category = formData.get("category") as string
-  const status = formData.get("status") as string
-
-  if (!title || !description || !category) {
-    return { error: "Title, description, and category are required" }
-  }
-
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/projects`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, description, fullDescription, category, status }),
+    await db.createForumComment({
+      content,
+      postId,
+      parentId,
+      authorId: "current-user-id", // In real app, get from session
     })
 
-    const data = await response.json()
+    revalidatePath(`/forum/*/*/${postId}`)
+  } catch (error) {
+    console.error("Error creating comment:", error)
+    throw error
+  }
+}
 
-    if (!response.ok) {
-      return { error: data.error }
+// Project Actions
+export async function createProjectAction(formData: FormData) {
+  try {
+    const title = formData.get("title") as string
+    const description = formData.get("description") as string
+    const category = formData.get("category") as string
+    const status = formData.get("status") as string
+    const location = formData.get("location") as string
+    const duration = formData.get("duration") as string
+    const startDate = formData.get("startDate") as string
+    const endDate = formData.get("endDate") as string
+    const funding = formData.get("funding") as string
+    const overview = formData.get("overview") as string
+    const methodology = formData.get("methodology") as string
+    const results = formData.get("results") as string
+
+    const technologies = JSON.parse((formData.get("technologies") as string) || "[]")
+    const objectives = JSON.parse((formData.get("objectives") as string) || "[]")
+    const challenges = JSON.parse((formData.get("challenges") as string) || "[]")
+    const outcomes = JSON.parse((formData.get("outcomes") as string) || "[]")
+    const teamMembers = JSON.parse((formData.get("teamMembers") as string) || "[]")
+    const gallery = JSON.parse((formData.get("gallery") as string) || "[]")
+
+    if (!title || !description || !category || !status) {
+      throw new Error("Missing required fields")
     }
+
+    const project = await db.createProject({
+      title,
+      description,
+      category,
+      status,
+      location,
+      duration,
+      startDate,
+      endDate,
+      funding,
+      overview,
+      methodology,
+      results,
+      technologies,
+      objectives,
+      challenges,
+      outcomes,
+      teamMembers,
+      gallery,
+      authorId: "current-user-id", // In real app, get from session
+    })
 
     revalidatePath("/projects")
-    return { success: true }
+    redirect(`/projects/${project.id}`)
   } catch (error) {
-    return { error: "Failed to create project. Please try again." }
+    console.error("Error creating project:", error)
+    throw error
   }
 }
 
-// Event actions
+// Event Actions
 export async function createEventAction(formData: FormData) {
-  const title = formData.get("title") as string
-  const description = formData.get("description") as string
-  const category = formData.get("category") as string
-  const startDate = formData.get("startDate") as string
-  const endDate = formData.get("endDate") as string
-  const location = formData.get("location") as string
-  const venue = formData.get("venue") as string
-
-  if (!title || !description || !startDate || !location) {
-    return { error: "Title, description, start date, and location are required" }
-  }
-
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/events`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, description, category, startDate, endDate, location, venue }),
-    })
+    const title = formData.get("title") as string
+    const description = formData.get("description") as string
+    const fullDescription = formData.get("fullDescription") as string
+    const category = formData.get("category") as string
+    const startDate = formData.get("startDate") as string
+    const endDate = formData.get("endDate") as string
+    const startTime = formData.get("startTime") as string
+    const endTime = formData.get("endTime") as string
+    const location = formData.get("location") as string
+    const venue = formData.get("venue") as string
+    const capacity = formData.get("capacity") as string
+    const price = formData.get("price") as string
+    const currency = formData.get("currency") as string
+    const registrationDeadline = formData.get("registrationDeadline") as string
+    const isPublic = formData.get("isPublic") === "true"
+    const allowRegistration = formData.get("allowRegistration") === "true"
 
-    const data = await response.json()
+    const requirements = JSON.parse((formData.get("requirements") as string) || "[]")
+    const tags = JSON.parse((formData.get("tags") as string) || "[]")
+    const speakers = JSON.parse((formData.get("speakers") as string) || "[]")
+    const agenda = JSON.parse((formData.get("agenda") as string) || "[]")
+    const gallery = JSON.parse((formData.get("gallery") as string) || "[]")
 
-    if (!response.ok) {
-      return { error: data.error }
+    if (!title || !description || !category || !startDate || !startTime || !location) {
+      throw new Error("Missing required fields")
     }
+
+    // Create the event object
+    const eventData = {
+      title,
+      description,
+      fullDescription: fullDescription || description,
+      category,
+      startDate: new Date(`${startDate}T${startTime}`),
+      endDate: endDate
+        ? new Date(`${endDate}T${endTime || startTime}`)
+        : new Date(`${startDate}T${endTime || startTime}`),
+      location,
+      venue: venue || location,
+      capacity: capacity ? Number.parseInt(capacity) : undefined,
+      price: price ? Number.parseFloat(price) : 0,
+      currency: currency || "RWF",
+      registrationDeadline: registrationDeadline ? new Date(registrationDeadline) : undefined,
+      requirements,
+      tags,
+      speakers,
+      agenda,
+      gallery,
+      isPublic,
+      allowRegistration,
+      organizerId: "current-user-id", // In real app, get from session
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      viewsCount: 0,
+      registeredCount: 0,
+      isPublished: true,
+      isFeatured: false,
+    }
+
+    const event = await db.createEvent(eventData)
 
     revalidatePath("/events")
-    return { success: true }
+    redirect(`/events/${event.id}`)
   } catch (error) {
-    return { error: "Failed to create event. Please try again." }
+    console.error("Error creating event:", error)
+    throw error
   }
 }
 
-// Search action
+// Search Actions
 export async function searchAction(formData: FormData) {
-  const query = formData.get("query") as string
-  const type = formData.get("type") as string
-
-  if (!query) {
-    return { error: "Search query is required" }
-  }
-
   try {
-    const results = {
-      posts: [],
-      projects: [],
-      events: [],
+    const query = formData.get("query") as string
+    const type = (formData.get("type") as string) || "all"
+
+    if (!query) {
+      return { results: [] }
     }
 
-    if (!type || type === "posts") {
-      const posts = await db.forumPosts.findAll()
-      results.posts = posts
-        .filter(
-          (post) =>
-            post.title.toLowerCase().includes(query.toLowerCase()) ||
-            post.content.toLowerCase().includes(query.toLowerCase()),
-        )
-        .slice(0, 10)
-    }
-
-    if (!type || type === "projects") {
-      const projects = await db.projects.findAll()
-      results.projects = projects
-        .filter(
-          (project) =>
-            project.title.toLowerCase().includes(query.toLowerCase()) ||
-            project.description.toLowerCase().includes(query.toLowerCase()),
-        )
-        .slice(0, 10)
-    }
-
-    if (!type || type === "events") {
-      const events = await db.events.findAll()
-      results.events = events
-        .filter(
-          (event) =>
-            event.title.toLowerCase().includes(query.toLowerCase()) ||
-            event.description.toLowerCase().includes(query.toLowerCase()),
-        )
-        .slice(0, 10)
-    }
-
+    const results = await db.search(query, type)
     return { results }
   } catch (error) {
-    return { error: "Search failed. Please try again." }
+    console.error("Error searching:", error)
+    return { results: [] }
+  }
+}
+
+// User Actions
+export async function updateUserProfileAction(formData: FormData) {
+  try {
+    const name = formData.get("name") as string
+    const email = formData.get("email") as string
+    const bio = formData.get("bio") as string
+    const location = formData.get("location") as string
+    const website = formData.get("website") as string
+
+    if (!name || !email) {
+      throw new Error("Name and email are required")
+    }
+
+    await db.updateUser("current-user-id", {
+      name,
+      email,
+      bio,
+      location,
+      website,
+    })
+
+    revalidatePath("/profile")
+  } catch (error) {
+    console.error("Error updating profile:", error)
+    throw error
+  }
+}
+
+// Event Registration Actions
+export async function registerForEventAction(formData: FormData) {
+  try {
+    const eventId = formData.get("eventId") as string
+    const userId = "current-user-id" // In real app, get from session
+
+    if (!eventId) {
+      throw new Error("Event ID is required")
+    }
+
+    await db.registerForEvent(eventId, userId)
+
+    revalidatePath(`/events/${eventId}`)
+    return { success: true, message: "Successfully registered for event!" }
+  } catch (error) {
+    console.error("Error registering for event:", error)
+    return { success: false, message: "Failed to register for event" }
+  }
+}
+
+export async function unregisterFromEventAction(formData: FormData) {
+  try {
+    const eventId = formData.get("eventId") as string
+    const userId = "current-user-id" // In real app, get from session
+
+    if (!eventId) {
+      throw new Error("Event ID is required")
+    }
+
+    await db.unregisterFromEvent(eventId, userId)
+
+    revalidatePath(`/events/${eventId}`)
+    return { success: true, message: "Successfully unregistered from event!" }
+  } catch (error) {
+    console.error("Error unregistering from event:", error)
+    return { success: false, message: "Failed to unregister from event" }
   }
 }
