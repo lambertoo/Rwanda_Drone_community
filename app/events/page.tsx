@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Calendar, Clock, MapPin, Users, Search, Grid, List, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -11,121 +11,62 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 
-const events = [
-  {
-    id: 1,
-    title: "Drone Photography Workshop",
-    description:
-      "Learn advanced techniques for capturing stunning aerial photographs with professional drone equipment.",
-    category: "Workshop",
-    date: "2024-02-15",
-    time: "09:00",
-    location: "Kigali",
-    venue: "Rwanda Convention Centre",
-    attendees: 45,
-    maxAttendees: 60,
-    price: 25000,
-    currency: "RWF",
-    image: "/placeholder.svg?height=200&width=300&text=Drone+Photography",
-    organizer: "Rwanda Drone Academy",
-    status: "upcoming",
-  },
-  {
-    id: 2,
-    title: "Agricultural Drone Technology Conference",
-    description: "Explore the latest innovations in agricultural drone technology and precision farming techniques.",
-    category: "Conference",
-    date: "2024-02-20",
-    time: "08:30",
-    location: "Musanze",
-    venue: "Northern Province Conference Hall",
-    attendees: 120,
-    maxAttendees: 200,
-    price: 0,
-    currency: "RWF",
-    image: "/placeholder.svg?height=200&width=300&text=AgriTech+Conference",
-    organizer: "AgriTech Rwanda",
-    status: "upcoming",
-  },
-  {
-    id: 3,
-    title: "Drone Racing Competition",
-    description: "High-speed drone racing competition featuring the best pilots from across East Africa.",
-    category: "Competition",
-    date: "2024-02-25",
-    time: "14:00",
-    location: "Kigali",
-    venue: "Amahoro Stadium",
-    attendees: 300,
-    maxAttendees: 500,
-    price: 5000,
-    currency: "RWF",
-    image: "/placeholder.svg?height=200&width=300&text=Drone+Racing",
-    organizer: "East Africa Drone Racing League",
-    status: "upcoming",
-  },
-  {
-    id: 4,
-    title: "Emergency Response Drone Training",
-    description: "Specialized training for emergency responders on using drones for search and rescue operations.",
-    category: "Training",
-    date: "2024-03-01",
-    time: "10:00",
-    location: "Kigali",
-    venue: "Rwanda National Police Academy",
-    attendees: 25,
-    maxAttendees: 30,
-    price: 50000,
-    currency: "RWF",
-    image: "/placeholder.svg?height=200&width=300&text=Emergency+Training",
-    organizer: "Rwanda Emergency Services",
-    status: "upcoming",
-  },
-  {
-    id: 5,
-    title: "Drone Technology Expo",
-    description: "Exhibition showcasing the latest drone technologies, innovations, and industry trends.",
-    category: "Expo",
-    date: "2024-03-10",
-    time: "09:00",
-    location: "Kigali",
-    venue: "Kigali Convention Centre",
-    attendees: 500,
-    maxAttendees: 1000,
-    price: 0,
-    currency: "RWF",
-    image: "/placeholder.svg?height=200&width=300&text=Tech+Expo",
-    organizer: "Rwanda Tech Association",
-    status: "upcoming",
-  },
-  {
-    id: 6,
-    title: "Youth Drone Programming Bootcamp",
-    description: "Intensive programming bootcamp teaching young people how to code and control drones.",
-    category: "Bootcamp",
-    date: "2024-03-15",
-    time: "08:00",
-    location: "Kigali",
-    venue: "Carnegie Mellon University Rwanda",
-    attendees: 40,
-    maxAttendees: 50,
-    price: 15000,
-    currency: "RWF",
-    image: "/placeholder.svg?height=200&width=300&text=Programming+Bootcamp",
-    organizer: "Code Rwanda",
-    status: "upcoming",
-  },
-]
+interface Event {
+  id: string
+  title: string
+  description: string
+  fullDescription?: string
+  category: string
+  startDate: string
+  endDate: string
+  location: string
+  venue: string
+  price: number
+  currency: string
+  viewsCount: number
+  likesCount: number
+  isPublished: boolean
+  isFeatured: boolean
+  createdAt: string
+  updatedAt: string
+  organizerId: string
+  organizer: {
+    id: string
+    fullName: string
+    avatar?: string
+    organization?: string
+  }
+}
 
 export default function EventsPage() {
+  const [events, setEvents] = useState<Event[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedLocation, setSelectedLocation] = useState("all")
   const [viewMode, setViewMode] = useState<"grid" | "list" | "calendar">("grid")
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
 
-  const categories = ["all", "Workshop", "Conference", "Competition", "Training", "Expo", "Bootcamp"]
-  const locations = ["all", "Kigali", "Musanze", "Huye", "Rubavu"]
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch('/api/events')
+        if (response.ok) {
+          const data = await response.json()
+          setEvents(data.events || [])
+        }
+      } catch (error) {
+        console.error('Error fetching events:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchEvents()
+  }, [])
+
+  const categories = ["all", ...Array.from(new Set(events.map(event => event.category)))]
+  const locations = ["all", ...Array.from(new Set(events.map(event => event.location)))]
 
   const filteredEvents = events.filter((event) => {
     const matchesSearch =
@@ -137,13 +78,26 @@ export default function EventsPage() {
     return matchesSearch && matchesCategory && matchesLocation
   })
 
-  const EventCard = ({ event }: { event: (typeof events)[0] }) => (
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString()
+  }
+
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
+  const EventCard = ({ event }: { event: Event }) => (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
       <div className="aspect-video relative">
-        <img src={event.image || "/placeholder.svg"} alt={event.title} className="w-full h-full object-cover" />
+        <img src="/placeholder.svg" alt={event.title} className="w-full h-full object-cover" />
         <Badge className="absolute top-2 right-2" variant="secondary">
           {event.category}
         </Badge>
+        {event.isFeatured && (
+          <Badge className="absolute top-2 left-2" variant="default">
+            Featured
+          </Badge>
+        )}
       </div>
       <CardHeader>
         <div className="flex justify-between items-start">
@@ -166,11 +120,11 @@ export default function EventsPage() {
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-blue-600" />
-            <span>{new Date(event.date).toLocaleDateString()}</span>
+            <span>{formatDate(event.startDate)}</span>
           </div>
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-green-600" />
-            <span>{event.time}</span>
+            <span>{formatTime(event.startDate)}</span>
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-red-600" />
@@ -180,9 +134,7 @@ export default function EventsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-purple-600" />
-            <span>
-              {event.attendees}/{event.maxAttendees} attendees
-            </span>
+            <span>Organized by {event.organizer.fullName}</span>
           </div>
         </div>
         <div className="mt-4 flex gap-2">
@@ -195,29 +147,34 @@ export default function EventsPage() {
     </Card>
   )
 
-  const EventListItem = ({ event }: { event: (typeof events)[0] }) => (
+  const EventListItem = ({ event }: { event: Event }) => (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-4">
         <div className="flex gap-4">
           <img
-            src={event.image || "/placeholder.svg"}
+            src="/placeholder.svg"
             alt={event.title}
             className="w-24 h-24 object-cover rounded-lg"
           />
           <div className="flex-1">
             <div className="flex justify-between items-start mb-2">
               <h3 className="font-semibold text-lg">{event.title}</h3>
-              <Badge variant="secondary">{event.category}</Badge>
+              <div className="flex gap-2">
+                <Badge variant="secondary">{event.category}</Badge>
+                {event.isFeatured && (
+                  <Badge variant="default">Featured</Badge>
+                )}
+              </div>
             </div>
             <p className="text-muted-foreground text-sm mb-3 line-clamp-2">{event.description}</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
               <div className="flex items-center gap-1">
                 <Calendar className="h-3 w-3 text-blue-600" />
-                <span>{new Date(event.date).toLocaleDateString()}</span>
+                <span>{formatDate(event.startDate)}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Clock className="h-3 w-3 text-green-600" />
-                <span>{event.time}</span>
+                <span>{formatTime(event.startDate)}</span>
               </div>
               <div className="flex items-center gap-1">
                 <MapPin className="h-3 w-3 text-red-600" />
@@ -225,9 +182,7 @@ export default function EventsPage() {
               </div>
               <div className="flex items-center gap-1">
                 <Users className="h-3 w-3 text-purple-600" />
-                <span>
-                  {event.attendees}/{event.maxAttendees}
-                </span>
+                <span>{event.organizer.fullName}</span>
               </div>
             </div>
           </div>
@@ -249,6 +204,19 @@ export default function EventsPage() {
       </CardContent>
     </Card>
   )
+
+  if (loading) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="flex justify-center items-center min-h-64">
+          <div className="text-center">
+            <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-spin" />
+            <p className="text-muted-foreground">Loading events...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto py-8">

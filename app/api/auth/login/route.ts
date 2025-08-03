@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/db"
+import { prisma } from "@/lib/prisma"
 import { createSession } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
@@ -11,7 +11,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user by email
-    const user = await db.users.findByEmail(email)
+    const user = await prisma.user.findUnique({
+      where: { email }
+    })
     if (!user) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
@@ -24,7 +26,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    // Create session
+    // Create session with enhanced user data
     const sessionId = createSession({
       id: user.id,
       email: user.email,
@@ -33,10 +35,18 @@ export async function POST(request: NextRequest) {
       avatar: user.avatar,
       role: user.role,
       isVerified: user.isVerified,
+      organization: user.organization,
+      pilotLicense: user.pilotLicense,
+      experience: user.experience,
+      specializations: user.specializations,
+      certifications: user.certifications,
     })
 
     // Update last active
-    await db.users.update(user.id, { lastActive: new Date() })
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastActive: new Date() }
+    })
 
     const response = NextResponse.json({
       message: "Login successful",
@@ -48,6 +58,11 @@ export async function POST(request: NextRequest) {
         avatar: user.avatar,
         role: user.role,
         isVerified: user.isVerified,
+        organization: user.organization,
+        pilotLicense: user.pilotLicense,
+        experience: user.experience,
+        specializations: user.specializations,
+        certifications: user.certifications,
       },
     })
 

@@ -1,12 +1,19 @@
-// Simple authentication utilities without JWT
+import { UserRole } from "./types"
+
+// Enhanced authentication utilities
 export interface AuthUser {
   id: string
   email: string
   username: string
   fullName: string
   avatar: string
-  role: "admin" | "moderator" | "member"
+  role: UserRole
   isVerified: boolean
+  organization?: string
+  pilotLicense?: string
+  experience?: string
+  specializations?: string[]
+  certifications?: string[]
 }
 
 // Simple session management (in production, use proper session storage)

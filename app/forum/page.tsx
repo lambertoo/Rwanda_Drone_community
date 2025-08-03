@@ -6,174 +6,110 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, MessageSquare, Users, TrendingUp, Plus } from "lucide-react"
 import Link from "next/link"
+import { prisma } from "@/lib/prisma"
 
-export default function ForumPage() {
-  const categories = [
-    {
-      id: "regulations",
-      title: "Regulations & Legal",
-      description: "Discuss RCAA regulations, legal requirements, and compliance for drone operations in Rwanda",
-      icon: "⚖️",
-      posts: 156,
-      members: 89,
-      lastPost: {
-        title: "RCAA Registration Process Update",
-        author: "DroneExpert_RW",
-        time: "2 hours ago",
+export default async function ForumPage() {
+  // Fetch categories from database
+  const categories = await prisma.forumCategory.findMany({
+    include: {
+      _count: {
+        select: { posts: true }
       },
+      posts: {
+        take: 1,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          author: {
+            select: {
+              username: true,
+              fullName: true
+            }
+          }
+        }
+      }
     },
-    {
-      id: "maintenance",
-      title: "Repairs & Maintenance",
-      description: "Get help with drone repairs, maintenance tips, and technical troubleshooting",
-      icon: "🔧",
-      posts: 234,
-      members: 145,
-      lastPost: {
-        title: "DJI Mini 3 Pro Gimbal Repair Guide",
-        author: "TechRepair_RW",
-        time: "4 hours ago",
-      },
-    },
-    {
-      id: "flying-tips",
-      title: "Flying Tips & Techniques",
-      description: "Share flying experiences, techniques, and safety tips for better drone operations",
-      icon: "✈️",
-      posts: 189,
-      members: 167,
-      lastPost: {
-        title: "Best Flying Spots Around Kigali",
-        author: "KigaliPilot",
-        time: "6 hours ago",
-      },
-    },
-    {
-      id: "jobs",
-      title: "Jobs & Opportunities",
-      description: "Find drone-related job opportunities and freelance projects in Rwanda",
-      icon: "💼",
-      posts: 78,
-      members: 234,
-      lastPost: {
-        title: "Freelance Photography Rates Discussion",
-        author: "AerialPhoto_RW",
-        time: "1 day ago",
-      },
-    },
-    {
-      id: "events",
-      title: "Events & Meetups",
-      description: "Organize and discover drone community events, workshops, and meetups",
-      icon: "📅",
-      posts: 45,
-      members: 123,
-      lastPost: {
-        title: "Drone Racing Event - March 25th",
-        author: "RaceOrganizer_RW",
-        time: "2 days ago",
-      },
-    },
-    {
-      id: "agriculture",
-      title: "Agricultural Applications",
-      description: "Discuss drone applications in agriculture, crop monitoring, and precision farming",
-      icon: "🌾",
-      posts: 167,
-      members: 98,
-      lastPost: {
-        title: "Crop Monitoring Results - Musanze",
-        author: "AgriDrone_RW",
-        time: "3 days ago",
-      },
-    },
-    {
-      id: "photography",
-      title: "Photography & Videography",
-      description: "Share aerial photography tips, showcase work, and discuss camera equipment",
-      icon: "📸",
-      posts: 298,
-      members: 201,
-      lastPost: {
-        title: "Sunset Photography Tips",
-        author: "SkyView_Photo",
-        time: "5 hours ago",
-      },
-    },
-    {
-      id: "general",
-      title: "General Discussion",
-      description: "General drone discussions, news, and community conversations",
-      icon: "💬",
-      posts: 345,
-      members: 278,
-      lastPost: {
-        title: "New Drone Technology Trends 2024",
-        author: "TechEnthusiast_RW",
-        time: "1 hour ago",
-      },
-    },
-  ]
+    orderBy: { name: 'asc' }
+  })
 
-  const recentPosts = [
-    {
-      id: "1",
-      title: "Complete Guide to RCAA Drone Registration in Rwanda - Updated 2024",
-      author: {
-        name: "Jean Claude Uwimana",
-        username: "DroneExpert_RW",
-        avatar: "/placeholder-user.jpg",
-        isVerified: true,
-      },
-      category: "Regulations",
-      replies: 23,
-      views: 1234,
-      time: "2 hours ago",
-      tags: ["RCAA", "Registration", "Legal"],
-    },
-    {
-      id: "2",
-      title: "DJI Mini 3 Pro Gimbal Repair - Step by Step Guide",
-      author: {
-        name: "Marie Mukamana",
-        username: "TechRepair_RW",
-        avatar: "/placeholder-user.jpg",
-        isVerified: false,
-      },
-      category: "Maintenance",
-      replies: 15,
-      views: 567,
-      time: "4 hours ago",
-      tags: ["DJI", "Repair", "Gimbal"],
-    },
-    {
-      id: "3",
-      title: "Best Flying Locations Around Kigali - Updated List 2024",
-      author: {
-        name: "David Nkurunziza",
-        username: "KigaliPilot",
-        avatar: "/placeholder-user.jpg",
-        isVerified: false,
-      },
-      category: "Flying Tips",
-      replies: 28,
-      views: 789,
-      time: "6 hours ago",
-      tags: ["Kigali", "Locations", "Safety"],
-    },
-  ]
+  // Transform categories to match expected format
+  const transformedCategories = categories.map(category => ({
+    id: category.id,
+    title: category.name,
+    description: category.description,
+    icon: getCategoryIcon(category.slug),
+    posts: category._count.posts,
+    members: Math.floor(Math.random() * 200) + 50, // Mock member count for now
+    lastPost: category.posts[0] ? {
+      title: category.posts[0].title,
+      author: category.posts[0].author.fullName || category.posts[0].author.username,
+      time: formatTimeAgo(category.posts[0].createdAt),
+    } : null,
+  }))
 
-  const trendingTopics = [
-    { tag: "RCAA", posts: 45 },
-    { tag: "DJI", posts: 67 },
-    { tag: "Photography", posts: 89 },
-    { tag: "Agriculture", posts: 34 },
-    { tag: "Racing", posts: 23 },
-    { tag: "Repair", posts: 56 },
-  ]
+  // Fetch recent posts from database
+  const recentPosts = await prisma.forumPost.findMany({
+    take: 5,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      author: {
+        select: {
+          id: true,
+          username: true,
+          fullName: true,
+          avatar: true,
+          isVerified: true,
+        }
+      },
+      category: {
+        select: {
+          name: true,
+        }
+      },
+      _count: {
+        select: { comments: true }
+      }
+    }
+  })
+
+  // Transform recent posts to match expected format
+  const transformedRecentPosts = recentPosts.map(post => ({
+    id: post.id,
+    title: post.title,
+    author: {
+      name: post.author.fullName || post.author.username,
+      username: post.author.username,
+      avatar: post.author.avatar || "/placeholder-user.jpg",
+      isVerified: post.author.isVerified,
+    },
+    category: post.category.name,
+    replies: post._count.comments,
+    views: post.viewsCount,
+    time: formatTimeAgo(post.createdAt),
+    tags: post.tags ? JSON.parse(post.tags) : [],
+  }))
+
+  function getCategoryIcon(slug: string): string {
+    const icons: { [key: string]: string } = {
+      general: "💬",
+      technical: "🔧",
+      showcase: "📸",
+    }
+    return icons[slug] || "📝"
+  }
+
+  function formatTimeAgo(date: Date): string {
+    const now = new Date()
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+    
+    if (diffInHours < 1) return "Just now"
+    if (diffInHours < 24) return `${diffInHours} hours ago`
+    if (diffInHours < 48) return "1 day ago"
+    return `${Math.floor(diffInHours / 24)} days ago`
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-6 space-y-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Community Forum</h1>
@@ -189,8 +125,11 @@ export default function ForumPage() {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search discussions, topics, or users..." className="pl-10" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <Input
+          placeholder="Search discussions, topics, or users..."
+          className="pl-10"
+        />
       </div>
 
       <Tabs defaultValue="categories" className="space-y-6">
@@ -200,42 +139,44 @@ export default function ForumPage() {
           <TabsTrigger value="trending">Trending</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="categories" className="space-y-6">
-          <div className="grid gap-4">
-            {categories.map((category) => (
+        <TabsContent value="categories" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {transformedCategories.map((category) => (
               <Link key={category.id} href={`/forum/${category.id}`}>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="text-3xl">{category.icon}</div>
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h3 className="font-semibold text-lg hover:text-blue-600 transition-colors">
-                              {category.title}
-                            </h3>
-                            <p className="text-sm text-muted-foreground mb-3">{category.description}</p>
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <MessageSquare className="h-4 w-4" />
-                              {category.posts}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Users className="h-4 w-4" />
-                              {category.members}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">Latest: </span>
-                            <span className="font-medium hover:text-blue-600">{category.lastPost.title}</span>
-                            <span className="text-muted-foreground"> by {category.lastPost.author}</span>
-                          </div>
-                          <div className="text-sm text-muted-foreground">{category.lastPost.time}</div>
-                        </div>
+                <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{category.icon}</span>
+                      <div>
+                        <CardTitle className="text-lg">{category.title}</CardTitle>
+                        <CardDescription className="text-sm">
+                          {category.description}
+                        </CardDescription>
                       </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1">
+                          <MessageSquare className="h-4 w-4" />
+                          {category.posts}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          {category.members}
+                        </span>
+                      </div>
+                      {category.lastPost && (
+                        <div className="text-right">
+                          <p className="font-medium text-foreground truncate">
+                            {category.lastPost.title}
+                          </p>
+                          <p className="text-xs">
+                            by {category.lastPost.author} • {category.lastPost.time}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -245,80 +186,86 @@ export default function ForumPage() {
         </TabsContent>
 
         <TabsContent value="recent" className="space-y-4">
-          {recentPosts.map((post) => (
-            <Card key={post.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={post.author.avatar || "/placeholder.svg"} alt={post.author.name} />
-                    <AvatarFallback>
-                      {post.author.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-lg hover:text-blue-600 transition-colors line-clamp-2">
+          <div className="space-y-4">
+            {transformedRecentPosts.map((post) => (
+              <Card key={post.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={post.author.avatar} />
+                      <AvatarFallback>
+                        {post.author.name.split(" ").map((n) => n[0]).join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Link
+                          href={`/forum/post/${post.id}`}
+                          className="font-semibold hover:underline truncate"
+                        >
                           {post.title}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-sm font-medium">{post.author.name}</span>
-                          {post.author.isVerified && (
-                            <Badge className="text-xs bg-blue-100 text-blue-800">Verified</Badge>
-                          )}
-                          <span className="text-sm text-muted-foreground">in {post.category}</span>
-                          <span className="text-sm text-muted-foreground">• {post.time}</span>
-                        </div>
+                        </Link>
+                        {post.author.isVerified && (
+                          <Badge variant="secondary" className="text-xs">
+                            Verified
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <MessageSquare className="h-4 w-4" />
-                          {post.replies}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <TrendingUp className="h-4 w-4" />
-                          {post.views}
-                        </div>
+                        <span>by {post.author.name}</span>
+                        <span>in {post.category}</span>
+                        <span>{post.replies} replies</span>
+                        <span>{post.views} views</span>
+                        <span>{post.time}</span>
                       </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-1">
-                      {post.tags.map((tag, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          #{tag}
-                        </Badge>
-                      ))}
+                      {post.tags.length > 0 && (
+                        <div className="flex gap-1 mt-2">
+                          {post.tags.slice(0, 3).map((tag) => (
+                            <Badge key={tag} variant="outline" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </TabsContent>
 
-        <TabsContent value="trending" className="space-y-6">
+        <TabsContent value="trending" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
                 Trending Topics
               </CardTitle>
-              <CardDescription>Popular discussion topics this week</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {trendingTopics.map((topic, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">#{topic.tag}</span>
-                    </div>
-                    <Badge variant="secondary">{topic.posts} posts</Badge>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">RCAA Registration Process</p>
+                    <p className="text-sm text-muted-foreground">156 posts • 2.3k views</p>
                   </div>
-                ))}
+                  <Badge variant="secondary">Hot</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">DJI Mini 3 Pro Tips</p>
+                    <p className="text-sm text-muted-foreground">89 posts • 1.8k views</p>
+                  </div>
+                  <Badge variant="secondary">Trending</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Agricultural Drone Applications</p>
+                    <p className="text-sm text-muted-foreground">234 posts • 3.1k views</p>
+                  </div>
+                  <Badge variant="secondary">Popular</Badge>
+                </div>
               </div>
             </CardContent>
           </Card>

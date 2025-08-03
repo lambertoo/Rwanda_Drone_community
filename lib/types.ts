@@ -1,54 +1,65 @@
+export type UserRole = "admin" | "hobbyist" | "pilot" | "regulator" | "student" | "service_provider"
+
+export type Region = 
+  | "KIGALI_NYARUGENGE" | "KIGALI_KICUKIRO" | "KIGALI_GASABO"
+  | "SOUTH_HUYE" | "SOUTH_NYAMAGABE" | "SOUTH_NYARUGURU" | "SOUTH_MUHANGA" | "SOUTH_KAMONYI" | "SOUTH_GISAGARA" | "SOUTH_NYANZA" | "SOUTH_RUHANGO"
+  | "NORTH_MUSANZE" | "NORTH_GICUMBI" | "NORTH_RULINDO" | "NORTH_BURERA" | "NORTH_GAKENKE"
+  | "EAST_KAYONZA" | "EAST_NGOMA" | "EAST_KIREHE" | "EAST_NYAGATARE" | "EAST_BUGESERA" | "EAST_RWAMAGANA" | "EAST_GATSIBO"
+  | "WEST_RUBAVU" | "WEST_RUSIZI" | "WEST_NYAMASHEKE" | "WEST_RUTSIRO" | "WEST_KARONGI" | "WEST_NGORORERO" | "WEST_NYABIHU"
+  | "UNKNOWN"
+
+export type ProjectStatus = "planning" | "in_progress" | "completed" | "on_hold"
+
 export interface User {
   id: string
   email: string
   username: string
   fullName: string
-  avatar: string
+  avatar?: string
   bio?: string
-  location?: string
+  location?: Region
   website?: string
   joinedAt: Date
   reputation: number
   isVerified: boolean
-  role: "admin" | "moderator" | "member"
+  role: UserRole
   lastActive: Date
   postsCount: number
   commentsCount: number
   projectsCount: number
+  pilotLicense?: string
+  organization?: string
+  experience?: string
+  specializations?: string
+  certifications?: string
 }
 
 export interface ForumCategory {
   id: string
   name: string
   description: string
-  icon: string
   slug: string
-  postsCount: number
-  lastPostAt: Date
-  lastPostBy: string
   color: string
-  isActive: boolean
-  order: number
+  postCount: number
+  lastPostAt?: Date
 }
 
 export interface ForumPost {
   id: string
   title: string
   content: string
-  excerpt: string
   categoryId: string
   category: ForumCategory
   authorId: string
   author: User
+  tags?: string
   createdAt: Date
   updatedAt: Date
   viewsCount: number
-  likesCount: number
   repliesCount: number
+  lastReplyAt?: Date
   isPinned: boolean
   isLocked: boolean
-  tags: string[]
-  status: "draft" | "published" | "archived"
 }
 
 export interface ForumComment {
@@ -68,63 +79,52 @@ export interface Project {
   id: string
   title: string
   description: string
-  fullDescription: string
+  fullDescription?: string
   category: string
-  status: "planning" | "in-progress" | "completed" | "on-hold"
-  startDate: Date
-  endDate?: Date
-  duration: string
-  fundingSource: string
-  location: string
+  status: ProjectStatus
   authorId: string
   author: User
-  teamMembers: TeamMember[]
-  technologies: string[]
-  gallery: string[]
-  impactMetrics: {
-    beneficiaries?: number
-    areasCovered?: string
-    costSavings?: string
-    timeReduction?: string
-  }
-  githubUrl?: string
-  demoUrl?: string
+  location?: string
+  duration?: string
+  startDate?: string
+  endDate?: string
+  funding?: string
+  technologies?: string
+  objectives?: string
+  challenges?: string
+  outcomes?: string
+  teamMembers?: string
+  gallery?: string
   createdAt: Date
   updatedAt: Date
   viewsCount: number
   likesCount: number
-  isPublished: boolean
   isFeatured: boolean
-}
-
-export interface TeamMember {
-  id: string
-  name: string
-  role: string
-  avatar: string
-  bio?: string
 }
 
 export interface Event {
   id: string
   title: string
   description: string
-  fullDescription: string
+  fullDescription?: string
   category: string
   startDate: Date
   endDate: Date
   location: string
-  venue: string
+  venue?: string
   capacity?: number
-  price?: number
-  currency?: string
+  price: number
+  currency: string
+  registrationDeadline?: Date
+  requirements?: string
+  tags?: string
+  speakers?: string
+  agenda?: string
+  gallery?: string
   organizerId: string
   organizer: User
-  speakers: Speaker[]
-  agenda: AgendaItem[]
-  requirements: string[]
-  gallery: string[]
-  registrationDeadline?: Date
+  isPublic: boolean
+  allowRegistration: boolean
   createdAt: Date
   updatedAt: Date
   viewsCount: number
@@ -133,86 +133,53 @@ export interface Event {
   isFeatured: boolean
 }
 
-export interface Speaker {
-  id: string
-  name: string
-  title: string
-  bio: string
-  avatar: string
-  company?: string
-  socialLinks?: {
-    linkedin?: string
-    twitter?: string
-    website?: string
-  }
-}
-
-export interface AgendaItem {
-  id: string
-  title: string
-  description: string
-  startTime: string
-  endTime: string
-  speaker?: string
-  type: "presentation" | "workshop" | "panel" | "break" | "networking"
-}
-
-export interface Job {
-  id: string
-  title: string
-  company: string
-  location: string
-  type: "full-time" | "part-time" | "contract" | "internship"
-  category: string
-  description: string
-  requirements: string[]
-  salary?: {
-    min: number
-    max: number
-    currency: string
-  }
-  postedBy: string
-  postedAt: Date
-  expiresAt: Date
-  isActive: boolean
-}
-
 export interface Service {
   id: string
   title: string
-  provider: string
-  category: string
   description: string
-  price: {
-    amount: number
-    currency: string
-    type: "fixed" | "hourly" | "project"
-  }
-  location: string
-  contact: {
-    email: string
-    phone?: string
-    website?: string
-  }
-  gallery: string[]
-  rating: number
-  reviewsCount: number
-  isActive: boolean
+  region: Region
+  contact: string
+  approved: boolean
   createdAt: Date
+  providerId: string
+  provider: User
 }
 
 export interface Resource {
   id: string
   title: string
+  description?: string
+  fileUrl: string
+  uploadedAt: Date
+  userId: string
+  uploadedBy: User
+}
+
+export interface Job {
+  id: string
+  title: string
   description: string
-  category: string
-  type: "guide" | "tutorial" | "documentation" | "tool" | "regulation"
-  content?: string
-  fileUrl?: string
-  externalUrl?: string
-  author: string
+  location: string
   createdAt: Date
-  updatedAt: Date
-  downloadCount: number
-  isPublished: boolean
+  posterId: string
+  poster: User
+}
+
+export interface JobApplication {
+  id: string
+  jobId: string
+  job: Job
+  applicantId: string
+  applicant: User
+  message?: string
+  createdAt: Date
+}
+
+export interface RSVP {
+  id: string
+  userId: string
+  user: User
+  eventId: string
+  event: Event
+  createdAt: Date
 }

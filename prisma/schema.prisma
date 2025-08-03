@@ -1,0 +1,305 @@
+// Combined Prisma schema for Drone Community Platform
+
+// === Prisma Config ===
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// === Enums ===
+enum UserRole {
+  admin
+  hobbyist
+  pilot
+  regulator
+  student
+  service_provider
+}
+
+enum ProjectStatus {
+  planning
+  in_progress
+  completed
+  on_hold
+  cancelled
+}
+
+enum EventType {
+  presentation
+  workshop
+  panel
+  break
+  networking
+}
+
+enum Region {
+  KIGALI_NYARUGENGE
+  KIGALI_KICUKIRO
+  KIGALI_GASABO
+
+  SOUTH_HUYE
+  SOUTH_NYAMAGABE
+  SOUTH_NYARUGURU
+  SOUTH_MUHANGA
+  SOUTH_KAMONYI
+  SOUTH_GISAGARA
+  SOUTH_NYANZA
+  SOUTH_RUHANGO
+
+  NORTH_MUSANZE
+  NORTH_GICUMBI
+  NORTH_RULINDO
+  NORTH_BURERA
+  NORTH_GAKENKE
+
+  EAST_KAYONZA
+  EAST_NGOMA
+  EAST_KIREHE
+  EAST_NYAGATARE
+  EAST_BUGESERA
+  EAST_RWAMAGANA
+  EAST_GATSIBO
+
+  WEST_RUBAVU
+  WEST_RUSIZI
+  WEST_NYAMASHEKE
+  WEST_RUTSIRO
+  WEST_KARONGI
+  WEST_NGORORERO
+  WEST_NYABIHU
+
+  UNKNOWN
+}
+
+// === Models ===
+model User {
+  id              String   @id @default(cuid())
+  username        String   @unique
+  email           String   @unique
+  fullName        String
+  avatar          String?
+  bio             String?
+  location        Region?
+  website         String?
+  joinedAt        DateTime @default(now())
+  reputation      Int      @default(0)
+  isVerified      Boolean  @default(false)
+  role            UserRole
+  lastActive      DateTime @default(now())
+  postsCount      Int      @default(0)
+  commentsCount   Int      @default(0)
+  projectsCount   Int      @default(0)
+  eventsCount     Int      @default(0)
+  servicesCount   Int      @default(0)
+  jobsCount       Int      @default(0)
+  pilotLicense    String?
+  organization    String?
+  experience      String?
+  specializations String?
+  certifications  String?
+
+  posts           ForumPost[]
+  comments        ForumComment[]
+  projects        Project[]
+  events          Event[]
+  services        Service[]
+  resources       Resource[]
+  jobs            Job[]
+  applications    JobApplication[]
+  rsvps           RSVP[]
+
+  @@map("users")
+}
+
+model ForumCategory {
+  id          String      @id @default(cuid())
+  name        String
+  description String
+  slug        String      @unique
+  color       String
+  postCount   Int         @default(0)
+  lastPostAt  DateTime?
+  posts       ForumPost[]
+
+  @@map("forum_categories")
+}
+
+model ForumPost {
+  id           String        @id @default(cuid())
+  title        String
+  content      String
+  categoryId   String
+  authorId     String
+  tags         String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  viewsCount   Int           @default(0)
+  repliesCount Int           @default(0)
+  lastReplyAt  DateTime?
+  isPinned     Boolean       @default(false)
+  isLocked     Boolean       @default(false)
+  category     ForumCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments     ForumComment[]
+
+  @@map("forum_posts")
+}
+
+model ForumComment {
+  id        String        @id @default(cuid())
+  content   String
+  postId    String
+  authorId  String
+  parentId  String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  likesCount Int          @default(0)
+  isEdited  Boolean       @default(false)
+  post      ForumPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent    ForumComment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   ForumComment[] @relation("CommentReplies")
+
+  @@map("forum_comments")
+}
+
+model Project {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  fullDescription String?
+  category        String
+  status          ProjectStatus
+  authorId        String
+  location        String?
+  duration        String?
+  startDate       String?
+  endDate         String?
+  funding         String?
+  technologies    String?
+  objectives      String?
+  challenges      String?
+  outcomes        String?
+  teamMembers     String?
+  gallery         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  viewsCount      Int      @default(0)
+  likesCount      Int      @default(0)
+  isFeatured      Boolean  @default(false)
+  author          User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@map("projects")
+}
+
+model Event {
+  id                   String   @id @default(cuid())
+  title                String
+  description          String
+  fullDescription      String?
+  category             String
+  startDate            DateTime
+  endDate              DateTime
+  location             String
+  venue                String?
+  capacity             Int?
+  price                Float    @default(0)
+  currency             String   @default("USD")
+  registrationDeadline DateTime?
+  requirements         String?
+  tags                 String?
+  speakers             String?
+  agenda               String?
+  gallery              String?
+  organizerId          String
+  isPublic             Boolean  @default(true)
+  allowRegistration    Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  viewsCount           Int      @default(0)
+  registeredCount      Int      @default(0)
+  isPublished          Boolean  @default(false)
+  isFeatured           Boolean  @default(false)
+  organizer            User     @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  rsvps                RSVP[]
+
+  @@map("events")
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  category        String
+  region          Region
+  contact         String
+  phone           String?
+  email           String?
+  website         String?
+  services        String?  // JSON array of services offered
+  rating          Float    @default(0)
+  reviewCount     Int      @default(0)
+  isApproved      Boolean  @default(false)
+  isFeatured      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  provider        User     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  providerId      String
+
+  @@map("services")
+}
+
+model Resource {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  fileUrl     String
+  uploadedAt  DateTime @default(now())
+  uploadedBy  User     @relation(fields: [userId], references: [id])
+  userId      String
+}
+
+model Job {
+  id              String           @id @default(cuid())
+  title           String
+  description     String
+  company         String
+  jobType         String           // Full-time, Part-time, Contract, Urgent
+  category        String           // Agriculture, Photography, Construction, Technical, Conservation, Education
+  location        String
+  salary          String?          // e.g., "800,000 - 1,200,000 RWF", "Per project basis", "Competitive"
+  requirements    String?          // JSON array of requirements
+  isUrgent        Boolean          @default(false)
+  isRemote        Boolean          @default(false)
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  poster          User             @relation(fields: [posterId], references: [id], onDelete: Cascade)
+  posterId        String
+  applications    JobApplication[]
+
+  @@map("jobs")
+}
+
+model JobApplication {
+  id          String   @id @default(cuid())
+  job         Job      @relation(fields: [jobId], references: [id])
+  jobId       String
+  applicant   User     @relation(fields: [applicantId], references: [id])
+  applicantId String
+  message     String?
+  createdAt   DateTime @default(now())
+}
+
+model RSVP {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   String
+  createdAt DateTime @default(now())
+}

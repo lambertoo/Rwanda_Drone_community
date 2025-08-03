@@ -9,7 +9,19 @@ interface User {
   location?: string
   website?: string
   joinedAt: Date
-  isActive: boolean
+  reputation: number
+  isVerified: boolean
+  role: "admin" | "hobbyist" | "pilot" | "regulator" | "student" | "service-provider"
+  lastActive: Date
+  postsCount: number
+  commentsCount: number
+  projectsCount: number
+  // Role-specific fields
+  pilotLicense?: string
+  organization?: string
+  experience?: string
+  specializations?: string[]
+  certifications?: string[]
 }
 
 interface ForumCategory {
@@ -131,18 +143,129 @@ interface Event {
   isFeatured: boolean
 }
 
-// Mock data storage
+// Mock data storage with enhanced user roles
 const mockUsers: User[] = [
   {
     id: "1",
     username: "admin",
-    email: "admin@example.com",
-    fullName: "Admin User",
+    email: "admin@rwandadrone.com",
+    fullName: "System Administrator",
     avatar: "/placeholder.svg?height=40&width=40&text=Admin",
-    bio: "Platform administrator",
+    bio: "Platform administrator and system manager",
     location: "Kigali, Rwanda",
     joinedAt: new Date("2024-01-01"),
-    isActive: true,
+    reputation: 1000,
+    isVerified: true,
+    role: "admin",
+    lastActive: new Date(),
+    postsCount: 50,
+    commentsCount: 200,
+    projectsCount: 10,
+    organization: "Rwanda Drone Community Platform",
+  },
+  {
+    id: "2",
+    username: "hobbyist_john",
+    email: "john.hobbyist@email.com",
+    fullName: "John Hobbyist",
+    avatar: "/placeholder.svg?height=40&width=40&text=JH",
+    bio: "Drone photography enthusiast and hobby pilot",
+    location: "Kigali, Rwanda",
+    joinedAt: new Date("2024-02-15"),
+    reputation: 450,
+    isVerified: true,
+    role: "hobbyist",
+    lastActive: new Date(),
+    postsCount: 25,
+    commentsCount: 80,
+    projectsCount: 3,
+    experience: "2 years",
+    specializations: ["Aerial Photography", "FPV Racing"],
+  },
+  {
+    id: "3",
+    username: "pilot_sarah",
+    email: "sarah.pilot@email.com",
+    fullName: "Sarah Uwimana",
+    avatar: "/placeholder.svg?height=40&width=40&text=SU",
+    bio: "Commercial drone pilot with extensive experience in agricultural monitoring",
+    location: "Musanze, Rwanda",
+    joinedAt: new Date("2024-01-20"),
+    reputation: 850,
+    isVerified: true,
+    role: "pilot",
+    lastActive: new Date(),
+    postsCount: 40,
+    commentsCount: 120,
+    projectsCount: 8,
+    pilotLicense: "RWA-PILOT-2024-001",
+    organization: "AgriDrone Solutions",
+    experience: "5 years",
+    specializations: ["Agricultural Monitoring", "Surveying", "Mapping"],
+    certifications: ["DJI Certified Pilot", "Agricultural Drone Specialist"],
+  },
+  {
+    id: "4",
+    username: "regulator_mike",
+    email: "mike.regulator@rcaa.gov.rw",
+    fullName: "Mike Regulator",
+    avatar: "/placeholder.svg?height=40&width=40&text=MR",
+    bio: "Regulatory officer at Rwanda Civil Aviation Authority",
+    location: "Kigali, Rwanda",
+    joinedAt: new Date("2024-01-10"),
+    reputation: 1200,
+    isVerified: true,
+    role: "regulator",
+    lastActive: new Date(),
+    postsCount: 30,
+    commentsCount: 150,
+    projectsCount: 2,
+    organization: "Rwanda Civil Aviation Authority (RCAA)",
+    experience: "8 years",
+    specializations: ["Regulatory Compliance", "Safety Standards", "Policy Development"],
+    certifications: ["Aviation Safety Inspector", "Drone Regulation Expert"],
+  },
+  {
+    id: "5",
+    username: "student_emma",
+    email: "emma.student@ur.ac.rw",
+    fullName: "Emma Student",
+    avatar: "/placeholder.svg?height=40&width=40&text=ES",
+    bio: "Computer Science student specializing in drone technology and AI",
+    location: "Kigali, Rwanda",
+    joinedAt: new Date("2024-03-01"),
+    reputation: 200,
+    isVerified: true,
+    role: "student",
+    lastActive: new Date(),
+    postsCount: 15,
+    commentsCount: 45,
+    projectsCount: 1,
+    organization: "University of Rwanda",
+    experience: "1 year",
+    specializations: ["AI Integration", "Programming", "Research"],
+    certifications: ["Python Programming", "Machine Learning Basics"],
+  },
+  {
+    id: "6",
+    username: "service_david",
+    email: "david.service@dronefix.rw",
+    fullName: "David Service",
+    avatar: "/placeholder.svg?height=40&width=40&text=DS",
+    bio: "Professional drone repair and maintenance service provider",
+    location: "Kigali, Rwanda",
+    joinedAt: new Date("2024-02-01"),
+    reputation: 650,
+    isVerified: true,
+    role: "service-provider",
+    lastActive: new Date(),
+    postsCount: 35,
+    commentsCount: 90,
+    projectsCount: 5,
+    organization: "DroneFix Rwanda",
+    experience: "4 years",
+    specializations: ["Drone Repair", "Maintenance", "Technical Support"],
+    certifications: ["DJI Certified Technician", "Electronics Repair"],
   },
 ]
 

@@ -12,8 +12,8 @@ interface PageProps {
   }
 }
 
-export default function ForumCategoryPage({ params }: PageProps) {
-  const { category } = params
+export default async function ForumCategoryPage({ params }: PageProps) {
+  const { category } = await params
 
   // Category information
   const categoryInfo = {

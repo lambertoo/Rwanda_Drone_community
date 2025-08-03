@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/db"
+import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/auth"
 
 export async function GET(request: NextRequest) {
@@ -11,9 +11,20 @@ export async function GET(request: NextRequest) {
 
     let projects
     if (featured) {
-      projects = await db.projects.findFeatured(limit)
+      projects = await prisma.project.findMany({
+        where: { isFeatured: true },
+        include: { author: true },
+        take: limit,
+        skip: offset,
+        orderBy: { createdAt: 'desc' }
+      })
     } else {
-      projects = await db.projects.findAll(limit, offset)
+      projects = await prisma.project.findMany({
+        include: { author: true },
+        take: limit,
+        skip: offset,
+        orderBy: { createdAt: 'desc' }
+      })
     }
 
     return NextResponse.json({ projects })

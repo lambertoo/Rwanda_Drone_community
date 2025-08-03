@@ -1,232 +1,333 @@
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Loader2, Eye, EyeOff, Shield, Users, Plane, GraduationCap, Wrench, Camera } from "lucide-react"
 import Link from "next/link"
 
+const roleInfo = {
+  admin: {
+    name: "Administrator",
+    description: "Full system access and management",
+    icon: Shield,
+    color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  },
+  hobbyist: {
+    name: "Hobbyist",
+    description: "Drone enthusiasts and recreational pilots",
+    icon: Camera,
+    color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  },
+  pilot: {
+    name: "Commercial Pilot",
+    description: "Licensed commercial drone pilots",
+    icon: Plane,
+    color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+  },
+  regulator: {
+    name: "Regulator",
+    description: "Government and regulatory officials",
+    icon: Shield,
+    color: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+  },
+  student: {
+    name: "Student",
+    description: "Students and researchers",
+    icon: GraduationCap,
+    color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
+  },
+  "service-provider": {
+    name: "Service Provider",
+    description: "Drone services and maintenance",
+    icon: Wrench,
+    color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+  },
+}
+
 export default function RegisterPage() {
-  const userTypes = [
-    { value: "hobbyist", label: "Hobbyist", description: "Recreational drone flying" },
-    { value: "pilot", label: "Professional Pilot", description: "Commercial drone operations" },
-    { value: "business", label: "Business", description: "Company offering drone services" },
-    { value: "student", label: "Student", description: "Learning about drone technology" },
-    { value: "regulator", label: "Regulator", description: "Government or regulatory body" },
-  ]
+  const router = useRouter()
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    username: "",
+    password: "",
+    confirmPassword: "",
+    role: "",
+    organization: "",
+    bio: "",
+    location: "",
+    pilotLicense: "",
+    experience: "",
+  })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
 
-  const districts = [
-    "Kigali",
-    "Musanze",
-    "Huye",
-    "Rubavu",
-    "Nyagatare",
-    "Rusizi",
-    "Muhanga",
-    "Karongi",
-    "Kayonza",
-    "Kirehe",
-    "Ngoma",
-    "Nyanza",
-    "Ruhango",
-    "Rulindo",
-    "Gakenke",
-    "Gatsibo",
-    "Gicumbi",
-    "Gisagara",
-    "Nyabihu",
-    "Nyamagabe",
-    "Nyamasheke",
-    "Rwamagana",
-    "Burera",
-    "Bugesera",
-    "Gasabo",
-    "Kicukiro",
-    "Nyarugenge",
-    "Ruhango",
-    "Kamonyi",
-    "Ngororero",
-  ]
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+    setError("")
+  }
 
-  const interests = [
-    "Agriculture",
-    "Photography/Videography",
-    "Mapping & Surveying",
-    "Construction",
-    "Emergency Response",
-    "Conservation",
-    "Racing/FPV",
-    "Education",
-    "Research",
-    "Commercial Operations",
-    "Hobby Flying",
-    "Technology Development",
-  ]
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError("")
+
+    // Basic validation
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match")
+      setIsLoading(false)
+      return
+    }
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long")
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        // Redirect to login page
+        router.push("/login?message=Registration successful! Please sign in.")
+      } else {
+        setError(data.error || "Registration failed")
+      }
+    } catch (err) {
+      setError("Network error. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Join Rwanda Drone Community</CardTitle>
-          <CardDescription>Connect with drone enthusiasts, professionals, and businesses across Rwanda</CardDescription>
+          <CardDescription>Create your account and connect with the drone community</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <form className="space-y-6">
-            {/* Basic Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Basic Information</h3>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" placeholder="Enter your first name" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" placeholder="Enter your last name" />
-                </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name *</Label>
+                <Input
+                  id="fullName"
+                  placeholder="Enter your full name"
+                  value={formData.fullName}
+                  onChange={(e) => handleInputChange("fullName", e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input id="email" type="email" placeholder="Enter your email" />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" placeholder="+250 7XX XXX XXX" />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" placeholder="Create a strong password" />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input id="confirmPassword" type="password" placeholder="Confirm your password" />
+                <Label htmlFor="username">Username *</Label>
+                <Input
+                  id="username"
+                  placeholder="Choose a username"
+                  value={formData.username}
+                  onChange={(e) => handleInputChange("username", e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
               </div>
             </div>
 
-            {/* Profile Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Profile Information</h3>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address *</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="password">Password *</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create a password"
+                    value={formData.password}
+                    onChange={(e) => handleInputChange("password", e.target.value)}
+                    required
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
 
               <div className="space-y-2">
-                <Label htmlFor="userType">User Type</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your user type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {userTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        <div>
-                          <div className="font-medium">{type.label}</div>
-                          <div className="text-sm text-muted-foreground">{type.description}</div>
+                <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                    required
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="role">Role *</Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value) => handleInputChange("role", value)}
+                disabled={isLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(roleInfo).map(([role, info]) => {
+                    const IconComponent = info.icon
+                    return (
+                      <SelectItem key={role} value={role}>
+                        <div className="flex items-center gap-2">
+                          <div className={`p-1 rounded ${info.color}`}>
+                            <IconComponent className="h-3 w-3" />
+                          </div>
+                          <span>{info.name}</span>
                         </div>
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    )
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="organization">Organization</Label>
+                <Input
+                  id="organization"
+                  placeholder="Your organization or company"
+                  value={formData.organization}
+                  onChange={(e) => handleInputChange("organization", e.target.value)}
+                  disabled={isLoading}
+                />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location">Location (District)</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your district" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {districts.map((district) => (
-                      <SelectItem key={district} value={district.toLowerCase()}>
-                        {district}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  placeholder="Tell us about yourself and your interest in drones..."
-                  className="min-h-[100px]"
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  placeholder="City, Rwanda"
+                  value={formData.location}
+                  onChange={(e) => handleInputChange("location", e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
             </div>
 
-            {/* Interests and Experience */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Interests & Experience</h3>
-
+            {formData.role === "pilot" && (
               <div className="space-y-2">
-                <Label>Areas of Interest (Select all that apply)</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {interests.map((interest) => (
-                    <div key={interest} className="flex items-center space-x-2">
-                      <Checkbox id={interest} />
-                      <Label htmlFor={interest} className="text-sm">
-                        {interest}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="experience">Experience Level</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your experience level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="beginner">Beginner (0-1 years)</SelectItem>
-                    <SelectItem value="intermediate">Intermediate (1-3 years)</SelectItem>
-                    <SelectItem value="advanced">Advanced (3-5 years)</SelectItem>
-                    <SelectItem value="expert">Expert (5+ years)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="certifications">Certifications</Label>
-                <Textarea
-                  id="certifications"
-                  placeholder="List any drone-related certifications (RCAA license, etc.)"
-                  className="min-h-[80px]"
+                <Label htmlFor="pilotLicense">Pilot License Number</Label>
+                <Input
+                  id="pilotLicense"
+                  placeholder="Enter your pilot license number"
+                  value={formData.pilotLicense}
+                  onChange={(e) => handleInputChange("pilotLicense", e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="experience">Experience Level</Label>
+              <Select
+                value={formData.experience}
+                onValueChange={(value) => handleInputChange("experience", value)}
+                disabled={isLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your experience level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="beginner">Beginner (0-1 years)</SelectItem>
+                  <SelectItem value="intermediate">Intermediate (1-3 years)</SelectItem>
+                  <SelectItem value="advanced">Advanced (3-5 years)</SelectItem>
+                  <SelectItem value="expert">Expert (5+ years)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Terms and Conditions */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="terms" />
-                <Label htmlFor="terms" className="text-sm">
-                  I agree to the{" "}
-                  <Link href="/terms" className="text-blue-600 hover:underline">
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="/privacy" className="text-blue-600 hover:underline">
-                    Privacy Policy
-                  </Link>
-                </Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox id="newsletter" />
-                <Label htmlFor="newsletter" className="text-sm">
-                  Subscribe to community newsletter and updates
-                </Label>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea
+                id="bio"
+                placeholder="Tell us about yourself and your interest in drones..."
+                value={formData.bio}
+                onChange={(e) => handleInputChange("bio", e.target.value)}
+                rows={3}
+                disabled={isLoading}
+              />
             </div>
 
-            <Button type="submit" className="w-full" size="lg">
-              Create Account
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating Account...
+                </>
+              ) : (
+                "Create Account"
+              )}
             </Button>
           </form>
 

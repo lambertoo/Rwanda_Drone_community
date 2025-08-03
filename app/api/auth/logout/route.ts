@@ -3,9 +3,11 @@ import { deleteSession } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
   try {
+    // Get session ID from cookies
     const sessionId = request.cookies.get("session-id")?.value
 
     if (sessionId) {
+      // Delete the session
       deleteSession(sessionId)
     }
 
@@ -16,7 +18,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 0,
+      maxAge: 0, // Expire immediately
     })
 
     return response

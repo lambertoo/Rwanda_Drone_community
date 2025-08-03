@@ -20,161 +20,44 @@ import {
   Clock,
 } from "lucide-react"
 import Link from "next/link"
+import { prisma } from "@/lib/prisma"
 
-export default function ProjectsPage() {
-  // Mock projects data
-  const projects = [
-    {
-      id: "1",
-      title: "Agricultural Monitoring System - Musanze District",
-      description:
-        "Comprehensive drone-based crop monitoring and analysis system for smallholder farmers in Musanze District, focusing on potato and maize cultivation optimization.",
-      category: "Agriculture",
-      status: "Completed",
-      location: "Musanze District, Rwanda",
-      duration: "6 months",
-      startDate: "January 2024",
-      endDate: "June 2024",
-      lead: {
-        name: "Dr. Agnes Mukamana",
-        role: "Project Lead",
-        organization: "University of Rwanda - Agriculture",
-        avatar: "/placeholder-user.jpg",
-      },
-      stats: {
-        views: 1234,
-        likes: 89,
-        comments: 23,
-      },
-      technologies: ["DJI Matrice 300", "Multispectral Imaging", "AI Analytics"],
-      featured: true,
+export default async function ProjectsPage() {
+  // Fetch projects from database
+  const projects = await prisma.project.findMany({
+    include: {
+      author: true,
     },
-    {
-      id: "2",
-      title: "Emergency Response Drone Network",
-      description:
-        "Rapid deployment drone system for emergency response and disaster management across Kigali Province.",
-      category: "Emergency Response",
-      status: "In Progress",
-      location: "Kigali Province, Rwanda",
-      duration: "12 months",
-      startDate: "March 2024",
-      endDate: "March 2025",
-      lead: {
-        name: "Jean Claude Niyonzima",
-        role: "Operations Manager",
-        organization: "Rwanda National Police",
-        avatar: "/placeholder-user.jpg",
-      },
-      stats: {
-        views: 856,
-        likes: 67,
-        comments: 15,
-      },
-      technologies: ["DJI Mini 3", "Thermal Cameras", "Real-time Streaming"],
-      featured: false,
+    orderBy: {
+      createdAt: 'desc'
+    }
+  })
+
+  // Transform projects to match expected format
+  const transformedProjects = projects.map(project => ({
+    id: project.id,
+    title: project.title,
+    description: project.description,
+    category: project.category,
+    status: project.status,
+    location: project.location || 'Not specified',
+    duration: project.duration || 'Not specified',
+    startDate: project.startDate || 'Not specified',
+    endDate: project.endDate || 'Not specified',
+    lead: {
+      name: project.author.fullName,
+      role: 'Project Lead',
+      organization: project.author.organization || 'Not specified',
+      avatar: project.author.avatar || '/placeholder-user.jpg',
     },
-    {
-      id: "3",
-      title: "Wildlife Conservation Monitoring",
-      description:
-        "Anti-poaching surveillance and wildlife population monitoring in Akagera National Park using advanced drone technology.",
-      category: "Environmental",
-      status: "Completed",
-      location: "Akagera National Park, Rwanda",
-      duration: "8 months",
-      startDate: "June 2023",
-      endDate: "February 2024",
-      lead: {
-        name: "Sarah Uwimana",
-        role: "Conservation Specialist",
-        organization: "Rwanda Development Board",
-        avatar: "/placeholder-user.jpg",
-      },
-      stats: {
-        views: 2156,
-        likes: 145,
-        comments: 34,
-      },
-      technologies: ["Fixed-wing Drones", "Night Vision", "GPS Tracking"],
-      featured: true,
+    stats: {
+      views: project.viewsCount,
+      likes: project.likesCount,
+      comments: 0, // Comments not implemented yet
     },
-    {
-      id: "4",
-      title: "Urban Planning & Mapping Initiative",
-      description:
-        "3D mapping and urban development planning for Kigali's expansion using high-resolution drone surveys.",
-      category: "Mapping",
-      status: "Planning",
-      location: "Kigali City, Rwanda",
-      duration: "10 months",
-      startDate: "May 2024",
-      endDate: "March 2025",
-      lead: {
-        name: "Emmanuel Habimana",
-        role: "Urban Planner",
-        organization: "City of Kigali",
-        avatar: "/placeholder-user.jpg",
-      },
-      stats: {
-        views: 634,
-        likes: 42,
-        comments: 8,
-      },
-      technologies: ["LiDAR", "Photogrammetry", "GIS Integration"],
-      featured: false,
-    },
-    {
-      id: "5",
-      title: "Medical Supply Delivery Network",
-      description:
-        "Last-mile medical supply delivery to remote health centers using autonomous drone delivery systems.",
-      category: "Delivery",
-      status: "In Progress",
-      location: "Northern Province, Rwanda",
-      duration: "18 months",
-      startDate: "January 2024",
-      endDate: "July 2025",
-      lead: {
-        name: "Dr. Marie Uwimana",
-        role: "Health Systems Specialist",
-        organization: "Ministry of Health",
-        avatar: "/placeholder-user.jpg",
-      },
-      stats: {
-        views: 1456,
-        likes: 98,
-        comments: 27,
-      },
-      technologies: ["Cargo Drones", "GPS Navigation", "Cold Chain"],
-      featured: true,
-    },
-    {
-      id: "6",
-      title: "Educational Drone Training Program",
-      description:
-        "Comprehensive drone education and training program for students and professionals across Rwanda's technical schools.",
-      category: "Education",
-      status: "Completed",
-      location: "Multiple Locations, Rwanda",
-      duration: "12 months",
-      startDate: "February 2023",
-      endDate: "February 2024",
-      lead: {
-        name: "Patrick Nkurunziza",
-        role: "Training Coordinator",
-        organization: "Rwanda Polytechnic",
-        avatar: "/placeholder-user.jpg",
-      },
-      stats: {
-        views: 987,
-        likes: 76,
-        comments: 19,
-      },
-      technologies: ["Training Simulators", "Educational Drones", "VR Training"],
-      featured: false,
-    },
-  ]
+    technologies: project.technologies ? JSON.parse(project.technologies) : [],
+    featured: project.isFeatured,
+  }))
 
   const categories = [
     { value: "all", label: "All Categories", count: projects.length },
@@ -228,8 +111,8 @@ export default function ProjectsPage() {
     }
   }
 
-  const featuredProjects = projects.filter((project) => project.featured)
-  const recentProjects = projects.slice(0, 3)
+  const featuredProjects = transformedProjects.filter((project) => project.featured)
+  const recentProjects = transformedProjects.slice(0, 3)
 
   return (
     <div className="space-y-8">
@@ -257,10 +140,10 @@ export default function ProjectsPage() {
               <div className="p-2 bg-blue-100 rounded-lg">
                 <Award className="h-4 w-4 text-blue-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{projects.length}</p>
-                <p className="text-sm text-muted-foreground">Total Projects</p>
-              </div>
+                              <div>
+                  <p className="text-2xl font-bold">{transformedProjects.length}</p>
+                  <p className="text-sm text-muted-foreground">Total Projects</p>
+                </div>
             </div>
           </CardContent>
         </Card>
@@ -296,10 +179,10 @@ export default function ProjectsPage() {
               <div className="p-2 bg-purple-100 rounded-lg">
                 <Users className="h-4 w-4 text-purple-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{new Set(projects.map((p) => p.lead.organization)).size}</p>
-                <p className="text-sm text-muted-foreground">Organizations</p>
-              </div>
+                              <div>
+                  <p className="text-2xl font-bold">{new Set(transformedProjects.map((p) => p.lead.organization)).size}</p>
+                  <p className="text-sm text-muted-foreground">Organizations</p>
+                </div>
             </div>
           </CardContent>
         </Card>
@@ -358,7 +241,7 @@ export default function ProjectsPage() {
 
         <TabsContent value="all" className="space-y-6">
           <div className="grid gap-6">
-            {projects.map((project) => (
+                            {transformedProjects.map((project) => (
               <Card key={project.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between gap-4">
@@ -369,7 +252,7 @@ export default function ProjectsPage() {
                         <Badge variant="secondary" className={getStatusColor(project.status)}>
                           {project.status}
                         </Badge>
-                        {project.featured && (
+                        {project.isFeatured && (
                           <Badge variant="default" className="bg-yellow-100 text-yellow-800">
                             Featured
                           </Badge>
@@ -558,7 +441,7 @@ export default function ProjectsPage() {
                         <Badge variant="secondary" className={getStatusColor(project.status)}>
                           {project.status}
                         </Badge>
-                        {project.featured && (
+                        {project.isFeatured && (
                           <Badge variant="default" className="bg-yellow-100 text-yellow-800">
                             Featured
                           </Badge>

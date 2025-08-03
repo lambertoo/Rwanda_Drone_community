@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/db"
+import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/auth"
 
 export async function GET(request: NextRequest) {
@@ -11,12 +11,60 @@ export async function GET(request: NextRequest) {
 
     let posts
     if (categoryId) {
-      posts = await db.forumPosts.findByCategory(categoryId, limit, offset)
+      posts = await prisma.forumPost.findMany({
+        where: { categoryId },
+        include: {
+          author: {
+            select: {
+              id: true,
+              username: true,
+              fullName: true,
+              avatar: true,
+              role: true,
+              isVerified: true,
+            }
+          },
+          category: true,
+          _count: {
+            select: { comments: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+      })
     } else {
-      posts = await db.forumPosts.findAll(limit, offset)
+      posts = await prisma.forumPost.findMany({
+        include: {
+          author: {
+            select: {
+              id: true,
+              username: true,
+              fullName: true,
+              avatar: true,
+              role: true,
+              isVerified: true,
+            }
+          },
+          category: true,
+          _count: {
+            select: { comments: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+      })
     }
 
-    return NextResponse.json({ posts })
+    // Transform the data to match expected format
+    const transformedPosts = posts.map(post => ({
+      ...post,
+      repliesCount: post._count.comments,
+      tags: post.tags ? JSON.parse(post.tags) : [],
+    }))
+
+    return NextResponse.json({ posts: transformedPosts })
   } catch (error) {
     console.error("Error fetching posts:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -41,31 +89,72 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Title, content, and category are required" }, { status: 400 })
     }
 
-    const category = await db.forumCategories.findById(categoryId)
+    // Verify category exists
+    const category = await prisma.forumCategory.findUnique({
+      where: { id: categoryId }
+    })
     if (!category) {
       return NextResponse.json({ error: "Invalid category" }, { status: 400 })
     }
 
-    const userRecord = await db.users.findById(user.id)
+    // Verify user exists
+    const userRecord = await prisma.user.findUnique({
+      where: { id: user.id }
+    })
     if (!userRecord) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const post = await db.forumPosts.create({
-      title,
-      content,
-      excerpt: content.substring(0, 200) + "...",
-      categoryId,
-      category,
-      authorId: user.id,
-      author: userRecord,
-      isPinned: false,
-      isLocked: false,
-      tags: tags || [],
-      status: "published",
+    // Create the post
+    const post = await prisma.forumPost.create({
+      data: {
+        title,
+        content,
+        categoryId,
+        authorId: user.id,
+        tags: JSON.stringify(tags || []),
+        viewsCount: 0,
+        repliesCount: 0,
+        isPinned: false,
+        isLocked: false,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+            fullName: true,
+            avatar: true,
+            role: true,
+            isVerified: true,
+          }
+        },
+        category: true,
+      }
     })
 
-    return NextResponse.json({ post }, { status: 201 })
+    // Update user's post count
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { postsCount: { increment: 1 } }
+    })
+
+    // Update category's post count
+    await prisma.forumCategory.update({
+      where: { id: categoryId },
+      data: { 
+        postCount: { increment: 1 },
+        lastPostAt: new Date()
+      }
+    })
+
+    return NextResponse.json({ 
+      post: {
+        ...post,
+        tags: JSON.parse(post.tags || '[]'),
+        repliesCount: 0
+      }
+    }, { status: 201 })
   } catch (error) {
     console.error("Error creating post:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

@@ -187,6 +187,21 @@ export default function NewProjectForm() {
     e.preventDefault()
     setIsSubmitting(true)
 
+    // Get user from localStorage
+    const userStr = localStorage.getItem("user")
+    if (!userStr) {
+      alert("Please log in to create a project")
+      setIsSubmitting(false)
+      return
+    }
+
+    const user = JSON.parse(userStr)
+    if (!user.id) {
+      alert("Invalid user session")
+      setIsSubmitting(false)
+      return
+    }
+
     try {
       const projectData = {
         ...formData,
@@ -202,6 +217,7 @@ export default function NewProjectForm() {
           formDataToSend.append(key, value as string)
         }
       })
+      formDataToSend.append("userId", user.id)
 
       await createProjectAction(formDataToSend)
     } catch (error) {

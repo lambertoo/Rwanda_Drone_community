@@ -64,11 +64,27 @@ export function NewPostForm({ categories, onCancel }: NewPostFormProps) {
       return
     }
 
+    // Get user from localStorage
+    const userStr = localStorage.getItem("user")
+    if (!userStr) {
+      setError("Please log in to create a post")
+      setIsSubmitting(false)
+      return
+    }
+
+    const user = JSON.parse(userStr)
+    if (!user.id) {
+      setError("Invalid user session")
+      setIsSubmitting(false)
+      return
+    }
+
     const formData = new FormData()
     formData.append("title", title.trim())
     formData.append("content", content.trim())
     formData.append("categoryId", selectedCategory)
     formData.append("tags", tags.join(","))
+    formData.append("userId", user.id)
 
     try {
       const result = await createForumPostAction(formData)

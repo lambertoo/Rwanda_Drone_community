@@ -1,3 +1,7 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -6,6 +10,42 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Users, MessageSquare, Calendar, Briefcase, TrendingUp, AlertTriangle, CheckCircle, X } from "lucide-react"
 
 export default function AdminPage() {
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Check if user is logged in and is admin
+    const storedUser = localStorage.getItem("user")
+    if (storedUser) {
+      const userData = JSON.parse(storedUser)
+      if (userData.role === "admin") {
+        setUser(userData)
+        setLoading(false)
+      } else {
+        // Not admin, redirect to home
+        router.push("/")
+      }
+    } else {
+      // Not logged in, redirect to login
+      router.push("/login")
+    }
+  }, [router])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Loading admin dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
   const stats = [
     { label: "Total Users", value: "1,247", change: "+12%", icon: Users, color: "text-blue-600" },
     { label: "Forum Posts", value: "3,456", change: "+8%", icon: MessageSquare, color: "text-green-600" },

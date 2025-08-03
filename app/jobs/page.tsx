@@ -1,284 +1,311 @@
-import { Button } from "@/components/ui/button"
+"use client"
+
+import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MapPin, Clock, DollarSign, Search, Briefcase, Plus } from "lucide-react"
+import { MapPin, Building2, Clock, DollarSign, Calendar, Users, Briefcase } from "lucide-react"
+
+interface Job {
+  id: string
+  title: string
+  description: string
+  company: string
+  jobType: string
+  category: string
+  location: string
+  salary: string | null
+  requirements: string | null
+  isUrgent: boolean
+  isRemote: boolean
+  createdAt: string
+  poster: {
+    id: string
+    fullName: string
+    avatar: string | null
+    isVerified: boolean
+    organization: string | null
+  }
+  applications: { id: string }[]
+}
 
 export default function JobsPage() {
-  const jobs = [
-    {
-      title: "Drone Pilot for Agricultural Mapping",
-      company: "AgriTech Solutions Rwanda",
-      location: "Musanze",
-      type: "Full-time",
-      salary: "800,000 - 1,200,000 RWF",
-      posted: "2 days ago",
-      description:
-        "Seeking experienced drone pilot for agricultural mapping projects across Northern Province. Must have RCAA certification and experience with multispectral imaging.",
-      requirements: [
-        "RCAA Drone Pilot License",
-        "2+ years experience",
-        "Agricultural knowledge preferred",
-        "Own drone equipment",
-      ],
-      category: "Agriculture",
-      urgent: false,
-    },
-    {
-      title: "Aerial Photography Specialist",
-      company: "SkyView Media",
-      location: "Kigali",
-      type: "Contract",
-      salary: "Per project basis",
-      posted: "1 day ago",
-      description: "Looking for creative drone photographer for real estate and event photography. Portfolio required.",
-      requirements: [
-        "Professional photography experience",
-        "High-quality drone equipment",
-        "Portfolio of aerial work",
-        "Flexible schedule",
-      ],
-      category: "Photography",
-      urgent: true,
-    },
-    {
-      title: "Construction Site Surveyor",
-      company: "BuildRight Construction",
-      location: "Kigali",
-      type: "Part-time",
-      salary: "600,000 - 800,000 RWF",
-      posted: "3 days ago",
-      description: "Part-time position for drone-based construction site surveying and progress monitoring.",
-      requirements: [
-        "Surveying background",
-        "Drone mapping experience",
-        "CAD software knowledge",
-        "Available weekends",
-      ],
-      category: "Construction",
-      urgent: false,
-    },
-    {
-      title: "Drone Maintenance Technician",
-      company: "Rwanda Drone Services",
-      location: "Kigali",
-      type: "Full-time",
-      salary: "500,000 - 700,000 RWF",
-      posted: "5 days ago",
-      description: "Technical role maintaining and repairing various drone models. Electronics background required.",
-      requirements: [
-        "Electronics/Engineering degree",
-        "Drone repair experience",
-        "Problem-solving skills",
-        "Tool proficiency",
-      ],
-      category: "Technical",
-      urgent: false,
-    },
-    {
-      title: "Wildlife Conservation Drone Operator",
-      company: "Rwanda Wildlife Conservation",
-      location: "Akagera National Park",
-      type: "Contract",
-      salary: "Competitive",
-      posted: "1 week ago",
-      description: "Operate drones for wildlife monitoring and anti-poaching efforts in national parks.",
-      requirements: ["Conservation experience", "Long-range drone operation", "Wildlife knowledge", "Physical fitness"],
-      category: "Conservation",
-      urgent: false,
-    },
-    {
-      title: "Drone Training Instructor",
-      company: "Rwanda Aviation Academy",
-      location: "Kigali",
-      type: "Full-time",
-      salary: "900,000 - 1,300,000 RWF",
-      posted: "1 week ago",
-      description: "Teach drone operation and safety courses. RCAA instructor certification required.",
-      requirements: [
-        "RCAA Instructor License",
-        "Teaching experience",
-        "Excellent communication",
-        "Curriculum development",
-      ],
-      category: "Education",
-      urgent: false,
-    },
-  ]
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
+  const [jobType, setJobType] = useState("all")
+  const [category, setCategory] = useState("all")
+  const [location, setLocation] = useState("all")
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "Full-time":
-        return "bg-green-100 text-green-800"
-      case "Part-time":
-        return "bg-blue-100 text-blue-800"
-      case "Contract":
-        return "bg-purple-100 text-purple-800"
+  // Prevent hydration mismatch by ensuring client-side rendering
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const fetchJobs = async () => {
+    try {
+      const params = new URLSearchParams()
+      if (jobType !== "all") params.append("jobType", jobType)
+      if (category !== "all") params.append("category", category)
+      if (location !== "all") params.append("location", location)
+
+      const response = await fetch(`/api/jobs?${params.toString()}`)
+      if (!response.ok) throw new Error("Failed to fetch jobs")
+      
+      const data = await response.json()
+      setJobs(data)
+    } catch (error) {
+      console.error("Error fetching jobs:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (mounted) {
+      fetchJobs()
+    }
+  }, [jobType, category, location, mounted])
+
+  if (!mounted) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="h-12 bg-gray-200 rounded w-3/4 mb-4"></div>
+          <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      </div>
+    )
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffTime = Math.abs(now.getTime() - date.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 1) return "Posted today"
+    if (diffDays === 2) return "Posted yesterday"
+    if (diffDays <= 7) return `Posted ${diffDays - 1} days ago`
+    return date.toLocaleDateString()
+  }
+
+  const getJobTypeColor = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'urgent':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+      case 'full-time':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+      case 'part-time':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+      case 'contract':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
       default:
-        return "bg-gray-100 text-gray-800"
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
     }
   }
 
   const getCategoryColor = (category: string) => {
-    switch (category) {
-      case "Agriculture":
-        return "bg-emerald-100 text-emerald-800"
-      case "Photography":
-        return "bg-pink-100 text-pink-800"
-      case "Construction":
-        return "bg-orange-100 text-orange-800"
-      case "Technical":
-        return "bg-blue-100 text-blue-800"
-      case "Conservation":
-        return "bg-green-100 text-green-800"
-      case "Education":
-        return "bg-purple-100 text-purple-800"
+    switch (category.toLowerCase()) {
+      case 'agriculture':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+      case 'photography':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+      case 'construction':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+      case 'technical':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+      case 'conservation':
+        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
+      case 'education':
+        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200'
       default:
-        return "bg-gray-100 text-gray-800"
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
     }
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Job Board</h1>
-          <p className="text-muted-foreground">Find drone-related career opportunities across Rwanda</p>
-        </div>
-        <Button className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Post Job
-        </Button>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search jobs..." className="pl-10" />
-        </div>
-        <Select>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Job Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="full-time">Full-time</SelectItem>
-            <SelectItem value="part-time">Part-time</SelectItem>
-            <SelectItem value="contract">Contract</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Location" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Locations</SelectItem>
-            <SelectItem value="kigali">Kigali</SelectItem>
-            <SelectItem value="musanze">Musanze</SelectItem>
-            <SelectItem value="huye">Huye</SelectItem>
-            <SelectItem value="rubavu">Rubavu</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="agriculture">Agriculture</SelectItem>
-            <SelectItem value="photography">Photography</SelectItem>
-            <SelectItem value="construction">Construction</SelectItem>
-            <SelectItem value="technical">Technical</SelectItem>
-            <SelectItem value="conservation">Conservation</SelectItem>
-            <SelectItem value="education">Education</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Job Listings */}
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Header */}
       <div className="space-y-4">
-        {jobs.map((job, index) => (
-          <Card
-            key={index}
-            className={`hover:shadow-lg transition-shadow ${job.urgent ? "border-l-4 border-l-red-500" : ""}`}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-semibold text-xl">{job.title}</h3>
-                      <p className="text-muted-foreground">{job.company}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      {job.urgent && (
-                        <Badge variant="destructive" className="text-xs">
-                          Urgent
-                        </Badge>
-                      )}
-                      <Badge className={getTypeColor(job.type)}>{job.type}</Badge>
-                      <Badge className={getCategoryColor(job.category)}>{job.category}</Badge>
-                    </div>
+        <h1 className="text-3xl font-bold">Job Board</h1>
+        <p className="text-lg text-muted-foreground">
+          Find drone-related career opportunities across Rwanda
+        </p>
+      </div>
+
+      {/* Filters and Actions */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Select value={jobType} onValueChange={setJobType}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Job Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="Full-time">Full-time</SelectItem>
+              <SelectItem value="Part-time">Part-time</SelectItem>
+              <SelectItem value="Contract">Contract</SelectItem>
+              <SelectItem value="Urgent">Urgent</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="Agriculture">Agriculture</SelectItem>
+              <SelectItem value="Photography">Photography</SelectItem>
+              <SelectItem value="Construction">Construction</SelectItem>
+              <SelectItem value="Technical">Technical</SelectItem>
+              <SelectItem value="Conservation">Conservation</SelectItem>
+              <SelectItem value="Education">Education</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={location} onValueChange={setLocation}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Location" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Locations</SelectItem>
+              <SelectItem value="Kigali">Kigali</SelectItem>
+              <SelectItem value="Musanze">Musanze</SelectItem>
+              <SelectItem value="Huye">Huye</SelectItem>
+              <SelectItem value="Akagera">Akagera National Park</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Link href="/jobs/new">
+          <Button className="bg-blue-600 hover:bg-blue-700">
+            Post Job
+          </Button>
+        </Link>
+      </div>
+
+      {/* Jobs Grid */}
+      <div className="space-y-4">
+        {loading ? (
+          <div className="space-y-4">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
                   </div>
-
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      {job.location}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="h-4 w-4" />
-                      {job.salary}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      Posted {job.posted}
-                    </div>
-                  </div>
-
-                  <p className="text-sm text-muted-foreground">{job.description}</p>
-
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-sm">Requirements:</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {job.requirements.map((req, reqIndex) => (
-                        <Badge key={reqIndex} variant="outline" className="text-xs">
-                          {req}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <Button>Apply Now</Button>
-                  <Button variant="outline" size="sm">
-                    Save Job
-                  </Button>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : jobs.length === 0 ? (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No jobs found</h3>
+              <p className="text-muted-foreground mb-4">
+                Try adjusting your filters or check back later for new opportunities.
+              </p>
+              <Link href="/jobs/new">
+                <Button>Post a Job</Button>
+              </Link>
             </CardContent>
           </Card>
-        ))}
+        ) : (
+          jobs.map((job) => {
+            let requirements: string[] = []
+            try {
+              requirements = job.requirements ? JSON.parse(job.requirements) : []
+            } catch (error) {
+              console.error('Error parsing requirements for job:', job.id, error)
+              requirements = []
+            }
+
+            return (
+              <Card key={job.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-semibold text-xl">{job.title}</h3>
+                          <p className="text-muted-foreground">{job.company}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          {job.isUrgent && (
+                            <Badge variant="destructive" className="text-xs">
+                              Urgent
+                            </Badge>
+                          )}
+                          <Badge className={getJobTypeColor(job.jobType)}>{job.jobType}</Badge>
+                          <Badge className={getCategoryColor(job.category)}>{job.category}</Badge>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          {job.location}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-4 w-4" />
+                          {job.salary}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          {formatDate(job.createdAt)}
+                        </div>
+                      </div>
+
+                      <p className="text-sm text-muted-foreground">{job.description}</p>
+
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-sm">Requirements:</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {requirements.map((req, reqIndex) => (
+                            <Badge key={reqIndex} variant="outline" className="text-xs">
+                              {req}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <Link href={`/jobs/${job.id}`}>
+                        <Button>Apply Now</Button>
+                      </Link>
+                      <Button variant="outline" size="sm">
+                        Save Job
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })
+        )}
       </div>
 
       {/* Call to Action */}
-      <Card className="bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
         <CardContent className="p-8 text-center">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Briefcase className="h-8 w-8 text-blue-600" />
-            </div>
-            <div className="text-left">
-              <h3 className="text-xl font-semibold">Looking to hire drone professionals?</h3>
-              <p className="text-muted-foreground">
-                Post your job and connect with qualified drone operators across Rwanda
-              </p>
-            </div>
-          </div>
-          <Button size="lg">Post a Job</Button>
+          <h3 className="text-xl font-semibold mb-2">Looking to hire drone professionals?</h3>
+          <p className="text-muted-foreground mb-4">
+            Post your job and connect with qualified drone operators across Rwanda
+          </p>
+          <Link href="/jobs/new">
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              Post a Job
+            </Button>
+          </Link>
         </CardContent>
       </Card>
     </div>

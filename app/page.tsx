@@ -19,154 +19,102 @@ import {
   Star,
 } from "lucide-react"
 import Link from "next/link"
+import { prisma } from "@/lib/prisma"
 
-export default function HomePage() {
-  // Mock data for featured projects
-  const featuredProjects = [
-    {
-      id: "1",
-      title: "Agricultural Monitoring System",
-      description:
-        "Comprehensive drone-based crop monitoring and analysis system for smallholder farmers in Musanze District.",
-      category: "Agriculture",
-      status: "Completed",
-      location: "Musanze District, Rwanda",
-      lead: {
-        name: "Dr. Agnes Mukamana",
-        organization: "University of Rwanda",
-        avatar: "/placeholder-user.jpg",
+async function getHomePageData() {
+  try {
+    // Get featured projects (isFeatured = true, limit 3)
+    const featuredProjects = await prisma.project.findMany({
+      where: { isFeatured: true },
+      take: 3,
+      include: {
+        author: {
+          select: {
+            fullName: true,
+            organization: true,
+            avatar: true,
+          }
+        }
       },
-      stats: {
-        views: 1234,
-        likes: 89,
-        comments: 23,
-      },
-      technologies: ["DJI Matrice 300", "Multispectral Imaging", "AI Analytics"],
-      image: "/placeholder.svg?height=200&width=300&text=Agricultural+Monitoring",
-    },
-    {
-      id: "3",
-      title: "Wildlife Conservation Monitoring",
-      description:
-        "Anti-poaching surveillance and wildlife population monitoring in Akagera National Park using advanced drone technology.",
-      category: "Environmental",
-      status: "Completed",
-      location: "Akagera National Park, Rwanda",
-      lead: {
-        name: "Sarah Uwimana",
-        organization: "Rwanda Development Board",
-        avatar: "/placeholder-user.jpg",
-      },
-      stats: {
-        views: 2156,
-        likes: 145,
-        comments: 34,
-      },
-      technologies: ["Fixed-wing Drones", "Night Vision", "GPS Tracking"],
-      image: "/placeholder.svg?height=200&width=300&text=Wildlife+Conservation",
-    },
-    {
-      id: "5",
-      title: "Medical Supply Delivery Network",
-      description:
-        "Last-mile medical supply delivery to remote health centers using autonomous drone delivery systems.",
-      category: "Delivery",
-      status: "In Progress",
-      location: "Northern Province, Rwanda",
-      lead: {
-        name: "Dr. Marie Uwimana",
-        organization: "Ministry of Health",
-        avatar: "/placeholder-user.jpg",
-      },
-      stats: {
-        views: 1456,
-        likes: 98,
-        comments: 27,
-      },
-      technologies: ["Cargo Drones", "GPS Navigation", "Cold Chain"],
-      image: "/placeholder.svg?height=200&width=300&text=Medical+Delivery",
-    },
-  ]
+      orderBy: { createdAt: 'desc' }
+    })
 
-  // Mock data for recent forum posts
-  const recentPosts = [
-    {
-      id: "1",
-      title: "Best practices for drone maintenance in humid conditions?",
-      category: "Technical Discussion",
-      author: {
-        name: "Jean Baptiste Nzeyimana",
-        avatar: "/placeholder-user.jpg",
-        reputation: 1250,
+    // Get recent forum posts (limit 3)
+    const recentPosts = await prisma.forumPost.findMany({
+      take: 3,
+      include: {
+        author: {
+          select: {
+            fullName: true,
+            avatar: true,
+            reputation: true,
+          }
+        },
+        category: {
+          select: {
+            name: true
+          }
+        },
+        _count: {
+          select: {
+            comments: true
+          }
+        }
       },
-      replies: 12,
-      views: 234,
-      lastActivity: "2 hours ago",
-      tags: ["maintenance", "humidity", "best-practices"],
-    },
-    {
-      id: "2",
-      title: "New RCAA regulations for commercial drone operations",
-      category: "Regulations & Compliance",
-      author: {
-        name: "Marie Uwimana",
-        avatar: "/placeholder-user.jpg",
-        reputation: 890,
-      },
-      replies: 8,
-      views: 156,
-      lastActivity: "4 hours ago",
-      tags: ["regulations", "commercial", "RCAA"],
-    },
-    {
-      id: "3",
-      title: "Successful crop monitoring project in Nyagatare",
-      category: "Project Showcase",
-      author: {
-        name: "Emmanuel Habimana",
-        avatar: "/placeholder-user.jpg",
-        reputation: 567,
-      },
-      replies: 15,
-      views: 342,
-      lastActivity: "6 hours ago",
-      tags: ["agriculture", "success-story", "monitoring"],
-    },
-  ]
+      orderBy: { createdAt: 'desc' }
+    })
 
-  // Mock data for upcoming events
-  const upcomingEvents = [
-    {
-      id: "1",
-      title: "Rwanda Drone Summit 2024",
-      date: "2024-03-15",
-      time: "09:00",
-      location: "Kigali Convention Centre",
-      category: "Conference",
-      attendees: 245,
-      price: 50000,
-    },
-    {
-      id: "2",
-      title: "Drone Photography Workshop",
-      date: "2024-03-22",
-      time: "14:00",
-      location: "University of Rwanda",
-      category: "Workshop",
-      attendees: 32,
-      price: 15000,
-    },
-    {
-      id: "3",
-      title: "Agricultural Drone Training",
-      date: "2024-03-28",
-      time: "08:00",
-      location: "Musanze District",
-      category: "Training",
-      attendees: 18,
-      price: 25000,
-    },
-  ]
+    // Get upcoming events (limit 3, future dates)
+    const upcomingEvents = await prisma.event.findMany({
+      where: {
+        startDate: {
+          gte: new Date()
+        },
+        isPublished: true
+      },
+      take: 3,
+      include: {
+        _count: {
+          select: {
+            rsvps: true
+          }
+        }
+      },
+      orderBy: { startDate: 'asc' }
+    })
+
+    // Get statistics
+    const stats = await Promise.all([
+      prisma.project.count(),
+      prisma.user.count(),
+      prisma.event.count({ where: { isPublished: true } }),
+      prisma.service.count({ where: { isApproved: true } })
+    ])
+
+    return {
+      featuredProjects,
+      recentPosts,
+      upcomingEvents,
+      stats: {
+        projects: stats[0],
+        users: stats[1],
+        events: stats[2],
+        services: stats[3]
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching home page data:', error)
+    return {
+      featuredProjects: [],
+      recentPosts: [],
+      upcomingEvents: [],
+      stats: { projects: 0, users: 0, events: 0, services: 0 }
+    }
+  }
+}
+
+export default async function HomePage() {
+  const { featuredProjects, recentPosts, upcomingEvents, stats } = await getHomePageData()
 
   const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {
@@ -191,13 +139,28 @@ export default function HomePage() {
     switch (status.toLowerCase()) {
       case "completed":
         return "bg-green-100 text-green-800"
-      case "in progress":
+      case "in_progress":
         return "bg-yellow-100 text-yellow-800"
       case "planning":
         return "bg-blue-100 text-blue-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
+  }
+
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  }
+
+  const formatTime = (date: Date) => {
+    return new Date(date).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
   }
 
   return (
@@ -242,7 +205,7 @@ export default function HomePage() {
             <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg mb-4">
               <Award className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
-            <h3 className="text-2xl font-bold mb-2">150+</h3>
+            <h3 className="text-2xl font-bold mb-2">{stats.projects}+</h3>
             <p className="text-muted-foreground">Active Projects</p>
           </CardContent>
         </Card>
@@ -251,7 +214,7 @@ export default function HomePage() {
             <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg mb-4">
               <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
-            <h3 className="text-2xl font-bold mb-2">2,500+</h3>
+            <h3 className="text-2xl font-bold mb-2">{stats.users}+</h3>
             <p className="text-muted-foreground">Community Members</p>
           </CardContent>
         </Card>
@@ -260,8 +223,8 @@ export default function HomePage() {
             <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg mb-4">
               <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
             </div>
-            <h3 className="text-2xl font-bold mb-2">85%</h3>
-            <p className="text-muted-foreground">Success Rate</p>
+            <h3 className="text-2xl font-bold mb-2">{stats.events}</h3>
+            <p className="text-muted-foreground">Events & Workshops</p>
           </CardContent>
         </Card>
         <Card className="text-center hover:shadow-lg transition-shadow">
@@ -269,8 +232,8 @@ export default function HomePage() {
             <div className="inline-flex items-center justify-center w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg mb-4">
               <Globe className="h-6 w-6 text-orange-600 dark:text-orange-400" />
             </div>
-            <h3 className="text-2xl font-bold mb-2">12</h3>
-            <p className="text-muted-foreground">Districts Covered</p>
+            <h3 className="text-2xl font-bold mb-2">{stats.services}</h3>
+            <p className="text-muted-foreground">Service Providers</p>
           </CardContent>
         </Card>
       </section>
@@ -291,75 +254,84 @@ export default function HomePage() {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {featuredProjects.map((project) => (
-            <Link key={project.id} href={`/projects/${project.id}`} className="block group">
-              <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group-hover:-translate-y-1">
-                <div className="aspect-video bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-800 dark:to-gray-700 relative overflow-hidden">
-                  <img
-                    src={project.image || "/placeholder.svg"}
-                    alt={project.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute top-4 left-4 flex gap-2">
-                    <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm">
-                      {getCategoryIcon(project.category)} {project.category}
-                    </Badge>
-                    <Badge variant="secondary" className={`${getStatusColor(project.status)} backdrop-blur-sm`}>
-                      {project.status}
-                    </Badge>
-                  </div>
-                </div>
-                <CardContent className="p-6">
-                  <h3 className="font-semibold text-lg mb-2 group-hover:text-blue-600 transition-colors line-clamp-1">
-                    {project.title}
-                  </h3>
-                  <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{project.description}</p>
+          {featuredProjects.map((project) => {
+            let technologies: string[] = []
+            try {
+              technologies = project.technologies ? JSON.parse(project.technologies) : []
+            } catch (error) {
+              technologies = []
+            }
 
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {project.technologies.slice(0, 2).map((tech) => (
-                      <Badge key={tech} variant="outline" className="text-xs">
-                        {tech}
+            return (
+              <Link key={project.id} href={`/projects/${project.id}`} className="block group">
+                <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group-hover:-translate-y-1">
+                  <div className="aspect-video bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-800 dark:to-gray-700 relative overflow-hidden">
+                    <img
+                      src={project.image || "/placeholder.svg"}
+                      alt={project.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-4 left-4 flex gap-2">
+                      <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm">
+                        {getCategoryIcon(project.category)} {project.category}
                       </Badge>
-                    ))}
-                    {project.technologies.length > 2 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{project.technologies.length - 2}
+                      <Badge variant="secondary" className={`${getStatusColor(project.status)} backdrop-blur-sm`}>
+                        {project.status.replace('_', ' ')}
                       </Badge>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={project.lead.avatar || "/placeholder.svg"} alt={project.lead.name} />
-                        <AvatarFallback className="text-xs">
-                          {project.lead.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-sm">{project.lead.name}</p>
-                        <p className="text-xs text-muted-foreground">{project.lead.organization}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Eye className="h-3 w-3" />
-                        {project.stats.views}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Heart className="h-3 w-3" />
-                        {project.stats.likes}
-                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                  <CardContent className="p-6">
+                    <h3 className="font-semibold text-lg mb-2 group-hover:text-blue-600 transition-colors line-clamp-1">
+                      {project.title}
+                    </h3>
+                    <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{project.description}</p>
+
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {technologies.slice(0, 2).map((tech) => (
+                        <Badge key={tech} variant="outline" className="text-xs">
+                          {tech}
+                        </Badge>
+                      ))}
+                      {technologies.length > 2 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{technologies.length - 2}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={project.author.avatar || "/placeholder.svg"} alt={project.author.fullName} />
+                          <AvatarFallback className="text-xs">
+                            {project.author.fullName
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm">{project.author.fullName}</p>
+                          <p className="text-xs text-muted-foreground">{project.author.organization}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {project.viewsCount}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Heart className="h-3 w-3" />
+                          {project.likesCount}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            )
+          })}
         </div>
       </section>
 
@@ -380,36 +352,29 @@ export default function HomePage() {
 
         <div className="grid gap-4">
           {recentPosts.map((post) => (
-            <Link key={post.id} href={`/forum/general/${post.id}`} className="block group">
+            <Link key={post.id} href={`/forum/${post.category.name.toLowerCase()}/${post.id}`} className="block group">
               <Card className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline" className="text-xs">
-                          {post.category}
+                          {post.category.name}
                         </Badge>
-                        <div className="flex gap-1">
-                          {post.tags.slice(0, 2).map((tag) => (
-                            <Badge key={tag} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
                       </div>
                       <h3 className="font-semibold group-hover:text-blue-600 transition-colors mb-2">{post.title}</h3>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6">
-                            <AvatarImage src={post.author.avatar || "/placeholder.svg"} alt={post.author.name} />
+                            <AvatarImage src={post.author.avatar || "/placeholder.svg"} alt={post.author.fullName} />
                             <AvatarFallback className="text-xs">
-                              {post.author.name
+                              {post.author.fullName
                                 .split(" ")
                                 .map((n) => n[0])
                                 .join("")}
                             </AvatarFallback>
                           </Avatar>
-                          <span>{post.author.name}</span>
+                          <span>{post.author.fullName}</span>
                           <div className="flex items-center gap-1">
                             <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                             <span>{post.author.reputation}</span>
@@ -421,16 +386,16 @@ export default function HomePage() {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
                         <div className="flex items-center gap-1">
                           <MessageSquare className="h-4 w-4" />
-                          {post.replies}
+                          {post._count.comments}
                         </div>
                         <div className="flex items-center gap-1">
                           <Eye className="h-4 w-4" />
-                          {post.views}
+                          {post.viewsCount}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        {post.lastActivity}
+                        {formatDate(post.createdAt)}
                       </div>
                     </div>
                   </div>
@@ -472,7 +437,7 @@ export default function HomePage() {
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-blue-600" />
                       <span>
-                        {new Date(event.date).toLocaleDateString()} at {event.time}
+                        {formatDate(event.startDate)} at {formatTime(event.startDate)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -481,12 +446,12 @@ export default function HomePage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-purple-600" />
-                      <span>{event.attendees} registered</span>
+                      <span>{event._count.rsvps} registered</span>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-green-600">
-                      {event.price === 0 ? "Free" : `${event.price.toLocaleString()} RWF`}
+                      {event.price === 0 ? "Free" : `${event.price.toLocaleString()} ${event.currency}`}
                     </span>
                     <Button size="sm" variant="outline">
                       Register
