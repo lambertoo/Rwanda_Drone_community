@@ -6,7 +6,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from 'lucide-react'
-import { DayButton, DayPicker, getDefaultClassNames } from 'react-day-picker'
+import { DayButton, DayPicker } from 'react-day-picker'
 
 import { cn } from '@/lib/utils'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -23,7 +23,32 @@ function Calendar({
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>['variant']
 }) {
-  const defaultClassNames = getDefaultClassNames()
+  const defaultClassNames = {
+    root: 'rdp',
+    months: 'rdp-months',
+    month: 'rdp-month',
+    nav: 'rdp-nav',
+    button_previous: 'rdp-button_previous',
+    button_next: 'rdp-button_next',
+    month_caption: 'rdp-month_caption',
+    dropdowns: 'rdp-dropdowns',
+    dropdown_root: 'rdp-dropdown_root',
+    dropdown: 'rdp-dropdown',
+    caption_label: 'rdp-caption_label',
+    table: 'rdp-table',
+    weekdays: 'rdp-weekdays',
+    weekday: 'rdp-weekday',
+    week: 'rdp-week',
+    week_number_header: 'rdp-week_number_header',
+    week_number: 'rdp-week_number',
+    day: 'rdp-day',
+    day_selected: 'rdp-day_selected',
+    day_today: 'rdp-day_today',
+    day_outside: 'rdp-day_outside',
+    day_disabled: 'rdp-day_disabled',
+    day_range_middle: 'rdp-day_range_middle',
+    day_hidden: 'rdp-day_hidden',
+  }
 
   return (
     <DayPicker

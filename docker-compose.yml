@@ -1,0 +1,53 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: rwanda_drone_db
+    environment:
+      POSTGRES_DB: rwanda_drone_community
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - drone_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rwanda_drone_app
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/rwanda_drone_community
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - drone_network
+    volumes:
+      - ./prisma:/app/prisma
+    command: >
+      sh -c "
+        npx prisma generate &&
+        npx prisma db push --force-reset &&
+        npm run db:seed &&
+        npm run dev -- --hostname 0.0.0.0
+      "
+
+volumes:
+  postgres_data:
+
+networks:
+  drone_network:
+    driver: bridge 

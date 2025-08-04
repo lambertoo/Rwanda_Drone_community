@@ -1,51 +1,120 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/db"
-import { getSession } from "@/lib/auth"
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const comments = await db.forumComments.findByPostId(params.id)
-    return NextResponse.json({ comments })
+    const { id } = await params
+
+    // Fetch comments with replies
+    const comments = await prisma.forumComment.findMany({
+      where: {
+        postId: id,
+        parentId: null // Only top-level comments
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            fullName: true,
+            username: true,
+            avatar: true,
+            isVerified: true,
+          }
+        },
+        replies: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                fullName: true,
+                username: true,
+                avatar: true,
+                isVerified: true,
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'asc'
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
+
+    return NextResponse.json({
+      comments: comments
+    })
   } catch (error) {
-    console.error("Error fetching comments:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error('Error fetching forum comments:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch comments' },
+      { status: 500 }
+    )
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const sessionId = request.cookies.get("session-id")?.value
-    if (!sessionId) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    const { id } = await params
+    const { content, userId, parentId } = await request.json()
+
+    if (!content || !userId) {
+      return NextResponse.json(
+        { error: 'Content and user ID are required' },
+        { status: 400 }
+      )
     }
 
-    const user = getSession(sessionId)
-    if (!user) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 })
-    }
-
-    const { content, parentId } = await request.json()
-
-    if (!content) {
-      return NextResponse.json({ error: "Content is required" }, { status: 400 })
-    }
-
-    const userRecord = await db.users.findById(user.id)
-    if (!userRecord) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    const comment = await db.forumComments.create({
-      content,
-      postId: params.id,
-      authorId: user.id,
-      author: userRecord,
-      parentId,
+    // Create the comment
+    const comment = await prisma.forumComment.create({
+      data: {
+        content,
+        postId: id,
+        authorId: userId,
+        parentId: parentId || null
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            fullName: true,
+            username: true,
+            avatar: true,
+            isVerified: true,
+          }
+        }
+      }
     })
 
-    return NextResponse.json({ comment }, { status: 201 })
+    // Update post reply count if it's a top-level comment
+    if (!parentId) {
+      await prisma.forumPost.update({
+        where: { id },
+        data: {
+          repliesCount: {
+            increment: 1
+          },
+          lastReplyAt: new Date()
+        }
+      })
+    }
+
+    return NextResponse.json({
+      comment: comment
+    })
   } catch (error) {
-    console.error("Error creating comment:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error('Error creating forum comment:', error)
+    return NextResponse.json(
+      { error: 'Failed to create comment' },
+      { status: 500 }
+    )
   }
 }

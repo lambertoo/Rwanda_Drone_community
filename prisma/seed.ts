@@ -182,6 +182,60 @@ async function main() {
 
   console.log('📂 Created forum categories')
 
+  // Create project categories
+  const projectCategories = await Promise.all([
+    prisma.projectCategory.create({
+      data: {
+        name: 'Aerial Photography',
+        description: 'Projects focused on aerial photography and videography',
+        slug: 'aerial-photography',
+        color: '#3B82F6',
+      }
+    }),
+    prisma.projectCategory.create({
+      data: {
+        name: 'Mapping & Surveying',
+        description: 'Projects involving mapping, surveying, and GIS applications',
+        slug: 'mapping-surveying',
+        color: '#10B981',
+      }
+    }),
+    prisma.projectCategory.create({
+      data: {
+        name: 'Agriculture',
+        description: 'Agricultural drone applications and precision farming',
+        slug: 'agriculture',
+        color: '#F59E0B',
+      }
+    }),
+    prisma.projectCategory.create({
+      data: {
+        name: 'Delivery & Logistics',
+        description: 'Drone delivery and logistics projects',
+        slug: 'delivery-logistics',
+        color: '#EF4444',
+      }
+    }),
+    prisma.projectCategory.create({
+      data: {
+        name: 'Research & Development',
+        description: 'Research projects and new drone technology development',
+        slug: 'research-development',
+        color: '#8B5CF6',
+      }
+    }),
+    prisma.projectCategory.create({
+      data: {
+        name: 'Education & Training',
+        description: 'Educational projects and drone training programs',
+        slug: 'education-training',
+        color: '#06B6D4',
+      }
+    })
+  ])
+
+  console.log('📂 Created project categories')
+
   // Create forum posts
   const posts = await Promise.all([
     prisma.forumPost.create({
@@ -267,7 +321,7 @@ async function main() {
         title: 'Agricultural Drone Mapping Project',
         description: 'Using drones for precision agriculture mapping in rural Rwanda',
         fullDescription: 'This project aims to help farmers improve crop yields through aerial mapping and analysis.',
-        category: 'Agriculture',
+        categoryId: projectCategories[2].id, // Agriculture
         status: ProjectStatus.in_progress,
         authorId: users[2].id,
         location: 'Southern Province',
@@ -291,7 +345,7 @@ async function main() {
         title: 'Drone Delivery Network',
         description: 'Establishing a drone delivery network for medical supplies',
         fullDescription: 'Creating a network of drones to deliver essential medical supplies to remote areas.',
-        category: 'Healthcare',
+        categoryId: projectCategories[3].id, // Delivery & Logistics
         status: ProjectStatus.planning,
         authorId: users[0].id,
         location: 'Rural Rwanda',
@@ -315,7 +369,7 @@ async function main() {
         title: 'Wildlife Conservation Drone Monitoring',
         description: 'Using drones for wildlife monitoring and anti-poaching in national parks',
         fullDescription: 'Advanced drone surveillance system for wildlife protection and population monitoring in Rwanda\'s national parks.',
-        category: 'Environmental',
+        categoryId: projectCategories[4].id, // Research & Development
         status: ProjectStatus.completed,
         authorId: users[1].id,
         location: 'Akagera National Park',
@@ -339,7 +393,7 @@ async function main() {
         title: 'Urban Infrastructure Inspection',
         description: 'Drone-based inspection of urban infrastructure and buildings',
         fullDescription: 'Comprehensive drone inspection system for urban infrastructure including bridges, buildings, and utilities.',
-        category: 'Infrastructure',
+        categoryId: projectCategories[1].id, // Mapping & Surveying
         status: ProjectStatus.in_progress,
         authorId: users[3].id,
         location: 'Kigali City',
@@ -363,7 +417,7 @@ async function main() {
         title: 'Precision Agriculture Implementation',
         description: 'Implementing precision agriculture techniques using drone technology',
         fullDescription: 'Large-scale implementation of precision agriculture using drones for crop monitoring and management.',
-        category: 'Agriculture',
+        categoryId: projectCategories[2].id, // Agriculture
         status: ProjectStatus.planning,
         authorId: users[4].id,
         location: 'Eastern Province',

@@ -1,30 +1,30 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
 import NewServiceForm from "@/components/services/new-service-form"
+import { AuthGuard } from "@/components/auth-guard"
 
 export default function NewServicePage() {
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-4">
-        <Link href="/services">
-          <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Services
-          </Button>
-        </Link>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/services" className="hover:text-foreground">
-            Services
-          </Link>
-          <span>/</span>
-          <span>New Service</span>
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">List Your Service</h1>
+          <p className="text-muted-foreground">
+            Offer your drone services to the community. Service Providers and Pilots can list their services.
+          </p>
         </div>
-      </div>
 
-      {/* Form */}
-      <NewServiceForm />
+        <AuthGuard 
+          requiredPermissions={["authenticated"]}
+          fallback={
+            <div className="text-center py-12">
+              <p className="text-muted-foreground mb-4">
+                You need to be logged in as a Service Provider or Pilot to list services.
+              </p>
+            </div>
+          }
+        >
+          <NewServiceForm />
+        </AuthGuard>
+      </div>
     </div>
   )
 } 

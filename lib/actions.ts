@@ -1,52 +1,42 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
-import { prisma } from "./prisma"
-import { getSession } from "./auth"
 import { cookies } from "next/headers"
+import { prisma } from "@/lib/prisma"
+import { getSession, canCreateProjects, canCreateServices, canPostJobs, canCreateEvents, canEditOwnContent, canDeleteAnyContent } from "@/lib/auth"
+import { revalidatePath } from "next/cache"
 
-// Forum Actions
+// Forum Post Actions
 export async function createForumPostAction(formData: FormData) {
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
-    
+
     let user = null
-    
+
     if (sessionId) {
       user = getSession(sessionId)
     }
-    
+
     // If no session, try to get user from form data (fallback for demo)
     if (!user) {
       const userId = formData.get("userId") as string
-      
       if (userId) {
-        // Fetch user from database
         const dbUser = await prisma.user.findUnique({
           where: { id: userId }
         })
-        
         if (dbUser) {
           user = {
             id: dbUser.id,
-            email: dbUser.email,
             username: dbUser.username,
+            email: dbUser.email,
             fullName: dbUser.fullName,
-            avatar: dbUser.avatar || "",
             role: dbUser.role,
-            isVerified: dbUser.isVerified,
-            organization: dbUser.organization,
-            pilotLicense: dbUser.pilotLicense,
-            experience: dbUser.experience,
-            specializations: dbUser.specializations,
-            certifications: dbUser.certifications,
+            isVerified: dbUser.isVerified
           }
         }
       }
     }
-    
+
     if (!user) {
       throw new Error("Authentication required")
     }
@@ -54,65 +44,80 @@ export async function createForumPostAction(formData: FormData) {
     const title = formData.get("title") as string
     const content = formData.get("content") as string
     const categoryId = formData.get("categoryId") as string
-    const tagsString = formData.get("tags") as string
-    const tags = tagsString ? tagsString.split(",").filter(tag => tag.trim()) : []
+    const tags = formData.get("tags") as string
 
     if (!title || !content || !categoryId) {
       throw new Error("Missing required fields")
     }
 
-    // Verify category exists
-    const category = await prisma.forumCategory.findUnique({
-      where: { id: categoryId }
-    })
-    if (!category) {
-      throw new Error("Invalid category")
-    }
-
-    // Create the post
     const post = await prisma.forumPost.create({
       data: {
         title,
         content,
         categoryId,
         authorId: user.id,
-        tags: JSON.stringify(tags),
-        viewsCount: 0,
-        repliesCount: 0,
-        isPinned: false,
-        isLocked: false,
+        tags: tags || null,
       },
       include: {
+        author: true,
         category: true,
-      }
+      },
     })
 
-    // Update user's post count
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { postsCount: { increment: 1 } }
-    })
-
-    // Update category's post count
+    // Update category post count
     await prisma.forumCategory.update({
       where: { id: categoryId },
-      data: { 
-        postCount: { increment: 1 },
-        lastPostAt: new Date()
-      }
+      data: {
+        postCount: {
+          increment: 1,
+        },
+        lastPostAt: new Date(),
+      },
     })
 
     revalidatePath("/forum")
-    revalidatePath(`/forum/${category.slug}`)
-    redirect(`/forum/${category.slug}/${post.id}`)
+    return { success: true, post }
   } catch (error) {
     console.error("Error creating forum post:", error)
-    throw error
+    throw new Error("Failed to create post. Please try again.")
   }
 }
 
 export async function createForumCommentAction(formData: FormData) {
   try {
+    const cookieStore = await cookies()
+    const sessionId = cookieStore.get("session-id")?.value
+
+    let user = null
+
+    if (sessionId) {
+      user = getSession(sessionId)
+    }
+
+    // If no session, try to get user from form data (fallback for demo)
+    if (!user) {
+      const userId = formData.get("userId") as string
+      if (userId) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: userId }
+        })
+        if (dbUser) {
+          user = {
+            id: dbUser.id,
+            username: dbUser.username,
+            email: dbUser.email,
+            fullName: dbUser.fullName,
+            role: dbUser.role,
+            isVerified: dbUser.isVerified
+          }
+        }
+      }
+    }
+
+    if (!user) {
+      throw new Error("Authentication required")
+    }
+
     const content = formData.get("content") as string
     const postId = formData.get("postId") as string
     const parentId = formData.get("parentId") as string | null
@@ -121,17 +126,31 @@ export async function createForumCommentAction(formData: FormData) {
       throw new Error("Missing required fields")
     }
 
-    await db.createForumComment({
-      content,
-      postId,
-      parentId,
-      authorId: "current-user-id", // In real app, get from session
+    const comment = await prisma.forumComment.create({
+      data: {
+        content,
+        postId,
+        parentId: parentId || null,
+        authorId: user.id,
+      },
+    })
+
+    // Update post's reply count
+    await prisma.forumPost.update({
+      where: { id: postId },
+      data: {
+        repliesCount: {
+          increment: 1,
+        },
+        lastReplyAt: new Date(),
+      },
     })
 
     revalidatePath(`/forum/*/*/${postId}`)
+    return { success: true, comment }
   } catch (error) {
     console.error("Error creating comment:", error)
-    throw error
+    throw new Error("Failed to create comment. Please try again.")
   }
 }
 
@@ -140,103 +159,105 @@ export async function createProjectAction(formData: FormData) {
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
-    
+
     let user = null
-    
+
     if (sessionId) {
       user = getSession(sessionId)
     }
-    
+
     // If no session, try to get user from form data (fallback for demo)
     if (!user) {
       const userId = formData.get("userId") as string
-      
       if (userId) {
         const dbUser = await prisma.user.findUnique({
           where: { id: userId }
         })
-        
         if (dbUser) {
           user = {
             id: dbUser.id,
-            email: dbUser.email,
             username: dbUser.username,
+            email: dbUser.email,
             fullName: dbUser.fullName,
-            avatar: dbUser.avatar || "",
             role: dbUser.role,
-            isVerified: dbUser.isVerified,
-            organization: dbUser.organization,
-            pilotLicense: dbUser.pilotLicense,
-            experience: dbUser.experience,
-            specializations: dbUser.specializations,
-            certifications: dbUser.certifications,
+            isVerified: dbUser.isVerified
           }
         }
       }
     }
-    
+
     if (!user) {
       throw new Error("Authentication required")
     }
 
+    // Check if user can create projects
+    if (!canCreateProjects(user)) {
+      throw new Error("You don't have permission to create projects")
+    }
+
     const title = formData.get("title") as string
     const description = formData.get("description") as string
-    const category = formData.get("category") as string
+    const fullDescription = formData.get("fullDescription") as string
+    const categoryId = formData.get("categoryId") as string
     const status = formData.get("status") as string
     const location = formData.get("location") as string
     const duration = formData.get("duration") as string
     const startDate = formData.get("startDate") as string
     const endDate = formData.get("endDate") as string
     const funding = formData.get("funding") as string
-    const fullDescription = formData.get("fullDescription") as string
+    const technologies = formData.get("technologies") as string
+    const objectives = formData.get("objectives") as string
+    const challenges = formData.get("challenges") as string
+    const outcomes = formData.get("outcomes") as string
+    const teamMembers = formData.get("teamMembers") as string
+    const gallery = formData.get("gallery") as string
 
-    const technologies = JSON.parse((formData.get("technologies") as string) || "[]")
-    const objectives = JSON.parse((formData.get("objectives") as string) || "[]")
-    const challenges = JSON.parse((formData.get("challenges") as string) || "[]")
-    const outcomes = JSON.parse((formData.get("outcomes") as string) || "[]")
-    const teamMembers = JSON.parse((formData.get("teamMembers") as string) || "[]")
-    const gallery = JSON.parse((formData.get("gallery") as string) || "[]")
-
-    if (!title || !description || !category || !status) {
+    if (!title || !description || !categoryId) {
       throw new Error("Missing required fields")
     }
+
+    // Map status values to enum
+    const mappedStatus = status === "in-progress" ? "in_progress" : 
+                        status === "on-hold" ? "on_hold" : 
+                        status as any
 
     const project = await prisma.project.create({
       data: {
         title,
         description,
-        fullDescription: fullDescription || description,
-        category,
-        status: status === "in-progress" ? "in_progress" : status === "on-hold" ? "on_hold" : status === "cancelled" ? "cancelled" : status as any,
-        location,
-        duration,
-        startDate,
-        endDate,
-        funding,
-        technologies: JSON.stringify(technologies),
-        objectives: JSON.stringify(objectives),
-        challenges: JSON.stringify(challenges),
-        outcomes: JSON.stringify(outcomes),
-        teamMembers: JSON.stringify(teamMembers),
-        gallery: JSON.stringify(gallery),
+        fullDescription: fullDescription || null,
+        categoryId,
+        status: mappedStatus,
         authorId: user.id,
-        viewsCount: 0,
-        likesCount: 0,
-        isFeatured: false,
-      }
+        location: location || null,
+        duration: duration || null,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        funding: funding || null,
+        technologies: technologies || null,
+        objectives: objectives || null,
+        challenges: challenges || null,
+        outcomes: outcomes || null,
+        teamMembers: teamMembers || null,
+        gallery: gallery || null,
+      },
     })
 
     // Update user's project count
     await prisma.user.update({
       where: { id: user.id },
-      data: { projectsCount: { increment: 1 } }
+      data: {
+        projectsCount: {
+          increment: 1,
+        },
+      },
     })
 
     revalidatePath("/projects")
-    redirect(`/projects/${project.id}`)
+    return { success: true, project }
   } catch (error) {
     console.error("Error creating project:", error)
-    throw error
+    throw new Error("Failed to create project. Please try again.")
   }
 }
 
@@ -244,13 +265,14 @@ export async function updateProjectAction(projectId: string, formData: FormData)
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
-    
+
     let user = null
-    
+
     if (sessionId) {
       user = getSession(sessionId)
     }
-    
+
+    // If no session, try to get user from form data (fallback for demo)
     if (!user) {
       const userId = formData.get("userId") as string
       if (userId) {
@@ -260,41 +282,38 @@ export async function updateProjectAction(projectId: string, formData: FormData)
         if (dbUser) {
           user = {
             id: dbUser.id,
-            email: dbUser.email,
             username: dbUser.username,
+            email: dbUser.email,
             fullName: dbUser.fullName,
-            avatar: dbUser.avatar || "",
             role: dbUser.role,
-            isVerified: dbUser.isVerified,
-            organization: dbUser.organization,
-            pilotLicense: dbUser.pilotLicense,
-            experience: dbUser.experience,
-            specializations: dbUser.specializations,
-            certifications: dbUser.certifications,
+            isVerified: dbUser.isVerified
           }
         }
       }
     }
-    
+
     if (!user) {
       throw new Error("Authentication required")
     }
 
-    // Check if project exists and user owns it
+    // Get the project to check ownership
     const existingProject = await prisma.project.findUnique({
-      where: { id: projectId }
+      where: { id: projectId },
+      select: { authorId: true }
     })
 
     if (!existingProject) {
       throw new Error("Project not found")
     }
 
-    if (existingProject.authorId !== user.id && user.role !== "admin") {
-      throw new Error("Unauthorized")
+    // Check if user can edit this project
+    if (!canEditOwnContent(user, existingProject.authorId)) {
+      throw new Error("You don't have permission to edit this project")
     }
 
     const title = formData.get("title") as string
     const description = formData.get("description") as string
+    const fullDescription = formData.get("fullDescription") as string
     const category = formData.get("category") as string
     const status = formData.get("status") as string
     const location = formData.get("location") as string
@@ -302,48 +321,50 @@ export async function updateProjectAction(projectId: string, formData: FormData)
     const startDate = formData.get("startDate") as string
     const endDate = formData.get("endDate") as string
     const funding = formData.get("funding") as string
-    const fullDescription = formData.get("fullDescription") as string
+    const technologies = formData.get("technologies") as string
+    const objectives = formData.get("objectives") as string
+    const challenges = formData.get("challenges") as string
+    const outcomes = formData.get("outcomes") as string
+    const teamMembers = formData.get("teamMembers") as string
+    const gallery = formData.get("gallery") as string
 
-    const technologies = JSON.parse((formData.get("technologies") as string) || "[]")
-    const objectives = JSON.parse((formData.get("objectives") as string) || "[]")
-    const challenges = JSON.parse((formData.get("challenges") as string) || "[]")
-    const outcomes = JSON.parse((formData.get("outcomes") as string) || "[]")
-    const teamMembers = JSON.parse((formData.get("teamMembers") as string) || "[]")
-    const gallery = JSON.parse((formData.get("gallery") as string) || "[]")
-
-    if (!title || !description || !category || !status) {
+    if (!title || !description || !category) {
       throw new Error("Missing required fields")
     }
 
-    const updatedProject = await prisma.project.update({
+    // Map status values to enum
+    const mappedStatus = status === "in-progress" ? "in_progress" : 
+                        status === "on-hold" ? "on_hold" : 
+                        status as any
+
+    const project = await prisma.project.update({
       where: { id: projectId },
       data: {
         title,
         description,
-        fullDescription: fullDescription || description,
+        fullDescription: fullDescription || null,
         category,
-        status: status === "in-progress" ? "in_progress" : status === "on-hold" ? "on_hold" : status === "cancelled" ? "cancelled" : status as any,
-        location,
-        duration,
-        startDate,
-        endDate,
-        funding,
-        technologies: JSON.stringify(technologies),
-        objectives: JSON.stringify(objectives),
-        challenges: JSON.stringify(challenges),
-        outcomes: JSON.stringify(outcomes),
-        teamMembers: JSON.stringify(teamMembers),
-        gallery: JSON.stringify(gallery),
-        updatedAt: new Date(),
-      }
+        status: mappedStatus,
+        location: location || null,
+        duration: duration || null,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        funding: funding || null,
+        technologies: technologies || null,
+        objectives: objectives || null,
+        challenges: challenges || null,
+        outcomes: outcomes || null,
+        teamMembers: teamMembers || null,
+        gallery: gallery || null,
+      },
     })
 
     revalidatePath("/projects")
     revalidatePath(`/projects/${projectId}`)
-    redirect(`/projects/${projectId}`)
+    return { success: true, project }
   } catch (error) {
     console.error("Error updating project:", error)
-    throw error
+    throw new Error("Failed to update project. Please try again.")
   }
 }
 
@@ -351,46 +372,41 @@ export async function deleteProjectAction(projectId: string) {
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
-    
+
     let user = null
-    
+
     if (sessionId) {
       user = getSession(sessionId)
     }
-    
+
     if (!user) {
       throw new Error("Authentication required")
     }
 
-    // Check if project exists and user owns it
+    // Get the project to check ownership
     const existingProject = await prisma.project.findUnique({
-      where: { id: projectId }
+      where: { id: projectId },
+      select: { authorId: true }
     })
 
     if (!existingProject) {
       throw new Error("Project not found")
     }
 
-    if (existingProject.authorId !== user.id && user.role !== "admin") {
-      throw new Error("Unauthorized")
+    // Check if user can delete this project
+    if (!canDeleteAnyContent(user) && !canEditOwnContent(user, existingProject.authorId)) {
+      throw new Error("You don't have permission to delete this project")
     }
 
-    // Delete the project
     await prisma.project.delete({
-      where: { id: projectId }
-    })
-
-    // Update user's project count
-    await prisma.user.update({
-      where: { id: existingProject.authorId },
-      data: { projectsCount: { decrement: 1 } }
+      where: { id: projectId },
     })
 
     revalidatePath("/projects")
-    redirect("/projects")
+    return { success: true }
   } catch (error) {
     console.error("Error deleting project:", error)
-    throw error
+    throw new Error("Failed to delete project. Please try again.")
   }
 }
 
@@ -399,13 +415,14 @@ export async function createEventAction(formData: FormData) {
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
-    
+
     let user = null
-    
+
     if (sessionId) {
       user = getSession(sessionId)
     }
-    
+
+    // If no session, try to get user from form data (fallback for demo)
     if (!user) {
       const userId = formData.get("userId") as string
       if (userId) {
@@ -415,24 +432,23 @@ export async function createEventAction(formData: FormData) {
         if (dbUser) {
           user = {
             id: dbUser.id,
-            email: dbUser.email,
             username: dbUser.username,
+            email: dbUser.email,
             fullName: dbUser.fullName,
-            avatar: dbUser.avatar || "",
             role: dbUser.role,
-            isVerified: dbUser.isVerified,
-            organization: dbUser.organization,
-            pilotLicense: dbUser.pilotLicense,
-            experience: dbUser.experience,
-            specializations: dbUser.specializations,
-            certifications: dbUser.certifications,
+            isVerified: dbUser.isVerified
           }
         }
       }
     }
-    
+
     if (!user) {
       throw new Error("Authentication required")
+    }
+
+    // Check if user can create events
+    if (!canCreateEvents(user)) {
+      throw new Error("You don't have permission to create events")
     }
 
     const title = formData.get("title") as string
@@ -443,51 +459,58 @@ export async function createEventAction(formData: FormData) {
     const endDate = formData.get("endDate") as string
     const location = formData.get("location") as string
     const venue = formData.get("venue") as string
-    const price = formData.get("price") as string
-    const currency = formData.get("currency") as string
+    const capacity = parseInt(formData.get("capacity") as string) || null
+    const price = parseFloat(formData.get("price") as string) || 0
+    const currency = formData.get("currency") as string || "USD"
+    const registrationDeadline = formData.get("registrationDeadline") as string
+    const requirements = formData.get("requirements") as string
+    const tags = formData.get("tags") as string
+    const speakers = formData.get("speakers") as string
+    const agenda = formData.get("agenda") as string
+    const gallery = formData.get("gallery") as string
 
-    const speakers = JSON.parse((formData.get("speakers") as string) || "[]")
-    const agenda = JSON.parse((formData.get("agenda") as string) || "[]")
-    const requirements = JSON.parse((formData.get("requirements") as string) || "[]")
-    const gallery = JSON.parse((formData.get("gallery") as string) || "[]")
-
-    if (!title || !description || !startDate || !location) {
-      throw new Error("Title, description, start date, and location are required")
+    if (!title || !description || !category || !startDate || !endDate || !location) {
+      throw new Error("Missing required fields")
     }
 
     const event = await prisma.event.create({
       data: {
         title,
         description,
-        fullDescription: fullDescription || description,
-        category: category || "General",
+        fullDescription: fullDescription || null,
+        category,
         startDate: new Date(startDate),
-        endDate: endDate ? new Date(endDate) : new Date(startDate),
+        endDate: new Date(endDate),
         location,
-        venue: venue || location,
-        price: price ? parseFloat(price) : 0,
-        currency: currency || "RWF",
-        speakers: JSON.stringify(speakers),
-        agenda: JSON.stringify(agenda),
-        requirements: JSON.stringify(requirements),
-        gallery: JSON.stringify(gallery),
-        isPublished: true,
-        isFeatured: false,
+        venue: venue || null,
+        capacity,
+        price,
+        currency,
+        registrationDeadline: registrationDeadline ? new Date(registrationDeadline) : null,
+        requirements: requirements || null,
+        tags: tags || null,
+        speakers: speakers || null,
+        agenda: agenda || null,
+        gallery: gallery || null,
         organizerId: user.id,
-      }
+      },
     })
 
-    // Update user's events count
+    // Update user's event count
     await prisma.user.update({
       where: { id: user.id },
-      data: { eventsCount: { increment: 1 } }
+      data: {
+        eventsCount: {
+          increment: 1,
+        },
+      },
     })
 
     revalidatePath("/events")
-    redirect(`/events/${event.id}`)
+    return { success: true, event }
   } catch (error) {
     console.error("Error creating event:", error)
-    throw error
+    throw new Error("Failed to create event. Please try again.")
   }
 }
 
@@ -495,13 +518,14 @@ export async function updateEventAction(eventId: string, formData: FormData) {
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
-    
+
     let user = null
-    
+
     if (sessionId) {
       user = getSession(sessionId)
     }
-    
+
+    // If no session, try to get user from form data (fallback for demo)
     if (!user) {
       const userId = formData.get("userId") as string
       if (userId) {
@@ -511,37 +535,33 @@ export async function updateEventAction(eventId: string, formData: FormData) {
         if (dbUser) {
           user = {
             id: dbUser.id,
-            email: dbUser.email,
             username: dbUser.username,
+            email: dbUser.email,
             fullName: dbUser.fullName,
-            avatar: dbUser.avatar || "",
             role: dbUser.role,
-            isVerified: dbUser.isVerified,
-            organization: dbUser.organization,
-            pilotLicense: dbUser.pilotLicense,
-            experience: dbUser.experience,
-            specializations: dbUser.specializations,
-            certifications: dbUser.certifications,
+            isVerified: dbUser.isVerified
           }
         }
       }
     }
-    
+
     if (!user) {
       throw new Error("Authentication required")
     }
 
-    // Check if event exists and user owns it
+    // Get the event to check ownership
     const existingEvent = await prisma.event.findUnique({
-      where: { id: eventId }
+      where: { id: eventId },
+      select: { organizerId: true }
     })
 
     if (!existingEvent) {
       throw new Error("Event not found")
     }
 
-    if (existingEvent.organizerId !== user.id && user.role !== "admin") {
-      throw new Error("Unauthorized")
+    // Check if user can edit this event
+    if (!canEditOwnContent(user, existingEvent.organizerId)) {
+      throw new Error("You don't have permission to edit this event")
     }
 
     const title = formData.get("title") as string
@@ -552,45 +572,49 @@ export async function updateEventAction(eventId: string, formData: FormData) {
     const endDate = formData.get("endDate") as string
     const location = formData.get("location") as string
     const venue = formData.get("venue") as string
-    const price = formData.get("price") as string
-    const currency = formData.get("currency") as string
+    const capacity = parseInt(formData.get("capacity") as string) || null
+    const price = parseFloat(formData.get("price") as string) || 0
+    const currency = formData.get("currency") as string || "USD"
+    const registrationDeadline = formData.get("registrationDeadline") as string
+    const requirements = formData.get("requirements") as string
+    const tags = formData.get("tags") as string
+    const speakers = formData.get("speakers") as string
+    const agenda = formData.get("agenda") as string
+    const gallery = formData.get("gallery") as string
 
-    const speakers = JSON.parse((formData.get("speakers") as string) || "[]")
-    const agenda = JSON.parse((formData.get("agenda") as string) || "[]")
-    const requirements = JSON.parse((formData.get("requirements") as string) || "[]")
-    const gallery = JSON.parse((formData.get("gallery") as string) || "[]")
-
-    if (!title || !description || !startDate || !location) {
-      throw new Error("Title, description, start date, and location are required")
+    if (!title || !description || !category || !startDate || !endDate || !location) {
+      throw new Error("Missing required fields")
     }
 
-    const updatedEvent = await prisma.event.update({
+    const event = await prisma.event.update({
       where: { id: eventId },
       data: {
         title,
         description,
-        fullDescription: fullDescription || description,
+        fullDescription: fullDescription || null,
         category,
         startDate: new Date(startDate),
-        endDate: endDate ? new Date(endDate) : new Date(startDate),
+        endDate: new Date(endDate),
         location,
-        venue,
-        price: price ? parseFloat(price) : 0,
+        venue: venue || null,
+        capacity,
+        price,
         currency,
-        speakers: JSON.stringify(speakers),
-        agenda: JSON.stringify(agenda),
-        requirements: JSON.stringify(requirements),
-        gallery: JSON.stringify(gallery),
-        updatedAt: new Date(),
-      }
+        registrationDeadline: registrationDeadline ? new Date(registrationDeadline) : null,
+        requirements: requirements || null,
+        tags: tags || null,
+        speakers: speakers || null,
+        agenda: agenda || null,
+        gallery: gallery || null,
+      },
     })
 
     revalidatePath("/events")
     revalidatePath(`/events/${eventId}`)
-    redirect(`/events/${eventId}`)
+    return { success: true, event }
   } catch (error) {
     console.error("Error updating event:", error)
-    throw error
+    throw new Error("Failed to update event. Please try again.")
   }
 }
 
@@ -598,60 +622,57 @@ export async function deleteEventAction(eventId: string) {
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
-    
+
     let user = null
-    
+
     if (sessionId) {
       user = getSession(sessionId)
     }
-    
+
     if (!user) {
       throw new Error("Authentication required")
     }
 
-    // Check if event exists and user owns it
+    // Get the event to check ownership
     const existingEvent = await prisma.event.findUnique({
-      where: { id: eventId }
+      where: { id: eventId },
+      select: { organizerId: true }
     })
 
     if (!existingEvent) {
       throw new Error("Event not found")
     }
 
-    if (existingEvent.organizerId !== user.id && user.role !== "admin") {
-      throw new Error("Unauthorized")
+    // Check if user can delete this event
+    if (!canDeleteAnyContent(user) && !canEditOwnContent(user, existingEvent.organizerId)) {
+      throw new Error("You don't have permission to delete this event")
     }
 
-    // Delete the event
     await prisma.event.delete({
-      where: { id: eventId }
-    })
-
-    // Update user's events count
-    await prisma.user.update({
-      where: { id: existingEvent.organizerId },
-      data: { eventsCount: { decrement: 1 } }
+      where: { id: eventId },
     })
 
     revalidatePath("/events")
-    redirect("/events")
+    return { success: true }
   } catch (error) {
     console.error("Error deleting event:", error)
-    throw error
+    throw new Error("Failed to delete event. Please try again.")
   }
 }
 
+// Service Actions
 export async function createServiceAction(formData: FormData) {
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
-    
+
     let user = null
-    
+
     if (sessionId) {
       user = getSession(sessionId)
     }
-    
+
+    // If no session, try to get user from form data (fallback for demo)
     if (!user) {
       const userId = formData.get("userId") as string
       if (userId) {
@@ -661,24 +682,23 @@ export async function createServiceAction(formData: FormData) {
         if (dbUser) {
           user = {
             id: dbUser.id,
-            email: dbUser.email,
             username: dbUser.username,
+            email: dbUser.email,
             fullName: dbUser.fullName,
-            avatar: dbUser.avatar || "",
             role: dbUser.role,
-            isVerified: dbUser.isVerified,
-            organization: dbUser.organization,
-            pilotLicense: dbUser.pilotLicense,
-            experience: dbUser.experience,
-            specializations: dbUser.specializations,
-            certifications: dbUser.certifications,
+            isVerified: dbUser.isVerified
           }
         }
       }
     }
-    
+
     if (!user) {
       throw new Error("Authentication required")
+    }
+
+    // Check if user can create services
+    if (!canCreateServices(user)) {
+      throw new Error("You don't have permission to create services")
     }
 
     const title = formData.get("title") as string
@@ -689,10 +709,10 @@ export async function createServiceAction(formData: FormData) {
     const phone = formData.get("phone") as string
     const email = formData.get("email") as string
     const website = formData.get("website") as string
-    const services = JSON.parse((formData.get("services") as string) || "[]")
+    const services = formData.get("services") as string
 
     if (!title || !description || !category || !region || !contact) {
-      throw new Error("Title, description, category, region, and contact are required")
+      throw new Error("Missing required fields")
     }
 
     const service = await prisma.service.create({
@@ -702,19 +722,29 @@ export async function createServiceAction(formData: FormData) {
         category,
         region: region as any,
         contact,
-        phone,
-        email,
-        website,
-        services: JSON.stringify(services),
+        phone: phone || null,
+        email: email || null,
+        website: website || null,
+        services: services || null,
         providerId: user.id,
-      }
+      },
+    })
+
+    // Update user's service count
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        servicesCount: {
+          increment: 1,
+        },
+      },
     })
 
     revalidatePath("/services")
-    redirect(`/services/${service.id}`)
+    return { success: true, service }
   } catch (error) {
     console.error("Error creating service:", error)
-    throw error
+    throw new Error("Failed to create service. Please try again.")
   }
 }
 
@@ -722,13 +752,14 @@ export async function updateServiceAction(serviceId: string, formData: FormData)
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
-    
+
     let user = null
-    
+
     if (sessionId) {
       user = getSession(sessionId)
     }
-    
+
+    // If no session, try to get user from form data (fallback for demo)
     if (!user) {
       const userId = formData.get("userId") as string
       if (userId) {
@@ -738,37 +769,33 @@ export async function updateServiceAction(serviceId: string, formData: FormData)
         if (dbUser) {
           user = {
             id: dbUser.id,
-            email: dbUser.email,
             username: dbUser.username,
+            email: dbUser.email,
             fullName: dbUser.fullName,
-            avatar: dbUser.avatar || "",
             role: dbUser.role,
-            isVerified: dbUser.isVerified,
-            organization: dbUser.organization,
-            pilotLicense: dbUser.pilotLicense,
-            experience: dbUser.experience,
-            specializations: dbUser.specializations,
-            certifications: dbUser.certifications,
+            isVerified: dbUser.isVerified
           }
         }
       }
     }
-    
+
     if (!user) {
       throw new Error("Authentication required")
     }
 
-    // Check if service exists and user owns it
+    // Get the service to check ownership
     const existingService = await prisma.service.findUnique({
-      where: { id: serviceId }
+      where: { id: serviceId },
+      select: { providerId: true }
     })
 
     if (!existingService) {
       throw new Error("Service not found")
     }
 
-    if (existingService.providerId !== user.id && user.role !== "admin") {
-      throw new Error("Unauthorized")
+    // Check if user can edit this service
+    if (!canEditOwnContent(user, existingService.providerId)) {
+      throw new Error("You don't have permission to edit this service")
     }
 
     const title = formData.get("title") as string
@@ -779,13 +806,13 @@ export async function updateServiceAction(serviceId: string, formData: FormData)
     const phone = formData.get("phone") as string
     const email = formData.get("email") as string
     const website = formData.get("website") as string
-    const services = JSON.parse((formData.get("services") as string) || "[]")
+    const services = formData.get("services") as string
 
     if (!title || !description || !category || !region || !contact) {
-      throw new Error("Title, description, category, region, and contact are required")
+      throw new Error("Missing required fields")
     }
 
-    const updatedService = await prisma.service.update({
+    const service = await prisma.service.update({
       where: { id: serviceId },
       data: {
         title,
@@ -793,20 +820,19 @@ export async function updateServiceAction(serviceId: string, formData: FormData)
         category,
         region: region as any,
         contact,
-        phone,
-        email,
-        website,
-        services: JSON.stringify(services),
-        updatedAt: new Date(),
-      }
+        phone: phone || null,
+        email: email || null,
+        website: website || null,
+        services: services || null,
+      },
     })
 
     revalidatePath("/services")
     revalidatePath(`/services/${serviceId}`)
-    redirect(`/services/${serviceId}`)
+    return { success: true, service }
   } catch (error) {
     console.error("Error updating service:", error)
-    throw error
+    throw new Error("Failed to update service. Please try again.")
   }
 }
 
@@ -814,54 +840,57 @@ export async function deleteServiceAction(serviceId: string) {
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
-    
+
     let user = null
-    
+
     if (sessionId) {
       user = getSession(sessionId)
     }
-    
+
     if (!user) {
       throw new Error("Authentication required")
     }
 
-    // Check if service exists and user owns it
+    // Get the service to check ownership
     const existingService = await prisma.service.findUnique({
-      where: { id: serviceId }
+      where: { id: serviceId },
+      select: { providerId: true }
     })
 
     if (!existingService) {
       throw new Error("Service not found")
     }
 
-    if (existingService.providerId !== user.id && user.role !== "admin") {
-      throw new Error("Unauthorized")
+    // Check if user can delete this service
+    if (!canDeleteAnyContent(user) && !canEditOwnContent(user, existingService.providerId)) {
+      throw new Error("You don't have permission to delete this service")
     }
 
-    // Delete the service
     await prisma.service.delete({
-      where: { id: serviceId }
+      where: { id: serviceId },
     })
 
     revalidatePath("/services")
-    redirect("/services")
+    return { success: true }
   } catch (error) {
     console.error("Error deleting service:", error)
-    throw error
+    throw new Error("Failed to delete service. Please try again.")
   }
 }
 
+// Job Actions
 export async function createJobAction(formData: FormData) {
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
-    
+
     let user = null
-    
+
     if (sessionId) {
       user = getSession(sessionId)
     }
-    
+
+    // If no session, try to get user from form data (fallback for demo)
     if (!user) {
       const userId = formData.get("userId") as string
       if (userId) {
@@ -871,24 +900,23 @@ export async function createJobAction(formData: FormData) {
         if (dbUser) {
           user = {
             id: dbUser.id,
-            email: dbUser.email,
             username: dbUser.username,
+            email: dbUser.email,
             fullName: dbUser.fullName,
-            avatar: dbUser.avatar || "",
             role: dbUser.role,
-            isVerified: dbUser.isVerified,
-            organization: dbUser.organization,
-            pilotLicense: dbUser.pilotLicense,
-            experience: dbUser.experience,
-            specializations: dbUser.specializations,
-            certifications: dbUser.certifications,
+            isVerified: dbUser.isVerified
           }
         }
       }
     }
-    
+
     if (!user) {
       throw new Error("Authentication required")
+    }
+
+    // Check if user can post jobs
+    if (!canPostJobs(user)) {
+      throw new Error("You don't have permission to post jobs")
     }
 
     const title = formData.get("title") as string
@@ -898,13 +926,12 @@ export async function createJobAction(formData: FormData) {
     const category = formData.get("category") as string
     const location = formData.get("location") as string
     const salary = formData.get("salary") as string
+    const requirements = formData.get("requirements") as string
     const isUrgent = formData.get("isUrgent") === "true"
     const isRemote = formData.get("isRemote") === "true"
 
-    const requirements = JSON.parse((formData.get("requirements") as string) || "[]")
-
     if (!title || !description || !company || !jobType || !category || !location) {
-      throw new Error("Title, description, company, job type, category, and location are required")
+      throw new Error("Missing required fields")
     }
 
     const job = await prisma.job.create({
@@ -916,24 +943,28 @@ export async function createJobAction(formData: FormData) {
         category,
         location,
         salary: salary || null,
-        requirements: JSON.stringify(requirements),
+        requirements: requirements || null,
         isUrgent,
         isRemote,
         posterId: user.id,
-      }
+      },
     })
 
-    // Update user's jobs count
+    // Update user's job count
     await prisma.user.update({
       where: { id: user.id },
-      data: { jobsCount: { increment: 1 } }
+      data: {
+        jobsCount: {
+          increment: 1,
+        },
+      },
     })
 
     revalidatePath("/jobs")
-    redirect(`/jobs/${job.id}`)
+    return { success: true, job }
   } catch (error) {
     console.error("Error creating job:", error)
-    throw error
+    throw new Error("Failed to create job. Please try again.")
   }
 }
 
@@ -941,13 +972,14 @@ export async function updateJobAction(jobId: string, formData: FormData) {
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
-    
+
     let user = null
-    
+
     if (sessionId) {
       user = getSession(sessionId)
     }
-    
+
+    // If no session, try to get user from form data (fallback for demo)
     if (!user) {
       const userId = formData.get("userId") as string
       if (userId) {
@@ -957,27 +989,21 @@ export async function updateJobAction(jobId: string, formData: FormData) {
         if (dbUser) {
           user = {
             id: dbUser.id,
-            email: dbUser.email,
             username: dbUser.username,
+            email: dbUser.email,
             fullName: dbUser.fullName,
-            avatar: dbUser.avatar || "",
             role: dbUser.role,
-            isVerified: dbUser.isVerified,
-            organization: dbUser.organization,
-            pilotLicense: dbUser.pilotLicense,
-            experience: dbUser.experience,
-            specializations: dbUser.specializations,
-            certifications: dbUser.certifications,
+            isVerified: dbUser.isVerified
           }
         }
       }
     }
-    
+
     if (!user) {
       throw new Error("Authentication required")
     }
 
-    // Check if user owns the job or is admin
+    // Get the job to check ownership
     const existingJob = await prisma.job.findUnique({
       where: { id: jobId },
       select: { posterId: true }
@@ -987,13 +1013,9 @@ export async function updateJobAction(jobId: string, formData: FormData) {
       throw new Error("Job not found")
     }
 
-    const dbUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { role: true }
-    })
-
-    if (existingJob.posterId !== user.id && dbUser?.role !== 'admin') {
-      throw new Error("Unauthorized")
+    // Check if user can edit this job
+    if (!canEditOwnContent(user, existingJob.posterId)) {
+      throw new Error("You don't have permission to edit this job")
     }
 
     const title = formData.get("title") as string
@@ -1003,17 +1025,15 @@ export async function updateJobAction(jobId: string, formData: FormData) {
     const category = formData.get("category") as string
     const location = formData.get("location") as string
     const salary = formData.get("salary") as string
+    const requirements = formData.get("requirements") as string
     const isUrgent = formData.get("isUrgent") === "true"
     const isRemote = formData.get("isRemote") === "true"
-    const isActive = formData.get("isActive") === "true"
-
-    const requirements = JSON.parse((formData.get("requirements") as string) || "[]")
 
     if (!title || !description || !company || !jobType || !category || !location) {
-      throw new Error("Title, description, company, job type, category, and location are required")
+      throw new Error("Missing required fields")
     }
 
-    await prisma.job.update({
+    const job = await prisma.job.update({
       where: { id: jobId },
       data: {
         title,
@@ -1023,19 +1043,18 @@ export async function updateJobAction(jobId: string, formData: FormData) {
         category,
         location,
         salary: salary || null,
-        requirements: JSON.stringify(requirements),
+        requirements: requirements || null,
         isUrgent,
         isRemote,
-        isActive,
-      }
+      },
     })
 
     revalidatePath("/jobs")
     revalidatePath(`/jobs/${jobId}`)
-    redirect(`/jobs/${jobId}`)
+    return { success: true, job }
   } catch (error) {
     console.error("Error updating job:", error)
-    throw error
+    throw new Error("Failed to update job. Please try again.")
   }
 }
 
@@ -1043,18 +1062,18 @@ export async function deleteJobAction(jobId: string) {
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
-    
+
     let user = null
-    
+
     if (sessionId) {
       user = getSession(sessionId)
     }
-    
+
     if (!user) {
       throw new Error("Authentication required")
     }
 
-    // Check if user owns the job or is admin
+    // Get the job to check ownership
     const existingJob = await prisma.job.findUnique({
       where: { id: jobId },
       select: { posterId: true }
@@ -1064,30 +1083,19 @@ export async function deleteJobAction(jobId: string) {
       throw new Error("Job not found")
     }
 
-    const dbUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { role: true }
-    })
-
-    if (existingJob.posterId !== user.id && dbUser?.role !== 'admin') {
-      throw new Error("Unauthorized")
+    // Check if user can delete this job
+    if (!canDeleteAnyContent(user) && !canEditOwnContent(user, existingJob.posterId)) {
+      throw new Error("You don't have permission to delete this job")
     }
 
-    // Delete the job
     await prisma.job.delete({
-      where: { id: jobId }
-    })
-
-    // Decrement user's jobs count
-    await prisma.user.update({
-      where: { id: existingJob.posterId },
-      data: { jobsCount: { decrement: 1 } }
+      where: { id: jobId },
     })
 
     revalidatePath("/jobs")
-    redirect("/jobs")
+    return { success: true }
   } catch (error) {
     console.error("Error deleting job:", error)
-    throw error
+    throw new Error("Failed to delete job. Please try again.")
   }
 }

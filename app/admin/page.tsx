@@ -1,344 +1,287 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Users, MessageSquare, Calendar, Briefcase, TrendingUp, AlertTriangle, CheckCircle, X } from "lucide-react"
+import { 
+  Users, 
+  Shield, 
+  FileText, 
+  Calendar, 
+  Briefcase, 
+  Settings, 
+  BarChart,
+  AlertTriangle,
+  CheckCircle,
+  XCircle
+} from "lucide-react"
+import { AdminOnly } from "@/components/auth-guard"
+import { AuthUser } from "@prisma/client"
 
 export default function AdminPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalPosts: 0,
+    totalEvents: 0,
+    totalServices: 0,
+    totalJobs: 0,
+    pendingApprovals: 0
+  })
 
   useEffect(() => {
-    // Check if user is logged in and is admin
+    // Get user from localStorage
     const storedUser = localStorage.getItem("user")
     if (storedUser) {
-      const userData = JSON.parse(storedUser)
-      if (userData.role === "admin") {
-        setUser(userData)
-        setLoading(false)
-      } else {
-        // Not admin, redirect to home
-        router.push("/")
+      try {
+        const parsedUser = JSON.parse(storedUser)
+        setUser(parsedUser)
+      } catch (error) {
+        console.error("Error parsing user from localStorage:", error)
       }
-    } else {
-      // Not logged in, redirect to login
-      router.push("/login")
     }
-  }, [router])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Loading admin dashboard...</p>
-        </div>
-      </div>
-    )
+    // Fetch admin stats
+    fetchAdminStats()
+  }, [])
+
+  const fetchAdminStats = async () => {
+    try {
+      const response = await fetch("/api/database/stats")
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+      }
+    } catch (error) {
+      console.error("Error fetching admin stats:", error)
+    }
   }
-
-  if (!user) {
-    return null
-  }
-  const stats = [
-    { label: "Total Users", value: "1,247", change: "+12%", icon: Users, color: "text-blue-600" },
-    { label: "Forum Posts", value: "3,456", change: "+8%", icon: MessageSquare, color: "text-green-600" },
-    { label: "Events", value: "28", change: "+15%", icon: Calendar, color: "text-purple-600" },
-    { label: "Job Listings", value: "45", change: "+22%", icon: Briefcase, color: "text-orange-600" },
-  ]
-
-  const pendingApprovals = [
-    {
-      type: "Event",
-      title: "Drone Racing Workshop",
-      author: "SpeedDrone_RW",
-      date: "2024-03-20",
-      status: "pending",
-    },
-    {
-      type: "Service",
-      title: "Aerial Inspection Services",
-      author: "InspectPro_RW",
-      date: "2024-03-19",
-      status: "pending",
-    },
-    {
-      type: "Job",
-      title: "Drone Photographer Needed",
-      author: "EventCorp_RW",
-      date: "2024-03-18",
-      status: "pending",
-    },
-  ]
-
-  const recentUsers = [
-    {
-      name: "John Mukamana",
-      email: "john.m@email.com",
-      type: "Pilot",
-      joined: "2024-03-15",
-      status: "active",
-    },
-    {
-      name: "Sarah Uwimana",
-      email: "sarah.u@email.com",
-      type: "Business",
-      joined: "2024-03-14",
-      status: "active",
-    },
-    {
-      name: "David Nkurunziza",
-      email: "david.n@email.com",
-      type: "Student",
-      joined: "2024-03-13",
-      status: "pending",
-    },
-  ]
-
-  const reportedContent = [
-    {
-      type: "Post",
-      title: "Inappropriate drone usage discussion",
-      reporter: "CommunityMod",
-      reason: "Violates safety guidelines",
-      date: "2024-03-16",
-    },
-    {
-      type: "Comment",
-      title: "Spam comment on agricultural post",
-      reporter: "AgriExpert_RW",
-      reason: "Spam content",
-      date: "2024-03-15",
-    },
-  ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage the Rwanda Drone Community platform</p>
+    <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome back, {user?.fullName}. Manage the platform and monitor activity.
+          </p>
         </div>
-      </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
-          <Card key={index}>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className={`p-2 rounded-lg bg-gray-100 ${stat.color}`}>
-                  <stat.icon className="h-6 w-6" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <div className="text-sm text-muted-foreground flex items-center gap-1">
-                    <TrendingUp className="h-3 w-3" />
-                    {stat.change}
-                  </div>
-                  <div className="text-xs text-muted-foreground">{stat.label}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Tabs defaultValue="approvals" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="approvals">Pending Approvals</TabsTrigger>
-          <TabsTrigger value="users">User Management</TabsTrigger>
-          <TabsTrigger value="content">Content Moderation</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="approvals" className="space-y-4">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                Pending Approvals
-              </CardTitle>
-              <CardDescription>Review and approve community submissions</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Author</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pendingApprovals.map((item, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <Badge variant="outline">{item.type}</Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">{item.title}</TableCell>
-                      <TableCell>{item.author}</TableCell>
-                      <TableCell>{item.date}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button size="sm" className="h-8">
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="outline" className="h-8 bg-transparent">
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="text-2xl font-bold">{stats.totalUsers}</div>
+              <p className="text-xs text-muted-foreground">
+                Registered community members
+              </p>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="users" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                User Management
-              </CardTitle>
-              <CardDescription>Manage community members and their permissions</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Forum Posts</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentUsers.map((user, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{user.type}</Badge>
-                      </TableCell>
-                      <TableCell>{user.joined}</TableCell>
-                      <TableCell>
-                        <Badge
-                          className={
-                            user.status === "active" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
-                          }
-                        >
-                          {user.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
-                            Edit
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            View
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="text-2xl font-bold">{stats.totalPosts}</div>
+              <p className="text-xs text-muted-foreground">
+                Community discussions
+              </p>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="content" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                Reported Content
-              </CardTitle>
-              <CardDescription>Review reported posts and comments</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Events</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Content</TableHead>
-                    <TableHead>Reporter</TableHead>
-                    <TableHead>Reason</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reportedContent.map((item, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <Badge variant="outline">{item.type}</Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">{item.title}</TableCell>
-                      <TableCell>{item.reporter}</TableCell>
-                      <TableCell>{item.reason}</TableCell>
-                      <TableCell>{item.date}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
-                            Review
-                          </Button>
-                          <Button size="sm" variant="destructive">
-                            Remove
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="text-2xl font-bold">{stats.totalEvents}</div>
+              <p className="text-xs text-muted-foreground">
+                Upcoming and past events
+              </p>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="analytics" className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Services</CardTitle>
+              <Briefcase className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalServices}</div>
+              <p className="text-xs text-muted-foreground">
+                Service listings
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Job Postings</CardTitle>
+              <Briefcase className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalJobs}</div>
+              <p className="text-xs text-muted-foreground">
+                Active job opportunities
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.pendingApprovals}</div>
+              <p className="text-xs text-muted-foreground">
+                Items awaiting review
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Admin Actions */}
+        <Tabs defaultValue="content" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="content">Content Management</TabsTrigger>
+            <TabsTrigger value="users">User Management</TabsTrigger>
+            <TabsTrigger value="moderation">Moderation</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="content" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>User Growth</CardTitle>
-                <CardDescription>Monthly user registration trends</CardDescription>
+                <CardTitle>Content Management</CardTitle>
+                <CardDescription>
+                  Approve, edit, or delete community content
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="h-64 bg-gradient-to-r from-blue-100 to-green-100 rounded-lg flex items-center justify-center">
-                  <p className="text-muted-foreground">User Growth Chart</p>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button variant="outline" className="justify-start">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Review Forum Posts
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Manage Events
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Approve Services
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Review Job Postings
+                  </Button>
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
 
+          <TabsContent value="users" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Content Activity</CardTitle>
-                <CardDescription>Posts, comments, and engagement metrics</CardDescription>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>
+                  Manage user accounts, roles, and permissions
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="h-64 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
-                  <p className="text-muted-foreground">Activity Chart</p>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button variant="outline" className="justify-start">
+                    <Users className="mr-2 h-4 w-4" />
+                    View All Users
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <Shield className="mr-2 h-4 w-4" />
+                    Manage Roles
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Verify Users
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Suspend Users
+                  </Button>
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+          </TabsContent>
+
+          <TabsContent value="moderation" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Content Moderation</CardTitle>
+                <CardDescription>
+                  Review reported content and maintain community standards
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button variant="outline" className="justify-start">
+                    <AlertTriangle className="mr-2 h-4 w-4" />
+                    Review Reports
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Flagged Content
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Moderation Settings
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <Shield className="mr-2 h-4 w-4" />
+                    Community Guidelines
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Platform Analytics</CardTitle>
+                <CardDescription>
+                  View detailed platform statistics and insights
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button variant="outline" className="justify-start">
+                    <BarChart className="mr-2 h-4 w-4" />
+                    User Activity
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <BarChart className="mr-2 h-4 w-4" />
+                    Content Analytics
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <BarChart className="mr-2 h-4 w-4" />
+                    Engagement Metrics
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <BarChart className="mr-2 h-4 w-4" />
+                    Growth Reports
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
   )
 }

@@ -1,115 +1,201 @@
 "use client"
 
-import { Calendar, Home, MessageSquare, Briefcase, Users, BookOpen, Settings, Wrench } from "lucide-react"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarHeader,
-} from "@/components/ui/sidebar"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { 
+  Home, 
+  MessageSquare, 
+  Calendar, 
+  Briefcase, 
+  Users, 
+  FileText, 
+  Shield,
+  BarChart,
+  BookOpen,
+  Camera,
+  Wrench,
+  GraduationCap,
+  Settings
+} from "lucide-react"
+import { AuthUser, UserRole } from "@prisma/client"
 
-const items = [
-  {
-    title: "Home",
-    url: "/",
-    icon: Home,
-  },
-  {
-    title: "Forum",
-    url: "/forum",
-    icon: MessageSquare,
-  },
-  {
-    title: "Projects",
-    url: "/projects",
-    icon: Briefcase,
-  },
-  {
-    title: "Events",
-    url: "/events",
-    icon: Calendar,
-  },
-  {
-    title: "Jobs",
-    url: "/jobs",
-    icon: Users,
-  },
-  {
-    title: "Services",
-    url: "/services",
-    icon: Wrench,
-  },
-  {
-    title: "Resources",
-    url: "/resources",
-    icon: BookOpen,
-  },
-]
+interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-const adminItems = [
-  {
-    title: "Admin Panel",
-    url: "/admin",
-    icon: Settings,
-  },
-]
+export function AppSidebar({ className }: SidebarProps) {
+  const pathname = usePathname()
+  const [user, setUser] = useState<AuthUser | null>(null)
 
-export function AppSidebar() {
+  useEffect(() => {
+    // Get user from localStorage
+    const storedUser = localStorage.getItem("user")
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser))
+      } catch (error) {
+        console.error("Error parsing user from localStorage:", error)
+      }
+    }
+  }, [])
+
+  const getRoleBasedNavItems = () => {
+    const baseItems = [
+      {
+        title: "Home",
+        href: "/",
+        icon: Home,
+      },
+      {
+        title: "Forum",
+        href: "/forum",
+        icon: MessageSquare,
+      },
+      {
+        title: "Projects",
+        href: "/projects",
+        icon: Camera,
+      },
+      {
+        title: "Events",
+        href: "/events",
+        icon: Calendar,
+      },
+      {
+        title: "Services",
+        href: "/services",
+        icon: Wrench,
+      },
+      {
+        title: "Jobs",
+        href: "/jobs",
+        icon: Briefcase,
+      },
+      {
+        title: "Resources",
+        href: "/resources",
+        icon: BookOpen,
+      },
+    ]
+
+    // Add role-specific items
+    const roleItems = []
+
+    // Admin items
+    if (user?.role === "admin") {
+      roleItems.push(
+        {
+          title: "Admin Dashboard",
+          href: "/admin",
+          icon: Shield,
+        },
+        {
+          title: "Analytics",
+          href: "/analytics",
+          icon: BarChart,
+        },
+        {
+          title: "User Management",
+          href: "/admin/users",
+          icon: Users,
+        },
+        {
+          title: "Settings",
+          href: "/settings",
+          icon: Settings,
+        }
+      )
+    }
+
+    // Regulator items
+    if (user?.role === "regulator") {
+      roleItems.push(
+        {
+          title: "Regulator Panel",
+          href: "/regulator",
+          icon: Shield,
+        },
+        {
+          title: "Content Review",
+          href: "/regulator/review",
+          icon: FileText,
+        }
+      )
+    }
+
+    // Pilot items
+    if (user?.role === "pilot") {
+      roleItems.push(
+        {
+          title: "My Certifications",
+          href: "/pilot/certifications",
+          icon: GraduationCap,
+        },
+        {
+          title: "Tutorials",
+          href: "/pilot/tutorials",
+          icon: BookOpen,
+        }
+      )
+    }
+
+    // Service Provider items
+    if (user?.role === "service_provider") {
+      roleItems.push(
+        {
+          title: "My Services",
+          href: "/provider/services",
+          icon: Wrench,
+        },
+        {
+          title: "Portfolio",
+          href: "/provider/portfolio",
+          icon: Camera,
+        }
+      )
+    }
+
+    // Student items
+    if (user?.role === "student") {
+      roleItems.push(
+        {
+          title: "Learning Resources",
+          href: "/student/resources",
+          icon: BookOpen,
+        },
+        {
+          title: "Internships",
+          href: "/student/internships",
+          icon: GraduationCap,
+        }
+      )
+    }
+
+    return [...baseItems, ...roleItems]
+  }
+
+  const navItems = getRoleBasedNavItems()
+
   return (
-    <Sidebar>
-      <SidebarHeader className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">RDC</span>
-          </div>
-          <div>
-            <h2 className="font-semibold text-sm">Rwanda Drone</h2>
-            <p className="text-xs text-muted-foreground">Community</p>
-          </div>
+    <div className={cn("space-y-4", className)}>
+      {/* Main Navigation */}
+      <div className="px-3 py-2">
+        <div className="space-y-1">
+          {navItems.map((item) => (
+            <Link key={item.href} href={item.href}>
+              <Button
+                variant={pathname === item.href ? "secondary" : "ghost"}
+                className="w-full justify-start"
+                size="sm"
+              >
+                <item.icon className="mr-2 h-4 w-4" />
+                {item.title}
+              </Button>
+            </Link>
+          ))}
         </div>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Platform</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Administration</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {adminItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+      </div>
+    </div>
   )
 }

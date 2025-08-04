@@ -1,52 +1,271 @@
+"use client"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Heart, MessageSquare, Share2, Bookmark, Flag, ThumbsUp, Calendar, Eye } from "lucide-react"
+import { ArrowLeft, Heart, MessageSquare, Share2, Bookmark, Flag, ThumbsUp, Calendar, Eye, Send, Loader } from "lucide-react"
 import Link from "next/link"
-import { prisma } from "@/lib/prisma"
-import { notFound } from "next/navigation"
 
 interface PageProps {
-  params: {
+  params: Promise<{
     category: string
     postId: string
-  }
+  }>
 }
 
-export default async function ForumPostPage({ params }: PageProps) {
-  const { category, postId } = await params
+export default function ForumPostPage({ params }: PageProps) {
+  const [post, setPost] = useState<any>(null)
+  const [comments, setComments] = useState<any[]>([])
+  const [newComment, setNewComment] = useState("")
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyContent, setReplyContent] = useState("")
+  const [isLiked, setIsLiked] = useState(false)
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false)
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
+  const [commentLikes, setCommentLikes] = useState<Record<string, boolean>>({})
 
-  // Fetch post data from database
-  const post = await prisma.forumPost.findUnique({
-    where: { id: postId },
-    include: {
-      author: true,
-      category: true,
-      comments: {
-        include: {
-          author: true,
-          replies: {
-            include: {
-              author: true
-            }
-          }
-        },
-        orderBy: {
-          createdAt: 'asc'
+  useEffect(() => {
+    const initializePage = async () => {
+      const { category, postId } = await params
+      await fetchPost(postId)
+      await fetchComments(postId)
+      
+      // Get user from localStorage
+      const storedUser = localStorage.getItem("user")
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser)
+          setUser(userData)
+          await checkIfLiked(userData.id, postId)
+          await checkCommentLikes(userData.id, postId)
+        } catch (error) {
+          console.error("Error parsing user from localStorage:", error)
         }
       }
     }
-  })
+    
+    initializePage()
+  }, [params])
 
-  if (!post) {
-    notFound()
+  const fetchPost = async (postId: string) => {
+    try {
+      const response = await fetch(`/api/forum/posts/${postId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setPost(data)
+      } else {
+        console.error("Failed to fetch post")
+      }
+    } catch (error) {
+      console.error("Error fetching post:", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // Parse tags from JSON string
-  const tags = post.tags ? JSON.parse(post.tags) : []
+  const fetchComments = async (postId: string) => {
+    try {
+      const response = await fetch(`/api/forum/posts/${postId}/comments`)
+      if (response.ok) {
+        const data = await response.json()
+        setComments(data.comments || [])
+      }
+    } catch (error) {
+      console.error("Error fetching comments:", error)
+    }
+  }
+
+  const checkIfLiked = async (userId: string, postId: string) => {
+    try {
+      const response = await fetch(`/api/forum/posts/${postId}/like/check?userId=${userId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setIsLiked(data.isLiked)
+      }
+    } catch (error) {
+      console.error("Error checking like status:", error)
+    }
+  }
+
+  const checkCommentLikes = async (userId: string, postId: string) => {
+    try {
+      const allComments = comments.flatMap(comment => [comment, ...(comment.replies || [])])
+      const likePromises = allComments.map(comment =>
+        fetch(`/api/forum/comments/${comment.id}/like/check?userId=${userId}`)
+          .then(res => res.json())
+          .then(data => ({ commentId: comment.id, isLiked: data.isLiked }))
+      )
+      
+      const results = await Promise.all(likePromises)
+      const likesMap = results.reduce((acc, { commentId, isLiked }) => {
+        acc[commentId] = isLiked
+        return acc
+      }, {} as Record<string, boolean>)
+      
+      setCommentLikes(likesMap)
+    } catch (error) {
+      console.error("Error checking comment likes:", error)
+    }
+  }
+
+  const handleLike = async () => {
+    if (!user) {
+      alert("Please log in to like posts")
+      return
+    }
+
+    try {
+      const { postId } = await params
+      const response = await fetch(`/api/forum/posts/${postId}/like`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: user.id }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setIsLiked(data.isLiked)
+        setPost(prev => prev ? { ...prev, likesCount: data.likesCount } : null)
+      }
+    } catch (error) {
+      console.error("Error liking post:", error)
+    }
+  }
+
+  const handleComment = async () => {
+    if (!user) {
+      alert("Please log in to comment")
+      return
+    }
+
+    if (!newComment.trim()) return
+
+    setIsSubmittingComment(true)
+    try {
+      const { postId } = await params
+      const response = await fetch(`/api/forum/posts/${postId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content: newComment, userId: user.id }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setComments(prev => [data.comment, ...prev])
+        setNewComment("")
+        await fetchComments(postId)
+      }
+    } catch (error) {
+      console.error("Error posting comment:", error)
+    } finally {
+      setIsSubmittingComment(false)
+    }
+  }
+
+  const handleReply = async (parentId: string) => {
+    if (!user) {
+      alert("Please log in to reply")
+      return
+    }
+
+    if (!replyContent.trim()) return
+
+    setIsSubmittingReply(true)
+    try {
+      const { postId } = await params
+      const response = await fetch(`/api/forum/posts/${postId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          content: replyContent,
+          userId: user.id,
+          parentId: parentId
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setReplyContent("")
+        setReplyingTo(null)
+        await fetchComments(postId)
+      }
+    } catch (error) {
+      console.error("Error posting reply:", error)
+    } finally {
+      setIsSubmittingReply(false)
+    }
+  }
+
+  const handleCommentLike = async (commentId: string) => {
+    if (!user) {
+      alert("Please log in to like comments")
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/forum/comments/${commentId}/like`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: user.id }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCommentLikes(prev => ({ ...prev, [commentId]: data.isLiked }))
+        
+        // Update the comment's like count in the state
+        setComments(prev => prev.map(comment => {
+          if (comment.id === commentId) {
+            return { ...comment, likesCount: data.likesCount }
+          }
+          if (comment.replies) {
+            return {
+              ...comment,
+              replies: comment.replies.map(reply => 
+                reply.id === commentId 
+                  ? { ...reply, likesCount: data.likesCount }
+                  : reply
+              )
+            }
+          }
+          return comment
+        }))
+      }
+    } catch (error) {
+      console.error("Error liking comment:", error)
+    }
+  }
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: post?.title || "Forum Post",
+          text: post?.content || "Check out this forum post!",
+          url: window.location.href,
+        })
+      } catch (error) {
+        console.error("Error sharing post:", error)
+      }
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      navigator.clipboard.writeText(window.location.href)
+      alert("Link copied to clipboard!")
+    }
+  }
 
   // Helper function to format date
   const formatDate = (date: Date) => {
@@ -71,14 +290,40 @@ export default async function ForumPostPage({ params }: PageProps) {
     return formatDate(date)
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading post...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!post) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-bold mb-4">Post Not Found</h2>
+        <p className="text-muted-foreground">The post you are looking for does not exist or has been removed.</p>
+        <Button asChild className="mt-6">
+          <Link href="/forum">Back to Forum</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  // Parse tags from JSON string
+  const tags = post.tags ? JSON.parse(post.tags) : []
+
   return (
     <div className="space-y-6">
       {/* Navigation */}
       <div className="flex items-center gap-4">
-        <Link href={`/forum/${category}`}>
+        <Link href={`/forum/${post.category.slug}`}>
           <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
             <ArrowLeft className="h-4 w-4" />
-            Back to {category}
+            Back to {post.category.name}
           </Button>
         </Link>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -86,8 +331,8 @@ export default async function ForumPostPage({ params }: PageProps) {
             Forum
           </Link>
           <span>/</span>
-          <Link href={`/forum/${category}`} className="hover:text-foreground capitalize">
-            {category}
+          <Link href={`/forum/${post.category.slug}`} className="hover:text-foreground capitalize">
+            {post.category.name}
           </Link>
           <span>/</span>
           <span>Post</span>
@@ -209,8 +454,8 @@ export default async function ForumPostPage({ params }: PageProps) {
 
       {/* Replies */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Replies ({post.comments.length})</h2>
-        {post.comments.map((comment) => (
+        <h2 className="text-xl font-semibold">Replies ({comments.length})</h2>
+        {comments.map((comment) => (
           <Card key={comment.id}>
             <CardContent className="p-6">
               <div className="flex items-start gap-4">

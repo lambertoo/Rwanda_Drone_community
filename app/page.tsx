@@ -21,7 +21,19 @@ import {
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 async function getHomePageData() {
+  // Skip database queries during build time
+  if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+    return {
+      featuredProjects: [],
+      recentPosts: [],
+      upcomingEvents: [],
+      stats: { projects: 0, users: 0, events: 0, services: 0 }
+    }
+  }
   try {
     // Get featured projects (isFeatured = true, limit 3)
     const featuredProjects = await prisma.project.findMany({
@@ -116,7 +128,8 @@ async function getHomePageData() {
 export default async function HomePage() {
   const { featuredProjects, recentPosts, upcomingEvents, stats } = await getHomePageData()
 
-  const getCategoryIcon = (category: string) => {
+  const getCategoryIcon = (category: string | undefined | null) => {
+    if (!category) return "🚁"
     switch (category.toLowerCase()) {
       case "agriculture":
         return "🌾"
@@ -135,7 +148,8 @@ export default async function HomePage() {
     }
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | undefined | null) => {
+    if (!status) return "bg-gray-100 text-gray-800"
     switch (status.toLowerCase()) {
       case "completed":
         return "bg-green-100 text-green-800"

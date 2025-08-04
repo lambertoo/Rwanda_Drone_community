@@ -2,7 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Plus, X, Upload, Eye, Calendar, MapPin, Users } from "lucide-react"
+import { Plus, X, Upload, Eye, Calendar, MapPin, Users, CheckCircle } from "lucide-react"
 import { createProjectAction } from "@/lib/actions"
 
 interface TeamMember {
@@ -33,10 +34,11 @@ interface ProjectGalleryItem {
 }
 
 export default function NewProjectForm() {
+  const router = useRouter()
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    category: "",
+    categoryId: "",
     status: "",
     location: "",
     duration: "",
@@ -60,6 +62,9 @@ export default function NewProjectForm() {
   const [currentOutcome, setCurrentOutcome] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("basic")
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null)
+  const [categories, setCategories] = useState([])
+  const [loadingCategories, setLoadingCategories] = useState(true)
 
   const [newTeamMember, setNewTeamMember] = useState({
     name: "",
@@ -70,16 +75,24 @@ export default function NewProjectForm() {
     bio: "",
   })
 
-  const categories = [
-    { value: "agriculture", label: "Agriculture", icon: "🌾" },
-    { value: "surveillance", label: "Surveillance & Security", icon: "🛡️" },
-    { value: "mapping", label: "Mapping & Surveying", icon: "🗺️" },
-    { value: "delivery", label: "Delivery & Logistics", icon: "📦" },
-    { value: "emergency", label: "Emergency Response", icon: "🚨" },
-    { value: "research", label: "Research & Development", icon: "🔬" },
-    { value: "education", label: "Education & Training", icon: "🎓" },
-    { value: "environmental", label: "Environmental Monitoring", icon: "🌍" },
-  ]
+  // Fetch categories from database
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/project-categories')
+        if (response.ok) {
+          const data = await response.json()
+          setCategories(data.categories)
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+      } finally {
+        setLoadingCategories(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   const statusOptions = [
     { value: "planning", label: "Planning", color: "bg-blue-100 text-blue-800" },
@@ -185,19 +198,26 @@ export default function NewProjectForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Prevent multiple submissions
+    if (isSubmitting) {
+      return
+    }
+    
     setIsSubmitting(true)
+    setNotification(null)
 
     // Get user from localStorage
     const userStr = localStorage.getItem("user")
     if (!userStr) {
-      alert("Please log in to create a project")
+      setNotification({ type: 'error', message: 'Please log in to create a project' })
       setIsSubmitting(false)
       return
     }
 
     const user = JSON.parse(userStr)
     if (!user.id) {
-      alert("Invalid user session")
+      setNotification({ type: 'error', message: 'Invalid user session' })
       setIsSubmitting(false)
       return
     }
@@ -219,19 +239,62 @@ export default function NewProjectForm() {
       })
       formDataToSend.append("userId", user.id)
 
-      await createProjectAction(formDataToSend)
+      const result = await createProjectAction(formDataToSend)
+      
+      if (result.success && result.project) {
+        setNotification({ 
+          type: 'success', 
+          message: 'Project published successfully! Redirecting to project page...' 
+        })
+        
+        // Redirect to the project page after a short delay
+        setTimeout(() => {
+          router.push(`/projects/${result.project.id}`)
+        }, 2000)
+      } else {
+        setNotification({ type: 'error', message: 'Failed to publish project. Please try again.' })
+      }
     } catch (error) {
       console.error("Error creating project:", error)
+      setNotification({ 
+        type: 'error', 
+        message: error instanceof Error ? error.message : 'Failed to publish project. Please try again.' 
+      })
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const selectedCategory = categories.find((cat) => cat.value === formData.category)
+  const selectedCategory = categories.find((cat) => cat.id === formData.categoryId)
   const selectedStatus = statusOptions.find((status) => status.value === formData.status)
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Notification */}
+      {notification && (
+        <div className={`p-4 rounded-lg border ${
+          notification.type === 'success' 
+            ? 'bg-green-50 border-green-200 text-green-800' 
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              {notification.type === 'success' && <CheckCircle className="h-5 w-5 text-green-400" />}
+              {notification.type === 'error' && <div className="h-5 w-5 text-red-400">✕</div>}
+            </div>
+            <div className="ml-3 flex-1">
+              <p className="text-sm font-medium">{notification.message}</p>
+            </div>
+            <button
+              onClick={() => setNotification(null)}
+              className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -274,16 +337,15 @@ export default function NewProjectForm() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="category">Category *</Label>
-                    <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
+                    <Select value={formData.categoryId} onValueChange={(value) => handleInputChange("categoryId", value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
+                        <SelectValue placeholder={loadingCategories ? "Loading categories..." : "Select a category"} />
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((category) => (
-                          <SelectItem key={category.value} value={category.value}>
+                          <SelectItem key={category.id} value={category.id}>
                             <div className="flex items-center gap-2">
-                              <span>{category.icon}</span>
-                              {category.label}
+                              {category.name}
                             </div>
                           </SelectItem>
                         ))}
@@ -660,8 +722,7 @@ export default function NewProjectForm() {
               <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    {selectedCategory && <span>{selectedCategory.icon}</span>}
-                    <Badge variant="outline">{selectedCategory?.label}</Badge>
+                                                <Badge variant="outline">{selectedCategory?.name}</Badge>
                     {selectedStatus && (
                       <Badge variant="secondary" className={selectedStatus.color}>
                         {selectedStatus.label}
@@ -800,11 +861,18 @@ export default function NewProjectForm() {
           <Button
             type="submit"
             disabled={
-              isSubmitting || !formData.title || !formData.description || !formData.category || !formData.status
+              isSubmitting || !formData.title || !formData.description || !formData.categoryId || !formData.status
             }
             className="min-w-[120px]"
           >
-            {isSubmitting ? "Publishing..." : "Publish Project"}
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Publishing...
+              </>
+            ) : (
+              "Publish Project"
+            )}
           </Button>
         </div>
       </form>

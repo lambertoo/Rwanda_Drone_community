@@ -26,20 +26,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    // Create session with enhanced user data
+    // Create session with only the required fields
     const sessionId = createSession({
       id: user.id,
-      email: user.email,
       username: user.username,
+      email: user.email,
       fullName: user.fullName,
-      avatar: user.avatar,
       role: user.role,
       isVerified: user.isVerified,
-      organization: user.organization,
-      pilotLicense: user.pilotLicense,
-      experience: user.experience,
-      specializations: user.specializations,
-      certifications: user.certifications,
     })
 
     // Update last active

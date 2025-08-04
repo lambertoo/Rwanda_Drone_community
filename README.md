@@ -1,16 +1,11 @@
 # Rwanda Drone Community Platform
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/lambrulis-projects/v0-drone-community-platform)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/lm44ObBxHhh)
 
 ## Overview
 
 The Rwanda Drone Community Platform is a comprehensive web application designed to connect drone enthusiasts, professionals, and businesses across Rwanda. The platform facilitates knowledge sharing, project collaboration, event organization, and service provision within the drone community.
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
 
 ## 🚀 Features
 
@@ -100,6 +95,46 @@ Any changes you make to your deployed app will be automatically pushed to this r
 - **Forms:** React Hook Form with Zod validation
 
 ## 🚀 Getting Started
+
+### Option 1: Docker (Recommended) 🐳
+
+The easiest way to run the application is using Docker:
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd rwanda_drone_community_platform
+
+# Run the setup script
+./setup-docker.sh
+```
+
+Or manually:
+```bash
+# Start the containers
+docker-compose up --build -d
+
+# View logs
+docker-compose logs -f
+
+# Stop containers
+docker-compose down
+```
+
+#### Development with Docker Database
+
+For development, you can run just the database in Docker and the app locally:
+
+```bash
+# Start only the database
+docker-compose -f docker-compose.dev.yml up -d
+
+# Run the app locally
+npm install
+npm run dev
+```
+
+### Option 2: Local Development
 
 ### Prerequisites
 - Node.js 18+ 
@@ -216,24 +251,7 @@ The platform implements a comprehensive role-based authentication system:
 - Payment integration for events/services
 - PostgreSQL/MySQL production database
 
-## 🚀 Deployment
 
-Your project is live at:
-
-**[https://vercel.com/lambrulis-projects/v0-drone-community-platform](https://vercel.com/lambrulis-projects/v0-drone-community-platform)**
-
-## 🔧 Development
-
-Continue building your app on:
-
-**[https://v0.dev/chat/projects/lm44ObBxHhh](https://v0.dev/chat/projects/lm44ObBxHhh)**
-
-## 📝 How It Works
-
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
 
 ## 🤝 Contributing
 

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Eye, EyeOff, Shield, Users, Plane, GraduationCap, Wrench, Camera } from "lucide-react"
+import { Loader, Eye, EyeOff, Shield, Users, Plane, GraduationCap, Wrench, Camera } from "lucide-react"
 import Link from "next/link"
 
 const roleInfo = {
@@ -322,7 +322,7 @@ export default function RegisterPage() {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader className="mr-2 h-4 w-4 animate-spin" />
                   Creating Account...
                 </>
               ) : (

@@ -1,85 +1,76 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getSession } from "@/lib/auth"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url)
-    const featured = searchParams.get("featured") === "true"
-    const limit = searchParams.get("limit") ? Number.parseInt(searchParams.get("limit")!) : undefined
-    const offset = searchParams.get("offset") ? Number.parseInt(searchParams.get("offset")!) : undefined
-
-    let projects
-    if (featured) {
-      projects = await prisma.project.findMany({
-        where: { isFeatured: true },
-        include: { author: true },
-        take: limit,
-        skip: offset,
-        orderBy: { createdAt: 'desc' }
-      })
-    } else {
-      projects = await prisma.project.findMany({
-        include: { author: true },
-        take: limit,
-        skip: offset,
-        orderBy: { createdAt: 'desc' }
-      })
-    }
-
-    return NextResponse.json({ projects })
-  } catch (error) {
-    console.error("Error fetching projects:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const sessionId = request.cookies.get("session-id")?.value
-    if (!sessionId) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
-    }
-
-    const user = getSession(sessionId)
-    if (!user) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 })
-    }
-
-    const { title, description, fullDescription, category, status } = await request.json()
-
-    if (!title || !description || !category) {
-      return NextResponse.json({ error: "Title, description, and category are required" }, { status: 400 })
-    }
-
-    const userRecord = await db.users.findById(user.id)
-    if (!userRecord) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    const project = await db.projects.create({
-      title,
-      description,
-      fullDescription: fullDescription || description,
-      category,
-      status: status || "planning",
-      startDate: new Date(),
-      duration: "TBD",
-      fundingSource: "Self-funded",
-      location: "Rwanda",
-      authorId: user.id,
-      author: userRecord,
-      teamMembers: [],
-      technologies: [],
-      gallery: [],
-      impactMetrics: {},
-      isPublished: true,
-      isFeatured: false,
+    // Fetch projects from database
+    const projects = await prisma.project.findMany({
+      include: {
+        author: true,
+        category: true,
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
     })
 
-    return NextResponse.json({ project }, { status: 201 })
+    // Transform projects to match expected format
+    const transformedProjects = projects.map(project => {
+      // Convert status to display format
+      const getStatusDisplay = (status: string) => {
+        switch (status) {
+          case 'in_progress':
+            return 'In Progress'
+          case 'on_hold':
+            return 'On Hold'
+          case 'planning':
+            return 'Planning'
+          case 'completed':
+            return 'Completed'
+          case 'cancelled':
+            return 'Cancelled'
+          default:
+            return status
+        }
+      }
+
+      return {
+        id: project.id,
+        title: project.title,
+        description: project.description,
+        category: project.category.name,
+        categorySlug: project.category.slug,
+        status: project.status, // Keep original for filtering
+        statusDisplay: getStatusDisplay(project.status), // Add display version
+        location: project.location || 'Not specified',
+        duration: project.duration || 'Not specified',
+        startDate: project.startDate || 'Not specified',
+        endDate: project.endDate || 'Not specified',
+        lead: {
+          name: project.author.fullName,
+          role: 'Project Lead',
+          organization: project.author.organization || 'Not specified',
+          avatar: project.author.avatar || '/placeholder-user.jpg',
+        },
+        stats: {
+          views: project.viewsCount,
+          likes: project.likesCount,
+          comments: 0, // Comments not implemented yet
+        },
+        technologies: project.technologies ? JSON.parse(project.technologies) : [],
+        featured: project.isFeatured,
+      }
+    })
+
+    return NextResponse.json({
+      projects: transformedProjects,
+      total: transformedProjects.length
+    })
   } catch (error) {
-    console.error("Error creating project:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error('Error fetching projects:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch projects' },
+      { status: 500 }
+    )
   }
 }
