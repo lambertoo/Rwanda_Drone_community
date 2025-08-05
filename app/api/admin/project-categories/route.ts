@@ -6,28 +6,21 @@ export async function GET() {
     const categories = await prisma.projectCategory.findMany({
       include: {
         _count: {
-          select: { projects: true }
+          select: {
+            projects: true
+          }
         }
       },
-      orderBy: { name: 'asc' }
+      orderBy: {
+        name: 'asc'
+      }
     })
 
-    const transformedCategories = categories.map(category => ({
-      id: category.id,
-      name: category.name,
-      description: category.description,
-      slug: category.slug,
-      color: category.color,
-      projectCount: category._count.projects
-    }))
-
-    return NextResponse.json({
-      categories: transformedCategories
-    })
+    return NextResponse.json({ categories })
   } catch (error) {
     console.error('Error fetching project categories:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch categories' },
+      { error: 'Failed to fetch project categories' },
       { status: 500 }
     )
   }
@@ -35,16 +28,16 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const body = await request.json()
+    const { name, description, slug, icon, color } = body
 
-    if (!name || !description) {
+    // Validate required fields
+    if (!name || !description || !slug) {
       return NextResponse.json(
-        { error: 'Name and description are required' },
+        { error: 'Name, description, and slug are required' },
         { status: 400 }
       )
     }
-
-    // Generate slug from name
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
     // Check if slug already exists
     const existingCategory = await prisma.projectCategory.findUnique({
@@ -53,7 +46,7 @@ export async function POST(request: Request) {
 
     if (existingCategory) {
       return NextResponse.json(
-        { error: 'A category with this name already exists' },
+        { error: 'A category with this slug already exists' },
         { status: 400 }
       )
     }
@@ -63,15 +56,23 @@ export async function POST(request: Request) {
         name,
         description,
         slug,
-        color: color || '#10b981',
+        icon: icon || "🚁",
+        color: color || "#3B82F6"
+      },
+      include: {
+        _count: {
+          select: {
+            projects: true
+          }
+        }
       }
     })
 
-    return NextResponse.json(category, { status: 201 })
+    return NextResponse.json({ category })
   } catch (error) {
     console.error('Error creating project category:', error)
     return NextResponse.json(
-      { error: 'Failed to create category' },
+      { error: 'Failed to create project category' },
       { status: 500 }
     )
   }

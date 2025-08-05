@@ -108,7 +108,13 @@ export function Header() {
           <div className="w-full flex-1 md:w-auto md:flex-none">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="search" placeholder="Search..." className="pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px]" />
+              <Input 
+                type="search" 
+                id="search"
+                name="search"
+                placeholder="Search..." 
+                className="pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px]" 
+              />
             </div>
           </div>
 

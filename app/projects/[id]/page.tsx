@@ -85,7 +85,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const router = useRouter()
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const [user, setUser] = useState<any>(null)
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState("")
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
@@ -99,21 +99,38 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
   useEffect(() => {
     const initializePage = async () => {
-      const { id } = await params
-      await fetchProject(id)
-      await fetchComments(id)
-      
-      // Get user from localStorage
-      const storedUser = localStorage.getItem("user")
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser)
-          setUser(userData)
-          await checkIfLiked(userData.id, id)
-          await checkCommentLikes(userData.id, id)
-        } catch (error) {
-          console.error("Error parsing user from localStorage:", error)
+      try {
+        const { id } = await params
+        console.log("Initializing page with project ID:", id)
+        
+        // First, just load the project data
+        await fetchProject(id)
+        
+        // Set loading to false after project is loaded
+        setLoading(false)
+        console.log("Project loaded successfully")
+        
+        // Then load comments and user data in the background
+        fetchComments(id)
+        
+        // Get user from localStorage (only on client side)
+        if (typeof window !== 'undefined') {
+          const storedUser = localStorage.getItem("user")
+          if (storedUser) {
+            try {
+              const userData = JSON.parse(storedUser)
+              setUser(userData)
+              // Check likes in the background
+              checkIfLiked(userData.id, id)
+              checkCommentLikes(userData.id, id)
+            } catch (error) {
+              console.error("Error parsing user from localStorage:", error)
+            }
+          }
         }
+      } catch (error) {
+        console.error("Error initializing page:", error)
+        setLoading(false)
       }
     }
     
@@ -131,8 +148,6 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
       }
     } catch (error) {
       console.error("Error fetching project:", error)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -191,20 +206,51 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
   const checkCommentLikes = async (userId: string, projectId: string) => {
     try {
-      const allComments = comments.flatMap(comment => [comment, ...(comment.replies || [])])
-      const likePromises = allComments.map(comment =>
-        fetch(`/api/comments/${comment.id}/like/check?userId=${userId}`)
-          .then(res => res.json())
-          .then(data => ({ commentId: comment.id, isLiked: data.isLiked }))
-      )
-      
-      const results = await Promise.all(likePromises)
-      const likesMap = results.reduce((acc, { commentId, isLiked }) => {
-        acc[commentId] = isLiked
-        return acc
-      }, {} as Record<string, boolean>)
-      
-      setCommentLikes(likesMap)
+      // Fetch comments first if not already loaded
+      if (comments.length === 0) {
+        const response = await fetch(`/api/projects/${projectId}/comments`)
+        if (response.ok) {
+          const data = await response.json()
+          const fetchedComments = data.comments || []
+          setComments(fetchedComments)
+          
+          // Check likes for the fetched comments
+          if (fetchedComments.length > 0) {
+            const allComments = fetchedComments.flatMap(comment => [comment, ...(comment.replies || [])])
+            const likePromises = allComments.map(comment =>
+              fetch(`/api/comments/${comment.id}/like/check?userId=${userId}`)
+                .then(res => res.json())
+                .then(data => ({ commentId: comment.id, isLiked: data.isLiked }))
+            )
+            
+            const results = await Promise.all(likePromises)
+            const likesMap = results.reduce((acc, { commentId, isLiked }) => {
+              acc[commentId] = isLiked
+              return acc
+            }, {} as Record<string, boolean>)
+            
+            setCommentLikes(likesMap)
+          }
+        }
+      } else {
+        // Comments already loaded, check likes
+        const allComments = comments.flatMap(comment => [comment, ...(comment.replies || [])])
+        if (allComments.length > 0) {
+          const likePromises = allComments.map(comment =>
+            fetch(`/api/comments/${comment.id}/like/check?userId=${userId}`)
+              .then(res => res.json())
+              .then(data => ({ commentId: comment.id, isLiked: data.isLiked }))
+          )
+          
+          const results = await Promise.all(likePromises)
+          const likesMap = results.reduce((acc, { commentId, isLiked }) => {
+            acc[commentId] = isLiked
+            return acc
+          }, {} as Record<string, boolean>)
+          
+          setCommentLikes(likesMap)
+        }
+      }
     } catch (error) {
       console.error("Error checking comment likes:", error)
     }
@@ -368,8 +414,10 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     }
   }
 
-  const canEdit = user && (user.id === project?.author.id || user.role === "admin")
-  const canDelete = user && (user.id === project?.author.id || user.role === "admin")
+  // Check if user can edit or delete this project
+  // Check if user can edit or delete this project
+  const canEdit = user && project && (user.role === 'ADMIN' || user.id === project.authorId)
+  const canDelete = user && user.role === 'ADMIN'
 
   if (loading) {
     return (
@@ -396,8 +444,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const teamMembers = project.teamMembers ? JSON.parse(project.teamMembers) : []
   const gallery = project.gallery ? JSON.parse(project.gallery) : []
 
-  const getStatusColor = (status: string | undefined | null) => {
-    if (!status) return "bg-gray-100 text-gray-800"
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "completed": return "bg-green-100 text-green-800"
       case "in_progress": return "bg-blue-100 text-blue-800"
@@ -408,8 +455,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     }
   }
 
-  const getStatusDisplay = (status: string | undefined | null) => {
-    if (!status) return "Unknown"
+  const getStatusDisplay = (status: string) => {
     switch (status) {
       case "in_progress": return "In Progress"
       case "on_hold": return "On Hold"
@@ -420,8 +466,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     }
   }
 
-  const getCategoryIcon = (category: string | undefined | null) => {
-    if (!category) return "🚁"
+  const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {
       case "agriculture": return "🌾"
       case "surveillance": return "🛡️"
@@ -478,6 +523,39 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
       icon: Smartphone
     }
   ]
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading project...</p>
+              <p className="text-sm text-muted-foreground mt-2">This may take a few seconds</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!project) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold mb-4">Project Not Found</h1>
+              <p className="text-muted-foreground">The project you're looking for doesn't exist.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -842,6 +920,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                   {user && (
                     <div className="space-y-4">
                       <Textarea
+                        id="new-comment"
+                        name="new-comment"
                         placeholder="Share your thoughts about this project..."
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
@@ -930,6 +1010,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                               {replyingTo === comment.id && (
                                 <div className="mt-3 space-y-2">
                                   <Textarea
+                                    id="reply-content"
+                                    name="reply-content"
                                     placeholder="Write a reply..."
                                     value={replyContent}
                                     onChange={(e) => setReplyContent(e.target.value)}

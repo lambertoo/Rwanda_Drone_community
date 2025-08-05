@@ -20,7 +20,7 @@ import {
 import { AdminOnly } from "@/components/auth-guard"
 import { AuthUser } from "@prisma/client"
 
-export default function AdminPage() {
+function AdminDashboard() {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -151,10 +151,11 @@ export default function AdminPage() {
 
         {/* Admin Actions */}
         <Tabs defaultValue="content" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="content">Content Management</TabsTrigger>
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="moderation">Moderation</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
@@ -251,6 +252,37 @@ export default function AdminPage() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="settings" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Platform Settings</CardTitle>
+                <CardDescription>
+                  Manage platform configuration and categories
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button variant="outline" className="justify-start" onClick={() => window.location.href = '/admin/settings/forum-categories'}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Manage Forum Categories
+                  </Button>
+                  <Button variant="outline" className="justify-start" onClick={() => window.location.href = '/admin/settings/project-categories'}>
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Manage Project Categories
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <Settings className="mr-2 h-4 w-4" />
+                    General Settings
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <Shield className="mr-2 h-4 w-4" />
+                    Security Settings
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="analytics" className="space-y-4">
             <Card>
               <CardHeader>
@@ -283,5 +315,13 @@ export default function AdminPage() {
           </TabsContent>
         </Tabs>
       </div>
+  )
+}
+
+export default function AdminPage() {
+  return (
+    <AdminOnly>
+      <AdminDashboard />
+    </AdminOnly>
   )
 }

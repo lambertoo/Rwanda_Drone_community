@@ -13,6 +13,7 @@ async function main() {
   await prisma.service.deleteMany()
   await prisma.event.deleteMany()
   await prisma.project.deleteMany()
+  await prisma.projectCategory.deleteMany()
   await prisma.forumComment.deleteMany()
   await prisma.forumPost.deleteMany()
   await prisma.forumCategory.deleteMany()
@@ -186,55 +187,61 @@ async function main() {
   const projectCategories = await Promise.all([
     prisma.projectCategory.create({
       data: {
-        name: 'Aerial Photography',
-        description: 'Projects focused on aerial photography and videography',
-        slug: 'aerial-photography',
-        color: '#3B82F6',
-      }
-    }),
-    prisma.projectCategory.create({
-      data: {
-        name: 'Mapping & Surveying',
-        description: 'Projects involving mapping, surveying, and GIS applications',
-        slug: 'mapping-surveying',
+        name: 'Agriculture',
+        description: 'Drone projects related to precision agriculture, crop monitoring, and farming',
+        slug: 'agriculture',
+        icon: '🌾',
         color: '#10B981',
       }
     }),
     prisma.projectCategory.create({
       data: {
-        name: 'Agriculture',
-        description: 'Agricultural drone applications and precision farming',
-        slug: 'agriculture',
+        name: 'Photography & Videography',
+        description: 'Aerial photography, videography, and cinematography projects',
+        slug: 'photography',
+        icon: '📸',
         color: '#F59E0B',
       }
     }),
     prisma.projectCategory.create({
       data: {
+        name: 'Mapping & Surveying',
+        description: '3D mapping, land surveying, and GIS applications',
+        slug: 'mapping',
+        icon: '🗺️',
+        color: '#3B82F6',
+      }
+    }),
+    prisma.projectCategory.create({
+      data: {
         name: 'Delivery & Logistics',
-        description: 'Drone delivery and logistics projects',
-        slug: 'delivery-logistics',
+        description: 'Drone delivery services and logistics applications',
+        slug: 'delivery',
+        icon: '📦',
+        color: '#8B5CF6',
+      }
+    }),
+    prisma.projectCategory.create({
+      data: {
+        name: 'Search & Rescue',
+        description: 'Emergency response, search and rescue operations',
+        slug: 'search-rescue',
+        icon: '🚨',
         color: '#EF4444',
       }
     }),
     prisma.projectCategory.create({
       data: {
         name: 'Research & Development',
-        description: 'Research projects and new drone technology development',
-        slug: 'research-development',
-        color: '#8B5CF6',
-      }
-    }),
-    prisma.projectCategory.create({
-      data: {
-        name: 'Education & Training',
-        description: 'Educational projects and drone training programs',
-        slug: 'education-training',
+        description: 'Academic research, innovation, and experimental projects',
+        slug: 'research',
+        icon: '🔬',
         color: '#06B6D4',
       }
     })
   ])
 
-  console.log('📂 Created project categories')
+  console.log('🚁 Created project categories')
 
   // Create forum posts
   const posts = await Promise.all([
@@ -321,7 +328,7 @@ async function main() {
         title: 'Agricultural Drone Mapping Project',
         description: 'Using drones for precision agriculture mapping in rural Rwanda',
         fullDescription: 'This project aims to help farmers improve crop yields through aerial mapping and analysis.',
-        categoryId: projectCategories[2].id, // Agriculture
+        categoryId: projectCategories[0].id, // Agriculture
         status: ProjectStatus.in_progress,
         authorId: users[2].id,
         location: 'Southern Province',
@@ -369,7 +376,7 @@ async function main() {
         title: 'Wildlife Conservation Drone Monitoring',
         description: 'Using drones for wildlife monitoring and anti-poaching in national parks',
         fullDescription: 'Advanced drone surveillance system for wildlife protection and population monitoring in Rwanda\'s national parks.',
-        categoryId: projectCategories[4].id, // Research & Development
+        categoryId: projectCategories[4].id, // Search & Rescue
         status: ProjectStatus.completed,
         authorId: users[1].id,
         location: 'Akagera National Park',
@@ -393,7 +400,7 @@ async function main() {
         title: 'Urban Infrastructure Inspection',
         description: 'Drone-based inspection of urban infrastructure and buildings',
         fullDescription: 'Comprehensive drone inspection system for urban infrastructure including bridges, buildings, and utilities.',
-        categoryId: projectCategories[1].id, // Mapping & Surveying
+        categoryId: projectCategories[2].id, // Mapping & Surveying
         status: ProjectStatus.in_progress,
         authorId: users[3].id,
         location: 'Kigali City',
@@ -417,7 +424,7 @@ async function main() {
         title: 'Precision Agriculture Implementation',
         description: 'Implementing precision agriculture techniques using drone technology',
         fullDescription: 'Large-scale implementation of precision agriculture using drones for crop monitoring and management.',
-        categoryId: projectCategories[2].id, // Agriculture
+        categoryId: projectCategories[0].id, // Agriculture
         status: ProjectStatus.planning,
         authorId: users[4].id,
         location: 'Eastern Province',

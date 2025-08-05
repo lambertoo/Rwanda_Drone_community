@@ -411,15 +411,25 @@ export default function ForumPostPage({ params }: PageProps) {
           {/* Post Actions */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
-                <Heart className="h-4 w-4" />
-                Like
+              <Button 
+                variant={isLiked ? "default" : "outline"} 
+                size="sm" 
+                className="flex items-center gap-2"
+                onClick={handleLike}
+              >
+                <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
+                {post.likesCount || 0} {isLiked ? "Liked" : "Like"}
               </Button>
               <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
                 <MessageSquare className="h-4 w-4" />
-                Reply
+                {post.repliesCount || 0} Replies
               </Button>
-              <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-2 bg-transparent"
+                onClick={handleShare}
+              >
                 <Share2 className="h-4 w-4" />
                 Share
               </Button>
@@ -444,10 +454,29 @@ export default function ForumPostPage({ params }: PageProps) {
           <CardTitle className="text-lg">Add a Reply</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Textarea placeholder="Share your thoughts, ask questions, or provide additional information..." rows={4} />
+          <Textarea 
+            id="new-comment"
+            name="new-comment"
+            placeholder="Share your thoughts, ask questions, or provide additional information..." 
+            rows={4} 
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+          />
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">Be respectful and constructive in your responses</div>
-            <Button>Post Reply</Button>
+            <Button 
+              onClick={handleComment}
+              disabled={isSubmittingComment || !newComment.trim()}
+            >
+              {isSubmittingComment ? (
+                <>
+                  <Loader className="h-4 w-4 mr-2 animate-spin" />
+                  Posting...
+                </>
+              ) : (
+                'Post Reply'
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -484,14 +513,63 @@ export default function ForumPostPage({ params }: PageProps) {
                   </div>
 
                   <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="sm" className="flex items-center gap-2 h-8 px-2">
-                      <ThumbsUp className="h-3 w-3" />
-                      {comment.likesCount}
+                    <Button 
+                      variant={commentLikes[comment.id] ? "default" : "ghost"} 
+                      size="sm" 
+                      className="flex items-center gap-2 h-8 px-2"
+                      onClick={() => handleCommentLike(comment.id)}
+                    >
+                      <ThumbsUp className={`h-3 w-3 ${commentLikes[comment.id] ? "fill-current" : ""}`} />
+                      {comment.likesCount || 0}
                     </Button>
-                    <Button variant="ghost" size="sm" className="h-8 px-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 px-2"
+                      onClick={() => setReplyingTo(comment.id)}
+                    >
                       Reply
                     </Button>
                   </div>
+
+                  {/* Reply Form */}
+                  {replyingTo === comment.id && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                      <Textarea
+                        placeholder="Write your reply..."
+                        value={replyContent}
+                        onChange={(e) => setReplyContent(e.target.value)}
+                        rows={3}
+                        className="mb-3"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          size="sm"
+                          onClick={() => handleReply(comment.id)}
+                          disabled={isSubmittingReply || !replyContent.trim()}
+                        >
+                          {isSubmittingReply ? (
+                            <>
+                              <Loader className="h-3 w-3 mr-1 animate-spin" />
+                              Posting...
+                            </>
+                          ) : (
+                            'Post Reply'
+                          )}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setReplyingTo(null)
+                            setReplyContent("")
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Nested Replies */}
                   {comment.replies && comment.replies.length > 0 && (
@@ -521,11 +599,21 @@ export default function ForumPostPage({ params }: PageProps) {
                             </div>
                             <p className="text-sm mb-2">{nestedReply.content}</p>
                             <div className="flex items-center gap-3">
-                              <Button variant="ghost" size="sm" className="flex items-center gap-1 h-6 px-2 text-xs">
-                                <ThumbsUp className="h-3 w-3" />
-                                {nestedReply.likesCount}
+                              <Button 
+                                variant={commentLikes[nestedReply.id] ? "default" : "ghost"} 
+                                size="sm" 
+                                className="flex items-center gap-1 h-6 px-2 text-xs"
+                                onClick={() => handleCommentLike(nestedReply.id)}
+                              >
+                                <ThumbsUp className={`h-3 w-3 ${commentLikes[nestedReply.id] ? "fill-current" : ""}`} />
+                                {nestedReply.likesCount || 0}
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 px-2 text-xs"
+                                onClick={() => setReplyingTo(nestedReply.id)}
+                              >
                                 Reply
                               </Button>
                             </div>

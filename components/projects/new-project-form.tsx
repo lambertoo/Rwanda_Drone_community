@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -38,7 +38,7 @@ export default function NewProjectForm() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    categoryId: "",
+    category: "",
     status: "",
     location: "",
     duration: "",
@@ -63,8 +63,6 @@ export default function NewProjectForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("basic")
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null)
-  const [categories, setCategories] = useState([])
-  const [loadingCategories, setLoadingCategories] = useState(true)
 
   const [newTeamMember, setNewTeamMember] = useState({
     name: "",
@@ -75,24 +73,16 @@ export default function NewProjectForm() {
     bio: "",
   })
 
-  // Fetch categories from database
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch('/api/project-categories')
-        if (response.ok) {
-          const data = await response.json()
-          setCategories(data.categories)
-        }
-      } catch (error) {
-        console.error('Error fetching categories:', error)
-      } finally {
-        setLoadingCategories(false)
-      }
-    }
-
-    fetchCategories()
-  }, [])
+  const categories = [
+    { value: "agriculture", label: "Agriculture", icon: "🌾" },
+    { value: "surveillance", label: "Surveillance & Security", icon: "🛡️" },
+    { value: "mapping", label: "Mapping & Surveying", icon: "🗺️" },
+    { value: "delivery", label: "Delivery & Logistics", icon: "📦" },
+    { value: "emergency", label: "Emergency Response", icon: "🚨" },
+    { value: "research", label: "Research & Development", icon: "🔬" },
+    { value: "education", label: "Education & Training", icon: "🎓" },
+    { value: "environmental", label: "Environmental Monitoring", icon: "🌍" },
+  ]
 
   const statusOptions = [
     { value: "planning", label: "Planning", color: "bg-blue-100 text-blue-800" },
@@ -265,7 +255,7 @@ export default function NewProjectForm() {
     }
   }
 
-  const selectedCategory = categories.find((cat) => cat.id === formData.categoryId)
+  const selectedCategory = categories.find((cat) => cat.value === formData.category)
   const selectedStatus = statusOptions.find((status) => status.value === formData.status)
 
   return (
@@ -337,15 +327,16 @@ export default function NewProjectForm() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="category">Category *</Label>
-                    <Select value={formData.categoryId} onValueChange={(value) => handleInputChange("categoryId", value)}>
+                    <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder={loadingCategories ? "Loading categories..." : "Select a category"} />
+                        <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
+                          <SelectItem key={category.value} value={category.value}>
                             <div className="flex items-center gap-2">
-                              {category.name}
+                              <span>{category.icon}</span>
+                              {category.label}
                             </div>
                           </SelectItem>
                         ))}
@@ -722,7 +713,8 @@ export default function NewProjectForm() {
               <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                                                <Badge variant="outline">{selectedCategory?.name}</Badge>
+                    {selectedCategory && <span>{selectedCategory.icon}</span>}
+                    <Badge variant="outline">{selectedCategory?.label}</Badge>
                     {selectedStatus && (
                       <Badge variant="secondary" className={selectedStatus.color}>
                         {selectedStatus.label}
@@ -861,7 +853,7 @@ export default function NewProjectForm() {
           <Button
             type="submit"
             disabled={
-              isSubmitting || !formData.title || !formData.description || !formData.categoryId || !formData.status
+              isSubmitting || !formData.title || !formData.description || !formData.category || !formData.status
             }
             className="min-w-[120px]"
           >

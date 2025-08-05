@@ -198,7 +198,7 @@ export async function createProjectAction(formData: FormData) {
     const title = formData.get("title") as string
     const description = formData.get("description") as string
     const fullDescription = formData.get("fullDescription") as string
-    const categoryId = formData.get("categoryId") as string
+    const category = formData.get("category") as string
     const status = formData.get("status") as string
     const location = formData.get("location") as string
     const duration = formData.get("duration") as string
@@ -212,7 +212,7 @@ export async function createProjectAction(formData: FormData) {
     const teamMembers = formData.get("teamMembers") as string
     const gallery = formData.get("gallery") as string
 
-    if (!title || !description || !categoryId) {
+    if (!title || !description || !category) {
       throw new Error("Missing required fields")
     }
 
@@ -226,7 +226,7 @@ export async function createProjectAction(formData: FormData) {
         title,
         description,
         fullDescription: fullDescription || null,
-        categoryId,
+        category,
         status: mappedStatus,
         authorId: user.id,
         location: location || null,

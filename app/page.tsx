@@ -46,6 +46,12 @@ async function getHomePageData() {
             organization: true,
             avatar: true,
           }
+        },
+        category: {
+          select: {
+            name: true,
+            icon: true
+          }
         }
       },
       orderBy: { createdAt: 'desc' }
@@ -128,8 +134,9 @@ async function getHomePageData() {
 export default async function HomePage() {
   const { featuredProjects, recentPosts, upcomingEvents, stats } = await getHomePageData()
 
-  const getCategoryIcon = (category: string | undefined | null) => {
+  const getCategoryIcon = (category: string | null | undefined) => {
     if (!category) return "🚁"
+    
     switch (category.toLowerCase()) {
       case "agriculture":
         return "🌾"
@@ -148,8 +155,7 @@ export default async function HomePage() {
     }
   }
 
-  const getStatusColor = (status: string | undefined | null) => {
-    if (!status) return "bg-gray-100 text-gray-800"
+  const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "completed":
         return "bg-green-100 text-green-800"
@@ -287,7 +293,7 @@ export default async function HomePage() {
                     />
                     <div className="absolute top-4 left-4 flex gap-2">
                       <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm">
-                        {getCategoryIcon(project.category)} {project.category}
+                        {getCategoryIcon(project.category?.name)} {project.category?.name || 'Uncategorized'}
                       </Badge>
                       <Badge variant="secondary" className={`${getStatusColor(project.status)} backdrop-blur-sm`}>
                         {project.status.replace('_', ' ')}
@@ -442,7 +448,7 @@ export default async function HomePage() {
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-lg">{getCategoryIcon(event.category)}</span>
-                    <Badge variant="outline">{event.category}</Badge>
+                    <Badge variant="outline">{event.category || 'General'}</Badge>
                   </div>
                   <h3 className="font-semibold text-lg mb-2 group-hover:text-blue-600 transition-colors">
                     {event.title}

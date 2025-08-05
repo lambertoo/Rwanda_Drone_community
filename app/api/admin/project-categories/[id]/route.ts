@@ -7,20 +7,19 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
-    const { name, description, color } = await request.json()
+    const body = await request.json()
+    const { name, description, slug, icon, color } = body
 
-    if (!name || !description) {
+    // Validate required fields
+    if (!name || !description || !slug) {
       return NextResponse.json(
-        { error: 'Name and description are required' },
+        { error: 'Name, description, and slug are required' },
         { status: 400 }
       )
     }
 
-    // Generate new slug from name
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-
     // Check if slug already exists (excluding current category)
-    const existingCategory = await prisma.forumCategory.findFirst({
+    const existingCategory = await prisma.projectCategory.findFirst({
       where: {
         slug,
         id: { not: id }
@@ -29,26 +28,34 @@ export async function PUT(
 
     if (existingCategory) {
       return NextResponse.json(
-        { error: 'A category with this name already exists' },
+        { error: 'A category with this slug already exists' },
         { status: 400 }
       )
     }
 
-    const category = await prisma.forumCategory.update({
+    const category = await prisma.projectCategory.update({
       where: { id },
       data: {
         name,
         description,
         slug,
-        color: color || '#3b82f6'
+        icon: icon || "🚁",
+        color: color || "#3B82F6"
+      },
+      include: {
+        _count: {
+          select: {
+            projects: true
+          }
+        }
       }
     })
 
-    return NextResponse.json(category)
+    return NextResponse.json({ category })
   } catch (error) {
-    console.error('Error updating forum category:', error)
+    console.error('Error updating project category:', error)
     return NextResponse.json(
-      { error: 'Failed to update category' },
+      { error: 'Failed to update project category' },
       { status: 500 }
     )
   }
@@ -61,39 +68,41 @@ export async function DELETE(
   try {
     const { id } = await params
 
-    // Check if category has posts
-    const categoryWithPosts = await prisma.forumCategory.findUnique({
+    // Check if category has projects
+    const categoryWithProjects = await prisma.projectCategory.findUnique({
       where: { id },
       include: {
         _count: {
-          select: { posts: true }
+          select: {
+            projects: true
+          }
         }
       }
     })
 
-    if (!categoryWithPosts) {
+    if (!categoryWithProjects) {
       return NextResponse.json(
         { error: 'Category not found' },
         { status: 404 }
       )
     }
 
-    if (categoryWithPosts._count.posts > 0) {
+    if (categoryWithProjects._count.projects > 0) {
       return NextResponse.json(
-        { error: 'Cannot delete category with existing posts' },
+        { error: 'Cannot delete category with existing projects' },
         { status: 400 }
       )
     }
 
-    await prisma.forumCategory.delete({
+    await prisma.projectCategory.delete({
       where: { id }
     })
 
     return NextResponse.json({ message: 'Category deleted successfully' })
   } catch (error) {
-    console.error('Error deleting forum category:', error)
+    console.error('Error deleting project category:', error)
     return NextResponse.json(
-      { error: 'Failed to delete category' },
+      { error: 'Failed to delete project category' },
       { status: 500 }
     )
   }

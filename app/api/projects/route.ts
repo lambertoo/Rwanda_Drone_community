@@ -7,7 +7,6 @@ export async function GET() {
     const projects = await prisma.project.findMany({
       include: {
         author: true,
-        category: true,
       },
       orderBy: {
         createdAt: 'desc'
@@ -38,8 +37,7 @@ export async function GET() {
         id: project.id,
         title: project.title,
         description: project.description,
-        category: project.category.name,
-        categorySlug: project.category.slug,
+        category: project.category,
         status: project.status, // Keep original for filtering
         statusDisplay: getStatusDisplay(project.status), // Add display version
         location: project.location || 'Not specified',

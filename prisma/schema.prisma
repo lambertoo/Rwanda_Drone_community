@@ -127,18 +127,6 @@ model ForumCategory {
   @@map("forum_categories")
 }
 
-model ProjectCategory {
-  id          String   @id @default(cuid())
-  name        String
-  description String
-  slug        String   @unique
-  color       String
-  projectCount Int     @default(0)
-  projects    Project[]
-
-  @@map("project_categories")
-}
-
 model ForumPost {
   id           String        @id @default(cuid())
   title        String
@@ -181,12 +169,27 @@ model ForumComment {
   @@map("forum_comments")
 }
 
+model ProjectCategory {
+  id          String    @id @default(cuid())
+  name        String
+  description String
+  slug        String    @unique
+  icon        String    @default("🚁")
+  color       String    @default("#3B82F6")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  projects    Project[]
+
+  @@map("project_categories")
+}
+
 model Project {
-  id              String           @id @default(cuid())
+  id              String        @id @default(cuid())
   title           String
   description     String
   fullDescription String?
-  categoryId      String
+  categoryId      String?
+  category        ProjectCategory? @relation(fields: [categoryId], references: [id])
   status          ProjectStatus
   authorId        String
   location        String?
@@ -200,13 +203,12 @@ model Project {
   outcomes        String?
   teamMembers     String?
   gallery         String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  viewsCount      Int              @default(0)
-  likesCount      Int              @default(0)
-  isFeatured      Boolean          @default(false)
-  category        ProjectCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  author          User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  viewsCount      Int           @default(0)
+  likesCount      Int           @default(0)
+  isFeatured      Boolean       @default(false)
+  author          User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments        Comment[]
   likes           ProjectLike[]
 

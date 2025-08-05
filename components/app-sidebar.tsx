@@ -17,8 +17,7 @@ import {
   BookOpen,
   Camera,
   Wrench,
-  GraduationCap,
-  Settings
+  GraduationCap
 } from "lucide-react"
 import { AuthUser, UserRole } from "@prisma/client"
 
@@ -99,11 +98,6 @@ export function AppSidebar({ className }: SidebarProps) {
           title: "User Management",
           href: "/admin/users",
           icon: Users,
-        },
-        {
-          title: "Settings",
-          href: "/settings",
-          icon: Settings,
         }
       )
     }
