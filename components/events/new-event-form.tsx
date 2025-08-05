@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Calendar, Clock, MapPin, Users, Plus, X, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import { useToast } from "@/hooks/use-toast"
 
 interface Speaker {
   id: string
@@ -35,15 +36,27 @@ interface AgendaItem {
   type: "presentation" | "workshop" | "panel" | "break" | "networking"
 }
 
+interface EventCategory {
+  id: string
+  name: string
+  description: string
+  slug: string
+  icon: string
+  color: string
+}
+
 export default function NewEventForm() {
   const router = useRouter()
+  const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentTab, setCurrentTab] = useState("basic")
+  const [categories, setCategories] = useState<EventCategory[]>([])
+  const [loadingCategories, setLoadingCategories] = useState(true)
 
   // Basic Information
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [category, setCategory] = useState("")
+  const [categoryId, setCategoryId] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [startTime, setStartTime] = useState("")
@@ -86,7 +99,35 @@ export default function NewEventForm() {
     type: "presentation" as const,
   })
 
-  const categories = ["Workshop", "Conference", "Competition", "Training", "Demo", "Networking", "Webinar", "Hackathon"]
+  // Fetch event categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/admin/event-categories')
+        if (response.ok) {
+          const data = await response.json()
+          setCategories(data)
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to load event categories",
+            variant: "destructive",
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load event categories",
+          variant: "destructive",
+        })
+      } finally {
+        setLoadingCategories(false)
+      }
+    }
+
+    fetchCategories()
+  }, [toast])
 
   const addRequirement = () => {
     if (newRequirement.trim()) {
@@ -153,19 +194,87 @@ export default function NewEventForm() {
     setIsSubmitting(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      // Get user from localStorage
+      const storedUser = localStorage.getItem("user")
+      if (!storedUser) {
+        toast({
+          title: "Authentication Error",
+          description: "Please log in to create an event",
+          variant: "destructive",
+        })
+        return
+      }
 
-      // For now, just redirect to events page
-      router.push("/events")
+      const user = JSON.parse(storedUser)
+
+      // Prepare event data
+      const eventData = {
+        title,
+        description,
+        fullDescription: fullDescription || description,
+        categoryId: categoryId || null,
+        startDate: `${startDate}T${startTime}:00`,
+        endDate: endDate ? `${endDate}T${endTime}:00` : `${startDate}T${endTime}:00`,
+        location,
+        venue: venue || location,
+        capacity: capacity ? parseInt(capacity) : null,
+        price: isFree ? 0 : parseFloat(price || "0"),
+        currency,
+        registrationDeadline: registrationDeadline ? `${registrationDeadline}T23:59:59` : null,
+        requirements: JSON.stringify(requirements),
+        tags: JSON.stringify(tags),
+        speakers: JSON.stringify(speakers.map(s => s.name)),
+        agenda: JSON.stringify(agenda),
+        gallery: JSON.stringify([]),
+        isPublished: true,
+        isFeatured: false,
+        userId: user.id,
+      }
+
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(eventData),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        
+        toast({
+          title: "Success!",
+          description: "Event created successfully. Redirecting to events page...",
+          variant: "default",
+        })
+
+        // Redirect to events page after a short delay
+        setTimeout(() => {
+          router.push("/events")
+        }, 2000)
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create event')
+      }
     } catch (error) {
       console.error("Error creating event:", error)
+      
+      let errorMessage = "Failed to create event"
+      if (error instanceof Error) {
+        errorMessage = error.message
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const isBasicValid = title && description && category && startDate && startTime && location
+  const isBasicValid = title && description && categoryId && startDate && startTime && location
   const canProceed = (tab: string) => {
     switch (tab) {
       case "details":
@@ -234,14 +343,17 @@ export default function NewEventForm() {
 
                 <div>
                   <Label htmlFor="category">Category *</Label>
-                  <Select value={category} onValueChange={setCategory} required>
+                  <Select value={categoryId} onValueChange={setCategoryId} required disabled={loadingCategories}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder={loadingCategories ? "Loading categories..." : "Select category"} />
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
+                        <SelectItem key={cat.id} value={cat.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{cat.icon}</span>
+                            <span>{cat.name}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>

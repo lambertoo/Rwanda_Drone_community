@@ -7,6 +7,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { Header } from "@/components/header"
 import { ThemeProvider } from "@/components/theme-provider"
 import { LoginLayout } from "@/components/login-layout"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -28,6 +29,7 @@ export default function RootLayout({
           <LoginLayout>
             {children}
           </LoginLayout>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

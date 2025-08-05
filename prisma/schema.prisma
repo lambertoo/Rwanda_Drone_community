@@ -281,12 +281,27 @@ model ForumCommentLike {
   @@map("forum_comment_likes")
 }
 
+model EventCategory {
+  id          String    @id @default(cuid())
+  name        String
+  description String
+  slug        String    @unique
+  icon        String    @default("🎯")
+  color       String    @default("#3B82F6")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  events      Event[]
+
+  @@map("event_categories")
+}
+
 model Event {
   id                   String    @id @default(cuid())
   title                String
   description          String
   fullDescription      String?
-  category             String
+  categoryId           String?
+  category             EventCategory? @relation(fields: [categoryId], references: [id])
   startDate            DateTime
   endDate              DateTime
   location             String

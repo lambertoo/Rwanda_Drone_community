@@ -14,6 +14,7 @@ async function main() {
   await prisma.event.deleteMany()
   await prisma.project.deleteMany()
   await prisma.projectCategory.deleteMany()
+  await prisma.eventCategory.deleteMany()
   await prisma.forumComment.deleteMany()
   await prisma.forumPost.deleteMany()
   await prisma.forumCategory.deleteMany()
@@ -243,6 +244,66 @@ async function main() {
 
   console.log('🚁 Created project categories')
 
+  // Create event categories
+  const eventCategories = await Promise.all([
+    prisma.eventCategory.create({
+      data: {
+        name: 'Conference',
+        description: 'Professional conferences, seminars, and industry events',
+        slug: 'conference',
+        icon: '🎤',
+        color: '#3B82F6',
+      }
+    }),
+    prisma.eventCategory.create({
+      data: {
+        name: 'Training',
+        description: 'Educational training programs and workshops',
+        slug: 'training',
+        icon: '🎓',
+        color: '#10B981',
+      }
+    }),
+    prisma.eventCategory.create({
+      data: {
+        name: 'Workshop',
+        description: 'Hands-on workshops and practical sessions',
+        slug: 'workshop',
+        icon: '🛠️',
+        color: '#F59E0B',
+      }
+    }),
+    prisma.eventCategory.create({
+      data: {
+        name: 'Hackathon',
+        description: 'Innovation competitions and hackathons',
+        slug: 'hackathon',
+        icon: '💻',
+        color: '#8B5CF6',
+      }
+    }),
+    prisma.eventCategory.create({
+      data: {
+        name: 'Networking',
+        description: 'Networking events and meetups',
+        slug: 'networking',
+        icon: '🤝',
+        color: '#06B6D4',
+      }
+    }),
+    prisma.eventCategory.create({
+      data: {
+        name: 'Competition',
+        description: 'Drone competitions and challenges',
+        slug: 'competition',
+        icon: '🏆',
+        color: '#EF4444',
+      }
+    })
+  ])
+
+  console.log('🎯 Created event categories')
+
   // Create forum posts
   const posts = await Promise.all([
     prisma.forumPost.create({
@@ -454,7 +515,7 @@ async function main() {
         title: 'Rwanda Drone Technology Conference 2024',
         description: 'Annual conference bringing together drone enthusiasts, professionals, and regulators',
         fullDescription: 'Join us for the biggest drone event in Rwanda featuring workshops, presentations, and networking opportunities.',
-        category: 'Conference',
+        categoryId: eventCategories[0].id, // Conference
         startDate: new Date('2024-06-15T09:00:00Z'),
         endDate: new Date('2024-06-17T18:00:00Z'),
         location: 'Kigali Convention Centre',
@@ -482,7 +543,7 @@ async function main() {
         title: 'Drone Photography Workshop',
         description: 'Learn aerial photography techniques from professional drone photographers',
         fullDescription: 'Hands-on workshop covering composition, camera settings, and post-processing for aerial photography.',
-        category: 'Workshop',
+        categoryId: eventCategories[2].id, // Workshop
         startDate: new Date('2024-04-20T10:00:00Z'),
         endDate: new Date('2024-04-20T16:00:00Z'),
         location: 'Kigali',
@@ -510,7 +571,7 @@ async function main() {
         title: 'Agricultural Drone Training Program',
         description: 'Comprehensive training program for agricultural drone applications',
         fullDescription: 'Learn how to use drones for precision agriculture, crop monitoring, and agricultural mapping.',
-        category: 'Training',
+        categoryId: eventCategories[1].id, // Training
         startDate: new Date('2024-05-15T08:00:00Z'),
         endDate: new Date('2024-05-17T17:00:00Z'),
         location: 'Musanze District',
@@ -538,7 +599,7 @@ async function main() {
         title: 'Drone Innovation Hackathon',
         description: '48-hour hackathon to develop innovative drone solutions',
         fullDescription: 'Join developers, engineers, and drone enthusiasts for a weekend of innovation and collaboration.',
-        category: 'Hackathon',
+        categoryId: eventCategories[3].id, // Hackathon
         startDate: new Date('2024-04-12T18:00:00Z'),
         endDate: new Date('2024-04-14T18:00:00Z'),
         location: 'Kigali Innovation City',

@@ -16,7 +16,14 @@ interface Event {
   title: string
   description: string
   fullDescription?: string
-  category: string
+  category?: {
+    id: string
+    name: string
+    description: string
+    slug: string
+    icon: string
+    color: string
+  }
   startDate: string
   endDate: string
   location: string
@@ -65,14 +72,14 @@ export default function EventsPage() {
     fetchEvents()
   }, [])
 
-  const categories = ["all", ...Array.from(new Set(events.map(event => event.category)))]
+  const categories = ["all", ...Array.from(new Set(events.map(event => event.category?.name).filter(Boolean)))]
   const locations = ["all", ...Array.from(new Set(events.map(event => event.location)))]
 
   const filteredEvents = events.filter((event) => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || event.category === selectedCategory
+    const matchesCategory = selectedCategory === "all" || event.category?.name === selectedCategory
     const matchesLocation = selectedLocation === "all" || event.location === selectedLocation
 
     return matchesSearch && matchesCategory && matchesLocation
@@ -91,7 +98,7 @@ export default function EventsPage() {
       <div className="aspect-video relative">
         <img src="/placeholder.svg" alt={event.title} className="w-full h-full object-cover" />
         <Badge className="absolute top-2 right-2" variant="secondary">
-          {event.category}
+          {event.category?.name || 'Uncategorized'}
         </Badge>
         {event.isFeatured && (
           <Badge className="absolute top-2 left-2" variant="default">
@@ -160,7 +167,7 @@ export default function EventsPage() {
             <div className="flex justify-between items-start mb-2">
               <h3 className="font-semibold text-lg">{event.title}</h3>
               <div className="flex gap-2">
-                <Badge variant="secondary">{event.category}</Badge>
+                <Badge variant="secondary">{event.category?.name || 'Uncategorized'}</Badge>
                 {event.isFeatured && (
                   <Badge variant="default">Featured</Badge>
                 )}

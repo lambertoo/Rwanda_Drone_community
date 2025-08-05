@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
         },
         include: {
           organizer: true,
+          category: true,
         },
         orderBy: {
           startDate: 'asc'
@@ -30,6 +31,7 @@ export async function GET(request: NextRequest) {
       events = await prisma.event.findMany({
         include: {
           organizer: true,
+          category: true,
         },
         orderBy: {
           startDate: 'desc'
@@ -49,21 +51,11 @@ export async function GET(request: NextRequest) {
 // CREATE - Create a new event
 export async function POST(request: NextRequest) {
   try {
-    const sessionId = request.cookies.get("session-id")?.value
-    if (!sessionId) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
-    }
-
-    const user = getSession(sessionId)
-    if (!user) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 })
-    }
-
     const { 
       title, 
       description, 
       fullDescription,
-      category, 
+      categoryId, 
       startDate, 
       endDate, 
       location, 
@@ -75,8 +67,22 @@ export async function POST(request: NextRequest) {
       requirements,
       gallery,
       isPublished,
-      isFeatured
+      isFeatured,
+      userId
     } = await request.json()
+
+    if (!userId) {
+      return NextResponse.json({ error: "User ID is required" }, { status: 400 })
+    }
+
+    // Verify user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
 
     if (!title || !description || !startDate || !location) {
       return NextResponse.json({ error: "Title, description, start date, and location are required" }, { status: 400 })
@@ -87,7 +93,7 @@ export async function POST(request: NextRequest) {
         title,
         description,
         fullDescription: fullDescription || description,
-        category: category || "General",
+        categoryId: categoryId || null,
         startDate: new Date(startDate),
         endDate: endDate ? new Date(endDate) : new Date(startDate),
         location,
@@ -104,6 +110,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         organizer: true,
+        category: true,
       }
     })
 

@@ -261,7 +261,7 @@ function AdminDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <Button variant="outline" className="justify-start" onClick={() => window.location.href = '/admin/settings/forum-categories'}>
                     <FileText className="mr-2 h-4 w-4" />
                     Manage Forum Categories
@@ -269,6 +269,10 @@ function AdminDashboard() {
                   <Button variant="outline" className="justify-start" onClick={() => window.location.href = '/admin/settings/project-categories'}>
                     <Briefcase className="mr-2 h-4 w-4" />
                     Manage Project Categories
+                  </Button>
+                  <Button variant="outline" className="justify-start" onClick={() => window.location.href = '/admin/settings/event-categories'}>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Manage Event Categories
                   </Button>
                   <Button variant="outline" className="justify-start">
                     <Settings className="mr-2 h-4 w-4" />

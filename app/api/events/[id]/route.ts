@@ -3,12 +3,14 @@ import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/auth"
 
 // READ - Get a single event
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const event = await prisma.event.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         organizer: true,
+        category: true,
         rsvps: {
           include: {
             user: true
@@ -23,7 +25,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     // Increment view count
     await prisma.event.update({
-      where: { id: params.id },
+      where: { id },
       data: { viewsCount: { increment: 1 } }
     })
 
@@ -35,8 +37,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // UPDATE - Update an event
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const sessionId = request.cookies.get("session-id")?.value
     if (!sessionId) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
@@ -49,7 +52,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     // Check if event exists and user owns it
     const existingEvent = await prisma.event.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { organizer: true }
     })
 
@@ -81,7 +84,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     } = await request.json()
 
     const updatedEvent = await prisma.event.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title,
         description,
@@ -114,12 +117,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE - Delete an event
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const sessionId = request.cookies.get("session-id")?.value
-    if (!sessionId) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
-    }
+    if (!sessionId) return NextResponse.json({ error: "Authentication required" }, { status: 401 })
 
     const user = getSession(sessionId)
     if (!user) {
@@ -128,7 +130,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     // Check if event exists and user owns it
     const existingEvent = await prisma.event.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { organizer: true }
     })
 
@@ -142,7 +144,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     // Delete the event
     await prisma.event.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
     // Update user's events count

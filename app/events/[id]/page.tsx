@@ -29,7 +29,14 @@ interface Event {
   title: string
   description: string
   fullDescription?: string
-  category: string
+  category?: {
+    id: string
+    name: string
+    description: string
+    slug: string
+    icon: string
+    color: string
+  }
   startDate: string
   endDate: string
   location: string
@@ -118,10 +125,66 @@ export default function EventDetailsPage({ params }: PageProps) {
     return <div>Event not found</div>
   }
 
-  const requirements = event.requirements ? JSON.parse(event.requirements) : []
-  const speakers = event.speakers ? JSON.parse(event.speakers) : []
-  const agenda = event.agenda ? JSON.parse(event.agenda) : []
-  const gallery = event.gallery ? JSON.parse(event.gallery) : []
+  const requirements = event.requirements ? (() => {
+    try {
+      // Handle double-encoded JSON
+      let parsed = event.requirements
+      if (typeof parsed === 'string') {
+        parsed = JSON.parse(parsed)
+        if (typeof parsed === 'string') {
+          parsed = JSON.parse(parsed)
+        }
+      }
+      return Array.isArray(parsed) ? parsed : []
+    } catch (error) {
+      return []
+    }
+  })() : []
+  
+  const speakers = event.speakers ? (() => {
+    try {
+      let parsed = event.speakers
+      if (typeof parsed === 'string') {
+        parsed = JSON.parse(parsed)
+        if (typeof parsed === 'string') {
+          parsed = JSON.parse(parsed)
+        }
+      }
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  })() : []
+  
+  const agenda = event.agenda ? (() => {
+    try {
+      let parsed = event.agenda
+      if (typeof parsed === 'string') {
+        parsed = JSON.parse(parsed)
+        if (typeof parsed === 'string') {
+          parsed = JSON.parse(parsed)
+        }
+      }
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  })() : []
+  
+  const gallery = event.gallery ? (() => {
+    try {
+      let parsed = event.gallery
+      if (typeof parsed === 'string') {
+        parsed = JSON.parse(parsed)
+        if (typeof parsed === 'string') {
+          parsed = JSON.parse(parsed)
+        }
+      }
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  })() : []
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', { 
@@ -174,7 +237,7 @@ export default function EventDetailsPage({ params }: PageProps) {
       {/* Event Header */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <Badge variant="outline">{event.category}</Badge>
+          <Badge variant="outline">{event.category?.name || 'Uncategorized'}</Badge>
           {event.isFeatured && (
             <Badge variant="default">Featured</Badge>
           )}
@@ -206,20 +269,31 @@ export default function EventDetailsPage({ params }: PageProps) {
           </Card>
 
           {/* Requirements */}
-          {requirements.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Requirements</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="list-disc list-inside space-y-2">
-                  {requirements.map((requirement: string, index: number) => (
-                    <li key={index} className="text-sm">{requirement}</li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
+          {(() => {
+            try {
+              const reqs = Array.isArray(requirements) ? requirements : []
+              if (reqs.length > 0) {
+                return (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Requirements</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="list-disc list-inside space-y-2">
+                        {reqs.map((requirement: string, index: number) => (
+                          <li key={index} className="text-sm">{requirement}</li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )
+              }
+              return null
+            } catch (error) {
+              console.error('Error rendering requirements:', error)
+              return null
+            }
+          })()}
 
           {/* Tags */}
           {event.tags && (
@@ -229,11 +303,25 @@ export default function EventDetailsPage({ params }: PageProps) {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {event.tags.split(',').map((tag: string, index: number) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      #{tag.trim()}
-                    </Badge>
-                  ))}
+                  {(() => {
+                    try {
+                      if (!event.tags) return []
+                      let tags = event.tags
+                      if (typeof tags === 'string') {
+                        tags = JSON.parse(tags)
+                        if (typeof tags === 'string') {
+                          tags = JSON.parse(tags)
+                        }
+                      }
+                      return Array.isArray(tags) ? tags.map((tag: string, index: number) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          #{tag}
+                        </Badge>
+                      )) : []
+                    } catch {
+                      return []
+                    }
+                  })()}
                 </div>
               </CardContent>
             </Card>
