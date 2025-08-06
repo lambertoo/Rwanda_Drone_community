@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, MessageSquare, Users, TrendingUp, Plus, Heart, Share2, Eye, Loader } from "lucide-react"
 import Link from "next/link"
@@ -47,14 +47,13 @@ interface ForumPost {
 export default function ForumPage() {
   const [categories, setCategories] = useState<ForumCategory[]>([])
   const [recentPosts, setRecentPosts] = useState<ForumPost[]>([])
-  const [trendingPosts, setTrendingPosts] = useState<ForumPost[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [user, setUser] = useState<any>(null)
   const [sortBy, setSortBy] = useState("newest")
   const [filterCategory, setFilterCategory] = useState("all")
   const [groupBy, setGroupBy] = useState("none")
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list")
   // Fetch data from API
   useEffect(() => {
     const fetchData = async () => {
@@ -73,12 +72,7 @@ export default function ForumPage() {
           setRecentPosts(recentPostsData.posts)
         }
 
-        // Fetch trending posts
-        const trendingPostsResponse = await fetch('/api/forum/posts?trending=true&limit=5')
-        if (trendingPostsResponse.ok) {
-          const trendingPostsData = await trendingPostsResponse.json()
-          setTrendingPosts(trendingPostsData.posts)
-        }
+
       } catch (error) {
         console.error('Error fetching forum data:', error)
       } finally {
@@ -189,48 +183,7 @@ export default function ForumPage() {
   }
 
   // Get posts for selected category or all posts
-  const getCategoryPosts = () => {
-    if (selectedCategory) {
-      return recentPosts.filter(post => post.categorySlug === selectedCategory)
-    }
-    return recentPosts
-  }
 
-  // Get filtered and sorted posts for categories tab
-  const getCategoryFilteredPosts = () => {
-    let posts = getCategoryPosts()
-    posts = sortPosts(posts, sortBy)
-    return posts
-  }
-
-  // Get grouped posts for categories tab
-  const getCategoryGroupedPosts = () => {
-    const filteredPosts = getCategoryFilteredPosts()
-    return groupPosts(filteredPosts, groupBy)
-  }
-
-  // Handle category selection
-  const handleCategorySelect = (categorySlug: string) => {
-    setSelectedCategory(selectedCategory === categorySlug ? null : categorySlug)
-  }
-
-  // Get category slug from category ID
-  const getCategorySlug = (categoryId: string) => {
-    const category = categories.find(c => c.id === categoryId)
-    if (category) {
-      // Map category titles to slugs
-      const slugMap: { [key: string]: string } = {
-        'General Discussion': 'general',
-        'Jobs & Opportunities': 'jobs',
-        'Regulations & Legal': 'regulations',
-        'Events & Meetups': 'events',
-        'Showcase': 'showcase',
-        'Technical Support': 'technical'
-      }
-      return slugMap[category.title] || category.title.toLowerCase().replace(/\s+/g, '-')
-    }
-    return categoryId
-  }
 
   function formatTimeAgo(date: Date): string {
     const now = new Date()
@@ -326,263 +279,97 @@ export default function ForumPage() {
         />
       </div>
 
-      <Tabs defaultValue="categories" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="recent">Recent Posts</TabsTrigger>
-          <TabsTrigger value="trending">Trending</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="categories" className="space-y-4">
-          {/* Category Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {categories.map((category) => (
-              <Card 
-                key={category.id} 
-                className={`hover:shadow-md transition-shadow cursor-pointer ${
-                  selectedCategory === getCategorySlug(category.id) ? 'ring-2 ring-blue-500' : ''
-                }`}
-                onClick={() => handleCategorySelect(getCategorySlug(category.id))}
-              >
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{category.icon}</span>
-                    <div>
-                      <CardTitle className="text-lg">{category.title}</CardTitle>
-                      <CardDescription className="text-sm">
-                        {category.description}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <div className="flex items-center gap-4">
-                      <span className="flex items-center gap-1">
-                        <MessageSquare className="h-4 w-4" />
-                        {category.posts}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        {category.members}
-                      </span>
-                    </div>
-                    {category.lastPost && (
-                      <div className="text-right">
-                        <p className="font-medium text-foreground truncate">
-                          {category.lastPost.title}
-                        </p>
-                        <p className="text-xs">
-                          by {category.lastPost.author} • {category.lastPost.time}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+      <div className="space-y-6">
+        {/* Controls */}
+        <div className="flex flex-wrap gap-4 items-center justify-between p-4 bg-muted/50 rounded-lg">
+          <div className="flex flex-wrap gap-2">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-1 text-sm border rounded-md bg-background"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="mostLiked">Most Liked</option>
+              <option value="mostViewed">Most Viewed</option>
+              <option value="mostReplied">Most Replied</option>
+            </select>
+            
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="px-3 py-1 text-sm border rounded-md bg-background"
+            >
+              <option value="all">All Categories</option>
+              <option value="general">General Discussion</option>
+              <option value="jobs">Jobs & Opportunities</option>
+              <option value="regulations">Regulations & Legal</option>
+              <option value="events">Events & Meetups</option>
+              <option value="showcase">Showcase</option>
+              <option value="technical">Technical Support</option>
+            </select>
+            
+            <select
+              value={groupBy}
+              onChange={(e) => setGroupBy(e.target.value)}
+              className="px-3 py-1 text-sm border rounded-md bg-background"
+            >
+              <option value="none">No Grouping</option>
+              <option value="category">Group by Category</option>
+              <option value="author">Group by Author</option>
+              <option value="time">Group by Time</option>
+            </select>
           </div>
-
-          {/* Posts Section - Show when category is selected or show all posts */}
-          {(selectedCategory || getCategoryPosts().length > 0) && (
-            <>
-              {/* Controls */}
-              <div className="flex flex-wrap gap-4 items-center justify-between p-4 bg-muted/50 rounded-lg">
-                <div className="flex flex-wrap gap-2">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="px-3 py-1 text-sm border rounded-md bg-background"
-                  >
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="mostLiked">Most Liked</option>
-                    <option value="mostViewed">Most Viewed</option>
-                    <option value="mostReplied">Most Replied</option>
-                  </select>
-                  
-                  <select
-                    value={groupBy}
-                    onChange={(e) => setGroupBy(e.target.value)}
-                    className="px-3 py-1 text-sm border rounded-md bg-background"
-                  >
-                    <option value="none">No Grouping</option>
-                    <option value="category">Group by Category</option>
-                    <option value="author">Group by Author</option>
-                    <option value="time">Group by Time</option>
-                  </select>
+          
+          <div className="flex items-center gap-4">
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant={viewMode === "list" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("list")}
+                className="flex items-center gap-1"
+              >
+                <div className="w-4 h-4 flex flex-col gap-0.5">
+                  <div className="w-full h-0.5 bg-current"></div>
+                  <div className="w-full h-0.5 bg-current"></div>
+                  <div className="w-full h-0.5 bg-current"></div>
                 </div>
-                
-                <div className="flex items-center gap-2">
-                  {selectedCategory && (
-                    <Badge variant="secondary" className="text-sm">
-                      {categories.find(c => getCategorySlug(c.id) === selectedCategory)?.title || selectedCategory}
-                    </Badge>
-                  )}
-                  <div className="text-sm text-muted-foreground">
-                    {getCategoryFilteredPosts().length} posts found
-                  </div>
+                List
+              </Button>
+              <Button
+                variant={viewMode === "grid" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("grid")}
+                className="flex items-center gap-1"
+              >
+                <div className="w-4 h-4 grid grid-cols-2 gap-0.5">
+                  <div className="w-full h-full bg-current rounded-sm"></div>
+                  <div className="w-full h-full bg-current rounded-sm"></div>
+                  <div className="w-full h-full bg-current rounded-sm"></div>
+                  <div className="w-full h-full bg-current rounded-sm"></div>
                 </div>
-              </div>
-
-              {/* Posts */}
-              <div className="space-y-4">
-                {Object.entries(getCategoryGroupedPosts()).map(([groupName, groupPosts]) => (
-                  <div key={groupName}>
-                    {groupBy !== "none" && (
-                      <h3 className="text-lg font-semibold mb-3 text-muted-foreground">
-                        {groupName} ({groupPosts.length})
-                      </h3>
-                    )}
-                    <div className="space-y-4">
-                      {groupPosts
-                        .filter(post => 
-                          searchTerm === "" || 
-                          post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          post.author.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          post.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (Array.isArray(post.tags) && post.tags.some(tag => 
-                            tag.toLowerCase().includes(searchTerm.toLowerCase())
-                          ))
-                        )
-                        .map((post) => (
-                          <Card key={post.id} className="hover:shadow-md transition-shadow">
-                            <CardContent className="p-6">
-                              <div className="flex items-start gap-4">
-                                <Avatar className="h-10 w-10">
-                                  <AvatarImage src={post.author.avatar} />
-                                  <AvatarFallback>
-                                    {post.author.name.split(" ").map((n) => n[0]).join("")}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <Link
-                                      href={`/forum/${post.categorySlug}/${post.id}`}
-                                      className="font-semibold hover:underline truncate"
-                                    >
-                                      {post.title}
-                                    </Link>
-                                    {post.author.isVerified && (
-                                      <Badge variant="secondary" className="text-xs">
-                                        Verified
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                    <span>by {post.author.name}</span>
-                                    <span>in {post.category}</span>
-                                    <span>{post.replies} replies</span>
-                                    <span>{post.views} views</span>
-                                    <span>{post.time}</span>
-                                  </div>
-                                  {Array.isArray(post.tags) && post.tags.length > 0 && (
-                                    <div className="flex gap-1 mt-2">
-                                      {post.tags.slice(0, 3).map((tag) => (
-                                        <Badge key={tag} variant="outline" className="text-xs">
-                                          {tag}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  )}
-
-                                  {/* Reddit-like Actions */}
-                                  <div className="flex items-center gap-4 mt-4 pt-4 border-t">
-                                    <button
-                                      onClick={() => handleLike(post.id)}
-                                      className="flex items-center gap-1 text-sm text-muted-foreground hover:text-blue-600 transition-colors"
-                                    >
-                                      <Heart className="h-4 w-4" />
-                                      {post.likes}
-                                    </button>
-                                    <Link
-                                      href={`/forum/${post.categorySlug}/${post.id}`}
-                                      className="flex items-center gap-1 text-sm text-muted-foreground hover:text-green-600 transition-colors"
-                                    >
-                                      <MessageSquare className="h-4 w-4" />
-                                      {post.replies}
-                                    </Link>
-                                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                      <Eye className="h-4 w-4" />
-                                      {post.views}
-                                    </div>
-                                    <button
-                                      onClick={() => handleShare(post.id, post.title, post.categorySlug)}
-                                      className="flex items-center gap-1 text-sm text-muted-foreground hover:text-purple-600 transition-colors"
-                                    >
-                                      <Share2 className="h-4 w-4" />
-                                      Share
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </TabsContent>
-
-        <TabsContent value="recent" className="space-y-4">
-          {/* Controls */}
-          <div className="flex flex-wrap gap-4 items-center justify-between p-4 bg-muted/50 rounded-lg">
-            <div className="flex flex-wrap gap-2">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-1 text-sm border rounded-md bg-background"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="mostLiked">Most Liked</option>
-                <option value="mostViewed">Most Viewed</option>
-                <option value="mostReplied">Most Replied</option>
-              </select>
-              
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="px-3 py-1 text-sm border rounded-md bg-background"
-              >
-                <option value="all">All Categories</option>
-                <option value="general">General Discussion</option>
-                <option value="jobs">Jobs & Opportunities</option>
-                <option value="regulations">Regulations & Legal</option>
-                <option value="events">Events & Meetups</option>
-                <option value="showcase">Showcase</option>
-                <option value="technical">Technical Support</option>
-              </select>
-              
-              <select
-                value={groupBy}
-                onChange={(e) => setGroupBy(e.target.value)}
-                className="px-3 py-1 text-sm border rounded-md bg-background"
-              >
-                <option value="none">No Grouping</option>
-                <option value="category">Group by Category</option>
-                <option value="author">Group by Author</option>
-                <option value="time">Group by Time</option>
-              </select>
+                Grid
+              </Button>
             </div>
             
             <div className="text-sm text-muted-foreground">
               {getFilteredPosts().length} posts found
             </div>
           </div>
-
-          {/* Posts */}
-          <div className="space-y-4">
-            {Object.entries(getGroupedPosts()).map(([groupName, groupPosts]) => (
-              <div key={groupName}>
-                {groupBy !== "none" && (
-                  <h3 className="text-lg font-semibold mb-3 text-muted-foreground">
-                    {groupName} ({groupPosts.length})
-                  </h3>
-                )}
+        </div>
+        {/* Posts */}
+        <div className="space-y-4">
+          {Object.entries(getGroupedPosts()).map(([groupName, groupPosts]) => (
+            <div key={groupName}>
+              {groupBy !== "none" && (
+                <h3 className="text-lg font-semibold mb-3 text-muted-foreground">
+                  {groupName} ({groupPosts.length})
+                </h3>
+              )}
+              
+              {viewMode === "list" ? (
+                // List View
                 <div className="space-y-4">
                   {groupPosts
                     .filter(post => 
@@ -595,167 +382,164 @@ export default function ForumPage() {
                       ))
                     )
                     .map((post) => (
-              <Card key={post.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={post.author.avatar} />
-                      <AvatarFallback>
-                        {post.author.name.split(" ").map((n) => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Link
-                          href={`/forum/${post.categorySlug}/${post.id}`}
-                          className="font-semibold hover:underline truncate"
-                        >
-                          {post.title}
-                        </Link>
-                        {post.author.isVerified && (
-                          <Badge variant="secondary" className="text-xs">
-                            Verified
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>by {post.author.name}</span>
-                        <span>in {post.category}</span>
-                        <span>{post.replies} replies</span>
-                        <span>{post.views} views</span>
-                        <span>{post.time}</span>
-                      </div>
-                      {Array.isArray(post.tags) && post.tags.length > 0 && (
-                        <div className="flex gap-1 mt-2">
-                          {post.tags.slice(0, 3).map((tag) => (
-                            <Badge key={tag} variant="outline" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
+                      <Card key={post.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-6">
+                          <div className="flex items-start gap-4">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={post.author.avatar} />
+                              <AvatarFallback>
+                                {post.author.name.split(" ").map((n) => n[0]).join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Link
+                                  href={`/forum/${post.categorySlug}/${post.id}`}
+                                  className="font-semibold hover:underline truncate"
+                                >
+                                  {post.title}
+                                </Link>
+                                {post.author.isVerified && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Verified
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <span>by {post.author.name}</span>
+                                <span>in {post.category}</span>
+                                <span>{post.replies} replies</span>
+                                <span>{post.views} views</span>
+                                <span>{post.time}</span>
+                              </div>
+                              {Array.isArray(post.tags) && post.tags.length > 0 && (
+                                <div className="flex gap-1 mt-2">
+                                  {post.tags.slice(0, 3).map((tag) => (
+                                    <Badge key={tag} variant="outline" className="text-xs">
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
 
-                      {/* Reddit-like Actions */}
-                      <div className="flex items-center gap-4 mt-4 pt-4 border-t">
-                        <button
-                          onClick={() => handleLike(post.id)}
-                          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-blue-600 transition-colors"
-                        >
-                          <Heart className="h-4 w-4" />
-                          {post.likes}
-                        </button>
-                        <Link
-                          href={`/forum/${post.categorySlug}/${post.id}`}
-                          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-green-600 transition-colors"
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                          {post.replies}
-                        </Link>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Eye className="h-4 w-4" />
-                          {post.views}
-                        </div>
-                        <button
-                          onClick={() => handleShare(post.id, post.title, post.categorySlug)}
-                          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-purple-600 transition-colors"
-                        >
-                          <Share2 className="h-4 w-4" />
-                          Share
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                              {/* Reddit-like Actions */}
+                              <div className="flex items-center gap-4 mt-4 pt-4 border-t">
+                                <button
+                                  onClick={() => handleLike(post.id)}
+                                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-blue-600 transition-colors"
+                                >
+                                  <Heart className="h-4 w-4" />
+                                  {post.likes}
+                                </button>
+                                <Link
+                                  href={`/forum/${post.categorySlug}/${post.id}`}
+                                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-green-600 transition-colors"
+                                >
+                                  <MessageSquare className="h-4 w-4" />
+                                  {post.replies}
+                                </Link>
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                  <Eye className="h-4 w-4" />
+                                  {post.views}
+                                </div>
+                                <button
+                                  onClick={() => handleShare(post.id, post.title, post.categorySlug)}
+                                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-purple-600 transition-colors"
+                                >
+                                  <Share2 className="h-4 w-4" />
+                                  Share
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))}
                 </div>
-              </div>
-            ))}
-          </div>
-        </TabsContent>
+              ) : (
+                // Grid View
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {groupPosts
+                    .filter(post => 
+                      searchTerm === "" || 
+                      post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      post.author.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      post.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      (Array.isArray(post.tags) && post.tags.some(tag => 
+                        tag.toLowerCase().includes(searchTerm.toLowerCase())
+                      ))
+                    )
+                    .map((post) => (
+                      <Card key={post.id} className="hover:shadow-md transition-shadow h-full">
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={post.author.avatar} />
+                                <AvatarFallback>
+                                  {post.author.name.split(" ").map((n) => n[0]).join("")}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{post.author.name}</p>
+                                <p className="text-xs text-muted-foreground">{post.time}</p>
+                              </div>
+                              {post.author.isVerified && (
+                                <Badge variant="secondary" className="text-xs">
+                                  Verified
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            <div>
+                              <Link
+                                href={`/forum/${post.categorySlug}/${post.id}`}
+                                className="font-semibold hover:underline line-clamp-2 text-sm"
+                              >
+                                {post.title}
+                              </Link>
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                in {post.category}
+                              </p>
+                            </div>
+                            
+                            {Array.isArray(post.tags) && post.tags.length > 0 && (
+                              <div className="flex gap-1 flex-wrap">
+                                {post.tags.slice(0, 2).map((tag) => (
+                                  <Badge key={tag} variant="outline" className="text-xs">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
 
-        <TabsContent value="trending" className="space-y-4">
-          <div className="space-y-4">
-            {trendingPosts.map((post) => (
-              <Card key={post.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={post.author.avatar} />
-                      <AvatarFallback>
-                        {post.author.name.split(" ").map((n) => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Link
-                          href={`/forum/${post.categorySlug}/${post.id}`}
-                          className="font-semibold hover:underline truncate"
-                        >
-                          {post.title}
-                        </Link>
-                        {post.author.isVerified && (
-                          <Badge variant="secondary" className="text-xs">
-                            Verified
-                          </Badge>
-                        )}
-                        <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700">
-                          Trending
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>by {post.author.name}</span>
-                        <span>in {post.category}</span>
-                        <span>{post.replies} replies</span>
-                        <span>{post.views} views</span>
-                        <span>{post.time}</span>
-                      </div>
-                      {Array.isArray(post.tags) && post.tags.length > 0 && (
-                        <div className="flex gap-1 mt-2">
-                          {post.tags.slice(0, 3).map((tag) => (
-                            <Badge key={tag} variant="outline" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Reddit-like Actions */}
-                      <div className="flex items-center gap-4 mt-4 pt-4 border-t">
-                        <button
-                          onClick={() => handleLike(post.id)}
-                          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-blue-600 transition-colors"
-                        >
-                          <Heart className="h-4 w-4" />
-                          {post.likes}
-                        </button>
-                        <Link
-                          href={`/forum/${post.categorySlug}/${post.id}`}
-                          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-green-600 transition-colors"
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                          {post.replies}
-                        </Link>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Eye className="h-4 w-4" />
-                          {post.views}
-                        </div>
-                        <button
-                          onClick={() => handleShare(post.id, post.title, post.categorySlug)}
-                          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-purple-600 transition-colors"
-                        >
-                          <Share2 className="h-4 w-4" />
-                          Share
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
+                            {/* Stats */}
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <div className="flex items-center gap-3">
+                                <span className="flex items-center gap-1">
+                                  <Heart className="h-3 w-3" />
+                                  {post.likes}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <MessageSquare className="h-3 w-3" />
+                                  {post.replies}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Eye className="h-3 w-3" />
+                                  {post.views}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
