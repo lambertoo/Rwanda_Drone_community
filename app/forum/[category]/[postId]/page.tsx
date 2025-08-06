@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -17,6 +17,7 @@ interface PageProps {
 }
 
 export default function ForumPostPage({ params }: PageProps) {
+  const { category, postId } = use(params)
   const [post, setPost] = useState<any>(null)
   const [comments, setComments] = useState<any[]>([])
   const [newComment, setNewComment] = useState("")
@@ -31,7 +32,6 @@ export default function ForumPostPage({ params }: PageProps) {
 
   useEffect(() => {
     const initializePage = async () => {
-      const { category, postId } = await params
       await fetchPost(postId)
       await fetchComments(postId)
       
@@ -50,7 +50,7 @@ export default function ForumPostPage({ params }: PageProps) {
     }
     
     initializePage()
-  }, [params])
+  }, [postId])
 
   const fetchPost = async (postId: string) => {
     try {
@@ -94,6 +94,9 @@ export default function ForumPostPage({ params }: PageProps) {
 
   const checkCommentLikes = async (userId: string, postId: string) => {
     try {
+      // Only check likes if comments are loaded
+      if (comments.length === 0) return
+      
       const allComments = comments.flatMap(comment => [comment, ...(comment.replies || [])])
       const likePromises = allComments.map(comment =>
         fetch(`/api/forum/comments/${comment.id}/like/check?userId=${userId}`)
@@ -313,8 +316,8 @@ export default function ForumPostPage({ params }: PageProps) {
     )
   }
 
-  // Parse tags from JSON string
-  const tags = post.tags ? JSON.parse(post.tags) : []
+  // Handle tags - they are already JSON objects from the database
+  const tags = Array.isArray(post.tags) ? post.tags : []
 
   return (
     <div className="space-y-6">

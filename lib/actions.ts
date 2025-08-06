@@ -2,69 +2,159 @@
 
 import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
-import { getSession, canCreateProjects, canCreateServices, canPostJobs, canCreateEvents, canEditOwnContent, canDeleteAnyContent } from "@/lib/auth"
+import { getAuthenticatedUser } from "@/lib/auth-middleware"
+import { canCreateProjects, canCreateServices, canPostJobs, canCreateEvents, canEditOwnContent, canDeleteAnyContent } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 
 // Forum Post Actions
 export async function createForumPostAction(formData: FormData) {
   try {
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
+    // Step 1: Authentication Validation
+    const user = await getAuthenticatedUser()
 
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
+    if (!user) {
+      return { 
+        success: false, 
+        error: "You must be logged in to create a forum post. Please sign in and try again." 
+      }
     }
 
-    // If no session, try to get user from form data (fallback for demo)
-    if (!user) {
-      const userId = formData.get("userId") as string
-      if (userId) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: userId }
-        })
-        if (dbUser) {
-          user = {
-            id: dbUser.id,
-            username: dbUser.username,
-            email: dbUser.email,
-            fullName: dbUser.fullName,
-            role: dbUser.role,
-            isVerified: dbUser.isVerified
-          }
+    // Step 2: Input Validation
+    const title = (formData.get("title") as string)?.trim()
+    const content = (formData.get("content") as string)?.trim()
+    const categoryId = formData.get("categoryId") as string
+    const tags = formData.get("tags") as string
+
+    // Validate title
+    if (!title) {
+      return { 
+        success: false, 
+        error: "Post title is required. Please enter a descriptive title for your post." 
+      }
+    }
+
+    if (title.length < 10) {
+      return { 
+        success: false, 
+        error: "Post title must be at least 10 characters long. Please make it more descriptive." 
+      }
+    }
+
+    if (title.length > 200) {
+      return { 
+        success: false, 
+        error: "Post title is too long. Please keep it under 200 characters." 
+      }
+    }
+
+    // Validate content
+    if (!content) {
+      return { 
+        success: false, 
+        error: "Post content is required. Please write the content of your post." 
+      }
+    }
+
+    if (content.length < 20) {
+      return { 
+        success: false, 
+        error: "Post content must be at least 20 characters long. Please provide more details." 
+      }
+    }
+
+    if (content.length > 10000) {
+      return { 
+        success: false, 
+        error: "Post content is too long. Please keep it under 10,000 characters." 
+      }
+    }
+
+    // Validate category
+    if (!categoryId) {
+      return { 
+        success: false, 
+        error: "Please select a category for your post." 
+      }
+    }
+
+    // Verify category exists
+    const category = await prisma.forumCategory.findUnique({
+      where: { id: categoryId }
+    })
+
+    if (!category) {
+      return { 
+        success: false, 
+        error: "Selected category does not exist. Please choose a valid category." 
+      }
+    }
+
+    // Step 3: Tags Processing
+    let parsedTags = []
+    if (tags) {
+      try {
+        // Try to parse as JSON first
+        const parsed = JSON.parse(tags)
+        if (Array.isArray(parsed)) {
+          parsedTags = parsed
+        } else {
+          // If it's not an array, treat as comma-separated string
+          parsedTags = tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+        }
+      } catch (error) {
+        // If JSON parsing fails, treat as comma-separated string
+        parsedTags = tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+      }
+    }
+
+    // Validate tags
+    if (parsedTags.length > 5) {
+      return { 
+        success: false, 
+        error: "You can only add up to 5 tags. Please remove some tags and try again." 
+      }
+    }
+
+    // Validate individual tag length
+    for (const tag of parsedTags) {
+      if (tag.length > 20) {
+        return { 
+          success: false, 
+          error: `Tag "${tag}" is too long. Tags must be 20 characters or less.` 
         }
       }
     }
 
-    if (!user) {
-      throw new Error("Authentication required")
-    }
-
-    const title = formData.get("title") as string
-    const content = formData.get("content") as string
-    const categoryId = formData.get("categoryId") as string
-    const tags = formData.get("tags") as string
-
-    if (!title || !content || !categoryId) {
-      throw new Error("Missing required fields")
-    }
-
+    // Step 4: Create Post
     const post = await prisma.forumPost.create({
       data: {
         title,
         content,
         categoryId,
         authorId: user.id,
-        tags: tags || null,
+        tags: parsedTags,
       },
       include: {
-        author: true,
-        category: true,
+        author: {
+          select: {
+            id: true,
+            username: true,
+            fullName: true,
+            avatar: true,
+            isVerified: true,
+          }
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          }
+        },
       },
     })
 
-    // Update category post count
+    // Step 5: Update Category Statistics
     await prisma.forumCategory.update({
       where: { id: categoryId },
       data: {
@@ -75,44 +165,47 @@ export async function createForumPostAction(formData: FormData) {
       },
     })
 
+    // Step 6: Revalidate and Return Success
     revalidatePath("/forum")
-    return { success: true, post }
+    revalidatePath(`/forum/${category.slug}`)
+    
+    return { 
+      success: true, 
+      post,
+      message: "Forum post created successfully!",
+      redirectUrl: `/forum/${category.slug}/${post.id}`
+    }
+
   } catch (error) {
     console.error("Error creating forum post:", error)
-    throw new Error("Failed to create post. Please try again.")
+    
+    // Handle specific database errors
+    if (error instanceof Error) {
+      if (error.message.includes('Unique constraint')) {
+        return { 
+          success: false, 
+          error: "A post with this title already exists. Please choose a different title." 
+        }
+      }
+      
+      if (error.message.includes('Foreign key constraint')) {
+        return { 
+          success: false, 
+          error: "Invalid category selected. Please choose a valid category." 
+        }
+      }
+    }
+    
+    return { 
+      success: false, 
+      error: "An unexpected error occurred while creating your post. Please try again. If the problem persists, contact support." 
+    }
   }
 }
 
 export async function createForumCommentAction(formData: FormData) {
   try {
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
-
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
-    }
-
-    // If no session, try to get user from form data (fallback for demo)
-    if (!user) {
-      const userId = formData.get("userId") as string
-      if (userId) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: userId }
-        })
-        if (dbUser) {
-          user = {
-            id: dbUser.id,
-            username: dbUser.username,
-            email: dbUser.email,
-            fullName: dbUser.fullName,
-            role: dbUser.role,
-            isVerified: dbUser.isVerified
-          }
-        }
-      }
-    }
+    const user = await getAuthenticatedUser()
 
     if (!user) {
       throw new Error("Authentication required")
@@ -157,34 +250,7 @@ export async function createForumCommentAction(formData: FormData) {
 // Project Actions
 export async function createProjectAction(formData: FormData) {
   try {
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
-
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
-    }
-
-    // If no session, try to get user from form data (fallback for demo)
-    if (!user) {
-      const userId = formData.get("userId") as string
-      if (userId) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: userId }
-        })
-        if (dbUser) {
-          user = {
-            id: dbUser.id,
-            username: dbUser.username,
-            email: dbUser.email,
-            fullName: dbUser.fullName,
-            role: dbUser.role,
-            isVerified: dbUser.isVerified
-          }
-        }
-      }
-    }
+    const user = await getAuthenticatedUser()
 
     if (!user) {
       throw new Error("Authentication required")

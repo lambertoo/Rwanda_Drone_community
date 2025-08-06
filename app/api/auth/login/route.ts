@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { createSession } from "@/lib/auth"
+import { generateToken } from "@/lib/jwt"
+import bcrypt from "bcryptjs"
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,22 +19,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    // For demo purposes, we'll accept any password
-    // In production, verify against hashed password
-    const isValidPassword = password.length > 0
+    // Verify password against hashed password
+    const isValidPassword = await bcrypt.compare(password, user.password)
 
     if (!isValidPassword) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    // Create session with only the required fields
-    const sessionId = createSession({
-      id: user.id,
-      username: user.username,
+    // Generate JWT token
+    const token = generateToken({
+      userId: user.id,
       email: user.email,
-      fullName: user.fullName,
+      username: user.username,
       role: user.role,
-      isVerified: user.isVerified,
     })
 
     // Update last active
@@ -58,10 +56,11 @@ export async function POST(request: NextRequest) {
         specializations: user.specializations,
         certifications: user.certifications,
       },
+      token: token,
     })
 
-    // Set HTTP-only cookie
-    response.cookies.set("session-id", sessionId, {
+    // Set HTTP-only cookie with JWT token
+    response.cookies.set("auth-token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",

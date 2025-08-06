@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { X, Plus, Hash } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { X, Plus, Hash, AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import { createForumPostAction } from "@/lib/actions"
 import { useRouter } from "next/navigation"
 
@@ -19,89 +20,162 @@ interface NewPostFormProps {
     id: string
     name: string
     slug: string
-    description: string
-    icon: string
+    description?: string
   }>
   onCancel?: () => void
 }
 
+interface FormState {
+  title: string
+  content: string
+  selectedCategory: string
+  tags: string[]
+  tagInput: string
+}
+
+interface ValidationErrors {
+  title?: string
+  content?: string
+  category?: string
+  tags?: string
+}
+
 export function NewPostForm({ categories, onCancel }: NewPostFormProps) {
-  const [title, setTitle] = useState("")
-  const [content, setContent] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("")
-  const [tags, setTags] = useState<string[]>([])
-  const [tagInput, setTagInput] = useState("")
+  const [formState, setFormState] = useState<FormState>({
+    title: "",
+    content: "",
+    selectedCategory: "",
+    tags: [],
+    tagInput: ""
+  })
+  
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState("")
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
+  const [user, setUser] = useState<any>(null)
+  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info', message: string, description?: string } | null>(null)
   const router = useRouter()
 
+  // Check user authentication on mount
+  useEffect(() => {
+    // For now, use localStorage as the primary auth method
+    // The server-side JWT authentication will handle the actual verification
+    const userStr = localStorage.getItem("user")
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr)
+        setUser(user)
+      } catch (error) {
+        console.error("Error parsing user:", error)
+        setUser(null)
+      }
+    }
+  }, [])
+
+  const showNotification = (type: 'success' | 'error' | 'info', message: string, description?: string) => {
+    setNotification({ type, message, description })
+    // Auto-hide after 5 seconds
+    setTimeout(() => setNotification(null), 5000)
+  }
+
+  const handleInputChange = (field: keyof FormState, value: string | string[]) => {
+    setFormState(prev => ({ ...prev, [field]: value }))
+    
+    // Clear validation error for this field
+    if (validationErrors[field as keyof ValidationErrors]) {
+      setValidationErrors(prev => ({ ...prev, [field]: undefined }))
+    }
+  }
+
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {}
+
+    if (!formState.title.trim()) {
+      errors.title = "Post title is required"
+    } else if (formState.title.length < 10) {
+      errors.title = "Post title must be at least 10 characters long"
+    } else if (formState.title.length > 200) {
+      errors.title = "Post title must be less than 200 characters"
+    }
+
+    if (!formState.content.trim()) {
+      errors.content = "Post content is required"
+    } else if (formState.content.length < 20) {
+      errors.content = "Post content must be at least 20 characters long"
+    } else if (formState.content.length > 10000) {
+      errors.content = "Post content must be less than 10,000 characters"
+    }
+
+    if (!formState.selectedCategory) {
+      errors.category = "Please select a category"
+    }
+
+    if (formState.tags.length > 5) {
+      errors.tags = "You can only add up to 5 tags"
+    }
+
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const handleAddTag = () => {
-    if (tagInput.trim() && !tags.includes(tagInput.trim()) && tags.length < 5) {
-      setTags([...tags, tagInput.trim()])
-      setTagInput("")
+    const tag = formState.tagInput.trim()
+    if (tag && !formState.tags.includes(tag) && formState.tags.length < 5) {
+      handleInputChange('tags', [...formState.tags, tag])
+      handleInputChange('tagInput', '')
+      showNotification('info', 'Tag added', `Added tag: ${tag}`)
+    } else if (formState.tags.includes(tag)) {
+      showNotification('error', 'Tag already exists', 'This tag has already been added')
+    } else if (formState.tags.length >= 5) {
+      showNotification('error', 'Too many tags', 'You can only add up to 5 tags')
     }
   }
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove))
-  }
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault()
-      handleAddTag()
-    }
+    handleInputChange('tags', formState.tags.filter(tag => tag !== tagToRemove))
+    showNotification('info', 'Tag removed', `Removed tag: ${tagToRemove}`)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!user) {
+      showNotification('error', 'Authentication Required', 'You must be logged in to create a forum post. Please sign in and try again.')
+      return
+    }
+
+    if (!validateForm()) {
+      showNotification('error', 'Validation Error', 'Please fix the errors in the form before submitting.')
+      return
+    }
+
     setIsSubmitting(true)
-    setError("")
-
-    if (!title.trim() || !content.trim() || !selectedCategory) {
-      setError("Please fill in all required fields")
-      setIsSubmitting(false)
-      return
-    }
-
-    // Get user from localStorage
-    const userStr = localStorage.getItem("user")
-    if (!userStr) {
-      setError("Please log in to create a post")
-      setIsSubmitting(false)
-      return
-    }
-
-    const user = JSON.parse(userStr)
-    if (!user.id) {
-      setError("Invalid user session")
-      setIsSubmitting(false)
-      return
-    }
-
-    const formData = new FormData()
-    formData.append("title", title.trim())
-    formData.append("content", content.trim())
-    formData.append("categoryId", selectedCategory)
-    formData.append("tags", tags.join(","))
-    formData.append("userId", user.id)
 
     try {
+      const formData = new FormData()
+      formData.append('title', formState.title)
+      formData.append('content', formState.content)
+      formData.append('categoryId', formState.selectedCategory)
+      formData.append('tags', JSON.stringify(formState.tags))
+
       const result = await createForumPostAction(formData)
 
-      if (result.error) {
-        setError(result.error)
+      if (result.success) {
+        showNotification('success', 'Post Created Successfully!', 'Your forum post has been published. Redirecting...')
+        
+        // Redirect after a delay
+        setTimeout(() => {
+          if (result.redirectUrl) {
+            router.push(result.redirectUrl)
+          } else {
+            router.push('/forum')
+          }
+        }, 2000)
       } else {
-        // Find the selected category to get its slug
-        const category = categories.find((cat) => cat.id === selectedCategory)
-        if (category) {
-          router.push(`/forum/${category.slug}`)
-        } else {
-          router.push("/forum")
-        }
+        showNotification('error', 'Failed to Create Post', result.error || 'An unexpected error occurred')
       }
-    } catch (err) {
-      setError("Failed to create post. Please try again.")
+    } catch (error) {
+      console.error('Error creating post:', error)
+      showNotification('error', 'Network Error', 'Please check your connection and try again')
     } finally {
       setIsSubmitting(false)
     }
@@ -110,144 +184,201 @@ export function NewPostForm({ categories, onCancel }: NewPostFormProps) {
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Create New Post</CardTitle>
-        <CardDescription>Share your knowledge, ask questions, or start a discussion with the community</CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <Hash className="h-5 w-5" />
+          Create New Forum Post
+        </CardTitle>
+        <CardDescription>
+          Share your thoughts, ask questions, or start a discussion in the community
+        </CardDescription>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
-              {error}
-            </div>
-          )}
 
+      <CardContent>
+        {/* Notification Popup */}
+        {notification && (
+          <div className="mb-6">
+            <div className={`p-4 rounded-lg shadow-lg border ${
+              notification.type === 'success' 
+                ? 'bg-green-100 border-green-300 text-green-900 shadow-green-100' 
+                : notification.type === 'error'
+                ? 'bg-red-50 border-red-200 text-red-800'
+                : 'bg-blue-50 border-blue-200 text-blue-800'
+            }`}>
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  {notification.type === 'success' && <CheckCircle className="h-5 w-5 text-green-600" />}
+                  {notification.type === 'error' && <AlertCircle className="h-5 w-5 text-red-400" />}
+                  {notification.type === 'info' && <div className="h-5 w-5 text-blue-400">ℹ</div>}
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm font-semibold">{notification.message}</p>
+                  {notification.description && (
+                    <p className="text-sm mt-1 opacity-90">{notification.description}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setNotification(null)}
+                  className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Authentication Warning */}
+        {!user && (
+          <Alert className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              You must be logged in to create a forum post. Please sign in first.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
+            <Label htmlFor="title">Post Title *</Label>
             <Input
               id="title"
+              value={formState.title}
+              onChange={(e) => handleInputChange('title', e.target.value)}
               placeholder="Enter a descriptive title for your post..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              maxLength={200}
-              required
+              className={validationErrors.title ? 'border-red-500' : ''}
+              disabled={isSubmitting}
             />
-            <p className="text-xs text-muted-foreground">{title.length}/200 characters</p>
+            {validationErrors.title && (
+              <p className="text-sm text-red-600">{validationErrors.title}</p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              {formState.title.length}/200 characters
+            </p>
           </div>
 
           {/* Category */}
           <div className="space-y-2">
             <Label htmlFor="category">Category *</Label>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a category" />
+            <Select
+              value={formState.selectedCategory}
+              onValueChange={(value) => handleInputChange('selectedCategory', value)}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger className={validationErrors.category ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Select a category for your post" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
-                    <div className="flex items-center gap-2">
-                      <span>{category.icon}</span>
-                      <span>{category.name}</span>
-                    </div>
+                    {category.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {validationErrors.category && (
+              <p className="text-sm text-red-600">{validationErrors.category}</p>
+            )}
           </div>
 
           {/* Content */}
           <div className="space-y-2">
-            <Label htmlFor="content">Content *</Label>
+            <Label htmlFor="content">Post Content *</Label>
             <Textarea
               id="content"
-              placeholder="Write your post content here... You can include details, questions, code snippets, or any relevant information."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={12}
-              className="resize-none"
-              required
+              value={formState.content}
+              onChange={(e) => handleInputChange('content', e.target.value)}
+              placeholder="Write your post content here..."
+              rows={8}
+              className={validationErrors.content ? 'border-red-500' : ''}
+              disabled={isSubmitting}
             />
-            <p className="text-xs text-muted-foreground">{content.length} characters • Markdown supported</p>
+            {validationErrors.content && (
+              <p className="text-sm text-red-600">{validationErrors.content}</p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              {formState.content.length}/10,000 characters
+            </p>
           </div>
 
           {/* Tags */}
           <div className="space-y-2">
-            <Label htmlFor="tags">Tags (optional)</Label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                  <Hash className="h-3 w-3" />
-                  {tag}
-                  <button type="button" onClick={() => handleRemoveTag(tag)} className="ml-1 hover:text-red-500">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
+            <Label htmlFor="tags">Tags (Optional)</Label>
             <div className="flex gap-2">
               <Input
                 id="tags"
-                placeholder="Add tags (press Enter or comma to add)"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                maxLength={20}
-                disabled={tags.length >= 5}
+                value={formState.tagInput}
+                onChange={(e) => handleInputChange('tagInput', e.target.value)}
+                placeholder="Add a tag..."
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleAddTag()
+                  }
+                }}
+                disabled={isSubmitting}
               />
               <Button
                 type="button"
                 variant="outline"
-                size="icon"
                 onClick={handleAddTag}
-                disabled={!tagInput.trim() || tags.length >= 5}
+                disabled={isSubmitting || !formState.tagInput.trim() || formState.tags.length >= 5}
               >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Add up to 5 tags to help others find your post • {tags.length}/5 tags used
+            {validationErrors.tags && (
+              <p className="text-sm text-red-600">{validationErrors.tags}</p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Press Enter or click + to add tags. Maximum 5 tags allowed.
             </p>
+            
+            {/* Display Tags */}
+            {formState.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {formState.tags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="gap-1">
+                    #{tag}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(tag)}
+                      className="ml-1 hover:text-red-600"
+                      disabled={isSubmitting}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
-
-          {/* Preview */}
-          {(title || content) && (
-            <div className="space-y-2">
-              <Label>Preview</Label>
-              <Card className="p-4 bg-muted/50">
-                <div className="space-y-2">
-                  {title && <h3 className="font-semibold text-lg">{title}</h3>}
-                  {selectedCategory && (
-                    <Badge variant="outline">
-                      {categories.find((cat) => cat.id === selectedCategory)?.icon}{" "}
-                      {categories.find((cat) => cat.id === selectedCategory)?.name}
-                    </Badge>
-                  )}
-                  {content && <p className="text-sm text-muted-foreground line-clamp-3">{content}</p>}
-                  {tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {tags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          #{tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Card>
-            </div>
-          )}
 
           {/* Actions */}
           <div className="flex items-center justify-between pt-4 border-t">
             <div className="text-sm text-muted-foreground">* Required fields</div>
             <div className="flex gap-3">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => showNotification('success', 'Test Success!', 'This is a test success notification with green background')}
+              >
+                Test Success
+              </Button>
               {onCancel && (
-                <Button type="button" variant="outline" onClick={onCancel}>
+                <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
                   Cancel
                 </Button>
               )}
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating Post..." : "Create Post"}
+              <Button type="submit" disabled={isSubmitting || !user}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating Post...
+                  </>
+                ) : (
+                  'Create Post'
+                )}
               </Button>
             </div>
           </div>

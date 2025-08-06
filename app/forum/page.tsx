@@ -142,20 +142,20 @@ export default function ForumPage() {
     }
   }
 
-  const handleShare = async (postId: string, title: string) => {
+  const handleShare = async (postId: string, title: string, categorySlug: string) => {
     if (navigator.share) {
       try {
         await navigator.share({
           title: title,
           text: `Check out this forum post: ${title}`,
-                                  url: `${window.location.origin}/forum/${post.categorySlug}/${postId}`,
+          url: `${window.location.origin}/forum/${categorySlug}/${postId}`,
         })
       } catch (error) {
         console.error("Error sharing post:", error)
       }
     } else {
       // Fallback for browsers that don't support Web Share API
-                navigator.clipboard.writeText(`${window.location.origin}/forum/${post.categorySlug}/${postId}`)
+      navigator.clipboard.writeText(`${window.location.origin}/forum/${categorySlug}/${postId}`)
       alert("Link copied to clipboard!")
     }
   }
@@ -282,7 +282,7 @@ export default function ForumPage() {
                         <span>{post.views} views</span>
                         <span>{post.time}</span>
                       </div>
-                      {post.tags.length > 0 && (
+                      {Array.isArray(post.tags) && post.tags.length > 0 && (
                         <div className="flex gap-1 mt-2">
                           {post.tags.slice(0, 3).map((tag) => (
                             <Badge key={tag} variant="outline" className="text-xs">
@@ -313,7 +313,7 @@ export default function ForumPage() {
                           {post.views}
                         </div>
                         <button
-                          onClick={() => handleShare(post.id, post.title)}
+                          onClick={() => handleShare(post.id, post.title, post.categorySlug)}
                           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-purple-600 transition-colors"
                         >
                           <Share2 className="h-4 w-4" />
@@ -364,7 +364,7 @@ export default function ForumPage() {
                         <span>{post.views} views</span>
                         <span>{post.time}</span>
                       </div>
-                      {post.tags.length > 0 && (
+                      {Array.isArray(post.tags) && post.tags.length > 0 && (
                         <div className="flex gap-1 mt-2">
                           {post.tags.slice(0, 3).map((tag) => (
                             <Badge key={tag} variant="outline" className="text-xs">
@@ -395,7 +395,7 @@ export default function ForumPage() {
                           {post.views}
                         </div>
                         <button
-                          onClick={() => handleShare(post.id, post.title)}
+                          onClick={() => handleShare(post.id, post.title, post.categorySlug)}
                           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-purple-600 transition-colors"
                         >
                           <Share2 className="h-4 w-4" />

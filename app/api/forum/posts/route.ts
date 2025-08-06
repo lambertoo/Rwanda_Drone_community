@@ -59,7 +59,7 @@ export async function GET(request: Request) {
       views: post.viewsCount,
       likes: post.likesCount,
       time: formatTimeAgo(post.createdAt),
-      tags: post.tags ? JSON.parse(post.tags) : [],
+      tags: post.tags || [],
     }))
 
     return NextResponse.json({

@@ -55,7 +55,7 @@ export async function GET() {
           likes: project.likesCount,
           comments: 0, // Comments not implemented yet
         },
-        technologies: project.technologies ? JSON.parse(project.technologies) : [],
+        technologies: project.technologies || [],
         featured: project.isFeatured,
       }
     })

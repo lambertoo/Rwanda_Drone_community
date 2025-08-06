@@ -1,8 +1,13 @@
 # Use the official Node.js runtime as the base image
-FROM node:18-alpine AS base
+FROM node:18-slim AS base
 
 # Install build dependencies
-RUN apk add --no-cache libc6-compat
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies only when needed
 FROM base AS deps

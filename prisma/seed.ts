@@ -1,4 +1,5 @@
 import { PrismaClient, UserRole, Region, ProjectStatus } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
@@ -22,12 +23,17 @@ async function main() {
 
   console.log('🗑️  Cleared existing data')
 
+  // Hash passwords
+  const adminPassword = await bcrypt.hash('admin123', 12)
+  const userPassword = await bcrypt.hash('password123', 12)
+
   // Create users
   const users = await Promise.all([
     prisma.user.create({
       data: {
         username: 'admin',
         email: 'admin@drone.com',
+        password: adminPassword,
         fullName: 'Admin User',
         avatar: '/placeholder-user.jpg',
         bio: 'Platform administrator',
@@ -37,14 +43,15 @@ async function main() {
         isVerified: true,
         organization: 'Rwanda Drone Community',
         experience: '10+ years in drone technology',
-        specializations: JSON.stringify(['Administration', 'Platform Management']),
-        certifications: JSON.stringify(['Admin Certification']),
+        specializations: ['Administration', 'Platform Management'],
+        certifications: ['Admin Certification'],
       }
     }),
     prisma.user.create({
       data: {
         username: 'hobbyist_john',
         email: 'hobbyist@drone.com',
+        password: userPassword,
         fullName: 'John Hobbyist',
         avatar: '/placeholder-user.jpg',
         bio: 'Drone photography enthusiast',
@@ -53,14 +60,15 @@ async function main() {
         reputation: 150,
         isVerified: false,
         experience: '2 years',
-        specializations: JSON.stringify(['Photography', 'Videography']),
-        certifications: JSON.stringify([]),
+        specializations: ['Photography', 'Videography'],
+        certifications: [],
       }
     }),
     prisma.user.create({
       data: {
         username: 'pilot_sarah',
         email: 'pilot@drone.com',
+        password: userPassword,
         fullName: 'Sarah Pilot',
         avatar: '/placeholder-user.jpg',
         bio: 'Commercial drone pilot',
@@ -71,14 +79,15 @@ async function main() {
         pilotLicense: 'RW-PILOT-2024-001',
         organization: 'SkyTech Rwanda',
         experience: '5 years',
-        specializations: JSON.stringify(['Aerial Surveying', 'Delivery']),
-        certifications: JSON.stringify(['Commercial Pilot License', 'RCAA Certified']),
+        specializations: ['Aerial Surveying', 'Delivery'],
+        certifications: ['Commercial Pilot License', 'RCAA Certified'],
       }
     }),
     prisma.user.create({
       data: {
         username: 'regulator_mike',
         email: 'regulator@drone.com',
+        password: userPassword,
         fullName: 'Mike Regulator',
         avatar: '/placeholder-user.jpg',
         bio: 'RCAA Regulatory Officer',
@@ -88,14 +97,15 @@ async function main() {
         isVerified: true,
         organization: 'Rwanda Civil Aviation Authority',
         experience: '8 years in aviation regulation',
-        specializations: JSON.stringify(['Regulation', 'Compliance']),
-        certifications: JSON.stringify(['Aviation Regulation Certification']),
+        specializations: ['Regulation', 'Compliance'],
+        certifications: ['Aviation Regulation Certification'],
       }
     }),
     prisma.user.create({
       data: {
         username: 'student_emma',
         email: 'student@drone.com',
+        password: userPassword,
         fullName: 'Emma Student',
         avatar: '/placeholder-user.jpg',
         bio: 'Computer Science student interested in drone technology',
@@ -105,14 +115,15 @@ async function main() {
         isVerified: false,
         organization: 'University of Rwanda',
         experience: '1 year',
-        specializations: JSON.stringify(['Programming', 'AI']),
-        certifications: JSON.stringify(['Student ID']),
+        specializations: ['Programming', 'AI'],
+        certifications: ['Student ID'],
       }
     }),
     prisma.user.create({
       data: {
         username: 'service_david',
         email: 'service@drone.com',
+        password: userPassword,
         fullName: 'David Service',
         avatar: '/placeholder-user.jpg',
         bio: 'Drone repair and maintenance specialist',
@@ -122,8 +133,8 @@ async function main() {
         isVerified: true,
         organization: 'DroneFix Rwanda',
         experience: '6 years',
-        specializations: JSON.stringify(['Repairs', 'Maintenance', 'Training']),
-        certifications: JSON.stringify(['Technical Certification', 'Service Provider License']),
+        specializations: ['Repairs', 'Maintenance', 'Training'],
+        certifications: ['Technical Certification', 'Service Provider License'],
       }
     })
   ])
@@ -312,7 +323,7 @@ async function main() {
         content: 'Welcome everyone to our new drone community platform! This is a place where we can share knowledge, experiences, and help each other grow in the drone industry.',
         categoryId: categories[0].id, // General
         authorId: users[0].id, // Admin
-        tags: JSON.stringify(['welcome', 'community', 'introduction']),
+        tags: ['welcome', 'community', 'introduction'],
         viewsCount: 45,
         repliesCount: 3,
       }
@@ -323,7 +334,7 @@ async function main() {
         content: 'Here\'s a complete guide to registering your drone with RCAA. The process involves several steps including documentation, training, and inspection.',
         categoryId: categories[3].id, // Regulations
         authorId: users[3].id, // Regulator
-        tags: JSON.stringify(['RCAA', 'registration', 'legal', 'guide']),
+        tags: ['RCAA', 'registration', 'legal', 'guide'],
         viewsCount: 123,
         repliesCount: 8,
         isPinned: true,
@@ -335,7 +346,7 @@ async function main() {
         content: 'Looking for recommendations for the best drone for aerial photography. Budget is around $500-1000. Any suggestions?',
         categoryId: categories[2].id, // Showcase
         authorId: users[1].id, // Hobbyist
-        tags: JSON.stringify(['photography', 'recommendations', 'aerial']),
+        tags: ['photography', 'recommendations', 'aerial'],
         viewsCount: 67,
         repliesCount: 5,
       }
@@ -346,7 +357,7 @@ async function main() {
         content: 'I offer professional drone repair and maintenance services in Kigali. Specializing in DJI, Parrot, and other popular brands.',
         categoryId: categories[1].id, // Technical
         authorId: users[5].id, // Service Provider
-        tags: JSON.stringify(['repair', 'maintenance', 'services', 'kigali']),
+        tags: ['repair', 'maintenance', 'services', 'kigali'],
         viewsCount: 89,
         repliesCount: 2,
       }
@@ -397,12 +408,12 @@ async function main() {
         startDate: '2024-01-15',
         endDate: '2024-07-15',
         funding: 'Government Grant',
-        technologies: JSON.stringify(['DJI Phantom 4', 'Agisoft Metashape', 'QGIS']),
-        objectives: JSON.stringify(['Crop monitoring', 'Yield prediction', 'Resource optimization']),
-        challenges: JSON.stringify(['Weather conditions', 'Battery limitations']),
-        outcomes: JSON.stringify(['Improved crop yields', 'Reduced water usage']),
-        teamMembers: JSON.stringify(['Sarah Pilot', 'Agricultural Experts', 'Data Analysts']),
-        gallery: JSON.stringify(['/project1-image1.jpg', '/project1-image2.jpg']),
+        technologies: ['DJI Phantom 4', 'Agisoft Metashape', 'QGIS'],
+        objectives: ['Crop monitoring', 'Yield prediction', 'Resource optimization'],
+        challenges: ['Weather conditions', 'Battery limitations'],
+        outcomes: ['Improved crop yields', 'Reduced water usage'],
+        teamMembers: ['Sarah Pilot', 'Agricultural Experts', 'Data Analysts'],
+        gallery: ['/project1-image1.jpg', '/project1-image2.jpg'],
         viewsCount: 156,
         likesCount: 23,
         isFeatured: true,
@@ -524,11 +535,11 @@ async function main() {
         price: 25000,
         currency: 'RWF',
         registrationDeadline: new Date('2024-06-10T23:59:59Z'),
-        requirements: JSON.stringify(['Registration required', 'Business casual dress']),
-        tags: JSON.stringify(['conference', 'networking', 'workshops']),
-        speakers: JSON.stringify(['Dr. Jean Claude', 'Sarah Pilot', 'Mike Regulator']),
-        agenda: JSON.stringify(['Day 1: Keynotes', 'Day 2: Workshops', 'Day 3: Networking']),
-        gallery: JSON.stringify([]),
+        requirements: ['Registration required', 'Business casual dress'],
+        tags: ['conference', 'networking', 'workshops'],
+        speakers: ['Dr. Jean Claude', 'Sarah Pilot', 'Mike Regulator'],
+        agenda: ['Day 1: Keynotes', 'Day 2: Workshops', 'Day 3: Networking'],
+        gallery: [],
         organizerId: users[0].id,
         isPublic: true,
         allowRegistration: true,
@@ -552,11 +563,11 @@ async function main() {
         price: 15000,
         currency: 'RWF',
         registrationDeadline: new Date('2024-04-18T23:59:59Z'),
-        requirements: JSON.stringify(['Bring your own drone', 'Basic photography knowledge']),
-        tags: JSON.stringify(['photography', 'workshop', 'hands-on']),
-        speakers: JSON.stringify(['John Hobbyist', 'Professional Photographers']),
-        agenda: JSON.stringify(['Morning: Theory', 'Afternoon: Practical']),
-        gallery: JSON.stringify([]),
+        requirements: ['Bring your own drone', 'Basic photography knowledge'],
+        tags: ['photography', 'workshop', 'hands-on'],
+        speakers: ['John Hobbyist', 'Professional Photographers'],
+        agenda: ['Morning: Theory', 'Afternoon: Practical'],
+        gallery: [],
         organizerId: users[1].id,
         isPublic: true,
         allowRegistration: true,
@@ -638,7 +649,7 @@ async function main() {
         phone: '+250 788 123 456',
         email: 'info@rwandaaerial.com',
         website: 'www.rwandaaerial.com',
-        services: JSON.stringify(['3D Mapping', 'Land Surveying', 'Construction Monitoring', 'Agricultural Analysis']),
+        services: ['3D Mapping', 'Land Surveying', 'Construction Monitoring', 'Agricultural Analysis'],
         rating: 4.8,
         reviewCount: 24,
         isApproved: true,
@@ -773,12 +784,12 @@ async function main() {
         category: 'Agriculture',
         location: 'Musanze',
         salary: '800,000 - 1,200,000 RWF',
-        requirements: JSON.stringify([
+        requirements: [
           'RCAA Drone Pilot License',
           '2+ years experience',
           'Agricultural knowledge preferred',
           'Own drone equipment'
-        ]),
+        ],
         isUrgent: false,
         posterId: users[2].id,
       }

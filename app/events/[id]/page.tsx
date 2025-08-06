@@ -60,11 +60,11 @@ interface Event {
     avatar?: string
     organization?: string
   }
-  speakers: string
-  agenda: string
-  requirements: string
-  gallery: string
-  tags?: string
+  speakers: any
+  agenda: any
+  requirements: any
+  gallery: any
+  tags?: any
   rsvps?: Array<{
     id: string
     status: string
@@ -125,66 +125,15 @@ export default function EventDetailsPage({ params }: PageProps) {
     return <div>Event not found</div>
   }
 
-  const requirements = event.requirements ? (() => {
-    try {
-      // Handle double-encoded JSON
-      let parsed = event.requirements
-      if (typeof parsed === 'string') {
-        parsed = JSON.parse(parsed)
-        if (typeof parsed === 'string') {
-          parsed = JSON.parse(parsed)
-        }
-      }
-      return Array.isArray(parsed) ? parsed : []
-    } catch (error) {
-      return []
-    }
-  })() : []
+  const requirements = event.requirements || []
+  const speakers = event.speakers || []
+  const agenda = event.agenda || []
+  const gallery = event.gallery || []
   
-  const speakers = event.speakers ? (() => {
-    try {
-      let parsed = event.speakers
-      if (typeof parsed === 'string') {
-        parsed = JSON.parse(parsed)
-        if (typeof parsed === 'string') {
-          parsed = JSON.parse(parsed)
-        }
-      }
-      return Array.isArray(parsed) ? parsed : []
-    } catch {
-      return []
-    }
-  })() : []
-  
-  const agenda = event.agenda ? (() => {
-    try {
-      let parsed = event.agenda
-      if (typeof parsed === 'string') {
-        parsed = JSON.parse(parsed)
-        if (typeof parsed === 'string') {
-          parsed = JSON.parse(parsed)
-        }
-      }
-      return Array.isArray(parsed) ? parsed : []
-    } catch {
-      return []
-    }
-  })() : []
-  
-  const gallery = event.gallery ? (() => {
-    try {
-      let parsed = event.gallery
-      if (typeof parsed === 'string') {
-        parsed = JSON.parse(parsed)
-        if (typeof parsed === 'string') {
-          parsed = JSON.parse(parsed)
-        }
-      }
-      return Array.isArray(parsed) ? parsed : []
-    } catch {
-      return []
-    }
-  })() : []
+  // Debug logging
+  console.log('Event data:', event)
+  console.log('Speakers:', speakers)
+  console.log('Agenda:', agenda)
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', { 
@@ -429,11 +378,19 @@ export default function EventDetailsPage({ params }: PageProps) {
                   {agenda.map((item: any, index: number) => (
                     <div key={index} className="flex gap-4 p-4 border rounded-lg">
                       <div className="text-sm font-medium text-blue-600 min-w-[80px]">
-                        {item.time}
+                        {item.startTime} - {item.endTime}
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <h4 className="font-semibold">{item.title}</h4>
                         <p className="text-sm text-muted-foreground">{item.description}</p>
+                        {item.speaker && (
+                          <p className="text-sm text-blue-600 mt-1">
+                            Speaker: {item.speaker}
+                          </p>
+                        )}
+                        <Badge variant="outline" className="mt-2">
+                          {item.type}
+                        </Badge>
                       </div>
                     </div>
                   ))}
@@ -448,25 +405,43 @@ export default function EventDetailsPage({ params }: PageProps) {
         <TabsContent value="speakers">
           <Card>
             <CardContent className="p-6">
+              {/* Debug info */}
+              <div className="mb-4 p-4 bg-gray-100 rounded-lg">
+                <h4 className="font-semibold mb-2">Debug Info:</h4>
+                <p>Speakers type: {typeof speakers}</p>
+                <p>Speakers length: {speakers.length}</p>
+                <p>Speakers data: {JSON.stringify(speakers)}</p>
+              </div>
+              
               {speakers.length > 0 ? (
                 <div className="grid md:grid-cols-2 gap-6">
-                  {speakers.map((speaker: any, index: number) => (
-                    <div key={index} className="flex items-start gap-3 p-4 border rounded-lg">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={speaker.avatar || "/placeholder.svg"} alt={speaker.name} />
-                        <AvatarFallback>
-                          {speaker.name
-                            ? speaker.name.split(" ").map((n: string) => n[0]).join("")
-                            : "SP"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h4 className="font-semibold">{speaker.name}</h4>
-                        <p className="text-sm text-blue-600 mb-1">{speaker.title}</p>
-                        <p className="text-sm text-muted-foreground">{speaker.bio}</p>
+                  {speakers.map((speaker: any, index: number) => {
+                    // Handle both string names and speaker objects
+                    const speakerName = typeof speaker === 'string' ? speaker : speaker.name || 'Unknown Speaker'
+                    const speakerTitle = typeof speaker === 'string' ? 'Speaker' : speaker.title || 'Speaker'
+                    const speakerBio = typeof speaker === 'string' ? '' : speaker.bio || ''
+                    const speakerAvatar = typeof speaker === 'string' ? '/placeholder.svg' : speaker.avatar || '/placeholder.svg'
+                    
+                    return (
+                      <div key={index} className="flex items-start gap-3 p-4 border rounded-lg">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={speakerAvatar} alt={speakerName} />
+                          <AvatarFallback>
+                            {speakerName
+                              ? speakerName.split(" ").map((n: string) => n[0]).join("")
+                              : "SP"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h4 className="font-semibold">{speakerName}</h4>
+                          <p className="text-sm text-blue-600 mb-1">{speakerTitle}</p>
+                          {speakerBio && (
+                            <p className="text-sm text-muted-foreground">{speakerBio}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <p className="text-muted-foreground">No speakers available.</p>

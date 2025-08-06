@@ -1,5 +1,3 @@
-// Combined Prisma schema for Drone Community Platform
-// === Prisma Config ===
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,7 +7,338 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// === Enums ===
+model User {
+  id                String             @id @default(cuid())
+  username          String             @unique
+  email             String             @unique
+  password          String             // Hashed password
+  fullName          String
+  avatar            String?
+  bio               String?
+  location          Region?
+  website           String?
+  joinedAt          DateTime           @default(now())
+  reputation        Int                @default(0)
+  isVerified        Boolean            @default(false)
+  role              UserRole
+  lastActive        DateTime           @default(now())
+  postsCount        Int                @default(0)
+  commentsCount     Int                @default(0)
+  projectsCount     Int                @default(0)
+  eventsCount       Int                @default(0)
+  servicesCount     Int                @default(0)
+  jobsCount         Int                @default(0)
+  pilotLicense      String?
+  organization      String?
+  experience        String?
+  specializations   Json?
+  certifications    Json?
+  jobs              Job[]
+  applications      JobApplication[]
+  rsvps             RSVP[]
+  resources         Resource[]
+  commentLikes      CommentLike[]
+  projectComments   Comment[]
+  events            Event[]
+  forumCommentLikes ForumCommentLike[]
+  comments          ForumComment[]
+  forumPostLikes    ForumPostLike[]
+  posts             ForumPost[]
+  projectLikes      ProjectLike[]
+  projects          Project[]
+  services          Service[]
+
+  @@map("users")
+}
+
+model ForumCategory {
+  id          String      @id @default(cuid())
+  name        String
+  description String
+  slug        String      @unique
+  color       String
+  postCount   Int         @default(0)
+  lastPostAt  DateTime?
+  posts       ForumPost[]
+
+  @@map("forum_categories")
+}
+
+model ForumPost {
+  id           String          @id @default(cuid())
+  title        String
+  content      String
+  categoryId   String
+  authorId     String
+  tags         Json?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  viewsCount   Int             @default(0)
+  repliesCount Int             @default(0)
+  likesCount   Int             @default(0)
+  lastReplyAt  DateTime?
+  isPinned     Boolean         @default(false)
+  isLocked     Boolean         @default(false)
+  comments     ForumComment[]
+  likes        ForumPostLike[]
+  author       User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  category     ForumCategory   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("forum_posts")
+}
+
+model ForumComment {
+  id         String             @id @default(cuid())
+  content    String
+  postId     String
+  authorId   String
+  parentId   String?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  likesCount Int                @default(0)
+  isEdited   Boolean            @default(false)
+  likes      ForumCommentLike[]
+  author     User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent     ForumComment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    ForumComment[]     @relation("CommentReplies")
+  post       ForumPost          @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("forum_comments")
+}
+
+model ProjectCategory {
+  id          String    @id @default(cuid())
+  name        String
+  description String
+  slug        String    @unique
+  icon        String    @default("🚁")
+  color       String    @default("#3B82F6")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  projects    Project[]
+
+  @@map("project_categories")
+}
+
+model Project {
+  id              String           @id @default(cuid())
+  title           String
+  description     String
+  fullDescription String?
+  categoryId      String?
+  status          ProjectStatus
+  authorId        String
+  location        String?
+  duration        String?
+  startDate       String?
+  endDate         String?
+  funding         String?
+  technologies    Json?
+  objectives      Json?
+  challenges      Json?
+  outcomes        Json?
+  teamMembers     Json?
+  gallery         Json?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  viewsCount      Int              @default(0)
+  likesCount      Int              @default(0)
+  isFeatured      Boolean          @default(false)
+  comments        Comment[]
+  likes           ProjectLike[]
+  author          User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  category        ProjectCategory? @relation(fields: [categoryId], references: [id])
+
+  @@map("projects")
+}
+
+model Comment {
+  id         String        @id @default(cuid())
+  content    String
+  projectId  String
+  authorId   String
+  parentId   String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  likesCount Int           @default(0)
+  likes      CommentLike[]
+  author     User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent     Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    Comment[]     @relation("CommentReplies")
+  project    Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  userId    String
+  commentId String
+  createdAt DateTime @default(now())
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@map("comment_likes")
+}
+
+model ProjectLike {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@map("project_likes")
+}
+
+model ForumPostLike {
+  id        String    @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime  @default(now())
+  post      ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("forum_post_likes")
+}
+
+model ForumCommentLike {
+  id        String       @id @default(cuid())
+  userId    String
+  commentId String
+  createdAt DateTime     @default(now())
+  comment   ForumComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@map("forum_comment_likes")
+}
+
+model EventCategory {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  slug        String   @unique
+  icon        String   @default("🎯")
+  color       String   @default("#3B82F6")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  events      Event[]
+
+  @@map("event_categories")
+}
+
+model Event {
+  id                   String         @id @default(cuid())
+  title                String
+  description          String
+  fullDescription      String?
+  categoryId           String?
+  startDate            DateTime
+  endDate              DateTime
+  location             String
+  venue                String?
+  capacity             Int?
+  price                Float          @default(0)
+  currency             String         @default("USD")
+  registrationDeadline DateTime?
+  organizerId          String
+  isPublic             Boolean        @default(true)
+  allowRegistration    Boolean        @default(true)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  viewsCount           Int            @default(0)
+  registeredCount      Int            @default(0)
+  isPublished          Boolean        @default(false)
+  isFeatured           Boolean        @default(false)
+  requirements         Json?
+  tags                 Json?
+  speakers             Json?
+  agenda               Json?
+  gallery              Json?
+  rsvps                RSVP[]
+  category             EventCategory? @relation(fields: [categoryId], references: [id])
+  organizer            User           @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+
+  @@map("events")
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  category    String
+  region      Region
+  contact     String
+  phone       String?
+  email       String?
+  website     String?
+  services    Json?
+  rating      Float    @default(0)
+  reviewCount Int      @default(0)
+  isApproved  Boolean  @default(false)
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  providerId  String
+  provider    User     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("services")
+}
+
+model Resource {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  fileUrl     String
+  uploadedAt  DateTime @default(now())
+  userId      String
+  uploadedBy  User     @relation(fields: [userId], references: [id])
+}
+
+model Job {
+  id           String           @id @default(cuid())
+  title        String
+  description  String
+  company      String
+  jobType      String
+  category     String
+  location     String
+  salary       String?
+  requirements Json?
+  isUrgent     Boolean          @default(false)
+  isRemote     Boolean          @default(false)
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  posterId     String
+  poster       User             @relation(fields: [posterId], references: [id], onDelete: Cascade)
+  applications JobApplication[]
+}
+
+model JobApplication {
+  id          String   @id @default(cuid())
+  jobId       String
+  applicantId String
+  message     String?
+  createdAt   DateTime @default(now())
+  applicant   User     @relation(fields: [applicantId], references: [id])
+  job         Job      @relation(fields: [jobId], references: [id])
+}
+
+model RSVP {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String
+  createdAt DateTime @default(now())
+  event     Event    @relation(fields: [eventId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
 enum UserRole {
   admin
   hobbyist
@@ -67,337 +396,4 @@ enum Region {
   WEST_NGORORERO
   WEST_NYABIHU
   UNKNOWN
-}
-
-// === Models ===
-model User {
-  id              String   @id @default(cuid())
-  username        String   @unique
-  email           String   @unique
-  fullName        String
-  avatar          String?
-  bio             String?
-  location        Region?
-  website         String?
-  joinedAt        DateTime @default(now())
-  reputation      Int      @default(0)
-  isVerified      Boolean  @default(false)
-  role            UserRole
-  lastActive      DateTime @default(now())
-  postsCount      Int      @default(0)
-  commentsCount   Int      @default(0)
-  projectsCount   Int      @default(0)
-  eventsCount     Int      @default(0)
-  servicesCount   Int      @default(0)
-  jobsCount       Int      @default(0)
-  pilotLicense    String?
-  organization    String?
-  experience      String?
-  specializations String?
-  certifications  String?
-
-  posts           ForumPost[]
-  comments        ForumComment[]
-  projectComments Comment[]
-  projectLikes    ProjectLike[]
-  projects        Project[]
-  events          Event[]
-  services        Service[]
-  resources       Resource[]
-  jobs            Job[]
-  applications    JobApplication[]
-  rsvps           RSVP[]
-  commentLikes    CommentLike[]
-  forumPostLikes  ForumPostLike[]
-  forumCommentLikes ForumCommentLike[]
-
-  @@map("users")
-}
-
-model ForumCategory {
-  id          String      @id @default(cuid())
-  name        String
-  description String
-  slug        String      @unique
-  color       String
-  postCount   Int         @default(0)
-  lastPostAt  DateTime?
-  posts       ForumPost[]
-
-  @@map("forum_categories")
-}
-
-model ForumPost {
-  id           String        @id @default(cuid())
-  title        String
-  content      String
-  categoryId   String
-  authorId     String
-  tags         String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  viewsCount   Int           @default(0)
-  repliesCount Int           @default(0)
-  likesCount   Int           @default(0)
-  lastReplyAt  DateTime?
-  isPinned     Boolean       @default(false)
-  isLocked     Boolean       @default(false)
-  category     ForumCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  comments     ForumComment[]
-  likes        ForumPostLike[]
-
-  @@map("forum_posts")
-}
-
-model ForumComment {
-  id           String        @id @default(cuid())
-  content      String
-  postId       String
-  authorId     String
-  parentId     String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  likesCount   Int           @default(0)
-  isEdited     Boolean       @default(false)
-  post         ForumPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parent       ForumComment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies      ForumComment[] @relation("CommentReplies")
-  likes        ForumCommentLike[]
-
-  @@map("forum_comments")
-}
-
-model ProjectCategory {
-  id          String    @id @default(cuid())
-  name        String
-  description String
-  slug        String    @unique
-  icon        String    @default("🚁")
-  color       String    @default("#3B82F6")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  projects    Project[]
-
-  @@map("project_categories")
-}
-
-model Project {
-  id              String        @id @default(cuid())
-  title           String
-  description     String
-  fullDescription String?
-  categoryId      String?
-  category        ProjectCategory? @relation(fields: [categoryId], references: [id])
-  status          ProjectStatus
-  authorId        String
-  location        String?
-  duration        String?
-  startDate       String?
-  endDate         String?
-  funding         String?
-  technologies    String?
-  objectives      String?
-  challenges      String?
-  outcomes        String?
-  teamMembers     String?
-  gallery         String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  viewsCount      Int           @default(0)
-  likesCount      Int           @default(0)
-  isFeatured      Boolean       @default(false)
-  author          User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  comments        Comment[]
-  likes           ProjectLike[]
-
-  @@map("projects")
-}
-
-model Comment {
-  id        String   @id @default(cuid())
-  content   String
-  projectId String
-  authorId  String
-  parentId  String?  // For threaded comments
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  likesCount Int     @default(0)
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   Comment[] @relation("CommentReplies")
-  likes     CommentLike[]
-
-  @@map("comments")
-}
-
-model CommentLike {
-  id        String   @id @default(cuid())
-  userId    String
-  commentId String
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, commentId])
-  @@map("comment_likes")
-}
-
-model ProjectLike {
-  id        String   @id @default(cuid())
-  userId    String
-  projectId String
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, projectId])
-  @@map("project_likes")
-}
-
-model ForumPostLike {
-  id        String   @id @default(cuid())
-  userId    String
-  postId    String
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post      ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, postId])
-  @@map("forum_post_likes")
-}
-
-model ForumCommentLike {
-  id        String   @id @default(cuid())
-  userId    String
-  commentId String
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comment   ForumComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, commentId])
-  @@map("forum_comment_likes")
-}
-
-model EventCategory {
-  id          String    @id @default(cuid())
-  name        String
-  description String
-  slug        String    @unique
-  icon        String    @default("🎯")
-  color       String    @default("#3B82F6")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  events      Event[]
-
-  @@map("event_categories")
-}
-
-model Event {
-  id                   String    @id @default(cuid())
-  title                String
-  description          String
-  fullDescription      String?
-  categoryId           String?
-  category             EventCategory? @relation(fields: [categoryId], references: [id])
-  startDate            DateTime
-  endDate              DateTime
-  location             String
-  venue                String?
-  capacity             Int?
-  price                Float     @default(0)
-  currency             String    @default("USD")
-  registrationDeadline DateTime?
-  requirements         String?
-  tags                 String?
-  speakers             String?
-  agenda               String?
-  gallery              String?
-  organizerId          String
-  isPublic             Boolean   @default(true)
-  allowRegistration    Boolean   @default(true)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  viewsCount           Int       @default(0)
-  registeredCount      Int       @default(0)
-  isPublished          Boolean   @default(false)
-  isFeatured           Boolean   @default(false)
-  organizer            User      @relation(fields: [organizerId], references: [id], onDelete: Cascade)
-  rsvps                RSVP[]
-
-  @@map("events")
-}
-
-model Service {
-  id              String   @id @default(cuid())
-  title           String
-  description     String
-  category        String
-  region          Region
-  contact         String
-  phone           String?
-  email           String?
-  website         String?
-  services        String?  // JSON array of services offered
-  rating          Float    @default(0)
-  reviewCount     Int      @default(0)
-  isApproved      Boolean  @default(false)
-  isFeatured      Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  provider        User     @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  providerId      String
-
-  @@map("services")
-}
-
-model Resource {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  fileUrl     String
-  uploadedAt  DateTime @default(now())
-  uploadedBy  User     @relation(fields: [userId], references: [id])
-  userId      String
-}
-
-model Job {
-  id              String           @id @default(cuid())
-  title           String
-  description     String
-  company         String
-  jobType         String
-  category        String
-  location        String
-  salary          String?
-  requirements    String?          // JSON array of requirements
-  isUrgent        Boolean          @default(false)
-  isRemote        Boolean          @default(false)
-  isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  poster          User             @relation(fields: [posterId], references: [id], onDelete: Cascade)
-  posterId        String
-  applications    JobApplication[]
-}
-
-model JobApplication {
-  id          String   @id @default(cuid())
-  job         Job      @relation(fields: [jobId], references: [id])
-  jobId       String
-  applicant   User     @relation(fields: [applicantId], references: [id])
-  applicantId String
-  message     String?
-  createdAt   DateTime @default(now())
-}
-
-model RSVP {
-  id     String @id @default(cuid())
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
-  event  Event  @relation(fields: [eventId], references: [id])
-  eventId String
-  createdAt DateTime @default(now())
 }
