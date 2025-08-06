@@ -54,6 +54,7 @@ export default function ForumPage() {
   const [sortBy, setSortBy] = useState("newest")
   const [filterCategory, setFilterCategory] = useState("all")
   const [groupBy, setGroupBy] = useState("none")
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   // Fetch data from API
   useEffect(() => {
     const fetchData = async () => {
@@ -187,6 +188,50 @@ export default function ForumPage() {
     return groupPosts(filteredPosts, groupBy)
   }
 
+  // Get posts for selected category or all posts
+  const getCategoryPosts = () => {
+    if (selectedCategory) {
+      return recentPosts.filter(post => post.categorySlug === selectedCategory)
+    }
+    return recentPosts
+  }
+
+  // Get filtered and sorted posts for categories tab
+  const getCategoryFilteredPosts = () => {
+    let posts = getCategoryPosts()
+    posts = sortPosts(posts, sortBy)
+    return posts
+  }
+
+  // Get grouped posts for categories tab
+  const getCategoryGroupedPosts = () => {
+    const filteredPosts = getCategoryFilteredPosts()
+    return groupPosts(filteredPosts, groupBy)
+  }
+
+  // Handle category selection
+  const handleCategorySelect = (categorySlug: string) => {
+    setSelectedCategory(selectedCategory === categorySlug ? null : categorySlug)
+  }
+
+  // Get category slug from category ID
+  const getCategorySlug = (categoryId: string) => {
+    const category = categories.find(c => c.id === categoryId)
+    if (category) {
+      // Map category titles to slugs
+      const slugMap: { [key: string]: string } = {
+        'General Discussion': 'general',
+        'Jobs & Opportunities': 'jobs',
+        'Regulations & Legal': 'regulations',
+        'Events & Meetups': 'events',
+        'Showcase': 'showcase',
+        'Technical Support': 'technical'
+      }
+      return slugMap[category.title] || category.title.toLowerCase().replace(/\s+/g, '-')
+    }
+    return categoryId
+  }
+
   function formatTimeAgo(date: Date): string {
     const now = new Date()
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
@@ -289,49 +334,197 @@ export default function ForumPage() {
         </TabsList>
 
         <TabsContent value="categories" className="space-y-4">
+          {/* Category Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {categories.map((category) => (
-              <Link key={category.id} href={`/forum/${category.id}`}>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{category.icon}</span>
-                      <div>
-                        <CardTitle className="text-lg">{category.title}</CardTitle>
-                        <CardDescription className="text-sm">
-                          {category.description}
-                        </CardDescription>
-                      </div>
+              <Card 
+                key={category.id} 
+                className={`hover:shadow-md transition-shadow cursor-pointer ${
+                  selectedCategory === getCategorySlug(category.id) ? 'ring-2 ring-blue-500' : ''
+                }`}
+                onClick={() => handleCategorySelect(getCategorySlug(category.id))}
+              >
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{category.icon}</span>
+                    <div>
+                      <CardTitle className="text-lg">{category.title}</CardTitle>
+                      <CardDescription className="text-sm">
+                        {category.description}
+                      </CardDescription>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <div className="flex items-center gap-4">
-                        <span className="flex items-center gap-1">
-                          <MessageSquare className="h-4 w-4" />
-                          {category.posts}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Users className="h-4 w-4" />
-                          {category.members}
-                        </span>
-                      </div>
-                      {category.lastPost && (
-                        <div className="text-right">
-                          <p className="font-medium text-foreground truncate">
-                            {category.lastPost.title}
-                          </p>
-                          <p className="text-xs">
-                            by {category.lastPost.author} • {category.lastPost.time}
-                          </p>
-                        </div>
-                      )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <div className="flex items-center gap-4">
+                      <span className="flex items-center gap-1">
+                        <MessageSquare className="h-4 w-4" />
+                        {category.posts}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        {category.members}
+                      </span>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
+                    {category.lastPost && (
+                      <div className="text-right">
+                        <p className="font-medium text-foreground truncate">
+                          {category.lastPost.title}
+                        </p>
+                        <p className="text-xs">
+                          by {category.lastPost.author} • {category.lastPost.time}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
+
+          {/* Posts Section - Show when category is selected or show all posts */}
+          {(selectedCategory || getCategoryPosts().length > 0) && (
+            <>
+              {/* Controls */}
+              <div className="flex flex-wrap gap-4 items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div className="flex flex-wrap gap-2">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="px-3 py-1 text-sm border rounded-md bg-background"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="mostLiked">Most Liked</option>
+                    <option value="mostViewed">Most Viewed</option>
+                    <option value="mostReplied">Most Replied</option>
+                  </select>
+                  
+                  <select
+                    value={groupBy}
+                    onChange={(e) => setGroupBy(e.target.value)}
+                    className="px-3 py-1 text-sm border rounded-md bg-background"
+                  >
+                    <option value="none">No Grouping</option>
+                    <option value="category">Group by Category</option>
+                    <option value="author">Group by Author</option>
+                    <option value="time">Group by Time</option>
+                  </select>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {selectedCategory && (
+                    <Badge variant="secondary" className="text-sm">
+                      {categories.find(c => getCategorySlug(c.id) === selectedCategory)?.title || selectedCategory}
+                    </Badge>
+                  )}
+                  <div className="text-sm text-muted-foreground">
+                    {getCategoryFilteredPosts().length} posts found
+                  </div>
+                </div>
+              </div>
+
+              {/* Posts */}
+              <div className="space-y-4">
+                {Object.entries(getCategoryGroupedPosts()).map(([groupName, groupPosts]) => (
+                  <div key={groupName}>
+                    {groupBy !== "none" && (
+                      <h3 className="text-lg font-semibold mb-3 text-muted-foreground">
+                        {groupName} ({groupPosts.length})
+                      </h3>
+                    )}
+                    <div className="space-y-4">
+                      {groupPosts
+                        .filter(post => 
+                          searchTerm === "" || 
+                          post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          post.author.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          post.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (Array.isArray(post.tags) && post.tags.some(tag => 
+                            tag.toLowerCase().includes(searchTerm.toLowerCase())
+                          ))
+                        )
+                        .map((post) => (
+                          <Card key={post.id} className="hover:shadow-md transition-shadow">
+                            <CardContent className="p-6">
+                              <div className="flex items-start gap-4">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarImage src={post.author.avatar} />
+                                  <AvatarFallback>
+                                    {post.author.name.split(" ").map((n) => n[0]).join("")}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Link
+                                      href={`/forum/${post.categorySlug}/${post.id}`}
+                                      className="font-semibold hover:underline truncate"
+                                    >
+                                      {post.title}
+                                    </Link>
+                                    {post.author.isVerified && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        Verified
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                    <span>by {post.author.name}</span>
+                                    <span>in {post.category}</span>
+                                    <span>{post.replies} replies</span>
+                                    <span>{post.views} views</span>
+                                    <span>{post.time}</span>
+                                  </div>
+                                  {Array.isArray(post.tags) && post.tags.length > 0 && (
+                                    <div className="flex gap-1 mt-2">
+                                      {post.tags.slice(0, 3).map((tag) => (
+                                        <Badge key={tag} variant="outline" className="text-xs">
+                                          {tag}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* Reddit-like Actions */}
+                                  <div className="flex items-center gap-4 mt-4 pt-4 border-t">
+                                    <button
+                                      onClick={() => handleLike(post.id)}
+                                      className="flex items-center gap-1 text-sm text-muted-foreground hover:text-blue-600 transition-colors"
+                                    >
+                                      <Heart className="h-4 w-4" />
+                                      {post.likes}
+                                    </button>
+                                    <Link
+                                      href={`/forum/${post.categorySlug}/${post.id}`}
+                                      className="flex items-center gap-1 text-sm text-muted-foreground hover:text-green-600 transition-colors"
+                                    >
+                                      <MessageSquare className="h-4 w-4" />
+                                      {post.replies}
+                                    </Link>
+                                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                      <Eye className="h-4 w-4" />
+                                      {post.views}
+                                    </div>
+                                    <button
+                                      onClick={() => handleShare(post.id, post.title, post.categorySlug)}
+                                      className="flex items-center gap-1 text-sm text-muted-foreground hover:text-purple-600 transition-colors"
+                                    >
+                                      <Share2 className="h-4 w-4" />
+                                      Share
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </TabsContent>
 
         <TabsContent value="recent" className="space-y-4">
