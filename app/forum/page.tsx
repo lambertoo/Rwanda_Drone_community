@@ -51,6 +51,9 @@ export default function ForumPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [user, setUser] = useState<any>(null)
+  const [sortBy, setSortBy] = useState("newest")
+  const [filterCategory, setFilterCategory] = useState("all")
+  const [groupBy, setGroupBy] = useState("none")
   // Fetch data from API
   useEffect(() => {
     const fetchData = async () => {
@@ -100,8 +103,88 @@ export default function ForumPage() {
       general: "💬",
       technical: "🔧",
       showcase: "📸",
+      events: "📅",
+      regulations: "📋",
+      jobs: "💼",
     }
     return icons[slug] || "📝"
+  }
+
+  // Sorting function
+  const sortPosts = (posts: ForumPost[], sortType: string) => {
+    switch (sortType) {
+      case "newest":
+        return [...posts].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+      case "oldest":
+        return [...posts].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
+      case "mostLiked":
+        return [...posts].sort((a, b) => b.likes - a.likes)
+      case "mostViewed":
+        return [...posts].sort((a, b) => b.views - a.views)
+      case "mostReplied":
+        return [...posts].sort((a, b) => b.replies - a.replies)
+      default:
+        return posts
+    }
+  }
+
+  // Filtering function
+  const filterPosts = (posts: ForumPost[], category: string) => {
+    if (category === "all") return posts
+    return posts.filter(post => post.categorySlug === category)
+  }
+
+  // Grouping function
+  const groupPosts = (posts: ForumPost[], groupType: string) => {
+    if (groupType === "none") return { "All Posts": posts }
+    
+    const grouped: { [key: string]: ForumPost[] } = {}
+    
+    switch (groupType) {
+      case "category":
+        posts.forEach(post => {
+          if (!grouped[post.category]) {
+            grouped[post.category] = []
+          }
+          grouped[post.category].push(post)
+        })
+        break
+      case "author":
+        posts.forEach(post => {
+          if (!grouped[post.author.name]) {
+            grouped[post.author.name] = []
+          }
+          grouped[post.author.name].push(post)
+        })
+        break
+      case "time":
+        posts.forEach(post => {
+          const timeGroup = post.time.includes("Just now") ? "Today" : 
+                           post.time.includes("hours ago") ? "Today" : 
+                           post.time.includes("day ago") ? "Yesterday" : "Older"
+          if (!grouped[timeGroup]) {
+            grouped[timeGroup] = []
+          }
+          grouped[timeGroup].push(post)
+        })
+        break
+    }
+    
+    return grouped
+  }
+
+  // Get filtered and sorted posts
+  const getFilteredPosts = () => {
+    let posts = [...recentPosts]
+    posts = filterPosts(posts, filterCategory)
+    posts = sortPosts(posts, sortBy)
+    return posts
+  }
+
+  // Get grouped posts
+  const getGroupedPosts = () => {
+    const filteredPosts = getFilteredPosts()
+    return groupPosts(filteredPosts, groupBy)
   }
 
   function formatTimeAgo(date: Date): string {
@@ -193,6 +276,8 @@ export default function ForumPage() {
         <Input
           placeholder="Search discussions, topics, or users..."
           className="pl-10"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
@@ -250,8 +335,73 @@ export default function ForumPage() {
         </TabsContent>
 
         <TabsContent value="recent" className="space-y-4">
+          {/* Controls */}
+          <div className="flex flex-wrap gap-4 items-center justify-between p-4 bg-muted/50 rounded-lg">
+            <div className="flex flex-wrap gap-2">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-1 text-sm border rounded-md bg-background"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="mostLiked">Most Liked</option>
+                <option value="mostViewed">Most Viewed</option>
+                <option value="mostReplied">Most Replied</option>
+              </select>
+              
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="px-3 py-1 text-sm border rounded-md bg-background"
+              >
+                <option value="all">All Categories</option>
+                <option value="general">General Discussion</option>
+                <option value="jobs">Jobs & Opportunities</option>
+                <option value="regulations">Regulations & Legal</option>
+                <option value="events">Events & Meetups</option>
+                <option value="showcase">Showcase</option>
+                <option value="technical">Technical Support</option>
+              </select>
+              
+              <select
+                value={groupBy}
+                onChange={(e) => setGroupBy(e.target.value)}
+                className="px-3 py-1 text-sm border rounded-md bg-background"
+              >
+                <option value="none">No Grouping</option>
+                <option value="category">Group by Category</option>
+                <option value="author">Group by Author</option>
+                <option value="time">Group by Time</option>
+              </select>
+            </div>
+            
+            <div className="text-sm text-muted-foreground">
+              {getFilteredPosts().length} posts found
+            </div>
+          </div>
+
+          {/* Posts */}
           <div className="space-y-4">
-            {recentPosts.map((post) => (
+            {Object.entries(getGroupedPosts()).map(([groupName, groupPosts]) => (
+              <div key={groupName}>
+                {groupBy !== "none" && (
+                  <h3 className="text-lg font-semibold mb-3 text-muted-foreground">
+                    {groupName} ({groupPosts.length})
+                  </h3>
+                )}
+                <div className="space-y-4">
+                  {groupPosts
+                    .filter(post => 
+                      searchTerm === "" || 
+                      post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      post.author.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      post.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      (Array.isArray(post.tags) && post.tags.some(tag => 
+                        tag.toLowerCase().includes(searchTerm.toLowerCase())
+                      ))
+                    )
+                    .map((post) => (
               <Card key={post.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
@@ -324,6 +474,9 @@ export default function ForumPage() {
                   </div>
                 </CardContent>
               </Card>
+                    ))}
+                </div>
+              </div>
             ))}
           </div>
         </TabsContent>

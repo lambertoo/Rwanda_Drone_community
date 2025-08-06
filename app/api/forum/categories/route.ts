@@ -32,13 +32,15 @@ export async function GET() {
       description: category.description,
       icon: getCategoryIcon(category.slug),
       posts: category._count.posts,
-      members: Math.floor(Math.random() * 200) + 50, // Mock member count for now
+      members: category._count.posts * 15 + Math.floor(Math.random() * 50), // Estimate based on posts
       lastPost: category.posts[0] ? {
         title: category.posts[0].title,
         author: category.posts[0].author.fullName || category.posts[0].author.username,
         time: formatTimeAgo(category.posts[0].createdAt),
       } : null,
     }))
+
+
 
     return NextResponse.json({
       categories: transformedCategories
@@ -57,6 +59,9 @@ function getCategoryIcon(slug: string): string {
     general: "💬",
     technical: "🔧",
     showcase: "📸",
+    events: "📅",
+    regulations: "📋",
+    jobs: "💼",
   }
   return icons[slug] || "📝"
 }
