@@ -3,7 +3,7 @@
 import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { getAuthenticatedUser } from "@/lib/auth-middleware"
-import { canCreateProjects, canCreateServices, canPostJobs, canCreateEvents, canEditOwnContent, canDeleteAnyContent } from "@/lib/auth"
+import { canCreateProjects, canCreateServices, canPostJobs, canCreateEvents, canEditOwnContent, canDeleteAnyContent, getSession } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 
 // Forum Post Actions
@@ -250,27 +250,35 @@ export async function createForumCommentAction(formData: FormData) {
 // Project Actions
 export async function createProjectAction(formData: FormData) {
   try {
+    // Step 1: Authentication Validation
     const user = await getAuthenticatedUser()
 
     if (!user) {
-      throw new Error("Authentication required")
+      return { 
+        success: false, 
+        error: "You must be logged in to create a project. Please sign in and try again." 
+      }
     }
 
     // Check if user can create projects
     if (!canCreateProjects(user)) {
-      throw new Error("You don't have permission to create projects")
+      return { 
+        success: false, 
+        error: "You don't have permission to create projects" 
+      }
     }
 
-    const title = formData.get("title") as string
-    const description = formData.get("description") as string
-    const fullDescription = formData.get("fullDescription") as string
-    const category = formData.get("category") as string
+    // Step 2: Input Validation
+    const title = (formData.get("title") as string)?.trim()
+    const description = (formData.get("description") as string)?.trim()
+    const fullDescription = (formData.get("fullDescription") as string)?.trim()
+    const categoryId = formData.get("category") as string
     const status = formData.get("status") as string
-    const location = formData.get("location") as string
-    const duration = formData.get("duration") as string
-    const startDate = formData.get("startDate") as string
-    const endDate = formData.get("endDate") as string
-    const funding = formData.get("funding") as string
+    const location = (formData.get("location") as string)?.trim()
+    const duration = (formData.get("duration") as string)?.trim()
+    const startDate = (formData.get("startDate") as string)?.trim()
+    const endDate = (formData.get("endDate") as string)?.trim()
+    const funding = (formData.get("funding") as string)?.trim()
     const technologies = formData.get("technologies") as string
     const objectives = formData.get("objectives") as string
     const challenges = formData.get("challenges") as string
@@ -278,21 +286,157 @@ export async function createProjectAction(formData: FormData) {
     const teamMembers = formData.get("teamMembers") as string
     const gallery = formData.get("gallery") as string
 
-    if (!title || !description || !category) {
-      throw new Error("Missing required fields")
+    // Validate title
+    if (!title) {
+      return { 
+        success: false, 
+        error: "Project title is required. Please enter a descriptive title for your project." 
+      }
     }
 
-    // Map status values to enum
+    if (title.length < 5) {
+      return { 
+        success: false, 
+        error: "Project title must be at least 5 characters long. Please make it more descriptive." 
+      }
+    }
+
+    if (title.length > 200) {
+      return { 
+        success: false, 
+        error: "Project title is too long. Please keep it under 200 characters." 
+      }
+    }
+
+    // Validate description
+    if (!description) {
+      return { 
+        success: false, 
+        error: "Project description is required. Please write a description of your project." 
+      }
+    }
+
+    if (description.length < 20) {
+      return { 
+        success: false, 
+        error: "Project description must be at least 20 characters long. Please provide more details." 
+      }
+    }
+
+    if (description.length > 1000) {
+      return { 
+        success: false, 
+        error: "Project description is too long. Please keep it under 1,000 characters." 
+      }
+    }
+
+    // Validate category
+    if (!categoryId) {
+      return { 
+        success: false, 
+        error: "Please select a category for your project." 
+      }
+    }
+
+    // Verify category exists
+    const category = await prisma.projectCategory.findUnique({
+      where: { id: categoryId }
+    })
+
+    if (!category) {
+      return { 
+        success: false, 
+        error: "Selected category does not exist. Please choose a valid category." 
+      }
+    }
+
+    // Step 3: Parse JSON fields
+    let parsedTechnologies = []
+    let parsedObjectives = []
+    let parsedChallenges = []
+    let parsedOutcomes = []
+    let parsedTeamMembers = []
+    let parsedGallery = []
+
+    if (technologies) {
+      try {
+        const parsed = JSON.parse(technologies)
+        if (Array.isArray(parsed)) {
+          parsedTechnologies = parsed
+        }
+      } catch (error) {
+        // If JSON parsing fails, treat as empty array
+        parsedTechnologies = []
+      }
+    }
+
+    if (objectives) {
+      try {
+        const parsed = JSON.parse(objectives)
+        if (Array.isArray(parsed)) {
+          parsedObjectives = parsed
+        }
+      } catch (error) {
+        parsedObjectives = []
+      }
+    }
+
+    if (challenges) {
+      try {
+        const parsed = JSON.parse(challenges)
+        if (Array.isArray(parsed)) {
+          parsedChallenges = parsed
+        }
+      } catch (error) {
+        parsedChallenges = []
+      }
+    }
+
+    if (outcomes) {
+      try {
+        const parsed = JSON.parse(outcomes)
+        if (Array.isArray(parsed)) {
+          parsedOutcomes = parsed
+        }
+      } catch (error) {
+        parsedOutcomes = []
+      }
+    }
+
+    if (teamMembers) {
+      try {
+        const parsed = JSON.parse(teamMembers)
+        if (Array.isArray(parsed)) {
+          parsedTeamMembers = parsed
+        }
+      } catch (error) {
+        parsedTeamMembers = []
+      }
+    }
+
+    if (gallery) {
+      try {
+        const parsed = JSON.parse(gallery)
+        if (Array.isArray(parsed)) {
+          parsedGallery = parsed
+        }
+      } catch (error) {
+        parsedGallery = []
+      }
+    }
+
+    // Step 4: Map status values to enum
     const mappedStatus = status === "in-progress" ? "in_progress" : 
                         status === "on-hold" ? "on_hold" : 
                         status as any
 
+    // Step 5: Create Project
     const project = await prisma.project.create({
       data: {
         title,
         description,
         fullDescription: fullDescription || null,
-        category,
+        categoryId,
         status: mappedStatus,
         authorId: user.id,
         location: location || null,
@@ -300,16 +444,33 @@ export async function createProjectAction(formData: FormData) {
         startDate: startDate || null,
         endDate: endDate || null,
         funding: funding || null,
-        technologies: technologies || null,
-        objectives: objectives || null,
-        challenges: challenges || null,
-        outcomes: outcomes || null,
-        teamMembers: teamMembers || null,
-        gallery: gallery || null,
+        technologies: parsedTechnologies,
+        objectives: parsedObjectives,
+        challenges: parsedChallenges,
+        outcomes: parsedOutcomes,
+        teamMembers: parsedTeamMembers,
+        gallery: parsedGallery,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+            fullName: true,
+            avatar: true,
+            isVerified: true,
+          }
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+          }
+        },
       },
     })
 
-    // Update user's project count
+    // Step 6: Update user's project count
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -319,11 +480,40 @@ export async function createProjectAction(formData: FormData) {
       },
     })
 
+    // Step 7: Revalidate and Return Success
     revalidatePath("/projects")
-    return { success: true, project }
+    
+    return { 
+      success: true, 
+      project,
+      message: "Project created successfully!",
+      redirectUrl: `/projects/${project.id}`
+    }
+
   } catch (error) {
     console.error("Error creating project:", error)
-    throw new Error("Failed to create project. Please try again.")
+    
+    // Handle specific database errors
+    if (error instanceof Error) {
+      if (error.message.includes('Unique constraint')) {
+        return { 
+          success: false, 
+          error: "A project with this title already exists. Please choose a different title." 
+        }
+      }
+      
+      if (error.message.includes('Foreign key constraint')) {
+        return { 
+          success: false, 
+          error: "Invalid category selected. Please choose a valid category." 
+        }
+      }
+    }
+    
+    return { 
+      success: false, 
+      error: "An unexpected error occurred while creating your project. Please try again. If the problem persists, contact support." 
+    }
   }
 }
 

@@ -441,8 +441,10 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     )
   }
 
-  const teamMembers = project.teamMembers ? JSON.parse(project.teamMembers) : []
-  const gallery = project.gallery ? JSON.parse(project.gallery) : []
+  const teamMembers = project.teamMembers ? 
+    (typeof project.teamMembers === 'string' ? JSON.parse(project.teamMembers) : project.teamMembers) : []
+  const gallery = project.gallery ? 
+    (typeof project.gallery === 'string' ? JSON.parse(project.gallery) : project.gallery) : []
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -466,7 +468,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     }
   }
 
-  const getCategoryIcon = (category: string) => {
+  const getCategoryIcon = (category: string | null | undefined) => {
+    if (!category) return "🚁"
     switch (category.toLowerCase()) {
       case "agriculture": return "🌾"
       case "surveillance": return "🛡️"
@@ -593,7 +596,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-2xl">{getCategoryIcon(project.category)}</span>
-                <Badge variant="outline" className="text-sm">{project.category}</Badge>
+                <Badge variant="outline" className="text-sm">{project.category || 'Uncategorized'}</Badge>
                 <Badge className={`text-sm ${getStatusColor(project.status)}`}>
                   {getStatusDisplay(project.status)}
                 </Badge>

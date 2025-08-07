@@ -61,7 +61,7 @@ export function canPostForum(user: AuthUser | null): boolean {
 }
 
 export function canCreateProjects(user: AuthUser | null): boolean {
-  return user !== null && ["hobbyist", "pilot", "student", "service_provider"].includes(user.role)
+  return user !== null && ["hobbyist", "pilot", "student", "service_provider", "admin", "regulator"].includes(user.role)
 }
 
 export function canCreateServices(user: AuthUser | null): boolean {

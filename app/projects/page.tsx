@@ -88,26 +88,35 @@ export default function ProjectsPage() {
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered.filter(project =>
-        project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.technologies.some(tech => 
-          tech.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      )
+      filtered = filtered.filter(project => {
+        const titleMatch = project.title.toLowerCase().includes(searchTerm.toLowerCase())
+        const descriptionMatch = project.description.toLowerCase().includes(searchTerm.toLowerCase())
+        
+        // Handle technologies as either array or string
+        let technologiesMatch = false
+        if (Array.isArray(project.technologies)) {
+          technologiesMatch = project.technologies.some(tech => 
+            tech.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        } else if (typeof project.technologies === 'string') {
+          technologiesMatch = project.technologies.toLowerCase().includes(searchTerm.toLowerCase())
+        }
+        
+        return titleMatch || descriptionMatch || technologiesMatch
+      })
     }
 
     // Category filter
     if (selectedCategory !== "all") {
       filtered = filtered.filter(project =>
-        project.category.toLowerCase() === selectedCategory.toLowerCase()
+        project.category && project.category.toLowerCase() === selectedCategory.toLowerCase()
       )
     }
 
     // Status filter
     if (selectedStatus !== "all") {
       filtered = filtered.filter(project =>
-        project.status.toLowerCase() === selectedStatus.toLowerCase()
+        project.status && project.status.toLowerCase() === selectedStatus.toLowerCase()
       )
     }
 
@@ -116,18 +125,18 @@ export default function ProjectsPage() {
 
   // Calculate real statistics
   const totalProjects = projects.length
-  const completedProjects = projects.filter(p => p.status.toLowerCase() === "completed").length
-  const inProgressProjects = projects.filter(p => p.status.toLowerCase() === "in_progress").length
-  const onHoldProjects = projects.filter(p => p.status.toLowerCase() === "on_hold").length
-  const uniqueOrganizations = new Set(projects.map(p => p.lead.organization)).size
+  const completedProjects = projects.filter(p => p.status && p.status.toLowerCase() === "completed").length
+  const inProgressProjects = projects.filter(p => p.status && p.status.toLowerCase() === "in_progress").length
+  const onHoldProjects = projects.filter(p => p.status && p.status.toLowerCase() === "on_hold").length
+  const uniqueOrganizations = new Set(projects.map(p => p.lead.organization).filter(Boolean)).size
 
   // Get unique categories with counts
   const categories = [
     { value: "all", label: "All Categories", count: totalProjects },
-    ...Array.from(new Set(projects.map(p => p.category))).map(category => ({
-      value: category.toLowerCase(),
-      label: category,
-      count: projects.filter(p => p.category.toLowerCase() === category.toLowerCase()).length
+    ...Array.from(new Set(projects.map(p => p.category).filter(Boolean))).map(category => ({
+      value: category ? category.toLowerCase() : 'uncategorized',
+      label: category || 'Uncategorized',
+      count: projects.filter(p => p.category && p.category.toLowerCase() === (category ? category.toLowerCase() : 'uncategorized')).length
     }))
   ]
 
@@ -155,6 +164,8 @@ export default function ProjectsPage() {
   }
 
   const getCategoryIcon = (category: string) => {
+    if (!category) return "🚁"
+    
     switch (category.toLowerCase()) {
       case "agriculture":
         return "🌾"
