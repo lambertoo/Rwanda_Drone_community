@@ -22,6 +22,7 @@ export default async function EditProjectPage({ params }: PageProps) {
     where: { id },
     include: {
       author: true,
+      category: true,
     }
   })
 

@@ -48,7 +48,11 @@ interface Project {
   title: string
   description: string
   fullDescription?: string
-  category: string
+  category?: {
+    id: string
+    name: string
+  }
+  categoryId?: string
   status: string
   location?: string
   duration?: string
@@ -77,14 +81,14 @@ export default function EditProjectForm({ project }: EditProjectFormProps) {
   const [formData, setFormData] = useState({
     title: project.title,
     description: project.description,
-    category: project.category,
+    category: project.category?.id || project.categoryId || "",
     status: project.status,
     location: project.location || "",
     duration: project.duration || "",
     startDate: project.startDate || "",
     endDate: project.endDate || "",
     funding: project.funding || "",
-    overview: project.fullDescription || project.description,
+    overview: project.fullDescription || "",
   })
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(project.teamMembers)
@@ -96,6 +100,8 @@ export default function EditProjectForm({ project }: EditProjectFormProps) {
   const [currentOutcome, setCurrentOutcome] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("basic")
+  const [categories, setCategories] = useState<Array<{ value: string, label: string, icon: string }>>([])
+  const [loadingCategories, setLoadingCategories] = useState(true)
 
   const [newTeamMember, setNewTeamMember] = useState({
     name: "",
@@ -114,16 +120,49 @@ export default function EditProjectForm({ project }: EditProjectFormProps) {
     file: null as File | null,
   })
 
-  const categories = [
-    { value: "agriculture", label: "Agriculture", icon: "🌾" },
-    { value: "surveillance", label: "Surveillance & Security", icon: "🛡️" },
-    { value: "mapping", label: "Mapping & Surveying", icon: "🗺️" },
-    { value: "delivery", label: "Delivery & Logistics", icon: "📦" },
-    { value: "emergency", label: "Emergency Response", icon: "🚨" },
-    { value: "research", label: "Research & Development", icon: "🔬" },
-    { value: "education", label: "Education & Training", icon: "🎓" },
-    { value: "environmental", label: "Environmental Monitoring", icon: "🌍" },
-  ]
+  // Fetch categories from database
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/admin/project-categories')
+        if (response.ok) {
+          const data = await response.json()
+          const formattedCategories = data.categories.map((cat: any) => ({
+            value: cat.id,
+            label: cat.name,
+            icon: cat.icon || "🚁"
+          }))
+          setCategories(formattedCategories)
+        } else {
+          console.error('Failed to fetch categories')
+          // Fallback to database IDs if API fails
+          setCategories([
+            { value: "cme0ed4om000csd6otbk9r3ok", label: "Agriculture", icon: "🌾" },
+            { value: "cme0ed4om000hsd6o6bk6z6gy", label: "Delivery & Logistics", icon: "📦" },
+            { value: "cme0ed4om000fsd6o6uks87km", label: "Mapping & Surveying", icon: "🗺️" },
+            { value: "cme0ed4om000dsd6otbk84p04", label: "Photography & Videography", icon: "📸" },
+            { value: "cme0ed4om000gsd6oh0ggaq5b", label: "Research & Development", icon: "🔬" },
+            { value: "cme0ed4om000esd6oi5l9hlvd", label: "Search & Rescue", icon: "🚨" },
+          ])
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+        // Fallback to database IDs if API fails
+        setCategories([
+          { value: "cme0ed4om000csd6otbk9r3ok", label: "Agriculture", icon: "🌾" },
+          { value: "cme0ed4om000hsd6o6bk6z6gy", label: "Delivery & Logistics", icon: "📦" },
+          { value: "cme0ed4om000fsd6o6uks87km", label: "Mapping & Surveying", icon: "🗺️" },
+          { value: "cme0ed4om000dsd6otbk84p04", label: "Photography & Videography", icon: "📸" },
+          { value: "cme0ed4om000gsd6oh0ggaq5b", label: "Research & Development", icon: "🔬" },
+          { value: "cme0ed4om000esd6oi5l9hlvd", label: "Search & Rescue", icon: "🚨" },
+        ])
+      } finally {
+        setLoadingCategories(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   const statusOptions = [
     { value: "planning", label: "Planning", color: "bg-blue-100 text-blue-800" },
@@ -338,17 +377,21 @@ export default function EditProjectForm({ project }: EditProjectFormProps) {
                     <Label htmlFor="category">Category *</Label>
                     <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
+                        <SelectValue placeholder={loadingCategories ? "Loading categories..." : "Select a category"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.value} value={category.value}>
-                            <div className="flex items-center gap-2">
-                              <span>{category.icon}</span>
-                              {category.label}
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {loadingCategories ? (
+                          <div className="p-2 text-sm text-muted-foreground">Loading categories...</div>
+                        ) : (
+                          categories.map((category) => (
+                            <SelectItem key={category.value} value={category.value}>
+                              <div className="flex items-center gap-2">
+                                <span>{category.icon}</span>
+                                {category.label}
+                              </div>
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>

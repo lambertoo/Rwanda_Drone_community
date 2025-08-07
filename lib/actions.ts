@@ -584,7 +584,7 @@ export async function updateProjectAction(projectId: string, formData: FormData)
 
     const title = formData.get("title") as string
     const description = formData.get("description") as string
-    const fullDescription = formData.get("fullDescription") as string
+    const fullDescription = formData.get("overview") as string
     const category = formData.get("category") as string
     const status = formData.get("status") as string
     const location = formData.get("location") as string
@@ -592,17 +592,35 @@ export async function updateProjectAction(projectId: string, formData: FormData)
     const startDate = formData.get("startDate") as string
     const endDate = formData.get("endDate") as string
     const funding = formData.get("funding") as string
-    const technologies = formData.get("technologies") as string
-    const objectives = formData.get("objectives") as string
-    const challenges = formData.get("challenges") as string
-    const outcomes = formData.get("outcomes") as string
-    const teamMembers = formData.get("teamMembers") as string
-    const gallery = formData.get("gallery") as string
-    const resources = formData.get("resources") as string
 
-    if (!title || !description || !category) {
+    if (!title || !description) {
       throw new Error("Missing required fields")
     }
+
+    // Helper to parse JSON fields, handling null/empty strings
+    const parseJsonField = (field: FormDataEntryValue | null) => {
+      if (!field || typeof field !== 'string' || field.trim() === '') {
+        return null
+      }
+      try {
+        return JSON.parse(field)
+      } catch (e) {
+        console.error(`Error parsing JSON field: ${field}`, e)
+        return null
+      }
+    }
+
+    // Parse JSON fields
+    const technologies = parseJsonField(formData.get("technologies"))
+    const objectives = parseJsonField(formData.get("objectives"))
+    const challenges = parseJsonField(formData.get("challenges"))
+    const outcomes = parseJsonField(formData.get("outcomes"))
+    const teamMembers = parseJsonField(formData.get("teamMembers"))
+    const gallery = parseJsonField(formData.get("gallery"))
+    const resources = parseJsonField(formData.get("resources"))
+
+    // Handle category properly - it should be a relation, not a string
+    const categoryData = category && category !== "undefined" ? { connect: { id: category } } : { disconnect: true }
 
     // Map status values to enum
     const mappedStatus = status === "in-progress" ? "in_progress" : 
@@ -615,20 +633,20 @@ export async function updateProjectAction(projectId: string, formData: FormData)
         title,
         description,
         fullDescription: fullDescription || null,
-        category,
+        category: categoryData,
         status: mappedStatus,
         location: location || null,
         duration: duration || null,
         startDate: startDate || null,
         endDate: endDate || null,
         funding: funding || null,
-        technologies: technologies || null,
-        objectives: objectives || null,
-        challenges: challenges || null,
-        outcomes: outcomes || null,
-        teamMembers: teamMembers || null,
-        gallery: gallery || null,
-        resources: resources || null,
+        technologies,
+        objectives,
+        challenges,
+        outcomes,
+        teamMembers,
+        gallery,
+        resources,
       },
     })
 
