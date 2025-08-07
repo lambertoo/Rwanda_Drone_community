@@ -139,6 +139,7 @@ model Project {
   outcomes        Json?
   teamMembers     Json?
   gallery         Json?
+  resources       Json?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   viewsCount      Int              @default(0)

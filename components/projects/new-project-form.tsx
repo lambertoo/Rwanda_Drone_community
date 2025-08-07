@@ -34,6 +34,17 @@ interface ProjectGalleryItem {
   type: "image" | "video"
 }
 
+interface ProjectResource {
+  id: string
+  title: string
+  description: string
+  type: "file" | "link" | "video"
+  url: string
+  size?: string
+  fileType?: string
+  embedCode?: string
+}
+
 export default function NewProjectForm() {
   const router = useRouter()
   const [formData, setFormData] = useState({
@@ -57,6 +68,7 @@ export default function NewProjectForm() {
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [gallery, setGallery] = useState<ProjectGalleryItem[]>([])
+  const [resources, setResources] = useState<ProjectResource[]>([])
   const [currentTech, setCurrentTech] = useState("")
   const [currentObjective, setCurrentObjective] = useState("")
   const [currentChallenge, setCurrentChallenge] = useState("")
@@ -75,6 +87,14 @@ export default function NewProjectForm() {
     email: "",
     expertise: "",
     bio: "",
+  })
+
+  const [newResource, setNewResource] = useState({
+    title: "",
+    description: "",
+    type: "file" as "file" | "link" | "video",
+    url: "",
+    file: null as File | null,
   })
 
   // Check user authentication on mount
@@ -239,6 +259,47 @@ export default function NewProjectForm() {
     setTeamMembers((prev) => prev.filter((member) => member.id !== id))
   }
 
+  const addResource = () => {
+    if (!newResource.title || !newResource.description || (!newResource.url && !newResource.file)) {
+      return
+    }
+
+    const resource: ProjectResource = {
+      id: Date.now().toString(),
+      title: newResource.title,
+      description: newResource.description,
+      type: newResource.type,
+      url: newResource.url || "",
+      size: newResource.file ? `${(newResource.file.size / 1024 / 1024).toFixed(2)} MB` : undefined,
+      fileType: newResource.file ? newResource.file.type : undefined,
+    }
+
+    setResources([...resources, resource])
+    setNewResource({
+      title: "",
+      description: "",
+      type: "file",
+      url: "",
+      file: null,
+    })
+  }
+
+  const removeResource = (id: string) => {
+    setResources(resources.filter(resource => resource.id !== id))
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Check file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        alert("File size must be less than 10MB")
+        return
+      }
+      setNewResource({ ...newResource, file })
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -255,6 +316,7 @@ export default function NewProjectForm() {
         ...formData,
         teamMembers,
         gallery,
+        resources,
       }
 
       const formDataToSend = new FormData()
@@ -350,11 +412,12 @@ export default function NewProjectForm() {
 
       <form onSubmit={handleSubmit}>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
             <TabsTrigger value="details">Project Details</TabsTrigger>
             <TabsTrigger value="team">Team</TabsTrigger>
             <TabsTrigger value="gallery">Gallery</TabsTrigger>
+            <TabsTrigger value="resources">Resources</TabsTrigger>
             <TabsTrigger value="preview">Preview</TabsTrigger>
           </TabsList>
 
@@ -755,6 +818,131 @@ export default function NewProjectForm() {
                   <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">Image and video upload functionality will be available soon.</p>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="resources" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5" />
+                  Project Resources
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Add files, links, or embedded content to your project. Files must be less than 10MB.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Add New Resource */}
+                <div className="space-y-4 p-4 border rounded-lg">
+                  <h4 className="font-semibold">Add New Resource</h4>
+                  
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="resource-title">Resource Title *</Label>
+                      <Input
+                        id="resource-title"
+                        value={newResource.title}
+                        onChange={(e) => setNewResource({ ...newResource, title: e.target.value })}
+                        placeholder="e.g., Final Report, Dataset, Video Demo"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="resource-type">Resource Type *</Label>
+                      <Select value={newResource.type} onValueChange={(value: "file" | "link" | "video") => setNewResource({ ...newResource, type: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="file">File Upload (PDF, ZIP, etc.)</SelectItem>
+                          <SelectItem value="link">External Link</SelectItem>
+                          <SelectItem value="video">Video (YouTube, Vimeo, etc.)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="resource-description">Description *</Label>
+                    <Textarea
+                      id="resource-description"
+                      value={newResource.description}
+                      onChange={(e) => setNewResource({ ...newResource, description: e.target.value })}
+                      placeholder="Brief description of this resource"
+                      rows={2}
+                    />
+                  </div>
+
+                  {newResource.type === "file" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="resource-file">Upload File *</Label>
+                      <Input
+                        id="resource-file"
+                        type="file"
+                        accept=".pdf,.zip,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
+                        onChange={handleFileChange}
+                      />
+                      <p className="text-xs text-muted-foreground">Maximum file size: 10MB</p>
+                    </div>
+                  )}
+
+                  {(newResource.type === "link" || newResource.type === "video") && (
+                    <div className="space-y-2">
+                      <Label htmlFor="resource-url">URL *</Label>
+                      <Input
+                        id="resource-url"
+                        type="url"
+                        value={newResource.url}
+                        onChange={(e) => setNewResource({ ...newResource, url: e.target.value })}
+                        placeholder={newResource.type === "video" ? "https://www.youtube.com/watch?v=..." : "https://example.com/resource"}
+                      />
+                    </div>
+                  )}
+
+                  <Button type="button" onClick={addResource} disabled={!newResource.title || !newResource.description || (!newResource.url && !newResource.file)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Resource
+                  </Button>
+                </div>
+
+                {/* Existing Resources */}
+                {resources.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">Project Resources ({resources.length})</h4>
+                    <div className="space-y-3">
+                      {resources.map((resource) => (
+                        <div key={resource.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h5 className="font-medium">{resource.title}</h5>
+                              <Badge variant="outline" className="text-xs">
+                                {resource.type}
+                              </Badge>
+                              {resource.size && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {resource.size}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">{resource.description}</p>
+                            {resource.url && (
+                              <p className="text-xs text-blue-600 mt-1">{resource.url}</p>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeResource(resource.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

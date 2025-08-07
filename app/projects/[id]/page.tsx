@@ -30,7 +30,9 @@ import {
   Eye,
   MessageSquare,
   Send,
-  Copy
+  Copy,
+  ExternalLink,
+  Video
 } from "lucide-react"
 import Link from "next/link"
 import { IfLoggedIn, IfAdmin } from "@/components/auth-guard"
@@ -54,6 +56,7 @@ interface Project {
   outcomes?: string
   teamMembers?: string
   gallery?: string
+  resources?: string
   createdAt: string
   viewsCount: number
   likesCount: number
@@ -445,6 +448,8 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     (typeof project.teamMembers === 'string' ? JSON.parse(project.teamMembers) : project.teamMembers) : []
   const gallery = project.gallery ? 
     (typeof project.gallery === 'string' ? JSON.parse(project.gallery) : project.gallery) : []
+  const resources = project.resources ? 
+    (typeof project.resources === 'string' ? JSON.parse(project.resources) : project.resources) : []
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -483,49 +488,19 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     }
   }
 
-  // Mock project resources for demonstration
-  const projectResources = [
-    {
-      title: "Final Project Report",
-      description: "Comprehensive 85-page report detailing methodology, results, and recommendations",
-      size: "12.3 MB",
-      type: "PDF",
-      downloads: 89,
-      icon: FileText
-    },
-    {
-      title: "Dataset - Crop Yield Analysis",
-      description: "Complete dataset with yield measurements, weather data, and drone imagery analysis",
-      size: "245 MB",
-      type: "CSV/ZIP",
-      downloads: 34,
-      icon: Database
-    },
-    {
-      title: "Drone Flight Logs",
-      description: "Detailed flight logs and metadata for all 156 survey missions",
-      size: "8.7 MB",
-      type: "JSON",
-      downloads: 23,
-      icon: BookOpen
-    },
-    {
-      title: "Training Materials",
-      description: "Farmer training guides and presentation materials in Kinyarwanda and English",
-      size: "45 MB",
-      type: "PDF/PPT",
-      downloads: 67,
-      icon: BookOpen
-    },
-    {
-      title: "Software Tools",
-      description: "Custom analysis tools and mobile applications developed for the project",
-      size: "156 MB",
-      type: "APK/EXE",
-      downloads: 45,
-      icon: Smartphone
+  // Get resource icon based on type
+  const getResourceIcon = (type: string) => {
+    switch (type) {
+      case "file":
+        return FileText
+      case "link":
+        return ExternalLink
+      case "video":
+        return Video
+      default:
+        return FileText
     }
-  ]
+  }
 
   if (loading) {
     return (
@@ -1161,27 +1136,60 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                 <CardTitle className="text-lg">Project Resources</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {projectResources.map((resource, index) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <resource.icon className="h-4 w-4 text-blue-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-sm mb-1">{resource.title}</h4>
-                        <p className="text-xs text-muted-foreground mb-2">{resource.description}</p>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{resource.size} • {resource.type}</span>
-                          <span>{resource.downloads} downloads</span>
+                {resources.length > 0 ? (
+                  resources.map((resource, index) => {
+                    const IconComponent = getResourceIcon(resource.type)
+                    return (
+                      <div key={index} className="border rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <IconComponent className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-sm mb-1">{resource.title}</h4>
+                            <p className="text-xs text-muted-foreground mb-2">{resource.description}</p>
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <span>
+                                {resource.size && `${resource.size} • `}
+                                {resource.type}
+                              </span>
+                            </div>
+                          </div>
                         </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full mt-3"
+                          onClick={() => {
+                            if (resource.type === "file") {
+                              // Handle file download
+                              window.open(resource.url, '_blank')
+                            } else if (resource.type === "link" || resource.type === "video") {
+                              // Handle external link/video
+                              window.open(resource.url, '_blank')
+                            }
+                          }}
+                        >
+                          {resource.type === "file" ? (
+                            <>
+                              <Download className="h-4 w-4 mr-2" />
+                              Download
+                            </>
+                          ) : (
+                            <>
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              Open
+                            </>
+                          )}
+                        </Button>
                       </div>
-                    </div>
-                    <Button variant="outline" size="sm" className="w-full mt-3">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
-                    </Button>
-                  </div>
-                ))}
+                    )
+                  })
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No resources available for this project.
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -425,6 +425,20 @@ export async function createProjectAction(formData: FormData) {
       }
     }
 
+    // Parse resources
+    let parsedResources: any[] = []
+    const resources = formData.get("resources") as string
+    if (resources) {
+      try {
+        const parsed = JSON.parse(resources)
+        if (Array.isArray(parsed)) {
+          parsedResources = parsed
+        }
+      } catch (error) {
+        parsedResources = []
+      }
+    }
+
     // Step 4: Map status values to enum
     const mappedStatus = status === "in-progress" ? "in_progress" : 
                         status === "on-hold" ? "on_hold" : 
@@ -450,6 +464,7 @@ export async function createProjectAction(formData: FormData) {
         outcomes: parsedOutcomes,
         teamMembers: parsedTeamMembers,
         gallery: parsedGallery,
+        resources: parsedResources,
       },
       include: {
         author: {
