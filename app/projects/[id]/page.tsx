@@ -43,7 +43,13 @@ interface Project {
   title: string
   description: string
   fullDescription?: string
-  category: string
+  category?: {
+    id: string
+    name: string
+    slug: string
+    icon?: string
+  }
+  categoryId?: string
   status: string
   location?: string
   duration?: string
@@ -473,19 +479,45 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     }
   }
 
-  const getCategoryIcon = (category: string | null | undefined) => {
+  const getCategoryIcon = (category: any) => {
     if (!category) return "🚁"
-    switch (category.toLowerCase()) {
-      case "agriculture": return "🌾"
-      case "surveillance": return "🛡️"
-      case "mapping": return "🗺️"
-      case "delivery": return "📦"
-      case "emergency": return "🚨"
-      case "research": return "🔬"
-      case "education": return "🎓"
-      case "environmental": return "🌍"
-      default: return "🚁"
+    
+    // If category is an object with icon property, use it
+    if (typeof category === 'object' && category.icon) {
+      return category.icon
     }
+    
+    // If category is an object with name property, map by name
+    if (typeof category === 'object' && category.name) {
+      switch (category.name.toLowerCase()) {
+        case "agriculture": return "🌾"
+        case "surveillance": return "🛡️"
+        case "mapping": return "🗺️"
+        case "delivery": return "📦"
+        case "emergency": return "🚨"
+        case "research": return "🔬"
+        case "education": return "🎓"
+        case "environmental": return "🌍"
+        default: return "🚁"
+      }
+    }
+    
+    // If category is a string, use the old logic
+    if (typeof category === 'string') {
+      switch (category.toLowerCase()) {
+        case "agriculture": return "🌾"
+        case "surveillance": return "🛡️"
+        case "mapping": return "🗺️"
+        case "delivery": return "📦"
+        case "emergency": return "🚨"
+        case "research": return "🔬"
+        case "education": return "🎓"
+        case "environmental": return "🌍"
+        default: return "🚁"
+      }
+    }
+    
+    return "🚁"
   }
 
   // Get resource icon based on type
@@ -571,7 +603,9 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-2xl">{getCategoryIcon(project.category)}</span>
-                <Badge variant="outline" className="text-sm">{project.category || 'Uncategorized'}</Badge>
+                <Badge variant="outline" className="text-sm">
+                  {project.category?.name || 'Uncategorized'}
+                </Badge>
                 <Badge className={`text-sm ${getStatusColor(project.status)}`}>
                   {getStatusDisplay(project.status)}
                 </Badge>
