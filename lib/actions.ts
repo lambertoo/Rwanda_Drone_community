@@ -598,6 +598,7 @@ export async function updateProjectAction(projectId: string, formData: FormData)
     const outcomes = formData.get("outcomes") as string
     const teamMembers = formData.get("teamMembers") as string
     const gallery = formData.get("gallery") as string
+    const resources = formData.get("resources") as string
 
     if (!title || !description || !category) {
       throw new Error("Missing required fields")
@@ -627,6 +628,7 @@ export async function updateProjectAction(projectId: string, formData: FormData)
         outcomes: outcomes || null,
         teamMembers: teamMembers || null,
         gallery: gallery || null,
+        resources: resources || null,
       },
     })
 

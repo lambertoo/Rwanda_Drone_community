@@ -29,13 +29,14 @@ export default async function EditProjectPage({ params }: PageProps) {
     notFound()
   }
 
-  // Parse JSON fields
-  const technologies = project.technologies ? JSON.parse(project.technologies) : []
-  const objectives = project.objectives ? JSON.parse(project.objectives) : []
-  const challenges = project.challenges ? JSON.parse(project.challenges) : []
-  const outcomes = project.outcomes ? JSON.parse(project.outcomes) : []
-  const teamMembers = project.teamMembers ? JSON.parse(project.teamMembers) : []
-  const gallery = project.gallery ? JSON.parse(project.gallery) : []
+  // Handle JSON fields (already parsed by Prisma)
+  const technologies = Array.isArray(project.technologies) ? project.technologies : []
+  const objectives = Array.isArray(project.objectives) ? project.objectives : []
+  const challenges = Array.isArray(project.challenges) ? project.challenges : []
+  const outcomes = Array.isArray(project.outcomes) ? project.outcomes : []
+  const teamMembers = Array.isArray(project.teamMembers) ? project.teamMembers : []
+  const gallery = Array.isArray(project.gallery) ? project.gallery : []
+  const resources = Array.isArray(project.resources) ? project.resources : []
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -48,6 +49,7 @@ export default async function EditProjectPage({ params }: PageProps) {
           outcomes,
           teamMembers,
           gallery,
+          resources,
         }}
       />
     </div>
