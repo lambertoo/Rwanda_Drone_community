@@ -99,6 +99,10 @@ export default function NewEventForm() {
     type: "presentation" as const,
   })
 
+  // Flyer upload
+  const [flyerFile, setFlyerFile] = useState<File | null>(null)
+  const [flyerPreview, setFlyerPreview] = useState<string | null>(null)
+
   // Fetch event categories
   useEffect(() => {
     const fetchCategories = async () => {
@@ -189,6 +193,45 @@ export default function NewEventForm() {
     setAgenda(agenda.filter((a) => a.id !== id))
   }
 
+  const handleFlyerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image file (JPG, PNG, GIF, etc.)",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please upload an image smaller than 5MB",
+          variant: "destructive",
+        })
+        return
+      }
+
+      setFlyerFile(file)
+      
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setFlyerPreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const removeFlyer = () => {
+    setFlyerFile(null)
+    setFlyerPreview(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -207,36 +250,39 @@ export default function NewEventForm() {
 
       const user = JSON.parse(storedUser)
 
-      // Prepare event data
-      const eventData = {
-        title,
-        description,
-        fullDescription: fullDescription || description,
-        categoryId: categoryId || null,
-        startDate: `${startDate}T${startTime}:00`,
-        endDate: endDate ? `${endDate}T${endTime}:00` : `${startDate}T${endTime}:00`,
-        location,
-        venue: venue || location,
-        capacity: capacity ? parseInt(capacity) : null,
-        price: isFree ? 0 : parseFloat(price || "0"),
-        currency,
-        registrationDeadline: registrationDeadline ? `${registrationDeadline}T23:59:59` : null,
-        requirements: JSON.stringify(requirements),
-        tags: JSON.stringify(tags),
-        speakers: JSON.stringify(speakers.map(s => s.name)),
-        agenda: JSON.stringify(agenda),
-        gallery: JSON.stringify([]),
-        isPublished: true,
-        isFeatured: false,
-        userId: user.id,
+      // Create FormData for file upload
+      const formData = new FormData()
+      
+      // Add event data
+      formData.append('title', title)
+      formData.append('description', description)
+      formData.append('fullDescription', fullDescription || description)
+      formData.append('categoryId', categoryId || '')
+      formData.append('startDate', `${startDate}T${startTime}:00`)
+      formData.append('endDate', endDate ? `${endDate}T${endTime}:00` : `${startDate}T${endTime}:00`)
+      formData.append('location', location)
+      formData.append('venue', venue || location)
+      formData.append('capacity', capacity || '')
+      formData.append('price', isFree ? '0' : (price || '0'))
+      formData.append('currency', currency)
+      formData.append('registrationDeadline', registrationDeadline ? `${registrationDeadline}T23:59:59` : '')
+      formData.append('requirements', JSON.stringify(requirements))
+      formData.append('tags', JSON.stringify(tags))
+      formData.append('speakers', JSON.stringify(speakers.map(s => s.name)))
+      formData.append('agenda', JSON.stringify(agenda))
+      formData.append('gallery', JSON.stringify([]))
+      formData.append('isPublished', 'true')
+      formData.append('isFeatured', 'false')
+      formData.append('userId', user.id)
+
+      // Add flyer file if uploaded
+      if (flyerFile) {
+        formData.append('flyer', flyerFile)
       }
 
       const response = await fetch('/api/events', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(eventData),
+        body: formData,
       })
 
       if (response.ok) {
@@ -446,6 +492,50 @@ export default function NewEventForm() {
                     onChange={(e) => setRegistrationDeadline(e.target.value)}
                     max={startDate}
                   />
+                </div>
+              </div>
+
+              {/* Flyer Upload */}
+              <div className="md:col-span-2">
+                <Label htmlFor="flyer">Event Flyer</Label>
+                <div className="mt-2">
+                  {flyerPreview ? (
+                    <div className="relative">
+                      <img
+                        src={flyerPreview}
+                        alt="Flyer preview"
+                        className="w-full max-w-md h-48 object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={removeFlyer}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="mt-2">
+                        <Label htmlFor="flyer-upload" className="cursor-pointer text-blue-600 hover:text-blue-500">
+                          Upload flyer image
+                        </Label>
+                        <p className="text-sm text-gray-500 mt-1">
+                          JPG, PNG, GIF up to 5MB
+                        </p>
+                      </div>
+                      <Input
+                        id="flyer-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFlyerUpload}
+                        className="hidden"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -781,8 +871,16 @@ export default function NewEventForm() {
               <CardDescription>Review your event before publishing</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                <Upload className="h-12 w-12 text-muted-foreground" />
+              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+                {flyerPreview ? (
+                  <img
+                    src={flyerPreview}
+                    alt="Event flyer"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Upload className="h-12 w-12 text-muted-foreground" />
+                )}
               </div>
 
               <div>

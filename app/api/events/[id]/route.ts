@@ -29,7 +29,31 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       data: { viewsCount: { increment: 1 } }
     })
 
-    return NextResponse.json({ event })
+    // Parse JSON fields before returning
+    const parseJsonField = (field: any) => {
+      if (!field) return []
+      if (typeof field === 'string') {
+        try {
+          const parsed = JSON.parse(field)
+          return Array.isArray(parsed) ? parsed : []
+        } catch (e) {
+          console.error('Error parsing JSON field:', e)
+          return []
+        }
+      }
+      return Array.isArray(field) ? field : []
+    }
+
+    const parsedEvent = {
+      ...event,
+      speakers: parseJsonField(event.speakers),
+      agenda: parseJsonField(event.agenda),
+      requirements: parseJsonField(event.requirements),
+      gallery: parseJsonField(event.gallery),
+      tags: parseJsonField(event.tags)
+    }
+
+    return NextResponse.json({ event: parsedEvent })
   } catch (error) {
     console.error("Error fetching event:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -64,52 +88,147 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    const {
-      title,
-      description,
-      fullDescription,
-      category,
-      startDate,
-      endDate,
-      location,
-      venue,
-      price,
-      currency,
-      speakers,
-      agenda,
-      requirements,
-      gallery,
-      isPublished,
-      isFeatured
-    } = await request.json()
+    // Check if the request is multipart/form-data (file upload)
+    const contentType = request.headers.get('content-type') || ''
+    
+    let eventData: any = {}
+    let flyerFile: File | null = null
+
+    if (contentType.includes('multipart/form-data')) {
+      // Handle FormData for file uploads
+      const formData = await request.formData()
+      
+      // Extract text fields
+      eventData = {
+        title: formData.get('title') as string,
+        description: formData.get('description') as string,
+        fullDescription: formData.get('fullDescription') as string,
+        categoryId: formData.get('categoryId') as string,
+        startDate: formData.get('startDate') as string,
+        endDate: formData.get('endDate') as string,
+        location: formData.get('location') as string,
+        venue: formData.get('venue') as string,
+        capacity: formData.get('capacity') as string,
+        price: formData.get('price') as string,
+        currency: formData.get('currency') as string,
+        registrationDeadline: formData.get('registrationDeadline') as string,
+        allowRegistration: formData.get('allowRegistration') as string,
+        isPublished: formData.get('isPublished') as string,
+        isFeatured: formData.get('isFeatured') as string,
+        speakers: formData.get('speakers') as string,
+        agenda: formData.get('agenda') as string,
+        requirements: formData.get('requirements') as string,
+        gallery: formData.get('gallery') as string,
+        userId: formData.get('userId') as string,
+      }
+
+      // Extract file
+      const flyer = formData.get('flyer') as File
+      if (flyer && flyer.size > 0) {
+        flyerFile = flyer
+      }
+    } else {
+      // Handle JSON data (fallback)
+      eventData = await request.json()
+    }
+
+    if (!eventData.title || !eventData.description || !eventData.startDate || !eventData.location) {
+      return NextResponse.json({ error: "Title, description, start date, and location are required" }, { status: 400 })
+    }
+
+    // Handle file upload if flyer is provided
+    let flyerUrl: string | null = null
+    if (flyerFile) {
+      try {
+        const bytes = await flyerFile.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+
+        // Generate a unique filename
+        const timestamp = Date.now()
+        const filename = `flyer_${timestamp}_${flyerFile.name}`
+
+        // Save to public/uploads directory
+        const fs = require('fs')
+        const path = require('path')
+
+        // Ensure uploads directory exists
+        const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true })
+        }
+
+        const filePath = path.join(uploadsDir, filename)
+        fs.writeFileSync(filePath, buffer)
+
+        flyerUrl = `/uploads/${filename}`
+      } catch (error) {
+        console.error('Error uploading file:', error)
+        return NextResponse.json({ error: "Failed to upload flyer" }, { status: 500 })
+      }
+    }
+
+    const updateData: any = {
+      title: eventData.title,
+      description: eventData.description,
+      fullDescription: eventData.fullDescription || eventData.description,
+      categoryId: eventData.categoryId || null,
+      startDate: new Date(eventData.startDate),
+      endDate: eventData.endDate ? new Date(eventData.endDate) : new Date(eventData.startDate),
+      location: eventData.location,
+      venue: eventData.venue || eventData.location,
+      capacity: eventData.capacity ? parseInt(eventData.capacity) : null,
+      price: parseFloat(eventData.price) || 0,
+      currency: eventData.currency || "RWF",
+      registrationDeadline: eventData.registrationDeadline ? new Date(eventData.registrationDeadline) : null,
+      allowRegistration: eventData.allowRegistration === 'true',
+      isPublished: eventData.isPublished === 'true',
+      isFeatured: eventData.isFeatured === 'true',
+      speakers: eventData.speakers ? JSON.parse(eventData.speakers) : [],
+      agenda: eventData.agenda ? JSON.parse(eventData.agenda) : [],
+      requirements: eventData.requirements ? JSON.parse(eventData.requirements) : [],
+      gallery: eventData.gallery ? JSON.parse(eventData.gallery) : [],
+      updatedAt: new Date(),
+    }
+
+    // Only update flyer if a new one was uploaded
+    if (flyerUrl) {
+      updateData.flyer = flyerUrl
+    }
 
     const updatedEvent = await prisma.event.update({
       where: { id },
-      data: {
-        title,
-        description,
-        fullDescription: fullDescription || description,
-        category,
-        startDate: startDate ? new Date(startDate) : undefined,
-        endDate: endDate ? new Date(endDate) : undefined,
-        location,
-        venue,
-        price,
-        currency,
-        speakers: speakers || [],
-        agenda: agenda || [],
-        requirements: requirements || [],
-        gallery: gallery || [],
-        isPublished,
-        isFeatured,
-        updatedAt: new Date(),
-      },
+      data: updateData,
       include: {
         organizer: true,
+        category: true,
       }
     })
 
-    return NextResponse.json({ event: updatedEvent })
+    // Parse JSON fields before returning
+    const parseJsonField = (field: any) => {
+      if (!field) return []
+      if (typeof field === 'string') {
+        try {
+          const parsed = JSON.parse(field)
+          return Array.isArray(parsed) ? parsed : []
+        } catch (e) {
+          console.error('Error parsing JSON field:', e)
+          return []
+        }
+      }
+      return Array.isArray(field) ? field : []
+    }
+
+    const parsedEvent = {
+      ...updatedEvent,
+      speakers: parseJsonField(updatedEvent.speakers),
+      agenda: parseJsonField(updatedEvent.agenda),
+      requirements: parseJsonField(updatedEvent.requirements),
+      gallery: parseJsonField(updatedEvent.gallery),
+      tags: parseJsonField(updatedEvent.tags)
+    }
+
+    return NextResponse.json({ event: parsedEvent })
   } catch (error) {
     console.error("Error updating event:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

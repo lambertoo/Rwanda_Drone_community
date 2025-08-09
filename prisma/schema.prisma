@@ -261,6 +261,7 @@ model Event {
   speakers             Json?
   agenda               Json?
   gallery              Json?
+  flyer                String?
   rsvps                RSVP[]
   category             EventCategory? @relation(fields: [categoryId], references: [id])
   organizer            User           @relation(fields: [organizerId], references: [id], onDelete: Cascade)

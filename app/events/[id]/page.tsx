@@ -86,8 +86,19 @@ export default function EventDetailsPage({ params }: PageProps) {
   const router = useRouter()
   const [event, setEvent] = useState<Event | null>(null)
   const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
+    // Get user from localStorage
+    const storedUser = localStorage.getItem("user")
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser))
+      } catch (error) {
+        console.error('Error parsing user data:', error)
+      }
+    }
+
     const fetchEvent = async () => {
       try {
         const { id } = await params
@@ -125,10 +136,11 @@ export default function EventDetailsPage({ params }: PageProps) {
     return <div>Event not found</div>
   }
 
-  const requirements = event.requirements || []
-  const speakers = event.speakers || []
-  const agenda = event.agenda || []
-  const gallery = event.gallery || []
+  // Use parsed data from API (now returns arrays/objects instead of strings)
+  const requirements = Array.isArray(event.requirements) ? event.requirements : []
+  const speakers = Array.isArray(event.speakers) ? event.speakers : []
+  const agenda = Array.isArray(event.agenda) ? event.agenda : []
+  const gallery = Array.isArray(event.gallery) ? event.gallery : []
   
   // Debug logging
   console.log('Event data:', event)
@@ -474,22 +486,24 @@ export default function EventDetailsPage({ params }: PageProps) {
       </Tabs>
 
       {/* Admin Actions */}
-      <div className="flex justify-end gap-2">
-        <Link href={`/events/${event.id}/edit`}>
-          <Button variant="outline" className="flex items-center gap-2">
-            <Edit className="h-4 w-4" />
-            Edit
+      {user && (user.id === event.organizerId || user.role === "admin") && (
+        <div className="flex justify-end gap-2">
+          <Link href={`/events/${event.id}/edit`}>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Edit className="h-4 w-4" />
+              Edit
+            </Button>
+          </Link>
+          <Button 
+            onClick={handleDelete}
+            variant="outline" 
+            className="flex items-center gap-2 text-red-600 hover:text-red-700"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
           </Button>
-        </Link>
-        <Button 
-          onClick={handleDelete}
-          variant="outline" 
-          className="flex items-center gap-2 text-red-600 hover:text-red-700"
-        >
-          <Trash2 className="h-4 w-4" />
-          Delete
-        </Button>
-      </div>
+        </div>
+      )}
     </div>
   )
 }
