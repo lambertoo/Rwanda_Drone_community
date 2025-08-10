@@ -137,14 +137,40 @@ export async function POST(request: NextRequest) {
     let flyerUrl: string | null = null
     if (flyerFile) {
       try {
+        // Security: Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        if (!allowedTypes.includes(flyerFile.type)) {
+          return NextResponse.json({ 
+            error: "Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed." 
+          }, { status: 400 })
+        }
+
+        // Security: Validate file size (max 5MB)
+        const maxSize = 5 * 1024 * 1024 // 5MB
+        if (flyerFile.size > maxSize) {
+          return NextResponse.json({ 
+            error: "File too large. Maximum size is 5MB." 
+          }, { status: 400 })
+        }
+
+        // Security: Validate filename
+        const filename = flyerFile.name.toLowerCase()
+        if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+          return NextResponse.json({ 
+            error: "Invalid filename." 
+          }, { status: 400 })
+        }
+
         // For now, we'll store the file in a simple way
         // In production, you'd want to use a proper file storage service like AWS S3, Cloudinary, etc.
         const bytes = await flyerFile.arrayBuffer()
         const buffer = Buffer.from(bytes)
         
-        // Generate a unique filename
+        // Generate a unique filename with timestamp and random string
         const timestamp = Date.now()
-        const filename = `flyer_${timestamp}_${flyerFile.name}`
+        const randomString = Math.random().toString(36).substring(2, 15)
+        const fileExtension = flyerFile.name.split('.').pop()
+        const safeFilename = `flyer_${timestamp}_${randomString}.${fileExtension}`
         
         // Save to public/uploads directory (you'll need to create this)
         const fs = require('fs')
@@ -156,10 +182,10 @@ export async function POST(request: NextRequest) {
           fs.mkdirSync(uploadsDir, { recursive: true })
         }
         
-        const filePath = path.join(uploadsDir, filename)
+        const filePath = path.join(uploadsDir, safeFilename)
         fs.writeFileSync(filePath, buffer)
         
-        flyerUrl = `/uploads/${filename}`
+        flyerUrl = `/uploads/${safeFilename}`
       } catch (error) {
         console.error('Error uploading file:', error)
         return NextResponse.json({ error: "Failed to upload flyer" }, { status: 500 })

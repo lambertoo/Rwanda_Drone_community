@@ -3,11 +3,12 @@ import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/auth"
 import { cookies } from "next/headers"
 
-// READ - Get a single job
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+// READ - Get a single opportunity
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const job = await prisma.job.findUnique({
-      where: { id: params.id },
+    const { id } = await params
+    const opportunity = await prisma.opportunity.findUnique({
+      where: { id },
       include: {
         poster: {
           select: {
@@ -36,26 +37,27 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       }
     })
 
-    if (!job) {
+    if (!opportunity) {
       return NextResponse.json(
-        { error: 'Job not found' },
+        { error: 'Opportunity not found' },
         { status: 404 }
       )
     }
 
-    return NextResponse.json(job)
+    return NextResponse.json(opportunity)
   } catch (error) {
-    console.error('Error fetching job:', error)
+    console.error('Error fetching opportunity:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch job' },
+      { error: 'Failed to fetch opportunity' },
       { status: 500 }
     )
   }
 }
 
-// UPDATE - Update a job
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+// UPDATE - Update an opportunity
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const session = await getSession(cookies())
     if (!session) {
       return NextResponse.json(
@@ -64,15 +66,15 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       )
     }
 
-    // Check if user owns the job or is admin
-    const existingJob = await prisma.job.findUnique({
-      where: { id: params.id },
+    // Check if user owns the opportunity or is admin
+    const existingOpportunity = await prisma.opportunity.findUnique({
+      where: { id },
       select: { posterId: true }
     })
 
-    if (!existingJob) {
+    if (!existingOpportunity) {
       return NextResponse.json(
-        { error: 'Job not found' },
+        { error: 'Opportunity not found' },
         { status: 404 }
       )
     }
@@ -82,7 +84,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       select: { role: true }
     })
 
-    if (existingJob.posterId !== session.userId && user?.role !== 'admin') {
+    if (existingOpportunity.posterId !== session.userId && user?.role !== 'admin') {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
@@ -94,7 +96,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       title,
       description,
       company,
-      jobType,
+      opportunityType,
       category,
       location,
       salary,
@@ -104,13 +106,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       isActive
     } = body
 
-    const job = await prisma.job.update({
-      where: { id: params.id },
+    const opportunity = await prisma.opportunity.update({
+      where: { id },
       data: {
         title,
         description,
         company,
-        jobType,
+        opportunityType,
         category,
         location,
         salary,
@@ -132,19 +134,20 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       }
     })
 
-    return NextResponse.json(job)
+    return NextResponse.json(opportunity)
   } catch (error) {
-    console.error('Error updating job:', error)
+    console.error('Error updating opportunity:', error)
     return NextResponse.json(
-      { error: 'Failed to update job' },
+      { error: 'Failed to update opportunity' },
       { status: 500 }
     )
   }
 }
 
-// DELETE - Delete a job
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+// DELETE - Delete an opportunity
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const session = await getSession(cookies())
     if (!session) {
       return NextResponse.json(
@@ -153,15 +156,15 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       )
     }
 
-    // Check if user owns the job or is admin
-    const existingJob = await prisma.job.findUnique({
-      where: { id: params.id },
+    // Check if user owns the opportunity or is admin
+    const existingOpportunity = await prisma.opportunity.findUnique({
+      where: { id },
       select: { posterId: true }
     })
 
-    if (!existingJob) {
+    if (!existingOpportunity) {
       return NextResponse.json(
-        { error: 'Job not found' },
+        { error: 'Opportunity not found' },
         { status: 404 }
       )
     }
@@ -171,33 +174,33 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       select: { role: true }
     })
 
-    if (existingJob.posterId !== session.userId && user?.role !== 'admin') {
+    if (existingOpportunity.posterId !== session.userId && user?.role !== 'admin') {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
       )
     }
 
-    // Delete the job
-    await prisma.job.delete({
-      where: { id: params.id }
+    // Delete the opportunity
+    await prisma.opportunity.delete({
+      where: { id }
     })
 
-    // Decrement user's job count
+    // Decrement user's opportunity count
     await prisma.user.update({
-      where: { id: existingJob.posterId },
+      where: { id: existingOpportunity.posterId },
       data: {
-        jobsCount: {
+        opportunitiesCount: {
           decrement: 1
         }
       }
     })
 
-    return NextResponse.json({ message: 'Job deleted successfully' })
+    return NextResponse.json({ message: 'Opportunity deleted successfully' })
   } catch (error) {
-    console.error('Error deleting job:', error)
+    console.error('Error deleting opportunity:', error)
     return NextResponse.json(
-      { error: 'Failed to delete job' },
+      { error: 'Failed to delete opportunity' },
       { status: 500 }
     )
   }

@@ -13,7 +13,7 @@ The Rwanda Drone Community Platform is a comprehensive web application designed 
 - **Forum & Discussions** - Community-driven discussions and knowledge sharing
 - **Project Showcase** - Display and discover drone projects across Rwanda
 - **Event Management** - Create, manage, and RSVP for drone-related events
-- **Job Board** - Post and apply for drone-related opportunities
+- **Opportunities Board** - Post and apply for drone-related opportunities
 - **Service Marketplace** - Connect service providers with clients
 - **Resource Library** - Educational materials, guides, and documentation
 - **Admin Dashboard** - Comprehensive platform management tools

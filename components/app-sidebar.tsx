@@ -69,14 +69,19 @@ export function AppSidebar({ className, onItemClick }: SidebarProps) {
         icon: Wrench,
       },
       {
-        title: "Jobs",
-        href: "/jobs",
+        title: "Opportunities",
+        href: "/opportunities",
         icon: Briefcase,
       },
       {
         title: "Resources",
         href: "/resources",
         icon: BookOpen,
+      },
+      {
+        title: "Profile",
+        href: "/profile",
+        icon: Users,
       },
     ]
 

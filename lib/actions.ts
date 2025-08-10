@@ -3,7 +3,7 @@
 import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { getAuthenticatedUser } from "@/lib/auth-middleware"
-import { canCreateProjects, canCreateServices, canPostJobs, canCreateEvents, canEditOwnContent, canDeleteAnyContent, getSession } from "@/lib/auth"
+import { canCreateProjects, canCreateServices, canPostOpportunities, canCreateEvents, canEditOwnContent, canDeleteAnyContent, getSession } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 
 // Forum Post Actions
@@ -1169,8 +1169,8 @@ export async function deleteServiceAction(serviceId: string) {
   }
 }
 
-// Job Actions
-export async function createJobAction(formData: FormData) {
+// Opportunity Actions
+export async function createOpportunityAction(formData: FormData) {
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
@@ -1205,15 +1205,15 @@ export async function createJobAction(formData: FormData) {
       throw new Error("Authentication required")
     }
 
-    // Check if user can post jobs
-    if (!canPostJobs(user)) {
-      throw new Error("You don't have permission to post jobs")
+    // Check if user can post opportunities
+    if (!canPostOpportunities(user)) {
+      throw new Error("You don't have permission to post opportunities")
     }
 
     const title = formData.get("title") as string
     const description = formData.get("description") as string
     const company = formData.get("company") as string
-    const jobType = formData.get("jobType") as string
+    const opportunityType = formData.get("opportunityType") as string
     const category = formData.get("category") as string
     const location = formData.get("location") as string
     const salary = formData.get("salary") as string
@@ -1221,16 +1221,16 @@ export async function createJobAction(formData: FormData) {
     const isUrgent = formData.get("isUrgent") === "true"
     const isRemote = formData.get("isRemote") === "true"
 
-    if (!title || !description || !company || !jobType || !category || !location) {
+    if (!title || !description || !company || !opportunityType || !category || !location) {
       throw new Error("Missing required fields")
     }
 
-    const job = await prisma.job.create({
+    const opportunity = await prisma.opportunity.create({
       data: {
         title,
         description,
         company,
-        jobType,
+        opportunityType,
         category,
         location,
         salary: salary || null,
@@ -1241,25 +1241,25 @@ export async function createJobAction(formData: FormData) {
       },
     })
 
-    // Update user's job count
+    // Update user's opportunity count
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        jobsCount: {
+        opportunitiesCount: {
           increment: 1,
         },
       },
     })
 
-    revalidatePath("/jobs")
-    return { success: true, job }
+    revalidatePath("/opportunities")
+    return { success: true, opportunity }
   } catch (error) {
-    console.error("Error creating job:", error)
-    throw new Error("Failed to create job. Please try again.")
+    console.error("Error creating opportunity:", error)
+    throw new Error("Failed to create opportunity. Please try again.")
   }
 }
 
-export async function updateJobAction(jobId: string, formData: FormData) {
+export async function updateOpportunityAction(opportunityId: string, formData: FormData) {
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
@@ -1294,25 +1294,25 @@ export async function updateJobAction(jobId: string, formData: FormData) {
       throw new Error("Authentication required")
     }
 
-    // Get the job to check ownership
-    const existingJob = await prisma.job.findUnique({
-      where: { id: jobId },
+    // Get the opportunity to check ownership
+    const existingOpportunity = await prisma.opportunity.findUnique({
+      where: { id: opportunityId },
       select: { posterId: true }
     })
 
-    if (!existingJob) {
-      throw new Error("Job not found")
+    if (!existingOpportunity) {
+      throw new Error("Opportunity not found")
     }
 
-    // Check if user can edit this job
-    if (!canEditOwnContent(user, existingJob.posterId)) {
-      throw new Error("You don't have permission to edit this job")
+    // Check if user can edit this opportunity
+    if (!canEditOwnContent(user, existingOpportunity.posterId)) {
+      throw new Error("You don't have permission to edit this opportunity")
     }
 
     const title = formData.get("title") as string
     const description = formData.get("description") as string
     const company = formData.get("company") as string
-    const jobType = formData.get("jobType") as string
+    const opportunityType = formData.get("opportunityType") as string
     const category = formData.get("category") as string
     const location = formData.get("location") as string
     const salary = formData.get("salary") as string
@@ -1320,17 +1320,17 @@ export async function updateJobAction(jobId: string, formData: FormData) {
     const isUrgent = formData.get("isUrgent") === "true"
     const isRemote = formData.get("isRemote") === "true"
 
-    if (!title || !description || !company || !jobType || !category || !location) {
+    if (!title || !description || !company || !opportunityType || !category || !location) {
       throw new Error("Missing required fields")
     }
 
-    const job = await prisma.job.update({
-      where: { id: jobId },
+    const opportunity = await prisma.opportunity.update({
+      where: { id: opportunityId },
       data: {
         title,
         description,
         company,
-        jobType,
+        opportunityType,
         category,
         location,
         salary: salary || null,
@@ -1340,16 +1340,16 @@ export async function updateJobAction(jobId: string, formData: FormData) {
       },
     })
 
-    revalidatePath("/jobs")
-    revalidatePath(`/jobs/${jobId}`)
-    return { success: true, job }
+    revalidatePath("/opportunities")
+    revalidatePath(`/opportunities/${opportunityId}`)
+    return { success: true, opportunity }
   } catch (error) {
-    console.error("Error updating job:", error)
-    throw new Error("Failed to update job. Please try again.")
+    console.error("Error updating opportunity:", error)
+    throw new Error("Failed to update opportunity. Please try again.")
   }
 }
 
-export async function deleteJobAction(jobId: string) {
+export async function deleteOpportunityAction(opportunityId: string) {
   try {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
@@ -1364,29 +1364,29 @@ export async function deleteJobAction(jobId: string) {
       throw new Error("Authentication required")
     }
 
-    // Get the job to check ownership
-    const existingJob = await prisma.job.findUnique({
-      where: { id: jobId },
+    // Get the opportunity to check ownership
+    const existingOpportunity = await prisma.opportunity.findUnique({
+      where: { id: opportunityId },
       select: { posterId: true }
     })
 
-    if (!existingJob) {
-      throw new Error("Job not found")
+    if (!existingOpportunity) {
+      throw new Error("Opportunity not found")
     }
 
-    // Check if user can delete this job
-    if (!canDeleteAnyContent(user) && !canEditOwnContent(user, existingJob.posterId)) {
-      throw new Error("You don't have permission to delete this job")
+    // Check if user can delete this opportunity
+    if (!canDeleteAnyContent(user) && !canEditOwnContent(user, existingOpportunity.posterId)) {
+      throw new Error("You don't have permission to delete this opportunity")
     }
 
-    await prisma.job.delete({
-      where: { id: jobId },
+    await prisma.opportunity.delete({
+      where: { id: opportunityId },
     })
 
-    revalidatePath("/jobs")
+    revalidatePath("/opportunities")
     return { success: true }
   } catch (error) {
-    console.error("Error deleting job:", error)
-    throw new Error("Failed to delete job. Please try again.")
+    console.error("Error deleting opportunity:", error)
+    throw new Error("Failed to delete opportunity. Please try again.")
   }
 }

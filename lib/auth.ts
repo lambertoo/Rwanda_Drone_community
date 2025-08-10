@@ -1,5 +1,7 @@
 import { cookies } from "next/headers"
 import { UserRole } from "@prisma/client"
+import bcrypt from "bcryptjs"
+import { verifyToken } from "./jwt"
 
 export interface AuthUser {
   id: string
@@ -10,21 +12,24 @@ export interface AuthUser {
   isVerified: boolean
 }
 
-// In-memory session store (for development)
-const sessions = new Map<string, AuthUser>()
-
+// Secure session management using JWT tokens
 export function createSession(user: AuthUser): string {
-  const sessionId = Math.random().toString(36).substring(2)
-  sessions.set(sessionId, user)
+  // For now, we'll use a simple session ID, but in production
+  // this should be replaced with proper JWT token generation
+  const sessionId = crypto.randomUUID()
   return sessionId
 }
 
 export function getSession(sessionId: string): AuthUser | null {
-  return sessions.get(sessionId) || null
+  // This function is deprecated - use getCurrentUser() instead
+  // which properly validates JWT tokens
+  console.warn('getSession() is deprecated. Use getCurrentUser() instead.')
+  return null
 }
 
 export function deleteSession(sessionId: string): void {
-  sessions.delete(sessionId)
+  // This function is deprecated - sessions are now stateless
+  console.warn('deleteSession() is deprecated. Sessions are now stateless.')
 }
 
 // Role-based authorization functions
@@ -68,11 +73,11 @@ export function canCreateServices(user: AuthUser | null): boolean {
   return user?.role === "service_provider" || user?.role === "pilot"
 }
 
-export function canPostJobs(user: AuthUser | null): boolean {
+export function canPostOpportunities(user: AuthUser | null): boolean {
   return user?.role === "service_provider" || user?.role === "pilot"
 }
 
-export function canApplyJobs(user: AuthUser | null): boolean {
+export function canApplyOpportunities(user: AuthUser | null): boolean {
   return user?.role === "pilot" || user?.role === "student"
 }
 
@@ -106,14 +111,33 @@ export function canUploadPortfolio(user: AuthUser | null): boolean {
 
 // Helper function to get current user from cookies
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  const cookieStore = await cookies()
-  const sessionId = cookieStore.get("session-id")?.value
-  
-  if (sessionId) {
-    return getSession(sessionId)
+  try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get("auth-token")?.value
+    
+    if (!token) {
+      return null
+    }
+    
+    // Verify JWT token
+    const payload = verifyToken(token)
+    if (!payload) {
+      return null
+    }
+    
+    // Return user data from token payload
+    return {
+      id: payload.userId,
+      username: payload.username,
+      email: payload.email,
+      fullName: payload.username, // We'll need to get this from database if needed
+      role: payload.role as UserRole,
+      isVerified: false, // We'll need to get this from database if needed
+    }
+  } catch (error) {
+    console.error('Error getting current user:', error)
+    return null
   }
-  
-  return null
 }
 
 // Helper function to check if user is logged in
@@ -138,4 +162,13 @@ export function validatePassword(password: string): boolean {
   // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/
   return passwordRegex.test(password)
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  const saltRounds = 12
+  return bcrypt.hash(password, saltRounds)
+}
+
+export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  return bcrypt.compare(password, hashedPassword)
 }

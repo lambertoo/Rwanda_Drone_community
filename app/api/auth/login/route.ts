@@ -1,15 +1,33 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { generateToken } from "@/lib/jwt"
-import bcrypt from "bcryptjs"
+import { verifyPassword } from "@/lib/auth"
+import { userLoginSchema } from "@/lib/validation"
+import { authRateLimit } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
-
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
+    // Apply rate limiting
+    const rateLimitResult = authRateLimit(request)
+    if (rateLimitResult) {
+      return rateLimitResult
     }
+
+    const body = await request.json()
+
+    // Validate input using Zod schema
+    const validationResult = userLoginSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { 
+          error: "Validation failed", 
+          details: validationResult.error.errors 
+        },
+        { status: 400 }
+      )
+    }
+
+    const { email, password } = validationResult.data
 
     // Find user by email
     const user = await prisma.user.findUnique({
@@ -20,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify password against hashed password
-    const isValidPassword = await bcrypt.compare(password, user.password)
+    const isValidPassword = await verifyPassword(password, user.password)
 
     if (!isValidPassword) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })

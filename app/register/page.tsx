@@ -13,12 +13,6 @@ import { Loader, Eye, EyeOff, Shield, Users, Plane, GraduationCap, Wrench, Camer
 import Link from "next/link"
 
 const roleInfo = {
-  admin: {
-    name: "Administrator",
-    description: "Full system access and management",
-    icon: Shield,
-    color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  },
   hobbyist: {
     name: "Hobbyist",
     description: "Drone enthusiasts and recreational pilots",
@@ -31,19 +25,13 @@ const roleInfo = {
     icon: Plane,
     color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
   },
-  regulator: {
-    name: "Regulator",
-    description: "Government and regulatory officials",
-    icon: Shield,
-    color: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
-  },
   student: {
     name: "Student",
     description: "Students and researchers",
     icon: GraduationCap,
     color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
   },
-  "service-provider": {
+  service_provider: {
     name: "Service Provider",
     description: "Drone services and maintenance",
     icon: Wrench,
@@ -65,6 +53,8 @@ export default function RegisterPage() {
     location: "",
     pilotLicense: "",
     experience: "",
+    website: "",
+    phone: "",
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -82,14 +72,28 @@ export default function RegisterPage() {
     setError("")
 
     // Basic validation
+    if (!formData.fullName || !formData.email || !formData.username || !formData.password || !formData.role) {
+      setError("Please fill in all required fields")
+      setIsLoading(false)
+      return
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match")
       setIsLoading(false)
       return
     }
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long")
+    if (formData.password.length < 8) {
+      setError("Password must be at least 8 characters long")
+      setIsLoading(false)
+      return
+    }
+
+    // Check password complexity
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/
+    if (!passwordRegex.test(formData.password)) {
+      setError("Password must contain at least 1 uppercase letter, 1 lowercase letter, and 1 number")
       setIsLoading(false)
       return
     }
@@ -109,7 +113,12 @@ export default function RegisterPage() {
         // Redirect to login page
         router.push("/login?message=Registration successful! Please sign in.")
       } else {
-        setError(data.error || "Registration failed")
+        if (data.details && Array.isArray(data.details)) {
+          const errorMessages = data.details.map((err: any) => err.message).join(", ")
+          setError(`Validation failed: ${errorMessages}`)
+        } else {
+          setError(data.error || "Registration failed")
+        }
       }
     } catch (err) {
       setError("Network error. Please try again.")
@@ -223,21 +232,25 @@ export default function RegisterPage() {
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(roleInfo).map(([role, info]) => {
-                    const IconComponent = info.icon
-                    return (
-                      <SelectItem key={role} value={role}>
-                        <div className="flex items-center gap-2">
-                          <div className={`p-1 rounded ${info.color}`}>
-                            <IconComponent className="h-3 w-3" />
+                  {Object.entries(roleInfo)
+                    .map(([role, info]) => {
+                      const IconComponent = info.icon
+                      return (
+                        <SelectItem key={role} value={role}>
+                          <div className="flex items-center gap-2">
+                            <div className={`p-1 rounded ${info.color}`}>
+                              <IconComponent className="h-3 w-3" />
+                            </div>
+                            <span>{info.name}</span>
                           </div>
-                          <span>{info.name}</span>
-                        </div>
-                      </SelectItem>
-                    )
-                  })}
+                        </SelectItem>
+                      )
+                    })}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Note: Administrator and Regulator roles are assigned by system administrators only.
+              </p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
@@ -254,11 +267,72 @@ export default function RegisterPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  placeholder="City, Rwanda"
+                <Select
                   value={formData.location}
-                  onChange={(e) => handleInputChange("location", e.target.value)}
+                  onValueChange={(value) => handleInputChange("location", value)}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="KIGALI_NYARUGENGE">Kigali - Nyarugenge</SelectItem>
+                    <SelectItem value="KIGALI_KICUKIRO">Kigali - Kicukiro</SelectItem>
+                    <SelectItem value="KIGALI_GASABO">Kigali - Gasabo</SelectItem>
+                    <SelectItem value="SOUTH_HUYE">South - Huye</SelectItem>
+                    <SelectItem value="SOUTH_NYAMAGABE">South - Nyamagabe</SelectItem>
+                    <SelectItem value="SOUTH_NYARUGURU">South - Nyaruguru</SelectItem>
+                    <SelectItem value="SOUTH_MUHANGA">South - Muhanga</SelectItem>
+                    <SelectItem value="SOUTH_KAMONYI">South - Kamonyi</SelectItem>
+                    <SelectItem value="SOUTH_GISAGARA">South - Gisagara</SelectItem>
+                    <SelectItem value="SOUTH_NYANZA">South - Nyanza</SelectItem>
+                    <SelectItem value="SOUTH_RUHANGO">South - Ruhango</SelectItem>
+                    <SelectItem value="NORTH_MUSANZE">North - Musanze</SelectItem>
+                    <SelectItem value="NORTH_GICUMBI">North - Gicumbi</SelectItem>
+                    <SelectItem value="NORTH_RULINDO">North - Rulindo</SelectItem>
+                    <SelectItem value="NORTH_BURERA">North - Burera</SelectItem>
+                    <SelectItem value="NORTH_GAKENKE">North - Gakenke</SelectItem>
+                    <SelectItem value="EAST_KAYONZA">East - Kayonza</SelectItem>
+                    <SelectItem value="EAST_NGOMA">East - Ngoma</SelectItem>
+                    <SelectItem value="EAST_KIREHE">East - Kirehe</SelectItem>
+                    <SelectItem value="EAST_NYAGATARE">East - Nyagatare</SelectItem>
+                    <SelectItem value="EAST_BUGESERA">East - Bugesera</SelectItem>
+                    <SelectItem value="EAST_RWAMAGANA">East - Rwamagana</SelectItem>
+                    <SelectItem value="EAST_GATSIBO">East - Gatsibo</SelectItem>
+                    <SelectItem value="WEST_RUBAVU">West - Rubavu</SelectItem>
+                    <SelectItem value="WEST_RUSIZI">West - Rusizi</SelectItem>
+                    <SelectItem value="WEST_NYAMASHEKE">West - Nyamasheke</SelectItem>
+                    <SelectItem value="WEST_RUTSIRO">West - Rutsiro</SelectItem>
+                    <SelectItem value="WEST_KARONGI">West - Karongi</SelectItem>
+                    <SelectItem value="WEST_NGORORERO">West - Ngororero</SelectItem>
+                    <SelectItem value="WEST_NYABIHU">West - Nyabihu</SelectItem>
+                    <SelectItem value="UNKNOWN">Unknown</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="website">Website (Optional)</Label>
+                <Input
+                  id="website"
+                  type="url"
+                  placeholder="https://yourwebsite.com"
+                  value={formData.website}
+                  onChange={(e) => handleInputChange("website", e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number (Optional)</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+250 123 456 789"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
                   disabled={isLoading}
                 />
               </div>

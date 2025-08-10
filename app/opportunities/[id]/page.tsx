@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { MapPin, Building2, Clock, DollarSign, Calendar, Users, Briefcase, Edit, Trash2, ArrowLeft } from "lucide-react"
-import { deleteJobAction } from "@/lib/actions"
+import { deleteOpportunityAction } from "@/lib/actions"
 
-interface Job {
+interface Opportunity {
   id: string
   title: string
   description: string
   company: string
-  jobType: string
+  opportunityType: string
   category: string
   location: string
   salary: string | null
@@ -45,10 +45,10 @@ interface Job {
   }[]
 }
 
-export default function JobDetailPage() {
+export default function OpportunityDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const [job, setJob] = useState<Job | null>(null)
+  const [opportunity, setOpportunity] = useState<Opportunity | null>(null)
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
@@ -64,41 +64,41 @@ export default function JobDetailPage() {
 
   useEffect(() => {
     if (mounted && params.id) {
-      fetchJob()
+      fetchOpportunity()
     }
   }, [mounted, params.id])
 
-  const fetchJob = async () => {
+  const fetchOpportunity = async () => {
     try {
-      const response = await fetch(`/api/jobs/${params.id}`)
+      const response = await fetch(`/api/opportunities/${params.id}`)
       if (!response.ok) {
         if (response.status === 404) {
-          router.push("/jobs")
+          router.push("/opportunities")
           return
         }
-        throw new Error("Failed to fetch job")
+        throw new Error("Failed to fetch opportunity")
       }
       
       const data = await response.json()
-      setJob(data)
+      setOpportunity(data)
     } catch (error) {
-      console.error("Error fetching job:", error)
+      console.error("Error fetching opportunity:", error)
     } finally {
       setLoading(false)
     }
   }
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this job?")) {
+    if (!confirm("Are you sure you want to delete this opportunity?")) {
       return
     }
 
     try {
-      await deleteJobAction(params.id as string)
-      router.push("/jobs")
+      await deleteOpportunityAction(params.id as string)
+      router.push("/opportunities")
     } catch (error) {
-      console.error("Error deleting job:", error)
-      alert("Failed to delete job. Please try again.")
+      console.error("Error deleting opportunity:", error)
+      alert("Failed to delete opportunity. Please try again.")
     }
   }
 
@@ -126,18 +126,18 @@ export default function JobDetailPage() {
     )
   }
 
-  if (!job) {
+  if (!opportunity) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
         <Card>
           <CardContent className="p-12 text-center">
             <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Job not found</h3>
+            <h3 className="text-lg font-semibold mb-2">Opportunity not found</h3>
             <p className="text-muted-foreground mb-4">
-              The job you're looking for doesn't exist or has been removed.
+              The opportunity you're looking for doesn't exist or has been removed.
             </p>
-            <Link href="/jobs">
-              <Button>Back to Jobs</Button>
+            <Link href="/opportunities">
+              <Button>Back to Opportunities</Button>
             </Link>
           </CardContent>
         </Card>
@@ -157,7 +157,7 @@ export default function JobDetailPage() {
     return date.toLocaleDateString()
   }
 
-  const getJobTypeColor = (type: string) => {
+  const getOpportunityTypeColor = (type: string) => {
     switch (type.toLowerCase()) {
       case 'urgent':
         return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
@@ -193,27 +193,27 @@ export default function JobDetailPage() {
 
   let requirements: string[] = []
   try {
-    requirements = job.requirements ? JSON.parse(job.requirements) : []
+    requirements = opportunity.requirements ? JSON.parse(opportunity.requirements) : []
   } catch (error) {
-    console.error('Error parsing requirements for job:', job.id, error)
+    console.error('Error parsing requirements for opportunity:', opportunity.id, error)
     requirements = []
   }
 
-  const canEdit = currentUser && (currentUser.id === job.poster.id || currentUser.role === 'admin')
+  const canEdit = currentUser && (currentUser.id === opportunity.poster.id || currentUser.role === 'admin')
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/jobs">
+        <Link href="/opportunities">
           <Button variant="outline" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Jobs
+            Back to Opportunities
           </Button>
         </Link>
         {canEdit && (
           <div className="flex gap-2 ml-auto">
-            <Link href={`/jobs/${job.id}/edit`}>
+            <Link href={`/opportunities/${opportunity.id}/edit`}>
               <Button variant="outline" size="sm">
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
@@ -227,65 +227,65 @@ export default function JobDetailPage() {
         )}
       </div>
 
-      {/* Job Header */}
+      {/* Opportunity Header */}
       <Card>
         <CardContent className="p-6">
           <div className="space-y-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <h1 className="text-3xl font-bold">{job.title}</h1>
-                  {job.isUrgent && (
+                  <h1 className="text-3xl font-bold">{opportunity.title}</h1>
+                  {opportunity.isUrgent && (
                     <Badge variant="destructive">Urgent</Badge>
                   )}
                 </div>
                 <div className="flex items-center gap-2 text-lg text-muted-foreground mb-2">
                   <Building2 className="h-5 w-5" />
-                  <span>{job.company}</span>
-                  {job.poster.isVerified && (
+                  <span>{opportunity.company}</span>
+                  {opportunity.poster.isVerified && (
                     <Badge variant="secondary">Verified</Badge>
                   )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Badge className={getJobTypeColor(job.jobType)}>
-                  {job.jobType}
+                <Badge className={getOpportunityTypeColor(opportunity.opportunityType)}>
+                  {opportunity.opportunityType}
                 </Badge>
-                <Badge className={getCategoryColor(job.category)}>
-                  {job.category}
+                <Badge className={getCategoryColor(opportunity.category)}>
+                  {opportunity.category}
                 </Badge>
               </div>
             </div>
 
-            {/* Job Details */}
+            {/* Opportunity Details */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span>{job.location}</span>
-                {job.isRemote && (
+                <span>{opportunity.location}</span>
+                {opportunity.isRemote && (
                   <Badge variant="outline">Remote</Badge>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span>{job.salary || 'Salary not specified'}</span>
+                <span>{opportunity.salary || 'Salary not specified'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>{formatDate(job.createdAt)}</span>
+                <span>{formatDate(opportunity.createdAt)}</span>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Job Description */}
+      {/* Opportunity Description */}
       <Card>
         <CardHeader>
-          <CardTitle>Job Description</CardTitle>
+          <CardTitle>Opportunity Description</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground whitespace-pre-wrap">{job.description}</p>
+          <p className="text-muted-foreground whitespace-pre-wrap">{opportunity.description}</p>
         </CardContent>
       </Card>
 
@@ -314,16 +314,16 @@ export default function JobDetailPage() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{job.company}</span>
+              <span className="font-medium">{opportunity.company}</span>
             </div>
-            {job.poster.organization && (
+            {opportunity.poster.organization && (
               <div className="text-sm text-muted-foreground">
-                {job.poster.organization}
+                {opportunity.poster.organization}
               </div>
             )}
             <div className="text-sm text-muted-foreground">
-              Posted by {job.poster.fullName}
-              {job.poster.isVerified && (
+              Posted by {opportunity.poster.fullName}
+              {opportunity.poster.isVerified && (
                 <Badge variant="secondary" className="ml-2">Verified</Badge>
               )}
             </div>
@@ -332,14 +332,14 @@ export default function JobDetailPage() {
       </Card>
 
       {/* Applications */}
-      {job.applications.length > 0 && (
+      {opportunity.applications.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Applications ({job.applications.length})</CardTitle>
+            <CardTitle>Applications ({opportunity.applications.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {job.applications.map((application) => (
+              {opportunity.applications.map((application) => (
                 <div key={application.id} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -368,7 +368,7 @@ export default function JobDetailPage() {
           Apply Now
         </Button>
         <Button variant="outline">
-          Save Job
+          Save Opportunity
         </Button>
         <Button variant="outline">
           Share

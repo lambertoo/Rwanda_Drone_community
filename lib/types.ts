@@ -155,11 +155,19 @@ export interface Resource {
   uploadedBy: User
 }
 
-export interface Job {
+export interface Opportunity {
   id: string
   title: string
   description: string
+  company: string
+  opportunityType: string
+  category: string
   location: string
+  salary?: string
+  requirements?: string
+  isUrgent: boolean
+  isRemote: boolean
+  isActive: boolean
   createdAt: Date
   posterId: string
   poster: User
@@ -167,8 +175,8 @@ export interface Job {
 
 export interface JobApplication {
   id: string
-  jobId: string
-  job: Job
+  opportunityId: string
+  opportunity: Opportunity
   applicantId: string
   applicant: User
   message?: string

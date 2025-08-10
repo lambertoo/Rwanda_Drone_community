@@ -8,12 +8,12 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MapPin, Building2, Clock, DollarSign, Calendar, Users, Briefcase } from "lucide-react"
 
-interface Job {
+interface Opportunity {
   id: string
   title: string
   description: string
   company: string
-  jobType: string
+  opportunityType: string
   category: string
   location: string
   salary: string | null
@@ -31,11 +31,11 @@ interface Job {
   applications: { id: string }[]
 }
 
-export default function JobsPage() {
-  const [jobs, setJobs] = useState<Job[]>([])
+export default function OpportunitiesPage() {
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
-  const [jobType, setJobType] = useState("all")
+  const [opportunityType, setOpportunityType] = useState("all")
   const [category, setCategory] = useState("all")
   const [location, setLocation] = useState("all")
 
@@ -44,20 +44,20 @@ export default function JobsPage() {
     setMounted(true)
   }, [])
 
-  const fetchJobs = async () => {
+  const fetchOpportunities = async () => {
     try {
       const params = new URLSearchParams()
-      if (jobType !== "all") params.append("jobType", jobType)
+      if (opportunityType !== "all") params.append("opportunityType", opportunityType)
       if (category !== "all") params.append("category", category)
       if (location !== "all") params.append("location", location)
 
-      const response = await fetch(`/api/jobs?${params.toString()}`)
-      if (!response.ok) throw new Error("Failed to fetch jobs")
+      const response = await fetch(`/api/opportunities?${params.toString()}`)
+      if (!response.ok) throw new Error("Failed to fetch opportunities")
       
       const data = await response.json()
-      setJobs(data)
+      setOpportunities(data)
     } catch (error) {
-      console.error("Error fetching jobs:", error)
+      console.error("Error fetching opportunities:", error)
     } finally {
       setLoading(false)
     }
@@ -65,9 +65,9 @@ export default function JobsPage() {
 
   useEffect(() => {
     if (mounted) {
-      fetchJobs()
+      fetchOpportunities()
     }
-  }, [jobType, category, location, mounted])
+  }, [opportunityType, category, location, mounted])
 
   if (!mounted) {
     return (
@@ -93,7 +93,7 @@ export default function JobsPage() {
     return date.toLocaleDateString()
   }
 
-  const getJobTypeColor = (type: string) => {
+  const getOpportunityTypeColor = (type: string) => {
     switch (type.toLowerCase()) {
       case 'urgent':
         return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
@@ -131,7 +131,7 @@ export default function JobsPage() {
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="space-y-4">
-        <h1 className="text-3xl font-bold">Job Board</h1>
+        <h1 className="text-3xl font-bold">Opportunities Board</h1>
         <p className="text-lg text-muted-foreground">
           Find drone-related career opportunities across Rwanda
         </p>
@@ -140,9 +140,9 @@ export default function JobsPage() {
       {/* Filters and Actions */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-4">
-          <Select value={jobType} onValueChange={setJobType}>
+          <Select value={opportunityType} onValueChange={setOpportunityType}>
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Job Type" />
+              <SelectValue placeholder="Opportunity Type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
@@ -182,14 +182,14 @@ export default function JobsPage() {
           </Select>
         </div>
 
-        <Link href="/jobs/new">
+        <Link href="/opportunities/new">
           <Button className="bg-blue-600 hover:bg-blue-700">
-            Post Job
+            Post Opportunity
           </Button>
         </Link>
       </div>
 
-      {/* Jobs Grid */}
+      {/* Opportunities Grid */}
       <div className="space-y-4">
         {loading ? (
           <div className="space-y-4">
@@ -205,66 +205,66 @@ export default function JobsPage() {
               </Card>
             ))}
           </div>
-        ) : jobs.length === 0 ? (
+        ) : opportunities.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No jobs found</h3>
+              <h3 className="text-lg font-semibold mb-2">No opportunities found</h3>
               <p className="text-muted-foreground mb-4">
                 Try adjusting your filters or check back later for new opportunities.
               </p>
-              <Link href="/jobs/new">
-                <Button>Post a Job</Button>
+              <Link href="/opportunities/new">
+                <Button>Post an Opportunity</Button>
               </Link>
             </CardContent>
           </Card>
         ) : (
-          jobs.map((job) => {
+          opportunities.map((opportunity) => {
             let requirements: string[] = []
             try {
-              requirements = job.requirements ? JSON.parse(job.requirements) : []
+              requirements = opportunity.requirements ? JSON.parse(opportunity.requirements) : []
             } catch (error) {
-              console.error('Error parsing requirements for job:', job.id, error)
+              console.error('Error parsing requirements for opportunity:', opportunity.id, error)
               requirements = []
             }
 
             return (
-              <Card key={job.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              <Card key={opportunity.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 space-y-3">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h3 className="font-semibold text-xl">{job.title}</h3>
-                          <p className="text-muted-foreground">{job.company}</p>
+                          <h3 className="font-semibold text-xl">{opportunity.title}</h3>
+                          <p className="text-muted-foreground">{opportunity.company}</p>
                         </div>
                         <div className="flex gap-2">
-                          {job.isUrgent && (
+                          {opportunity.isUrgent && (
                             <Badge variant="destructive" className="text-xs">
                               Urgent
                             </Badge>
                           )}
-                          <Badge className={getJobTypeColor(job.jobType)}>{job.jobType}</Badge>
-                          <Badge className={getCategoryColor(job.category)}>{job.category}</Badge>
+                          <Badge className={getOpportunityTypeColor(opportunity.opportunityType)}>{opportunity.opportunityType}</Badge>
+                          <Badge className={getCategoryColor(opportunity.category)}>{opportunity.category}</Badge>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <MapPin className="h-4 w-4" />
-                          {job.location}
+                          {opportunity.location}
                         </div>
                         <div className="flex items-center gap-1">
                           <DollarSign className="h-4 w-4" />
-                          {job.salary}
+                          {opportunity.salary}
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
-                          {formatDate(job.createdAt)}
+                          {formatDate(opportunity.createdAt)}
                         </div>
                       </div>
 
-                      <p className="text-sm text-muted-foreground">{job.description}</p>
+                      <p className="text-sm text-muted-foreground">{opportunity.description}</p>
 
                       <div className="space-y-2">
                         <h4 className="font-semibold text-sm">Requirements:</h4>
@@ -279,11 +279,11 @@ export default function JobsPage() {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <Link href={`/jobs/${job.id}`}>
+                      <Link href={`/opportunities/${opportunity.id}`}>
                         <Button>Apply Now</Button>
                       </Link>
                       <Button variant="outline" size="sm">
-                        Save Job
+                        Save Opportunity
                       </Button>
                     </div>
                   </div>
@@ -299,15 +299,15 @@ export default function JobsPage() {
         <CardContent className="p-8 text-center">
           <h3 className="text-xl font-semibold mb-2">Looking to hire drone professionals?</h3>
           <p className="text-muted-foreground mb-4">
-            Post your job and connect with qualified drone operators across Rwanda
+            Post your opportunity and connect with qualified drone operators across Rwanda
           </p>
-          <Link href="/jobs/new">
+          <Link href="/opportunities/new">
             <Button className="bg-blue-600 hover:bg-blue-700">
-              Post a Job
+              Post an Opportunity
             </Button>
           </Link>
         </CardContent>
       </Card>
     </div>
   )
-}
+} 

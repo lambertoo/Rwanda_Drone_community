@@ -17,6 +17,7 @@ model User {
   bio               String?
   location          Region?
   website           String?
+  phone             String?
   joinedAt          DateTime           @default(now())
   reputation        Int                @default(0)
   isVerified        Boolean            @default(false)
@@ -27,15 +28,15 @@ model User {
   projectsCount     Int                @default(0)
   eventsCount       Int                @default(0)
   servicesCount     Int                @default(0)
-  jobsCount         Int                @default(0)
+  opportunitiesCount Int                @default(0)
   pilotLicense      String?
   organization      String?
   experience        String?
   specializations   Json?
   certifications    Json?
-  jobs              Job[]
+  opportunities     Opportunity[]
   applications      JobApplication[]
-  rsvps             RSVP[]
+  rsvps             rsvp[]
   resources         Resource[]
   commentLikes      CommentLike[]
   projectComments   Comment[]
@@ -262,7 +263,7 @@ model Event {
   agenda               Json?
   gallery              Json?
   flyer                String?
-  rsvps                RSVP[]
+  rsvps                rsvp[]
   category             EventCategory? @relation(fields: [categoryId], references: [id])
   organizer            User           @relation(fields: [organizerId], references: [id], onDelete: Cascade)
 
@@ -302,43 +303,45 @@ model Resource {
   uploadedBy  User     @relation(fields: [userId], references: [id])
 }
 
-model Job {
-  id           String           @id @default(cuid())
-  title        String
-  description  String
-  company      String
-  jobType      String
-  category     String
-  location     String
-  salary       String?
-  requirements Json?
-  isUrgent     Boolean          @default(false)
-  isRemote     Boolean          @default(false)
-  isActive     Boolean          @default(true)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  posterId     String
-  poster       User             @relation(fields: [posterId], references: [id], onDelete: Cascade)
-  applications JobApplication[]
+model Opportunity {
+  id               String           @id @default(cuid())
+  title            String
+  description      String
+  company          String
+  opportunityType  String
+  category         String
+  location         String
+  salary           String?
+  requirements     Json?
+  isUrgent         Boolean          @default(false)
+  isRemote         Boolean          @default(false)
+  isActive         Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  posterId         String
+  poster           User             @relation(fields: [posterId], references: [id], onDelete: Cascade)
+  applications     JobApplication[]
 }
 
 model JobApplication {
-  id          String   @id @default(cuid())
-  jobId       String
-  applicantId String
-  message     String?
-  createdAt   DateTime @default(now())
-  applicant   User     @relation(fields: [applicantId], references: [id])
-  job         Job      @relation(fields: [jobId], references: [id])
+  id            String      @id @default(cuid())
+  opportunityId String
+  applicantId   String
+  message       String?
+  createdAt     DateTime    @default(now())
+  applicant     User        @relation(fields: [applicantId], references: [id])
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id])
 }
 
-model RSVP {
+model rsvp {
   id        String   @id @default(cuid())
   userId    String
   eventId   String
   createdAt DateTime @default(now())
   event     Event    @relation(fields: [eventId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
+
+  @@map("rsvp")
 }
 
 enum UserRole {

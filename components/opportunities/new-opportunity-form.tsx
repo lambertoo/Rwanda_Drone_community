@@ -9,9 +9,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, X } from "lucide-react"
-import { createJobAction } from "@/lib/actions"
+import { createOpportunityAction } from "@/lib/actions"
 
-export default function NewJobForm() {
+export default function NewOpportunityForm() {
   const [loading, setLoading] = useState(false)
   const [requirements, setRequirements] = useState<string[]>([""])
 
@@ -38,10 +38,10 @@ export default function NewJobForm() {
     try {
       // Check if user is logged in
       const user = localStorage.getItem("user")
-      if (!user) {
-        alert("Please log in to post a job.")
-        return
-      }
+              if (!user) {
+          alert("Please log in to post an opportunity.")
+          return
+        }
 
       const formData = new FormData(e.currentTarget)
       
@@ -53,11 +53,11 @@ export default function NewJobForm() {
       const userData = JSON.parse(user)
       formData.append("userId", userData.id)
 
-      console.log("Creating job with user:", userData.id)
-      await createJobAction(formData)
+              console.log("Creating opportunity with user:", userData.id)
+        await createOpportunityAction(formData)
     } catch (error) {
-      console.error("Error creating job:", error)
-      alert("Failed to create job. Please try again.")
+              console.error("Error creating opportunity:", error)
+              alert("Failed to create opportunity. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -67,21 +67,21 @@ export default function NewJobForm() {
     <div className="max-w-4xl mx-auto">
       <div className="space-y-6">
         <div className="text-center space-y-4">
-          <h1 className="text-3xl font-bold">Post a Job</h1>
-          <p className="text-lg text-muted-foreground">
-            Find the perfect drone professional for your project
-          </p>
+                                <h1 className="text-3xl font-bold">Post an Opportunity</h1>
+                      <p className="text-lg text-muted-foreground">
+                        Find the perfect drone professional for your project
+                      </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Job Information</CardTitle>
+            <CardTitle>Opportunity Information</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Job Title *</Label>
+                                      <Label htmlFor="title">Opportunity Title *</Label>
                   <Input
                     id="title"
                     name="title"
@@ -102,7 +102,7 @@ export default function NewJobForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Job Description *</Label>
+                <Label htmlFor="description">Opportunity Description *</Label>
                 <Textarea
                   id="description"
                   name="description"
@@ -114,10 +114,10 @@ export default function NewJobForm() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="jobType">Job Type *</Label>
-                  <Select name="jobType" required>
+                                      <Label htmlFor="opportunityType">Opportunity Type *</Label>
+                                      <Select name="opportunityType" required>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select job type" />
+                                              <SelectValue placeholder="Select opportunity type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Full-time">Full-time</SelectItem>
@@ -212,9 +212,9 @@ export default function NewJobForm() {
               </div>
 
               <div className="flex gap-4 pt-4">
-                <Button type="submit" disabled={loading} className="flex-1 bg-blue-600 hover:bg-blue-700">
-                  {loading ? "Creating..." : "Post Job"}
-                </Button>
+                                      <Button type="submit" disabled={loading} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                        {loading ? "Creating..." : "Post Opportunity"}
+                      </Button>
               </div>
             </form>
           </CardContent>

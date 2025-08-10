@@ -7,9 +7,9 @@ async function main() {
   console.log('🌱 Starting database seeding...')
 
   // Clear existing data
-  await prisma.rSVP.deleteMany()
+  await prisma.rsvp.deleteMany()
   await prisma.jobApplication.deleteMany()
-  await prisma.job.deleteMany()
+  await prisma.opportunity.deleteMany()
   await prisma.resource.deleteMany()
   await prisma.service.deleteMany()
   await prisma.event.deleteMany()
@@ -185,9 +185,9 @@ async function main() {
     }),
     prisma.forumCategory.create({
       data: {
-        name: 'Jobs & Opportunities',
-        description: 'Find drone-related job opportunities and freelance projects in Rwanda',
-        slug: 'jobs',
+            name: 'Jobs & Opportunities',
+    description: 'Find drone-related job opportunities and freelance projects in Rwanda',
+    slug: 'opportunities',
         color: '#06B6D4',
       }
     })
@@ -773,14 +773,14 @@ async function main() {
 
   console.log('📚 Created resources')
 
-  // Create jobs
-  const jobs = await Promise.all([
-    prisma.job.create({
+  // Create opportunities
+  const opportunities = await Promise.all([
+    prisma.opportunity.create({
       data: {
         title: 'Drone Pilot for Agricultural Mapping',
         description: 'Seeking experienced drone pilot for agricultural mapping projects across Northern Province. Must have RCAA certification and experience with multispectral imaging.',
         company: 'AgriTech Solutions Rwanda',
-        jobType: 'Full-time',
+        opportunityType: 'Full-time',
         category: 'Agriculture',
         location: 'Musanze',
         salary: '800,000 - 1,200,000 RWF',
@@ -794,12 +794,12 @@ async function main() {
         posterId: users[2].id,
       }
     }),
-    prisma.job.create({
+    prisma.opportunity.create({
       data: {
         title: 'Aerial Photography Specialist',
         description: 'Looking for creative drone photographer for real estate and event photography. Portfolio required.',
         company: 'SkyView Media',
-        jobType: 'Urgent',
+        opportunityType: 'Urgent',
         category: 'Photography',
         location: 'Kigali',
         salary: 'Per project basis',
@@ -813,12 +813,12 @@ async function main() {
         posterId: users[5].id,
       }
     }),
-    prisma.job.create({
+    prisma.opportunity.create({
       data: {
         title: 'Construction Site Surveyor',
         description: 'Part-time position for drone-based construction site surveying and progress monitoring.',
         company: 'BuildRight Construction',
-        jobType: 'Part-time',
+        opportunityType: 'Part-time',
         category: 'Construction',
         location: 'Kigali',
         salary: '600,000 - 800,000 RWF',
@@ -832,12 +832,12 @@ async function main() {
         posterId: users[3].id,
       }
     }),
-    prisma.job.create({
+    prisma.opportunity.create({
       data: {
         title: 'Drone Maintenance Technician',
         description: 'Technical role maintaining and repairing various drone models. Electronics background required.',
         company: 'Rwanda Drone Services',
-        jobType: 'Full-time',
+        opportunityType: 'Full-time',
         category: 'Technical',
         location: 'Kigali',
         salary: '500,000 - 700,000 RWF',
@@ -851,12 +851,12 @@ async function main() {
         posterId: users[4].id,
       }
     }),
-    prisma.job.create({
+    prisma.opportunity.create({
       data: {
         title: 'Wildlife Conservation Drone Operator',
         description: 'Operate drones for wildlife monitoring and anti-poaching efforts in national parks.',
         company: 'Rwanda Wildlife Conservation',
-        jobType: 'Contract',
+        opportunityType: 'Contract',
         category: 'Conservation',
         location: 'Akagera National Park',
         salary: 'Competitive',
@@ -870,12 +870,12 @@ async function main() {
         posterId: users[1].id,
       }
     }),
-    prisma.job.create({
+    prisma.opportunity.create({
       data: {
         title: 'Drone Training Instructor',
         description: 'Teach drone operation and safety courses. RCAA instructor certification required.',
         company: 'Rwanda Aviation Academy',
-        jobType: 'Full-time',
+        opportunityType: 'Full-time',
         category: 'Education',
         location: 'Kigali',
         salary: '900,000 - 1,300,000 RWF',
@@ -889,12 +889,12 @@ async function main() {
         posterId: users[0].id,
       }
     }),
-    prisma.job.create({
+    prisma.opportunity.create({
       data: {
         title: 'Real Estate Drone Photographer',
         description: 'Capture stunning aerial photos and videos for real estate listings. Experience with real estate photography preferred.',
         company: 'Rwanda Real Estate Media',
-        jobType: 'Part-time',
+        opportunityType: 'Part-time',
         category: 'Photography',
         location: 'Kigali',
         salary: '400,000 - 600,000 RWF',
@@ -908,12 +908,12 @@ async function main() {
         posterId: users[3].id,
       }
     }),
-    prisma.job.create({
+    prisma.opportunity.create({
       data: {
         title: 'Emergency Response Drone Pilot',
         description: 'Urgent need for drone pilot to assist in emergency response and disaster assessment operations.',
         company: 'Rwanda Emergency Services',
-        jobType: 'Urgent',
+        opportunityType: 'Urgent',
         category: 'Technical',
         location: 'Kigali',
         salary: '1,000,000 - 1,500,000 RWF',
@@ -927,12 +927,12 @@ async function main() {
         posterId: users[2].id,
       }
     }),
-    prisma.job.create({
+    prisma.opportunity.create({
       data: {
         title: 'Agricultural Drone Consultant',
         description: 'Provide consulting services for agricultural drone implementation and precision farming solutions.',
         company: 'AgriTech Consulting Rwanda',
-        jobType: 'Contract',
+        opportunityType: 'Contract',
         category: 'Agriculture',
         location: 'Huye',
         salary: 'Per project basis',
@@ -946,12 +946,12 @@ async function main() {
         posterId: users[5].id,
       }
     }),
-    prisma.job.create({
+    prisma.opportunity.create({
       data: {
         title: 'Drone Software Developer',
         description: 'Develop software solutions for drone operations, including flight planning and data analysis tools.',
         company: 'Rwanda Drone Tech Solutions',
-        jobType: 'Full-time',
+        opportunityType: 'Full-time',
         category: 'Technical',
         location: 'Kigali',
         salary: '1,200,000 - 1,800,000 RWF',
@@ -967,20 +967,20 @@ async function main() {
     })
   ])
 
-  console.log('💼 Created jobs')
+  console.log('💼 Created opportunities')
 
   // Create job applications
   await Promise.all([
     prisma.jobApplication.create({
       data: {
-        jobId: jobs[0].id,
+        opportunityId: opportunities[0].id,
         applicantId: users[1].id,
         message: 'I have 2 years of experience in drone photography and would love to expand into commercial operations.',
       }
     }),
     prisma.jobApplication.create({
       data: {
-        jobId: jobs[1].id,
+        opportunityId: opportunities[1].id,
         applicantId: users[4].id,
         message: 'I am a student with strong technical skills and would like to learn drone repair.',
       }
@@ -991,19 +991,19 @@ async function main() {
 
   // Create RSVPs
   await Promise.all([
-    prisma.rSVP.create({
+    prisma.rsvp.create({
       data: {
         userId: users[1].id,
         eventId: events[0].id,
       }
     }),
-    prisma.rSVP.create({
+    prisma.rsvp.create({
       data: {
         userId: users[2].id,
         eventId: events[0].id,
       }
     }),
-    prisma.rSVP.create({
+    prisma.rsvp.create({
       data: {
         userId: users[4].id,
         eventId: events[1].id,

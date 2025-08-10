@@ -1,0 +1,80 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: rwanda_drone_db_prod
+    environment:
+      POSTGRES_DB: rwanda_drone_community
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    networks:
+      - drone_network_prod
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rwanda_drone_app_prod
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/rwanda_drone_community
+      
+      # JWT Configuration (MUST be set via environment variable)
+      JWT_SECRET: ${JWT_SECRET}
+      
+      # Node Environment
+      NODE_ENV: production
+      
+      # Security Configuration
+      SESSION_SECRET: ${SESSION_SECRET}
+      
+      # File Upload Configuration
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-5242880}
+      ALLOWED_FILE_TYPES: ${ALLOWED_FILE_TYPES:-image/jpeg,image/jpg,image/png,image/gif,image/webp}
+      
+      # Rate Limiting Configuration
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-5}
+      
+      # CORS Configuration
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      
+      # Cookie Configuration
+      COOKIE_SAME_SITE: ${COOKIE_SAME_SITE:-strict}
+      COOKIE_MAX_AGE: ${COOKIE_MAX_AGE:-604800}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - drone_network_prod
+    volumes:
+      - ./prisma:/app/prisma
+      - ./public/uploads:/app/public/uploads
+    command: >
+      sh -c "
+        npx prisma generate &&
+        npx prisma db push --accept-data-loss &&
+        npx prisma db seed &&
+        npm start
+      "
+    restart: unless-stopped
+
+volumes:
+  postgres_data_prod:
+
+networks:
+  drone_network_prod:
+    driver: bridge 

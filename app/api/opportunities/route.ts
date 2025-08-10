@@ -3,11 +3,11 @@ import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/auth"
 import { cookies } from "next/headers"
 
-// READ - Get all jobs
+// READ - Get all opportunities
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const jobType = searchParams.get('jobType')
+    const opportunityType = searchParams.get('opportunityType')
     const category = searchParams.get('category')
     const location = searchParams.get('location')
 
@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
       isActive: true
     }
 
-    if (jobType && jobType !== 'all') {
-      where.jobType = jobType
+    if (opportunityType && opportunityType !== 'all') {
+      where.opportunityType = opportunityType
     }
 
     if (category && category !== 'all') {
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const jobs = await prisma.job.findMany({
+    const opportunities = await prisma.opportunity.findMany({
       where,
       include: {
         poster: {
@@ -54,17 +54,17 @@ export async function GET(request: NextRequest) {
       ]
     })
 
-    return NextResponse.json(jobs)
+    return NextResponse.json(opportunities)
   } catch (error) {
-    console.error('Error fetching jobs:', error)
+    console.error('Error fetching opportunities:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch jobs' },
+      { error: 'Failed to fetch opportunities' },
       { status: 500 }
     )
   }
 }
 
-// CREATE - Create a new job
+// CREATE - Create a new opportunity
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession(cookies())
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       title,
       description,
       company,
-      jobType,
+      opportunityType,
       category,
       location,
       salary,
@@ -90,19 +90,19 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Validate required fields
-    if (!title || !description || !company || !jobType || !category || !location) {
+    if (!title || !description || !company || !opportunityType || !category || !location) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
-    const job = await prisma.job.create({
+    const opportunity = await prisma.opportunity.create({
       data: {
         title,
         description,
         company,
-        jobType,
+        opportunityType,
         category,
         location,
         salary,
@@ -124,21 +124,21 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Increment user's job count
+    // Increment user's opportunity count
     await prisma.user.update({
       where: { id: session.userId },
       data: {
-        jobsCount: {
+        opportunitiesCount: {
           increment: 1
         }
       }
     })
 
-    return NextResponse.json(job, { status: 201 })
+    return NextResponse.json(opportunity, { status: 201 })
   } catch (error) {
-    console.error('Error creating job:', error)
+    console.error('Error creating opportunity:', error)
     return NextResponse.json(
-      { error: 'Failed to create job' },
+      { error: 'Failed to create opportunity' },
       { status: 500 }
     )
   }
