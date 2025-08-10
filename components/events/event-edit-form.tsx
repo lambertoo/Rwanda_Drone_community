@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { Calendar, Clock, MapPin, Users, DollarSign, Upload, X, Plus, Trash2 } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
+import { Calendar, Clock, MapPin, Users, Plus, X, Upload } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 interface Event {
@@ -64,17 +65,18 @@ interface Speaker {
   name: string
   title: string
   bio: string
-  avatar?: string
+  company: string
+  avatar: string
 }
 
 interface AgendaItem {
   id: string
-  startTime: string
-  endTime: string
   title: string
   description: string
-  speaker?: string
-  type: string
+  startTime: string
+  endTime: string
+  speaker: string
+  type: "presentation" | "workshop" | "panel" | "break" | "networking"
 }
 
 interface EventEditFormProps {
@@ -85,6 +87,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [currentTab, setCurrentTab] = useState("basic")
   const [categories, setCategories] = useState<EventCategory[]>([])
   const [loadingCategories, setLoadingCategories] = useState(true)
 
@@ -120,6 +123,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
   const [registrationDeadline, setRegistrationDeadline] = useState(
     event.registrationDeadline ? formatDateForInput(event.registrationDeadline) : ""
   )
+  const [isFree, setIsFree] = useState(event.price === 0)
   const [allowRegistration, setAllowRegistration] = useState(event.allowRegistration)
   const [isPublished, setIsPublished] = useState(event.isPublished)
   const [isFeatured, setIsFeatured] = useState(event.isFeatured)
@@ -143,6 +147,25 @@ export default function EventEditForm({ event }: EventEditFormProps) {
   const [agenda, setAgenda] = useState<AgendaItem[]>(parseJsonField(event.agenda))
   const [gallery, setGallery] = useState<any[]>(parseJsonField(event.gallery))
 
+  // New item states
+  const [newRequirement, setNewRequirement] = useState("")
+  const [newTag, setNewTag] = useState("")
+  const [newSpeaker, setNewSpeaker] = useState({
+    name: "",
+    title: "",
+    bio: "",
+    company: "",
+    avatar: "",
+  })
+  const [newAgendaItem, setNewAgendaItem] = useState({
+    title: "",
+    description: "",
+    startTime: "",
+    endTime: "",
+    speaker: "",
+    type: "presentation" as const,
+  })
+
   // Flyer upload
   const [flyerFile, setFlyerFile] = useState<File | null>(null)
   const [flyerPreview, setFlyerPreview] = useState<string | null>(event.flyer || null)
@@ -154,17 +177,28 @@ export default function EventEditForm({ event }: EventEditFormProps) {
         const response = await fetch('/api/admin/event-categories')
         if (response.ok) {
           const data = await response.json()
-          setCategories(data.categories)
+          setCategories(data || [])
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to load event categories",
+            variant: "destructive",
+          })
         }
       } catch (error) {
         console.error('Error fetching categories:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load event categories",
+          variant: "destructive",
+        })
       } finally {
         setLoadingCategories(false)
       }
     }
 
     fetchCategories()
-  }, [])
+  }, [toast])
 
   const handleFlyerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -190,7 +224,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
       }
 
       setFlyerFile(file)
-
+      
       // Create preview
       const reader = new FileReader()
       reader.onload = (e) => {
@@ -207,13 +241,10 @@ export default function EventEditForm({ event }: EventEditFormProps) {
 
   // Requirements
   const addRequirement = () => {
-    setRequirements([...requirements, ""])
-  }
-
-  const updateRequirement = (index: number, value: string) => {
-    const newRequirements = [...requirements]
-    newRequirements[index] = value
-    setRequirements(newRequirements)
+    if (newRequirement.trim()) {
+      setRequirements([...requirements, newRequirement.trim()])
+      setNewRequirement("")
+    }
   }
 
   const removeRequirement = (index: number) => {
@@ -222,61 +253,54 @@ export default function EventEditForm({ event }: EventEditFormProps) {
 
   // Tags
   const addTag = () => {
-    setTags([...tags, ""])
+    if (newTag.trim() && !tags.includes(newTag.trim())) {
+      setTags([...tags, newTag.trim()])
+      setNewTag("")
+    }
   }
 
-  const updateTag = (index: number, value: string) => {
-    const newTags = [...tags]
-    newTags[index] = value
-    setTags(newTags)
-  }
-
-  const removeTag = (index: number) => {
-    setTags(tags.filter((_, i) => i !== index))
+  const removeTag = (tag: string) => {
+    setTags(tags.filter((t) => t !== tag))
   }
 
   // Speakers
   const addSpeaker = () => {
-    const newSpeaker: Speaker = {
-      id: Date.now().toString(),
-      name: "",
-      title: "",
-      bio: "",
+    if (newSpeaker.name && newSpeaker.title) {
+      const speaker: Speaker = {
+        id: Date.now().toString(),
+        ...newSpeaker,
+        avatar: newSpeaker.avatar || "/placeholder.svg?height=100&width=100&text=Speaker",
+      }
+      setSpeakers([...speakers, speaker])
+      setNewSpeaker({ name: "", title: "", bio: "", company: "", avatar: "" })
     }
-    setSpeakers([...speakers, newSpeaker])
   }
 
-  const updateSpeaker = (index: number, field: keyof Speaker, value: string) => {
-    const newSpeakers = [...speakers]
-    newSpeakers[index] = { ...newSpeakers[index], [field]: value }
-    setSpeakers(newSpeakers)
-  }
-
-  const removeSpeaker = (index: number) => {
-    setSpeakers(speakers.filter((_, i) => i !== index))
+  const removeSpeaker = (id: string) => {
+    setSpeakers(speakers.filter((s) => s.id !== id))
   }
 
   // Agenda
   const addAgendaItem = () => {
-    const newItem: AgendaItem = {
-      id: Date.now().toString(),
-      startTime: "09:00",
-      endTime: "10:00",
-      title: "",
-      description: "",
-      type: "session"
+    if (newAgendaItem.title && newAgendaItem.startTime && newAgendaItem.endTime) {
+      const item: AgendaItem = {
+        id: Date.now().toString(),
+        ...newAgendaItem,
+      }
+      setAgenda([...agenda, item])
+      setNewAgendaItem({
+        title: "",
+        description: "",
+        startTime: "",
+        endTime: "",
+        speaker: "",
+        type: "presentation",
+      })
     }
-    setAgenda([...agenda, newItem])
   }
 
-  const updateAgendaItem = (index: number, field: keyof AgendaItem, value: string) => {
-    const newAgenda = [...agenda]
-    newAgenda[index] = { ...newAgenda[index], [field]: value }
-    setAgenda(newAgenda)
-  }
-
-  const removeAgendaItem = (index: number) => {
-    setAgenda(agenda.filter((_, i) => i !== index))
+  const removeAgendaItem = (id: string) => {
+    setAgenda(agenda.filter((a) => a.id !== id))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -310,17 +334,17 @@ export default function EventEditForm({ event }: EventEditFormProps) {
       formData.append('location', location)
       formData.append('venue', venue || location)
       formData.append('capacity', capacity || '')
-      formData.append('price', price || '0')
+      formData.append('price', isFree ? '0' : (price || '0'))
       formData.append('currency', currency)
       formData.append('registrationDeadline', registrationDeadline ? `${registrationDeadline}T23:59:59` : '')
-      formData.append('allowRegistration', allowRegistration.toString())
-      formData.append('isPublished', isPublished.toString())
-      formData.append('isFeatured', isFeatured.toString())
-      formData.append('requirements', JSON.stringify(requirements.filter(Boolean)))
-      formData.append('tags', JSON.stringify(tags.filter(Boolean)))
-      formData.append('speakers', JSON.stringify(speakers))
+      formData.append('requirements', JSON.stringify(requirements))
+      formData.append('tags', JSON.stringify(tags))
+      formData.append('speakers', JSON.stringify(speakers.map(s => s.name)))
       formData.append('agenda', JSON.stringify(agenda))
       formData.append('gallery', JSON.stringify(gallery))
+      formData.append('isPublished', isPublished.toString())
+      formData.append('isFeatured', isFeatured.toString())
+      formData.append('allowRegistration', allowRegistration.toString())
       formData.append('userId', user.id)
 
       // Add flyer file if uploaded
@@ -368,189 +392,275 @@ export default function EventEditForm({ event }: EventEditFormProps) {
     }
   }
 
+  const isBasicValid = title && description && categoryId && startDate && startTime && location
+  const canProceed = (tab: string) => {
+    switch (tab) {
+      case "details":
+        return isBasicValid
+      case "speakers":
+        return isBasicValid
+      case "agenda":
+        return isBasicValid
+      case "preview":
+        return isBasicValid
+      default:
+        return true
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <Tabs defaultValue="basic" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="basic">Basic Info</TabsTrigger>
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="content">Content</TabsTrigger>
-          <TabsTrigger value="preview">Preview</TabsTrigger>
+    <form onSubmit={handleSubmit} className="p-8">
+      <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-8">
+        <TabsList className="grid w-full grid-cols-5 bg-gray-100 p-1 rounded-xl">
+          <TabsTrigger 
+            value="basic" 
+            className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 rounded-lg transition-all"
+          >
+            Basic Info
+          </TabsTrigger>
+          <TabsTrigger 
+            value="details" 
+            disabled={!canProceed("details")}
+            className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 rounded-lg transition-all disabled:opacity-50"
+          >
+            Details
+          </TabsTrigger>
+          <TabsTrigger 
+            value="speakers" 
+            disabled={!canProceed("speakers")}
+            className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 rounded-lg transition-all disabled:opacity-50"
+          >
+            Speakers
+          </TabsTrigger>
+          <TabsTrigger 
+            value="agenda" 
+            disabled={!canProceed("agenda")}
+            className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 rounded-lg transition-all disabled:opacity-50"
+          >
+            Agenda
+          </TabsTrigger>
+          <TabsTrigger 
+            value="preview" 
+            disabled={!canProceed("preview")}
+            className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 rounded-lg transition-all disabled:opacity-50"
+          >
+            Preview
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="basic" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="title">Event Title *</Label>
+        <TabsContent value="basic" className="space-y-8">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
+              <h2 className="text-2xl font-bold text-gray-900">Basic Information</h2>
+              <p className="text-gray-600 mt-1">Essential details about your event</p>
+            </div>
+            <div className="p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <Label htmlFor="title" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    Event Title *
+                  </Label>
                   <Input
                     id="title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Enter event title"
+                    className="h-12 text-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
                 </div>
 
+                <div className="md:col-span-2">
+                  <Label htmlFor="description" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    Short Description *
+                  </Label>
+                  <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Brief description of your event"
+                    rows={3}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
+                    required
+                  />
+                  <p className="text-sm text-gray-500 mt-2">{description.length}/200 characters</p>
+                </div>
+
                 <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Select value={categoryId} onValueChange={setCategoryId}>
-                    <SelectTrigger>
+                  <Label htmlFor="category" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    Category *
+                  </Label>
+                  <Select value={categoryId} onValueChange={setCategoryId} required disabled={loadingCategories}>
+                    <SelectTrigger className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder={loadingCategories ? "Loading categories..." : "Select category"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.icon} {category.name}
-                        </SelectItem>
-                      ))}
+                      {loadingCategories ? (
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                          Loading categories...
+                        </div>
+                      ) : categories && categories.length > 0 ? (
+                        categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{category.icon}</span>
+                              <span>{category.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                          No categories available
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <Label htmlFor="startDate">Start Date *</Label>
+                  <Label htmlFor="startDate" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    Start Date *
+                  </Label>
                   <Input
                     id="startDate"
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
+                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="startTime">Start Time</Label>
-                  <Input
-                    id="startTime"
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="endDate">End Date</Label>
+                  <Label htmlFor="endDate" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    End Date
+                  </Label>
                   <Input
                     id="endDate"
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
+                    min={startDate}
+                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="endTime">End Time</Label>
+                  <Label htmlFor="startTime" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    Start Time *
+                  </Label>
                   <Input
-                    id="endTime"
+                    id="startTime"
                     type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="location">Location *</Label>
-                  <Input
-                    id="location"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Enter event location"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="venue">Venue</Label>
+                  <Label htmlFor="endTime" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    End Time
+                  </Label>
                   <Input
-                    id="venue"
-                    value={venue}
-                    onChange={(e) => setVenue(e.target.value)}
-                    placeholder="Enter venue name"
+                    id="endTime"
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    min={startTime}
+                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="capacity">Capacity</Label>
+                  <Label htmlFor="location" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    Location *
+                  </Label>
+                  <Input
+                    id="location"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="City or region"
+                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="venue" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    Venue
+                  </Label>
+                  <Input
+                    id="venue"
+                    value={venue}
+                    onChange={(e) => setVenue(e.target.value)}
+                    placeholder="Specific venue name"
+                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="capacity" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    Capacity
+                  </Label>
                   <Input
                     id="capacity"
                     type="number"
                     value={capacity}
                     onChange={(e) => setCapacity(e.target.value)}
-                    placeholder="Enter capacity"
+                    placeholder="Maximum attendees"
+                    min="1"
+                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="price">Price</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    placeholder="Enter price"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="currency">Currency</Label>
-                  <Select value={currency} onValueChange={setCurrency}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="RWF">RWF</SelectItem>
-                      <SelectItem value="USD">USD</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="registrationDeadline">Registration Deadline</Label>
+                  <Label htmlFor="registrationDeadline" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    Registration Deadline
+                  </Label>
                   <Input
                     id="registrationDeadline"
                     type="date"
                     value={registrationDeadline}
                     onChange={(e) => setRegistrationDeadline(e.target.value)}
+                    max={startDate}
+                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               {/* Flyer Upload */}
-              <div className="md:col-span-2">
-                <Label htmlFor="flyer">Event Flyer</Label>
+              <div className="md:col-span-2 pt-6 border-t border-gray-200">
+                <Label htmlFor="flyer" className="text-sm font-semibold text-gray-700 mb-3 block">
+                  Event Flyer
+                </Label>
                 <div className="mt-2">
                   {flyerPreview ? (
                     <div className="relative">
                       <img
                         src={flyerPreview}
                         alt="Flyer preview"
-                        className="w-full max-w-md h-48 object-cover rounded-lg border"
+                        className="w-full max-w-md h-48 object-cover rounded-xl border-2 border-gray-200"
                       />
                       <Button
                         type="button"
                         variant="destructive"
                         size="sm"
-                        className="absolute top-2 right-2"
+                        className="absolute top-3 right-3 shadow-lg"
                         onClick={removeFlyer}
                       >
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
                   ) : (
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="mt-2">
-                        <Label htmlFor="flyer-upload" className="cursor-pointer text-blue-600 hover:text-blue-500">
+                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <Upload className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                      <div className="space-y-2">
+                        <Label htmlFor="flyer-upload" className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium text-lg">
                           Upload flyer image
                         </Label>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-gray-500">
                           JPG, PNG, GIF up to 5MB
                         </p>
                       </div>
@@ -565,445 +675,533 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
 
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="flex items-center space-x-2">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
+              <h2 className="text-2xl font-bold text-gray-900">Pricing</h2>
+            </div>
+            <div className="p-8 space-y-6">
+              <div className="flex items-center space-x-3">
+                <Switch id="isFree" checked={isFree} onCheckedChange={setIsFree} />
+                <Label htmlFor="isFree" className="text-base font-medium text-gray-700">
+                  This is a free event
+                </Label>
+              </div>
+
+              {!isFree && (
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="price" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Price
+                    </Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      placeholder="0"
+                      min="0"
+                      step="0.01"
+                      className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="currency" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Currency
+                    </Label>
+                    <Select value={currency} onValueChange={setCurrency}>
+                      <SelectTrigger className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="RWF">RWF</SelectItem>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
+              <h2 className="text-2xl font-bold text-gray-900">Event Settings</h2>
+            </div>
+            <div className="p-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="flex items-center space-x-3">
                   <Switch
                     id="allowRegistration"
                     checked={allowRegistration}
                     onCheckedChange={setAllowRegistration}
                   />
-                  <Label htmlFor="allowRegistration">Allow Registration</Label>
+                  <Label htmlFor="allowRegistration" className="text-base font-medium text-gray-700">
+                    Allow online registration
+                  </Label>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <Switch
                     id="isPublished"
                     checked={isPublished}
                     onCheckedChange={setIsPublished}
                   />
-                  <Label htmlFor="isPublished">Published</Label>
+                  <Label htmlFor="isPublished" className="text-base font-medium text-gray-700">
+                    Make this event public
+                  </Label>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <Switch
                     id="isFeatured"
                     checked={isFeatured}
                     onCheckedChange={setIsFeatured}
                   />
-                  <Label htmlFor="isFeatured">Featured</Label>
+                  <Label htmlFor="isFeatured" className="text-base font-medium text-gray-700">
+                    Featured event
+                  </Label>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
-        <TabsContent value="details" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Event Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <TabsContent value="details" className="space-y-8">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
+              <h2 className="text-2xl font-bold text-gray-900">Event Details</h2>
+              <p className="text-gray-600 mt-1">Additional information about your event</p>
+            </div>
+            <div className="p-8 space-y-8">
               <div>
-                <Label htmlFor="description">Short Description *</Label>
-                <Textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Brief description of the event"
-                  rows={3}
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="fullDescription">Full Description</Label>
+                <Label htmlFor="fullDescription" className="text-sm font-semibold text-gray-700 mb-3 block">
+                  Full Description
+                </Label>
                 <Textarea
                   id="fullDescription"
                   value={fullDescription}
                   onChange={(e) => setFullDescription(e.target.value)}
-                  placeholder="Detailed description of the event"
+                  placeholder="Detailed description of your event"
                   rows={6}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
                 />
               </div>
 
-              {/* Requirements */}
               <div>
-                <Label>Requirements</Label>
-                <div className="space-y-2">
+                <Label className="text-sm font-semibold text-gray-700 mb-3 block">Requirements</Label>
+                <div className="flex gap-3 mb-4">
+                  <Input
+                    value={newRequirement}
+                    onChange={(e) => setNewRequirement(e.target.value)}
+                    placeholder="Add a requirement"
+                    onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addRequirement())}
+                    className="flex-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                  <Button type="button" onClick={addRequirement} size="sm" className="px-6">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-3">
                   {requirements.map((req, index) => (
-                    <div key={index} className="flex gap-2">
-                      <Input
-                        value={req}
-                        onChange={(e) => updateRequirement(index, e.target.value)}
-                        placeholder="Enter requirement"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeRequirement(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Badge key={index} variant="secondary" className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-100 text-blue-800 hover:bg-blue-200">
+                      {req}
+                      <X className="h-4 w-4 cursor-pointer hover:text-blue-600" onClick={() => removeRequirement(index)} />
+                    </Badge>
                   ))}
-                  <Button type="button" variant="outline" onClick={addRequirement}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Requirement
-                  </Button>
                 </div>
               </div>
 
-              {/* Tags */}
               <div>
-                <Label>Tags</Label>
-                <div className="space-y-2">
-                  {tags.map((tag, index) => (
-                    <div key={index} className="flex gap-2">
-                      <Input
-                        value={tag}
-                        onChange={(e) => updateTag(index, e.target.value)}
-                        placeholder="Enter tag"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeTag(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button type="button" variant="outline" onClick={addTag}>
+                <Label className="text-sm font-semibold text-gray-700 mb-3 block">Tags</Label>
+                <div className="flex gap-3 mb-4">
+                  <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    placeholder="Add a tag"
+                    onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+                    className="flex-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                  <Button type="button" onClick={addTag} size="sm" className="px-6">
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Tag
+                    Add
                   </Button>
                 </div>
+                <div className="flex flex-wrap gap-3">
+                  {tags.map((tag) => (
+                    <Badge key={tag} variant="outline" className="flex items-center gap-2 px-3 py-2 text-sm border-gray-300 text-gray-700 hover:bg-gray-50">
+                      #{tag}
+                      <X className="h-4 w-4 cursor-pointer hover:text-gray-600" onClick={() => removeTag(tag)} />
+                    </Badge>
+                  ))}
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
-        <TabsContent value="content" className="space-y-6">
-          {/* Speakers */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Speakers</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {speakers.map((speaker, index) => (
-                <div key={speaker.id} className="border rounded-lg p-4 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-semibold">Speaker {index + 1}</h4>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeSpeaker(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label>Name</Label>
-                      <Input
-                        value={speaker.name}
-                        onChange={(e) => updateSpeaker(index, 'name', e.target.value)}
-                        placeholder="Speaker name"
-                      />
-                    </div>
-                    <div>
-                      <Label>Title</Label>
-                      <Input
-                        value={speaker.title}
-                        onChange={(e) => updateSpeaker(index, 'title', e.target.value)}
-                        placeholder="Speaker title"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label>Bio</Label>
-                      <Textarea
-                        value={speaker.bio}
-                        onChange={(e) => updateSpeaker(index, 'bio', e.target.value)}
-                        placeholder="Speaker bio"
-                        rows={3}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <Button type="button" variant="outline" onClick={addSpeaker}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Speaker
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Agenda */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Agenda</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {agenda.map((item, index) => (
-                <div key={item.id} className="border rounded-lg p-4 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-semibold">Agenda Item {index + 1}</h4>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeAgendaItem(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label>Start Time</Label>
-                      <Input
-                        type="time"
-                        value={item.startTime}
-                        onChange={(e) => updateAgendaItem(index, 'startTime', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label>End Time</Label>
-                      <Input
-                        type="time"
-                        value={item.endTime}
-                        onChange={(e) => updateAgendaItem(index, 'endTime', e.target.value)}
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label>Title</Label>
-                      <Input
-                        value={item.title}
-                        onChange={(e) => updateAgendaItem(index, 'title', e.target.value)}
-                        placeholder="Agenda item title"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label>Description</Label>
-                      <Textarea
-                        value={item.description}
-                        onChange={(e) => updateAgendaItem(index, 'description', e.target.value)}
-                        placeholder="Agenda item description"
-                        rows={3}
-                      />
-                    </div>
-                    <div>
-                      <Label>Speaker</Label>
-                      <Input
-                        value={item.speaker || ""}
-                        onChange={(e) => updateAgendaItem(index, 'speaker', e.target.value)}
-                        placeholder="Speaker name"
-                      />
-                    </div>
-                    <div>
-                      <Label>Type</Label>
-                      <Select value={item.type} onValueChange={(value) => updateAgendaItem(index, 'type', value)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="session">Session</SelectItem>
-                          <SelectItem value="break">Break</SelectItem>
-                          <SelectItem value="keynote">Keynote</SelectItem>
-                          <SelectItem value="workshop">Workshop</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <Button type="button" variant="outline" onClick={addAgendaItem}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Agenda Item
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="preview" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Event Preview</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Event Header */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">
-                    {categories.find(c => c.id === categoryId)?.name || 'Uncategorized'}
-                  </Badge>
-                  {isFeatured && <Badge variant="default">Featured</Badge>}
-                </div>
-                <h2 className="text-3xl font-bold">{title}</h2>
-                <p className="text-lg text-muted-foreground">{description}</p>
-              </div>
-
-              {/* Event Details */}
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">Date & Time</p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(`${startDate}T${startTime}`).toLocaleDateString()} at {startTime}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">Location</p>
-                      <p className="text-sm text-muted-foreground">{location}</p>
-                      {venue && <p className="text-sm text-muted-foreground">{venue}</p>}
-                    </div>
-                  </div>
-
-                  {capacity && (
-                    <div className="flex items-center gap-3">
-                      <Users className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">Capacity</p>
-                        <p className="text-sm text-muted-foreground">{capacity} people</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-3">
-                    <DollarSign className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">Price</p>
-                      <p className="text-sm text-muted-foreground">
-                        {price === '0' ? 'Free' : `${price} ${currency}`}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Flyer Preview */}
-                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden">
-                  {flyerPreview ? (
-                    <img
-                      src={flyerPreview}
-                      alt="Event flyer"
-                      className="w-full h-full object-cover"
+        <TabsContent value="speakers" className="space-y-8">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
+              <h2 className="text-2xl font-bold text-gray-900">Speakers</h2>
+              <p className="text-gray-600 mt-1">Add speakers for your event</p>
+            </div>
+            <div className="p-8 space-y-8">
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Speaker</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="speakerName" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Name
+                    </Label>
+                    <Input
+                      id="speakerName"
+                      value={newSpeaker.name}
+                      onChange={(e) => setNewSpeaker({ ...newSpeaker, name: e.target.value })}
+                      placeholder="Speaker name"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     />
-                  ) : (
-                    <Upload className="h-12 w-12 text-muted-foreground" />
-                  )}
+                  </div>
+                  <div>
+                    <Label htmlFor="speakerTitle" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Title
+                    </Label>
+                    <Input
+                      id="speakerTitle"
+                      value={newSpeaker.title}
+                      onChange={(e) => setNewSpeaker({ ...newSpeaker, title: e.target.value })}
+                      placeholder="Job title"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="speakerCompany" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Company
+                    </Label>
+                    <Input
+                      id="speakerCompany"
+                      value={newSpeaker.company}
+                      onChange={(e) => setNewSpeaker({ ...newSpeaker, company: e.target.value })}
+                      placeholder="Company name"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="speakerAvatar" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Avatar URL
+                    </Label>
+                    <Input
+                      id="speakerAvatar"
+                      value={newSpeaker.avatar}
+                      onChange={(e) => setNewSpeaker({ ...newSpeaker, avatar: e.target.value })}
+                      placeholder="Profile image URL"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="speakerBio" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Bio
+                    </Label>
+                    <Textarea
+                      id="speakerBio"
+                      value={newSpeaker.bio}
+                      onChange={(e) => setNewSpeaker({ ...newSpeaker, bio: e.target.value })}
+                      placeholder="Speaker biography"
+                      rows={3}
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Button type="button" onClick={addSpeaker} className="w-full h-12 text-base font-medium">
+                      <Plus className="h-5 w-5 mr-2" />
+                      Add Speaker
+                    </Button>
+                  </div>
                 </div>
               </div>
 
-              {/* Full Description */}
-              {fullDescription && (
-                <div>
-                  <h3 className="text-xl font-semibold mb-3">About This Event</h3>
-                  <div className="prose prose-sm max-w-none">
-                    <div className="whitespace-pre-wrap">{fullDescription}</div>
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Speakers</h3>
+                {speakers.map((speaker) => (
+                  <div key={speaker.id} className="flex items-start gap-4 p-6 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 transition-colors">
+                    <img
+                      src={speaker.avatar || "/placeholder.svg?height=60&width=60&text=Speaker"}
+                      alt={speaker.name}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                    />
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-lg text-gray-900">{speaker.name}</h4>
+                      <p className="text-gray-600 font-medium">{speaker.title}</p>
+                      {speaker.company && <p className="text-gray-500">{speaker.company}</p>}
+                      {speaker.bio && <p className="text-gray-600 mt-2">{speaker.bio}</p>}
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => removeSpeaker(speaker.id)} className="text-red-600 border-red-300 hover:bg-red-50">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="agenda" className="space-y-8">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
+              <h2 className="text-2xl font-bold text-gray-900">Event Agenda</h2>
+              <p className="text-gray-600 mt-1">Create a schedule for your event</p>
+            </div>
+            <div className="p-8 space-y-8">
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Agenda Item</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <Label htmlFor="agendaTitle" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Session Title
+                    </Label>
+                    <Input
+                      id="agendaTitle"
+                      value={newAgendaItem.title}
+                      onChange={(e) => setNewAgendaItem({ ...newAgendaItem, title: e.target.value })}
+                      placeholder="Session title"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="agendaStartTime" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Start Time
+                    </Label>
+                    <Input
+                      id="agendaStartTime"
+                      type="time"
+                      value={newAgendaItem.startTime}
+                      onChange={(e) => setNewAgendaItem({ ...newAgendaItem, startTime: e.target.value })}
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="agendaEndTime" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      End Time
+                    </Label>
+                    <Input
+                      id="agendaEndTime"
+                      type="time"
+                      value={newAgendaItem.endTime}
+                      onChange={(e) => setNewAgendaItem({ ...newAgendaItem, endTime: e.target.value })}
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="agendaType" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Type
+                    </Label>
+                    <Select
+                      value={newAgendaItem.type}
+                      onValueChange={(value) => setNewAgendaItem({ ...newAgendaItem, type: value as any })}
+                    >
+                      <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="presentation">Presentation</SelectItem>
+                        <SelectItem value="workshop">Workshop</SelectItem>
+                        <SelectItem value="panel">Panel Discussion</SelectItem>
+                        <SelectItem value="break">Break</SelectItem>
+                        <SelectItem value="networking">Networking</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="agendaSpeaker" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Speaker
+                    </Label>
+                    <Select
+                      value={newAgendaItem.speaker}
+                      onValueChange={(value) => setNewAgendaItem({ ...newAgendaItem, speaker: value })}
+                    >
+                      <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                        <SelectValue placeholder="Select speaker" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {speakers.map((speaker) => (
+                          <SelectItem key={speaker.id} value={speaker.name}>
+                            {speaker.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="agendaDescription" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Description
+                    </Label>
+                    <Textarea
+                      id="agendaDescription"
+                      value={newAgendaItem.description}
+                      onChange={(e) => setNewAgendaItem({ ...newAgendaItem, description: e.target.value })}
+                      placeholder="Session description"
+                      rows={2}
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Button type="button" onClick={addAgendaItem} className="w-full h-12 text-base font-medium">
+                      <Plus className="h-5 w-5 mr-2" />
+                      Add Agenda Item
+                    </Button>
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Requirements */}
-              {requirements.filter(Boolean).length > 0 && (
-                <div>
-                  <h3 className="text-xl font-semibold mb-3">Requirements</h3>
-                  <ul className="list-disc list-inside space-y-2">
-                    {requirements.filter(Boolean).map((req, index) => (
-                      <li key={index} className="text-sm">{req}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Tags */}
-              {tags.filter(Boolean).length > 0 && (
-                <div>
-                  <h3 className="text-xl font-semibold mb-3">Tags</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {tags.filter(Boolean).map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        #{tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Speakers */}
-              {speakers.length > 0 && (
-                <div>
-                  <h3 className="text-xl font-semibold mb-3">Speakers</h3>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {speakers.map((speaker, index) => (
-                      <div key={index} className="flex items-start gap-3 p-4 border rounded-lg">
-                        <div className="h-12 w-12 bg-muted rounded-full flex items-center justify-center">
-                          {speaker.name ? speaker.name.split(" ").map((n: string) => n[0]).join("") : "SP"}
-                        </div>
-                        <div>
-                          <h4 className="font-semibold">{speaker.name || "Speaker Name"}</h4>
-                          <p className="text-sm text-blue-600 mb-1">{speaker.title || "Speaker"}</p>
-                          {speaker.bio && (
-                            <p className="text-sm text-muted-foreground">{speaker.bio}</p>
-                          )}
-                        </div>
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Event Schedule</h3>
+                <div className="space-y-3">
+                  {agenda
+                    .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                    .map((item) => (
+                      <div key={item.id} className="flex items-center gap-4 p-3 border border-gray-200 rounded-lg bg-white">
+                        <span className="font-mono text-sm text-blue-600 font-semibold min-w-[80px]">{item.startTime}</span>
+                        <span className="font-medium text-gray-900">{item.title}</span>
+                        <Badge variant="outline" className="ml-auto border-gray-300 text-gray-700">
+                          {item.type}
+                        </Badge>
                       </div>
                     ))}
-                  </div>
                 </div>
-              )}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
 
-              {/* Agenda */}
-              {agenda.length > 0 && (
+        <TabsContent value="preview" className="space-y-8">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
+              <h2 className="text-2xl font-bold text-gray-900">Event Preview</h2>
+              <p className="text-gray-600 mt-1">Review your event before publishing</p>
+            </div>
+            <div className="p-8 space-y-8">
+              <div className="aspect-video bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300">
+                {flyerPreview ? (
+                  <img
+                    src={flyerPreview}
+                    alt="Event flyer"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-center">
+                    <Upload className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No flyer uploaded</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-6">
                 <div>
-                  <h3 className="text-xl font-semibold mb-3">Agenda</h3>
-                  <div className="space-y-4">
-                    {agenda.map((item, index) => (
-                      <div key={index} className="flex gap-4 p-4 border rounded-lg">
-                        <div className="text-sm font-medium text-blue-600 min-w-[80px]">
-                          {item.startTime} - {item.endTime}
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold">{item.title || "Agenda Item"}</h4>
-                          <p className="text-sm text-muted-foreground">{item.description}</p>
-                          {item.speaker && (
-                            <p className="text-sm text-blue-600 mt-1">
-                              Speaker: {item.speaker}
-                            </p>
-                          )}
-                          <Badge variant="outline" className="mt-2">
-                            {item.type}
-                          </Badge>
-                        </div>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-3">{title || "Event Title"}</h2>
+                  <p className="text-lg text-gray-600 mb-6">{description || "Event description"}</p>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <Calendar className="h-5 w-5 text-blue-600" />
                       </div>
-                    ))}
+                      <div>
+                        <p className="font-medium text-gray-900">Date</p>
+                        <p className="text-gray-600">{startDate || "TBD"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <Clock className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">Time</p>
+                        <p className="text-gray-600">{startTime || "TBD"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                        <MapPin className="h-5 w-5 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">Location</p>
+                        <p className="text-gray-600">{location || "TBD"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <Users className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">Capacity</p>
+                        <p className="text-gray-600">{capacity ? `${capacity} spots` : "Unlimited"}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+
+                {fullDescription && (
+                  <div className="pt-6 border-t border-gray-200">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3">About This Event</h3>
+                    <p className="text-gray-600 leading-relaxed">{fullDescription}</p>
+                  </div>
+                )}
+
+                {speakers.length > 0 && (
+                  <div className="pt-6 border-t border-gray-200">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Speakers</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {speakers.map((speaker) => (
+                        <div key={speaker.id} className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl bg-gray-50">
+                          <img
+                            src={speaker.avatar || "/placeholder.svg?height=40&width=40&text=Speaker"}
+                            alt={speaker.name}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-white"
+                          />
+                          <div>
+                            <p className="font-semibold text-gray-900">{speaker.name}</p>
+                            <p className="text-sm text-gray-600">{speaker.title}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {agenda.length > 0 && (
+                  <div className="pt-6 border-t border-gray-200">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Agenda</h3>
+                    <div className="space-y-3">
+                      {agenda
+                        .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                        .map((item) => (
+                          <div key={item.id} className="flex items-center gap-4 p-3 border border-gray-200 rounded-lg bg-white">
+                            <span className="font-mono text-sm text-blue-600 font-semibold min-w-[80px]">{item.startTime}</span>
+                            <span className="font-medium text-gray-900">{item.title}</span>
+                            <Badge variant="outline" className="ml-auto border-gray-300 text-gray-700">
+                              {item.type}
+                            </Badge>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
-      <div className="flex gap-4">
-        <Button type="submit" disabled={isSubmitting} className="flex-1">
-          {isSubmitting ? "Updating Event..." : "Update Event"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push(`/events/${event.id}`)}
-        >
+      <div className="flex justify-between pt-8 border-t border-gray-200">
+        <Button type="button" variant="outline" onClick={() => router.push(`/events/${event.id}`)} className="h-12 px-8">
           Cancel
+        </Button>
+        <Button type="submit" disabled={!isBasicValid || isSubmitting} className="h-12 px-8 text-base font-medium">
+          {isSubmitting ? "Updating..." : "Update Event"}
         </Button>
       </div>
     </form>

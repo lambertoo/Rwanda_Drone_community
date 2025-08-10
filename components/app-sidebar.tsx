@@ -21,9 +21,11 @@ import {
 } from "lucide-react"
 import { AuthUser, UserRole } from "@prisma/client"
 
-interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
+  onItemClick?: () => void
+}
 
-export function AppSidebar({ className }: SidebarProps) {
+export function AppSidebar({ className, onItemClick }: SidebarProps) {
   const pathname = usePathname()
   const [user, setUser] = useState<AuthUser | null>(null)
 
@@ -171,20 +173,26 @@ export function AppSidebar({ className }: SidebarProps) {
 
   const navItems = getRoleBasedNavItems()
 
+  const handleItemClick = () => {
+    if (onItemClick) {
+      onItemClick()
+    }
+  }
+
   return (
     <div className={cn("space-y-4", className)}>
       {/* Main Navigation */}
       <div className="px-3 py-2">
         <div className="space-y-1">
           {navItems.map((item) => (
-            <Link key={item.href} href={item.href}>
+            <Link key={item.href} href={item.href} onClick={handleItemClick}>
               <Button
                 variant={pathname === item.href ? "secondary" : "ghost"}
-                className="w-full justify-start"
+                className="w-full justify-start h-11 lg:h-9"
                 size="sm"
               >
                 <item.icon className="mr-2 h-4 w-4" />
-                {item.title}
+                <span className="text-sm lg:text-sm">{item.title}</span>
               </Button>
             </Link>
           ))}

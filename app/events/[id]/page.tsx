@@ -21,6 +21,7 @@ import {
   ExternalLink,
   Eye,
   MessageSquare,
+  Star,
 } from "lucide-react"
 import { deleteEventAction } from "@/lib/actions"
 
@@ -178,173 +179,278 @@ export default function EventDetailsPage({ params }: PageProps) {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-4">
-        <Link href="/events">
-          <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Events
-          </Button>
-        </Link>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/events" className="hover:text-foreground">
-            Events
-          </Link>
-          <span>/</span>
-          <span>Event Details</span>
+      {/* Back Button */}
+      <Link 
+        href="/events"
+        className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        <span className="hidden sm:inline">Back to Events</span>
+        <span className="sm:hidden">Back</span>
+      </Link>
+
+      {/* Hero Section */}
+      <div className="relative">
+        <div className="aspect-[2/1] rounded-lg overflow-hidden">
+          <img 
+            src={event.gallery && event.gallery.length > 0 ? event.gallery[0].url : "/placeholder.svg?height=400&width=800&text=" + encodeURIComponent(event.title)} 
+            alt={event.title} 
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="absolute inset-0 bg-black/40 rounded-lg"></div>
+        <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6 text-white">
+          <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80 mb-2 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+            {event.category?.name || 'Event'}
+          </div>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">{event.title}</h1>
+          <p className="text-base sm:text-lg opacity-90 line-clamp-2">{event.description}</p>
         </div>
       </div>
 
-      {/* Event Header */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">{event.category?.name || 'Uncategorized'}</Badge>
-          {event.isFeatured && (
-            <Badge variant="default">Featured</Badge>
-          )}
-        </div>
-        <h1 className="text-4xl font-bold">{event.title}</h1>
-        <p className="text-lg text-muted-foreground">{event.description}</p>
-      </div>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Left Column - Event Content */}
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="h-auto sm:h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground grid w-full grid-cols-2 sm:grid-cols-4 gap-1">
+              <TabsTrigger value="overview" className="text-xs sm:text-sm px-2 sm:px-3 py-2">Overview</TabsTrigger>
+              <TabsTrigger value="agenda" className="text-xs sm:text-sm px-2 sm:px-3 py-2">Agenda</TabsTrigger>
+              <TabsTrigger value="speakers" className="text-xs sm:text-sm px-2 sm:px-3 py-2">Speakers</TabsTrigger>
+              <TabsTrigger value="gallery" className="text-xs sm:text-sm px-2 sm:px-3 py-2">Gallery</TabsTrigger>
+            </TabsList>
 
-      {/* Event Content */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="agenda">Agenda</TabsTrigger>
-          <TabsTrigger value="speakers">Speakers</TabsTrigger>
-          <TabsTrigger value="gallery">Gallery</TabsTrigger>
-        </TabsList>
+            <TabsContent value="overview" className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-4 sm:space-y-6">
+              {/* About This Event */}
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="text-lg sm:text-xl">About This Event</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 sm:p-6">
+                  <div className="prose prose-sm max-w-none dark:prose-invert">
+                    <div className="whitespace-pre-wrap text-sm sm:text-base">{event.fullDescription || event.description}</div>
+                  </div>
+                </CardContent>
+              </Card>
 
-        <TabsContent value="overview" className="space-y-6">
-          {/* About This Event */}
-          <Card>
-            <CardHeader>
-              <CardTitle>About This Event</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="prose prose-sm max-w-none">
-                <div className="whitespace-pre-wrap">{event.fullDescription || event.description}</div>
-              </div>
-            </CardContent>
-          </Card>
+              {/* Requirements */}
+              {(() => {
+                try {
+                  const reqs = Array.isArray(requirements) ? requirements : []
+                  if (reqs.length > 0) {
+                    return (
+                      <Card>
+                        <CardHeader className="p-4 sm:p-6">
+                          <CardTitle className="text-lg sm:text-xl">Requirements</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 sm:p-6">
+                          <ul className="space-y-2">
+                            {reqs.map((requirement: string, index: number) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                <span className="text-sm sm:text-base">{requirement}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </CardContent>
+                      </Card>
+                    )
+                  }
+                  return null
+                } catch (error) {
+                  console.error('Error rendering requirements:', error)
+                  return null
+                }
+              })()}
 
-          {/* Requirements */}
-          {(() => {
-            try {
-              const reqs = Array.isArray(requirements) ? requirements : []
-              if (reqs.length > 0) {
-                return (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Requirements</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="list-disc list-inside space-y-2">
-                        {reqs.map((requirement: string, index: number) => (
-                          <li key={index} className="text-sm">{requirement}</li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                )
-              }
-              return null
-            } catch (error) {
-              console.error('Error rendering requirements:', error)
-              return null
-            }
-          })()}
-
-          {/* Tags */}
-          {event.tags && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Tags</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {(() => {
-                    try {
-                      if (!event.tags) return []
-                      let tags = event.tags
-                      if (typeof tags === 'string') {
-                        tags = JSON.parse(tags)
-                        if (typeof tags === 'string') {
-                          tags = JSON.parse(tags)
+              {/* Tags */}
+              {event.tags && (
+                <Card>
+                  <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="text-lg sm:text-xl">Tags</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex flex-wrap gap-2">
+                      {(() => {
+                        try {
+                          if (!event.tags) return []
+                          let tags = event.tags
+                          if (typeof tags === 'string') {
+                            tags = JSON.parse(tags)
+                            if (typeof tags === 'string') {
+                              tags = JSON.parse(tags)
+                            }
+                          }
+                          return Array.isArray(tags) ? tags.map((tag: string, index: number) => (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              #{tag}
+                            </Badge>
+                          )) : []
+                        } catch {
+                          return []
                         }
-                      }
-                      return Array.isArray(tags) ? tags.map((tag: string, index: number) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          #{tag}
-                        </Badge>
-                      )) : []
-                    } catch {
-                      return []
-                    }
-                  })()}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
 
+            <TabsContent value="agenda" className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-4">
+              <Card>
+                <CardContent className="p-4 sm:p-6">
+                  {agenda.length > 0 ? (
+                    <div className="space-y-3 sm:space-y-4">
+                      {agenda.map((item: any, index: number) => (
+                        <div key={index} className="flex flex-col sm:flex-row gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg">
+                          <div className="text-sm font-medium text-blue-600 min-w-[80px]">
+                            {item.startTime} - {item.endTime}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-sm sm:text-base">{item.title}</h4>
+                            <p className="text-xs sm:text-sm text-muted-foreground">{item.description}</p>
+                            {item.speaker && (
+                              <p className="text-xs sm:text-sm text-blue-600 mt-1">
+                                Speaker: {item.speaker}
+                              </p>
+                            )}
+                            <Badge variant="outline" className="mt-2 text-xs">
+                              {item.type}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm sm:text-base">No agenda items available.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="speakers" className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-4">
+              <Card>
+                <CardContent className="p-4 sm:p-6">
+                  {speakers.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                      {speakers.map((speaker: any, index: number) => {
+                        // Handle both string names and speaker objects
+                        const speakerName = typeof speaker === 'string' ? speaker : speaker.name || 'Unknown Speaker'
+                        const speakerTitle = typeof speaker === 'string' ? 'Speaker' : speaker.title || 'Speaker'
+                        const speakerBio = typeof speaker === 'string' ? '' : speaker.bio || ''
+                        const speakerAvatar = typeof speaker === 'string' ? '/placeholder.svg' : speaker.avatar || '/placeholder.svg'
+                        
+                        return (
+                          <div key={index} className="flex items-start gap-3 p-3 sm:p-4 border rounded-lg">
+                            <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
+                              <AvatarImage src={speakerAvatar} alt={speakerName} />
+                              <AvatarFallback>
+                                {speakerName
+                                  ? speakerName.split(" ").map((n: string) => n[0]).join("")
+                                  : "SP"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <h4 className="font-semibold text-sm sm:text-base">{speakerName}</h4>
+                              <p className="text-xs sm:text-sm text-blue-600 mb-1">{speakerTitle}</p>
+                              {speakerBio && (
+                                <p className="text-xs sm:text-sm text-muted-foreground">{speakerBio}</p>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm sm:text-base">No speakers available.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="gallery" className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-4">
+              <Card>
+                <CardContent className="p-4 sm:p-6">
+                  {gallery.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                      {gallery.map((item: any, index: number) => (
+                        <div key={index} className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                          <img 
+                            src={item.url || "/placeholder.jpg"} 
+                            alt={item.caption || "Gallery image"} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm sm:text-base">No gallery images available.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Right Column - Event Details & Actions */}
+        <div className="space-y-4 sm:space-y-6">
           {/* Event Details */}
           <Card>
-            <CardHeader>
-              <CardTitle>Event Details</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl">Event Details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Event Information */}
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <Calendar className="h-5 w-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <div className="font-medium">{formatDate(event.startDate)}</div>
-                    <div className="text-sm text-muted-foreground">{formatTime(event.startDate)} - {formatTime(event.endDate)}</div>
+            <CardContent className="p-4 sm:p-6 space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm sm:text-base">{formatDate(event.startDate)}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{formatTime(event.startDate)} - {formatTime(event.endDate)}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-red-600 mt-0.5" />
-                  <div>
-                    <div className="font-medium">{event.venue}</div>
-                    <div className="text-sm text-muted-foreground">{event.location}</div>
+                <div className="flex items-center gap-3">
+                  <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm sm:text-base">{event.venue}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{event.location}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-start gap-3">
-                  <Users className="h-5 w-5 text-green-600 mt-0.5" />
-                  <div>
-                    <div className="font-medium">{event.registeredCount}/{event.capacity || '∞'} attendees</div>
-                    <div className="text-sm text-muted-foreground">
+                <div className="flex items-center gap-3">
+                  <Users className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm sm:text-base">{event.registeredCount}/{event.capacity || '∞'} attendees</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       {event.capacity ? `${event.capacity - event.registeredCount} spots remaining` : 'Open for registration'}
-                    </div>
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Separator */}
-              <div className="border-t border-gray-200 dark:border-gray-700"></div>
+              <div className="border-t border-border h-[1px] w-full"></div>
 
               {/* Price and Actions */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-medium">Price</span>
-                  <span className="text-2xl font-bold text-blue-600">
+                  <span className="text-base sm:text-lg font-semibold">Price</span>
+                  <span className="text-base sm:text-lg font-bold text-primary">
                     {event.price === 0 ? 'Free' : `${event.price.toLocaleString()} ${event.currency}`}
                   </span>
                 </div>
                 
-                <div className="flex gap-3">
-                  <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
-                    Register Now
-                  </Button>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Heart className="h-4 w-4" />
+                <Button className="w-full h-11 rounded-md px-8 text-sm sm:text-base">
+                  Register Now
+                </Button>
+                
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1 h-9 rounded-md px-3 bg-transparent text-xs sm:text-sm">
+                    <Heart className="h-4 w-4 mr-2" />
                     Save
                   </Button>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Share2 className="h-4 w-4" />
+                  <Button variant="outline" className="flex-1 h-9 rounded-md px-3 bg-transparent text-xs sm:text-sm">
+                    <Share2 className="h-4 w-4 mr-2" />
                     Share
                   </Button>
                 </div>
@@ -354,12 +460,12 @@ export default function EventDetailsPage({ params }: PageProps) {
 
           {/* Organizer */}
           <Card>
-            <CardHeader>
-              <CardTitle>Organizer</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl">Organizer</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-start gap-3">
-                <Avatar className="h-12 w-12">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
                   <AvatarImage src={event.organizer.avatar || "/placeholder.svg"} alt={event.organizer.fullName} />
                   <AvatarFallback>
                     {event.organizer.fullName
@@ -368,128 +474,28 @@ export default function EventDetailsPage({ params }: PageProps) {
                       .join("")}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <h4 className="font-semibold">{event.organizer.fullName}</h4>
-                  <p className="text-sm text-blue-600 mb-1">{event.organizer.organization || 'Event Organizer'}</p>
-                  <p className="text-sm text-muted-foreground mb-2">4.8 (24 events)</p>
-                  <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
-                    <ExternalLink className="h-3 w-3" />
-                    Contact Organizer
-                  </Button>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm sm:text-base truncate">{event.organizer.fullName}</p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Star className="h-4 w-4 fill-current text-yellow-400" />
+                    <span className="text-xs sm:text-sm text-muted-foreground">4.8 (24 events)</span>
+                  </div>
                 </div>
               </div>
+              <Button variant="outline" className="w-full mt-4 h-10 px-4 py-2 bg-transparent text-sm">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Contact Organizer
+              </Button>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="agenda">
-          <Card>
-            <CardContent className="p-6">
-              {agenda.length > 0 ? (
-                <div className="space-y-4">
-                  {agenda.map((item: any, index: number) => (
-                    <div key={index} className="flex gap-4 p-4 border rounded-lg">
-                      <div className="text-sm font-medium text-blue-600 min-w-[80px]">
-                        {item.startTime} - {item.endTime}
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold">{item.title}</h4>
-                        <p className="text-sm text-muted-foreground">{item.description}</p>
-                        {item.speaker && (
-                          <p className="text-sm text-blue-600 mt-1">
-                            Speaker: {item.speaker}
-                          </p>
-                        )}
-                        <Badge variant="outline" className="mt-2">
-                          {item.type}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No agenda items available.</p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="speakers">
-          <Card>
-            <CardContent className="p-6">
-              {/* Debug info */}
-              <div className="mb-4 p-4 bg-gray-100 rounded-lg">
-                <h4 className="font-semibold mb-2">Debug Info:</h4>
-                <p>Speakers type: {typeof speakers}</p>
-                <p>Speakers length: {speakers.length}</p>
-                <p>Speakers data: {JSON.stringify(speakers)}</p>
-              </div>
-              
-              {speakers.length > 0 ? (
-                <div className="grid md:grid-cols-2 gap-6">
-                  {speakers.map((speaker: any, index: number) => {
-                    // Handle both string names and speaker objects
-                    const speakerName = typeof speaker === 'string' ? speaker : speaker.name || 'Unknown Speaker'
-                    const speakerTitle = typeof speaker === 'string' ? 'Speaker' : speaker.title || 'Speaker'
-                    const speakerBio = typeof speaker === 'string' ? '' : speaker.bio || ''
-                    const speakerAvatar = typeof speaker === 'string' ? '/placeholder.svg' : speaker.avatar || '/placeholder.svg'
-                    
-                    return (
-                      <div key={index} className="flex items-start gap-3 p-4 border rounded-lg">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={speakerAvatar} alt={speakerName} />
-                          <AvatarFallback>
-                            {speakerName
-                              ? speakerName.split(" ").map((n: string) => n[0]).join("")
-                              : "SP"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h4 className="font-semibold">{speakerName}</h4>
-                          <p className="text-sm text-blue-600 mb-1">{speakerTitle}</p>
-                          {speakerBio && (
-                            <p className="text-sm text-muted-foreground">{speakerBio}</p>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No speakers available.</p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="gallery">
-          <Card>
-            <CardContent className="p-6">
-              {gallery.length > 0 ? (
-                <div className="grid md:grid-cols-3 gap-4">
-                  {gallery.map((item: any, index: number) => (
-                    <div key={index} className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                      <img 
-                        src={item.url || "/placeholder.jpg"} 
-                        alt={item.caption || "Gallery image"} 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No gallery images available.</p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
 
       {/* Admin Actions */}
       {user && (user.id === event.organizerId || user.role === "admin") && (
-        <div className="flex justify-end gap-2">
-          <Link href={`/events/${event.id}/edit`}>
-            <Button variant="outline" className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+          <Link href={`/events/${event.id}/edit`} className="w-full sm:w-auto">
+            <Button variant="outline" className="flex items-center gap-2 w-full sm:w-auto">
               <Edit className="h-4 w-4" />
               Edit
             </Button>
@@ -497,7 +503,7 @@ export default function EventDetailsPage({ params }: PageProps) {
           <Button 
             onClick={handleDelete}
             variant="outline" 
-            className="flex items-center gap-2 text-red-600 hover:text-red-700"
+            className="flex items-center gap-2 text-red-600 hover:text-red-700 w-full sm:w-auto"
           >
             <Trash2 className="h-4 w-4" />
             Delete
