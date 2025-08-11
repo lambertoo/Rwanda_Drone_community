@@ -29,9 +29,14 @@ export async function POST(request: NextRequest) {
 
     const { email, password } = validationResult.data
 
-    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email }
+    // Find user by email or username
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: email },
+          { username: email }
+        ]
+      }
     })
     if (!user) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
@@ -42,6 +47,11 @@ export async function POST(request: NextRequest) {
 
     if (!isValidPassword) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+    }
+
+    // Check if user is blocked
+    if (!user.isActive) {
+      return NextResponse.json({ error: "Account is blocked. Please contact an administrator." }, { status: 403 })
     }
 
     // Generate JWT token
@@ -68,6 +78,7 @@ export async function POST(request: NextRequest) {
         avatar: user.avatar,
         role: user.role,
         isVerified: user.isVerified,
+        isActive: user.isActive,
         organization: user.organization,
         pilotLicense: user.pilotLicense,
         experience: user.experience,

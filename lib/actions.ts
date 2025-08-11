@@ -19,6 +19,22 @@ export async function createForumPostAction(formData: FormData) {
       }
     }
 
+    // Step 1.5: Verification Check
+    if (!user.isVerified) {
+      return { 
+        success: false, 
+        error: "Your account must be verified to create forum posts. Please contact an administrator to verify your account." 
+      }
+    }
+
+    // Step 1.6: Active Account Check
+    if (!user.isActive) {
+      return { 
+        success: false, 
+        error: "Your account is blocked. You cannot create forum posts. Please contact an administrator." 
+      }
+    }
+
     // Step 2: Input Validation
     const title = (formData.get("title") as string)?.trim()
     const content = (formData.get("content") as string)?.trim()
@@ -211,6 +227,16 @@ export async function createForumCommentAction(formData: FormData) {
       throw new Error("Authentication required")
     }
 
+    // Check if user is verified
+    if (!user.isVerified) {
+      throw new Error("Your account must be verified to create forum comments. Please contact an administrator to verify your account.")
+    }
+
+    // Check if user account is active
+    if (!user.isActive) {
+      throw new Error("Your account is blocked. You cannot create forum comments. Please contact an administrator.")
+    }
+
     const content = formData.get("content") as string
     const postId = formData.get("postId") as string
     const parentId = formData.get("parentId") as string | null
@@ -265,6 +291,22 @@ export async function createProjectAction(formData: FormData) {
       return { 
         success: false, 
         error: "You don't have permission to create projects" 
+      }
+    }
+
+    // Check if user is verified
+    if (!user.isVerified) {
+      return { 
+        success: false, 
+        error: "Your account must be verified to create projects. Please contact an administrator to verify your account." 
+      }
+    }
+
+    // Check if user account is active
+    if (!user.isActive) {
+      return { 
+        success: false, 
+        error: "Your account is blocked. You cannot create projects. Please contact an administrator." 
       }
     }
 

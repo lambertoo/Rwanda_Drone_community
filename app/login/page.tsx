@@ -15,11 +15,11 @@ import Link from "next/link"
 // Demo credentials for each role
 const demoCredentials = {
   admin: { email: "admin@drone.com", password: "admin123" },
-  hobbyist: { email: "hobbyist@drone.com", password: "hobbyist123" },
-  pilot: { email: "pilot@drone.com", password: "pilot123" },
-  regulator: { email: "regulator@drone.com", password: "regulator123" },
-  student: { email: "student@drone.com", password: "student123" },
-  "service-provider": { email: "service@drone.com", password: "service123" },
+  hobbyist: { email: "hobbyist@drone.com", password: "password123" },
+  pilot: { email: "pilot@drone.com", password: "password123" },
+  regulator: { email: "regulator@drone.com", password: "password123" },
+  student: { email: "student@drone.com", password: "password123" },
+  "service-provider": { email: "service@drone.com", password: "password123" },
 }
 
 const roleInfo = {
@@ -137,8 +137,8 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!selectedRole) {
-      showNotification('error', 'Role Required', 'Please select a role first')
+    if (!email || !password) {
+      showNotification('error', 'Missing Information', 'Please enter both email and password')
       return
     }
     
@@ -245,13 +245,16 @@ export default function LoginPage() {
               Welcome Back
             </h2>
             <p className="text-lg text-gray-600 mb-8">
-              Choose your role to access the platform with demo credentials
+              Access the platform with your credentials or try demo accounts below
             </p>
           </div>
 
-          {/* Role Selection */}
+          {/* Demo Accounts Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Your Role</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Demo Accounts for Testing</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Try different user roles to test platform features. Click any role to auto-fill credentials.
+            </p>
             <div className="grid gap-3">
               {Object.entries(roleInfo).map(([role, info]) => {
                 const IconComponent = info.icon
@@ -273,6 +276,9 @@ export default function LoginPage() {
                       <div className="flex-1">
                         <h4 className="font-semibold text-gray-900">{info.name}</h4>
                         <p className="text-sm text-gray-600">{info.description}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Demo: {demoCredentials[role as keyof typeof demoCredentials]?.email}
+                        </p>
                       </div>
                       {isSelected && (
                         <CheckCircle className="h-6 w-6 text-green-500" />
@@ -287,7 +293,7 @@ export default function LoginPage() {
               <Alert className={`${roleInfo[selectedRole as keyof typeof roleInfo]?.bgColor} ${roleInfo[selectedRole as keyof typeof roleInfo]?.borderColor}`}>
                 <CheckCircle className="h-4 w-4" />
                 <AlertDescription className="text-gray-700">
-                  <strong>Demo Credentials Ready:</strong> {demoCredentials[selectedRole as keyof typeof demoCredentials]?.email}
+                  <strong>Demo Credentials Auto-filled:</strong> {demoCredentials[selectedRole as keyof typeof demoCredentials]?.email}
                 </AlertDescription>
               </Alert>
             )}
@@ -303,9 +309,7 @@ export default function LoginPage() {
               </div>
               <CardTitle className="text-2xl font-bold text-gray-900">Sign In</CardTitle>
               <CardDescription className="text-gray-600">
-                {selectedRole
-                  ? `Login as ${roleInfo[selectedRole as keyof typeof roleInfo]?.name}`
-                  : "Select a role to continue"}
+                Enter your credentials to access the platform
               </CardDescription>
             </CardHeader>
             
@@ -313,12 +317,12 @@ export default function LoginPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                    Email Address
+                    Username or Email
                   </Label>
                   <Input
                     id="email"
-                    type="email"
-                    placeholder="Enter your email"
+                    type="text"
+                    placeholder="Enter your username or email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -372,17 +376,15 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200"
-                  disabled={isLoading || !selectedRole}
+                  disabled={isLoading}
                 >
                   {isLoading ? (
                     <>
                       <Loader className="mr-2 h-4 w-4 animate-spin" />
                       Signing In...
                     </>
-                  ) : !selectedRole ? (
-                    "Select a Role First"
                   ) : (
-                    `Sign In as ${roleInfo[selectedRole as keyof typeof roleInfo]?.name}`
+                    "Sign In"
                   )}
                 </Button>
               </form>

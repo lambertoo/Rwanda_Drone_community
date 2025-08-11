@@ -20,7 +20,8 @@ model User {
   phone             String?
   joinedAt          DateTime           @default(now())
   reputation        Int                @default(0)
-  isVerified        Boolean            @default(false)
+  isVerified        Boolean            @default(true)
+  isActive          Boolean            @default(true)
   role              UserRole
   lastActive        DateTime           @default(now())
   postsCount        Int                @default(0)

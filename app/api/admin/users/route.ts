@@ -32,6 +32,7 @@ export async function GET() {
         fullName: true,
         role: true,
         isVerified: true,
+        isActive: true,
         reputation: true,
         joinedAt: true,
         lastActive: true,
@@ -178,7 +179,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH: Update user role (admin only)
+// PATCH: Update user role, verification, active status, and other info (admin only)
 export async function PATCH(request: NextRequest) {
   try {
     // Check authentication
@@ -199,7 +200,22 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { userId, role, isVerified, isActive } = body
+    const { 
+      userId, 
+      role, 
+      isVerified, 
+      isActive, 
+      fullName, 
+      email, 
+      username, 
+      organization, 
+      bio, 
+      location, 
+      pilotLicense, 
+      experience, 
+      website, 
+      phone 
+    } = body
 
     if (!userId) {
       return NextResponse.json(
@@ -224,6 +240,26 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    // Check if email or username already exists (when updating)
+    if (email || username) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            ...(email ? [{ email }] : []),
+            ...(username ? [{ username }] : [])
+          ],
+          NOT: { id: userId }
+        }
+      })
+      
+      if (existingUser) {
+        return NextResponse.json(
+          { error: "Email or username already exists" },
+          { status: 409 }
+        )
+      }
+    }
+
     // Update user
     const updatedUser = await prisma.user.update({
       where: { id: userId },
@@ -231,6 +267,16 @@ export async function PATCH(request: NextRequest) {
         ...(role && { role }),
         ...(typeof isVerified === 'boolean' && { isVerified }),
         ...(typeof isActive === 'boolean' && { isActive }),
+        ...(fullName && { fullName }),
+        ...(email && { email }),
+        ...(username && { username }),
+        ...(organization !== undefined && { organization }),
+        ...(bio !== undefined && { bio }),
+        ...(location && { location }),
+        ...(pilotLicense !== undefined && { pilotLicense }),
+        ...(experience && { experience }),
+        ...(website !== undefined && { website }),
+        ...(phone !== undefined && { phone }),
       },
       select: {
         id: true,
@@ -240,7 +286,14 @@ export async function PATCH(request: NextRequest) {
         role: true,
         isVerified: true,
         isActive: true,
-        updatedAt: true,
+        organization: true,
+        bio: true,
+        location: true,
+        pilotLicense: true,
+        experience: true,
+        website: true,
+        phone: true,
+        joinedAt: true,
       }
     })
 
@@ -252,6 +305,64 @@ export async function PATCH(request: NextRequest) {
     console.error('Error updating user:', error)
     return NextResponse.json(
       { error: "Failed to update user" },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT: Reset user password (admin only)
+export async function PUT(request: NextRequest) {
+  try {
+    // Check authentication
+    const user = await getAuthenticatedUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      )
+    }
+
+    // Check if user has admin role
+    if (user.role !== 'admin') {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const { userId, newPassword } = body
+
+    if (!userId || !newPassword) {
+      return NextResponse.json(
+        { error: "User ID and new password are required" },
+        { status: 400 }
+      )
+    }
+
+    if (newPassword.length < 8) {
+      return NextResponse.json(
+        { error: "Password must be at least 8 characters long" },
+        { status: 400 }
+      )
+    }
+
+    // Hash the new password
+    const hashedPassword = await hashPassword(newPassword)
+
+    // Update user password
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword }
+    })
+
+    return NextResponse.json({
+      message: "Password reset successfully"
+    })
+  } catch (error) {
+    console.error('Error resetting password:', error)
+    return NextResponse.json(
+      { error: "Failed to reset password" },
       { status: 500 }
     )
   }
