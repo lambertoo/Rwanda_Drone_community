@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MapPin, Building2, Clock, DollarSign, Calendar, Users, Briefcase, Edit, Trash2, Plus, Search, Filter, FormInput, Eye, Grid3X3, List, BarChart3, Settings, Share2, FileText, UserCheck } from "lucide-react"
+import { MapPin, Building2, Clock, DollarSign, Calendar, Users, Briefcase, Edit, Trash2, Plus, Search, Filter, FormInput, Eye, Grid3X3, List, BarChart3, Settings, Share2, FileText, UserCheck, Bookmark, BookmarkCheck } from "lucide-react"
 import { deleteOpportunityAction } from "@/lib/actions"
 
 interface Opportunity {
@@ -62,10 +62,27 @@ interface AppliedOpportunity {
   submittedAt: string
 }
 
+interface SavedOpportunity {
+  id: string
+  opportunity: {
+    id: string
+    title: string
+    company: string
+    location: string
+    tabCategory: string
+    poster: {
+      fullName: string
+    }
+    createdAt: string
+  }
+  savedAt: string
+}
+
 export default function MyOpportunitiesPage() {
   const router = useRouter()
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [appliedOpportunities, setAppliedOpportunities] = useState<AppliedOpportunity[]>([])
+  const [savedOpportunities, setSavedOpportunities] = useState<SavedOpportunity[]>([])
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
@@ -88,6 +105,7 @@ export default function MyOpportunitiesPage() {
     if (mounted && currentUser) {
       fetchMyOpportunities()
       fetchAppliedOpportunities()
+      fetchSavedOpportunities()
     }
   }, [mounted, currentUser])
 
@@ -111,11 +129,60 @@ export default function MyOpportunitiesPage() {
 
   const fetchAppliedOpportunities = async () => {
     try {
-      // This would need to be implemented in the API
-      // For now, we'll use a placeholder
-      setAppliedOpportunities([])
+      const token = localStorage.getItem("token")
+      if (!token) {
+        setAppliedOpportunities([])
+        return
+      }
+
+      const response = await fetch("/api/opportunities/my-applications", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setAppliedOpportunities(data)
+      } else {
+        console.error("Failed to fetch applied opportunities")
+        setAppliedOpportunities([])
+      }
     } catch (error) {
       console.error("Error fetching applied opportunities:", error)
+      setAppliedOpportunities([])
+    }
+  }
+
+  const fetchSavedOpportunities = async () => {
+    try {
+      const token = localStorage.getItem("token")
+      console.log("🔍 Token from localStorage:", token ? "Present" : "Missing")
+      
+      if (!token) {
+        console.log("❌ No token found, cannot fetch saved opportunities")
+        setSavedOpportunities([])
+        return
+      }
+
+      console.log("🔍 Fetching saved opportunities from database")
+      const response = await fetch("/api/opportunities/saved", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log("✅ Fetched saved opportunities:", data)
+        setSavedOpportunities(data)
+      } else {
+        console.error("❌ Failed to fetch saved opportunities:", response.status, response.statusText)
+        setSavedOpportunities([])
+      }
+    } catch (error) {
+      console.error("❌ Error fetching saved opportunities:", error)
+      setSavedOpportunities([])
     }
   }
 
@@ -130,6 +197,16 @@ export default function MyOpportunitiesPage() {
       fetchMyOpportunities()
     } catch (error) {
       console.error("Error deleting opportunity:", error)
+    }
+  }
+
+  const handleUnsaveOpportunity = async (savedOpportunityId: string) => {
+    try {
+      // This would need to be implemented in the API
+      // For now, we'll just remove it from the local state
+      setSavedOpportunities(prev => prev.filter(saved => saved.id !== savedOpportunityId))
+    } catch (error) {
+      console.error("Error unsaving opportunity:", error)
     }
   }
 
@@ -236,7 +313,7 @@ export default function MyOpportunitiesPage() {
         <div>
           <h1 className="text-3xl font-bold">My Opportunities</h1>
           <p className="text-muted-foreground">
-            Manage your posted opportunities and track applications
+            Manage your posted opportunities, track applications, and save interesting opportunities
           </p>
         </div>
         <Link href="/opportunities/new">
@@ -249,7 +326,7 @@ export default function MyOpportunitiesPage() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="created" className="flex items-center gap-2">
             <Briefcase className="h-4 w-4" />
             Opportunities I Created
@@ -262,6 +339,13 @@ export default function MyOpportunitiesPage() {
             Opportunities I Applied To
             <Badge variant="secondary" className="ml-1">
               {appliedOpportunities.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="saved" className="flex items-center gap-2">
+            <Bookmark className="h-4 w-4" />
+            Saved Opportunities
+            <Badge variant="secondary" className="ml-1">
+              {savedOpportunities.length}
             </Badge>
           </TabsTrigger>
         </TabsList>
@@ -521,6 +605,76 @@ export default function MyOpportunitiesPage() {
                         <p className="text-sm text-muted-foreground mt-1">
                           Applied {formatDate(applied.submittedAt)}
                         </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Saved Opportunities Tab */}
+        <TabsContent value="saved" className="space-y-6">
+          {savedOpportunities.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Bookmark className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No saved opportunities yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Save interesting opportunities to review them later.
+                </p>
+                <Link href="/opportunities">
+                  <Button>
+                    <Briefcase className="h-4 w-4 mr-2" />
+                    Browse Opportunities
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {savedOpportunities.map((saved) => (
+                <Card key={saved.id}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-xl font-semibold">{saved.opportunity.title}</h3>
+                          <Badge variant="outline" className="flex items-center gap-1">
+                            <BookmarkCheck className="h-3 w-3" />
+                            Saved
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                          <span>{saved.opportunity.company}</span>
+                          <span>{saved.opportunity.location}</span>
+                          <Badge className={getTabCategoryColor(saved.opportunity.tabCategory)}>
+                            {saved.opportunity.tabCategory === 'job' ? 'Job' : 
+                             saved.opportunity.tabCategory === 'gig' ? 'Gig' : 'Other'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <span>Posted by {saved.opportunity.poster.fullName}</span>
+                          <span>Posted {formatDate(saved.opportunity.createdAt)}</span>
+                          <span>Saved {formatDate(saved.savedAt)}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Link href={`/opportunities/${saved.opportunity.id}`}>
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                        </Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleUnsaveOpportunity(saved.id)}
+                        >
+                          <Bookmark className="h-4 w-4 mr-2" />
+                          Unsave
+                        </Button>
                       </div>
                     </div>
                   </CardContent>

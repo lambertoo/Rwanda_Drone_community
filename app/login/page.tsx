@@ -156,8 +156,9 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
-        // Store user info in localStorage
+        // Store user info and token in localStorage
         localStorage.setItem("user", JSON.stringify(data.user))
+        localStorage.setItem("token", data.token)
         
         // Show success notification
         showNotification('success', `Welcome back, ${data.user.fullName}!`, 'Login successful. Redirecting...')

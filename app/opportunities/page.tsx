@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MapPin, Building2, Clock, DollarSign, Calendar, Users, Briefcase } from "lucide-react"
+import { MapPin, Building2, Clock, DollarSign, Calendar, Users, Briefcase, Bookmark, BookmarkCheck } from "lucide-react"
 
 interface Opportunity {
   id: string
@@ -35,17 +35,52 @@ interface Opportunity {
 
 export default function OpportunitiesPage() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
+  const [savedOpportunities, setSavedOpportunities] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState("job")
   const [opportunityType, setOpportunityType] = useState("all")
   const [category, setCategory] = useState("all")
   const [location, setLocation] = useState("all")
+  const [currentUser, setCurrentUser] = useState<any>(null)
 
   // Prevent hydration mismatch by ensuring client-side rendering
   useEffect(() => {
     setMounted(true)
+    // Get current user from localStorage
+    const user = localStorage.getItem("user")
+    if (user) {
+      setCurrentUser(JSON.parse(user))
+    }
   }, [])
+
+  // Fetch saved opportunities when user is available
+  useEffect(() => {
+    if (currentUser && mounted) {
+      fetchSavedOpportunities()
+    }
+  }, [currentUser, mounted])
+
+  const fetchSavedOpportunities = async () => {
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) return
+
+      const response = await fetch("/api/opportunities/saved", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const savedIds = data.map((item: any) => item.opportunity.id)
+        setSavedOpportunities(new Set(savedIds))
+      }
+    } catch (error) {
+      console.error("Error fetching saved opportunities:", error)
+    }
+  }
 
   const fetchOpportunities = async () => {
     try {
@@ -72,6 +107,54 @@ export default function OpportunitiesPage() {
       fetchOpportunities()
     }
   }, [activeTab, opportunityType, category, location, mounted])
+
+  const handleSaveOpportunity = async (opportunityId: string) => {
+    if (!currentUser) {
+      // Redirect to login if user is not authenticated
+      window.location.href = '/login'
+      return
+    }
+
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        window.location.href = '/login'
+        return
+      }
+
+      const response = await fetch(`/api/opportunities/${opportunityId}/save`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Update local state based on API response
+        const newSavedOpportunities = new Set(savedOpportunities)
+        if (data.saved) {
+          newSavedOpportunities.add(opportunityId)
+          console.log("💾 Added opportunity to saved:", opportunityId)
+        } else {
+          newSavedOpportunities.delete(opportunityId)
+          console.log("🗑️ Removed opportunity from saved:", opportunityId)
+        }
+        
+        setSavedOpportunities(newSavedOpportunities)
+      } else {
+        console.error("Failed to save/unsave opportunity")
+      }
+    } catch (error) {
+      console.error("Error saving/unsaving opportunity:", error)
+    }
+  }
+
+  const isOpportunitySaved = (opportunityId: string) => {
+    return savedOpportunities.has(opportunityId)
+  }
 
   if (!mounted) {
     return (
@@ -199,6 +282,8 @@ export default function OpportunitiesPage() {
             }
           }
 
+          const isSaved = isOpportunitySaved(opportunity.id)
+
           return (
             <Card key={opportunity.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               <CardContent className="p-6">
@@ -253,8 +338,23 @@ export default function OpportunitiesPage() {
                     <Link href={`/opportunities/${opportunity.id}`}>
                       <Button>Apply Now</Button>
                     </Link>
-                    <Button variant="outline" size="sm">
-                      Save Opportunity
+                    <Button 
+                      variant={isSaved ? "default" : "outline"} 
+                      size="sm"
+                      onClick={() => handleSaveOpportunity(opportunity.id)}
+                      className={isSaved ? "bg-blue-600 hover:bg-blue-700" : ""}
+                    >
+                      {isSaved ? (
+                        <>
+                          <BookmarkCheck className="h-4 w-4 mr-2" />
+                          Saved
+                        </>
+                      ) : (
+                        <>
+                          <Bookmark className="h-4 w-4 mr-2" />
+                          Save Opportunity
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>

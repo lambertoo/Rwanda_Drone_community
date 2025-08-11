@@ -51,6 +51,7 @@ model User {
   services          Service[]
   createdForms      ApplicationForm[]        // Forms created by this user
   formSubmissions   ApplicationSubmission[]  // Applications submitted by this user
+  savedOpportunities SavedOpportunity[]     // Opportunities saved by this user
 
   @@map("users")
 }
@@ -325,6 +326,7 @@ model Opportunity {
   posterId         String
   poster           User             @relation(fields: [posterId], references: [id], onDelete: Cascade)
   applications     JobApplication[]
+  savedBy          SavedOpportunity[]
   applicationForm  ApplicationForm? // One-to-one relationship
 }
 
@@ -402,6 +404,18 @@ model JobApplication {
   createdAt     DateTime    @default(now())
   applicant     User        @relation(fields: [applicantId], references: [id])
   opportunity   Opportunity @relation(fields: [opportunityId], references: [id])
+}
+
+model SavedOpportunity {
+  id            String      @id @default(cuid())
+  userId        String
+  opportunityId String
+  savedAt       DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, opportunityId])
+  @@map("saved_opportunities")
 }
 
 model rsvp {
