@@ -514,10 +514,10 @@ export default function FormBuilder({ opportunityId, onSave, initialForm }: Form
           </div>
         </CardHeader>
         <CardContent>
-          {fields.length === 0 ? (
+                      {fields.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Settings className="h-12 w-12 mx-auto mb-4" />
-              <p>No fields added yet. Choose a block type above to start building your form.</p>
+              <p>No fields added yet. Click 'Add Field' to start building your form.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -563,6 +563,29 @@ export default function FormBuilder({ opportunityId, onSave, initialForm }: Form
               ))}
             </div>
           )}
+          
+          {/* Add Field Button - Always visible below fields */}
+          <div className="mt-6 pt-4 border-t">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-3">Add more fields to your form</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {Object.entries(BLOCK_TYPES).map(([blockType, types]) => (
+                  types.map((type) => (
+                    <Button
+                      key={`${blockType}-${type.value}`}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                      onClick={() => addField(blockType, type.value)}
+                    >
+                      <span className="text-lg">{type.icon}</span>
+                      <span className="text-sm">{type.label}</span>
+                    </Button>
+                  ))
+                ))}
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
