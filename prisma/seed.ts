@@ -791,6 +791,7 @@ async function main() {
           'Own drone equipment'
         ],
         isUrgent: false,
+        tabCategory: 'job',
         posterId: users[2].id,
       }
     }),
@@ -810,6 +811,7 @@ async function main() {
           'Flexible schedule'
         ]),
         isUrgent: true,
+        tabCategory: 'gig',
         posterId: users[5].id,
       }
     }),
@@ -829,6 +831,7 @@ async function main() {
           'Available weekends'
         ]),
         isUrgent: false,
+        tabCategory: 'job',
         posterId: users[3].id,
       }
     }),
@@ -848,6 +851,7 @@ async function main() {
           'Tool proficiency'
         ]),
         isUrgent: false,
+        tabCategory: 'job',
         posterId: users[4].id,
       }
     }),
@@ -867,6 +871,7 @@ async function main() {
           'Physical fitness'
         ]),
         isUrgent: false,
+        tabCategory: 'other',
         posterId: users[1].id,
       }
     }),
@@ -886,6 +891,7 @@ async function main() {
           'Curriculum development'
         ]),
         isUrgent: false,
+        tabCategory: 'other',
         posterId: users[0].id,
       }
     }),
@@ -905,6 +911,7 @@ async function main() {
           'Flexible weekday availability'
         ]),
         isUrgent: false,
+        tabCategory: 'gig',
         posterId: users[3].id,
       }
     }),
@@ -924,6 +931,7 @@ async function main() {
           'Strong communication skills'
         ]),
         isUrgent: true,
+        tabCategory: 'job',
         posterId: users[2].id,
       }
     }),
@@ -943,6 +951,7 @@ async function main() {
           'Knowledge of precision farming'
         ]),
         isUrgent: false,
+        tabCategory: 'gig',
         posterId: users[5].id,
       }
     }),
@@ -962,6 +971,7 @@ async function main() {
           'GIS software experience'
         ]),
         isUrgent: false,
+        tabCategory: 'job',
         posterId: users[4].id,
       }
     })

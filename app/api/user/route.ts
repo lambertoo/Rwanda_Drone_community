@@ -28,6 +28,11 @@ export async function GET() {
         avatar: true,
         createdAt: true,
         role: true,
+        organization: true,
+        pilotLicense: true,
+        experience: true,
+        specializations: true,
+        certifications: true,
         _count: {
           select: {
             posts: true,
@@ -182,7 +187,19 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json()
-    const { fullName, username, bio, location, website, phone } = body
+    const { 
+      fullName, 
+      username, 
+      bio, 
+      location, 
+      website, 
+      phone, 
+      organization, 
+      pilotLicense, 
+      experience, 
+      specializations, 
+      certifications 
+    } = body
 
     // Update user profile
     const updatedProfile = await prisma.user.update({
@@ -194,6 +211,11 @@ export async function PUT(request: Request) {
         location: location || undefined,
         website: website || undefined,
         phone: phone || undefined,
+        organization: organization || undefined,
+        pilotLicense: pilotLicense || undefined,
+        experience: experience || undefined,
+        specializations: specializations || undefined,
+        certifications: certifications || undefined,
       },
       select: {
         id: true,
@@ -205,7 +227,12 @@ export async function PUT(request: Request) {
         website: true,
         phone: true,
         avatar: true,
-        createdAt: true
+        createdAt: true,
+        organization: true,
+        pilotLicense: true,
+        experience: true,
+        specializations: true,
+        certifications: true
       }
     })
 

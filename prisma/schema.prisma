@@ -49,6 +49,8 @@ model User {
   projectLikes      ProjectLike[]
   projects          Project[]
   services          Service[]
+  createdForms      ApplicationForm[]        // Forms created by this user
+  formSubmissions   ApplicationSubmission[]  // Applications submitted by this user
 
   @@map("users")
 }
@@ -317,11 +319,79 @@ model Opportunity {
   isUrgent         Boolean          @default(false)
   isRemote         Boolean          @default(false)
   isActive         Boolean          @default(true)
+  tabCategory      String           @default("job")
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   posterId         String
   poster           User             @relation(fields: [posterId], references: [id], onDelete: Cascade)
   applications     JobApplication[]
+  applicationForm  ApplicationForm? // One-to-one relationship
+}
+
+model ApplicationForm {
+  id            String                    @id @default(cuid())
+  opportunityId String                    @unique
+  creatorId     String                    // User who created the form
+  title         String                    @default("Application Form")
+  description   String?
+  isActive      Boolean                   @default(true)
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  opportunity   Opportunity               @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  creator       User                      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  fields       ApplicationFormField[]
+  submissions  ApplicationSubmission[]
+}
+
+model ApplicationFormField {
+  id                String                    @id @default(cuid())
+  formId            String
+  label             String
+  type              ApplicationFieldType
+  placeholder       String?
+  required          Boolean                   @default(false)
+  options           Json?                    // For select, radio, checkbox fields
+  validation        Json?                    // Validation rules
+  order             Int                      // Field order in form
+  conditions        ApplicationFieldCondition[] // Conditional logic
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  form              ApplicationForm          @relation(fields: [formId], references: [id], onDelete: Cascade)
+  submissions       ApplicationFieldSubmission[]
+}
+
+model ApplicationFieldCondition {
+  id                String                    @id @default(cuid())
+  fieldId           String
+  targetFieldId     String                    // Field this condition affects
+  operator          ConditionOperator         // equals, not_equals, contains, etc.
+  value             String                    // Value to compare against
+  action            ConditionAction           // show, hide, require, etc.
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  field             ApplicationFormField      @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+}
+
+model ApplicationSubmission {
+  id                String                    @id @default(cuid())
+  formId            String
+  applicantId       String
+  status            ApplicationStatus         @default(PENDING)
+  submittedAt       DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  form              ApplicationForm          @relation(fields: [formId], references: [id], onDelete: Cascade)
+  applicant         User                     @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  fieldSubmissions  ApplicationFieldSubmission[]
+}
+
+model ApplicationFieldSubmission {
+  id                String                    @id @default(cuid())
+  submissionId      String
+  fieldId           String
+  value             String                    // Submitted value
+  createdAt         DateTime                  @default(now())
+  submission        ApplicationSubmission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  field             ApplicationFormField      @relation(fields: [fieldId], references: [id], onDelete: Cascade)
 }
 
 model JobApplication {
@@ -402,4 +472,46 @@ enum Region {
   WEST_NGORORERO
   WEST_NYABIHU
   UNKNOWN
+}
+
+enum ApplicationFieldType {
+  TEXT
+  TEXTAREA
+  EMAIL
+  PHONE
+  NUMBER
+  SELECT
+  RADIO
+  CHECKBOX
+  DATE
+  FILE
+  PARAGRAPH
+}
+
+enum ConditionOperator {
+  EQUALS
+  NOT_EQUALS
+  CONTAINS
+  NOT_CONTAINS
+  GREATER_THAN
+  LESS_THAN
+  IS_EMPTY
+  IS_NOT_EMPTY
+}
+
+enum ConditionAction {
+  SHOW
+  HIDE
+  REQUIRE
+  MAKE_OPTIONAL
+  ENABLE
+  DISABLE
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWING
+  APPROVED
+  REJECTED
+  WITHDRAWN
 }

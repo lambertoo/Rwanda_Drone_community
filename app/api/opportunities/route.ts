@@ -7,12 +7,17 @@ import { cookies } from "next/headers"
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
+    const tabCategory = searchParams.get('tabCategory')
     const opportunityType = searchParams.get('opportunityType')
     const category = searchParams.get('category')
     const location = searchParams.get('location')
 
     const where: any = {
       isActive: true
+    }
+
+    if (tabCategory && tabCategory !== 'all') {
+      where.tabCategory = tabCategory
     }
 
     if (opportunityType && opportunityType !== 'all') {

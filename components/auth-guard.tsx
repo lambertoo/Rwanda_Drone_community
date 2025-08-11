@@ -6,7 +6,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Lock, Shield, User, Users, Calendar, FileText, Briefcase, Settings } from "lucide-react"
 import Link from "next/link"
-import { AuthUser, UserRole } from "@prisma/client"
+import { UserRole } from "@prisma/client"
+
+// Define a more flexible user type that matches what's stored in localStorage
+interface LocalUser {
+  id: string
+  email: string
+  username: string
+  fullName: string
+  role: UserRole
+  isVerified?: boolean
+  isActive?: boolean
+  avatar?: string
+  organization?: string
+  pilotLicense?: string
+  experience?: string
+  specializations?: any
+  certifications?: any
+}
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -23,18 +40,34 @@ export function AuthGuard({
   fallback,
   showLoginPrompt = true 
 }: AuthGuardProps) {
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const [user, setUser] = useState<LocalUser | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     // Get user from localStorage (for demo purposes)
     const storedUser = localStorage.getItem("user")
+    console.log("AuthGuard - Stored user data:", storedUser) // Debug log
+    
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser))
+        const parsedUser = JSON.parse(storedUser)
+        console.log("AuthGuard - Parsed user data:", parsedUser) // Debug log
+        
+        // Validate that we have the minimum required fields
+        if (parsedUser && parsedUser.id && parsedUser.role) {
+          console.log("AuthGuard - User data is valid, setting user") // Debug log
+          setUser(parsedUser)
+        } else {
+          console.error("AuthGuard - User data is missing required fields:", parsedUser) // Debug log
+          setUser(null)
+        }
       } catch (error) {
-        console.error("Error parsing user from localStorage:", error)
+        console.error("AuthGuard - Error parsing user from localStorage:", error)
+        setUser(null)
       }
+    } else {
+      console.log("AuthGuard - No user data found in localStorage") // Debug log
+      setUser(null)
     }
     setLoading(false)
   }, [])
@@ -49,6 +82,7 @@ export function AuthGuard({
 
   // Check if user has required role
   if (requiredRole && user?.role !== requiredRole) {
+    console.log("AuthGuard - User role mismatch, showing access restricted") // Debug log
     if (fallback) return <>{fallback}</>
     
     if (!showLoginPrompt) return null
@@ -83,8 +117,9 @@ export function AuthGuard({
     )
   }
 
-  // Check if user has required permissions
-  if (requiredPermissions.length > 0 && !user) {
+  // Check if user is logged in (when no specific role is required)
+  if (!user) {
+    console.log("AuthGuard - User not logged in, showing login prompt") // Debug log
     if (fallback) return <>{fallback}</>
     
     if (!showLoginPrompt) return null
@@ -119,6 +154,44 @@ export function AuthGuard({
     )
   }
 
+  // Check if user has required permissions (only if permissions are specified)
+  if (requiredPermissions.length > 0 && !user) {
+    console.log("AuthGuard - User not found, showing login prompt") // Debug log
+    if (fallback) return <>{fallback}</>
+    
+    if (!showLoginPrompt) return null
+
+    return (
+      <Card className="max-w-md mx-auto mt-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5 text-orange-500" />
+            Login Required
+          </CardTitle>
+          <CardDescription>
+            You need to be logged in to access this content.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert>
+            <AlertDescription>
+              This feature requires authentication. Please log in to continue.
+            </AlertDescription>
+          </Alert>
+          <div className="flex gap-2">
+            <Button asChild>
+              <Link href="/login">Login</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/">Go Home</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  console.log("AuthGuard - User authenticated, rendering children") // Debug log
   return <>{children}</>
 }
 
@@ -146,7 +219,7 @@ export function AdminOnly({ children }: { children: React.ReactNode }) {
 
 export function LoggedInOnly({ children }: { children: React.ReactNode }) {
   return (
-    <AuthGuard requiredPermissions={["authenticated"]}>
+    <AuthGuard>
       {children}
     </AuthGuard>
   )

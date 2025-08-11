@@ -74,6 +74,11 @@ export function AppSidebar({ className, onItemClick }: SidebarProps) {
         icon: Briefcase,
       },
       {
+        title: "My Opportunities",
+        href: "/opportunities/my-opportunities",
+        icon: Briefcase,
+      },
+      {
         title: "Resources",
         href: "/resources",
         icon: BookOpen,

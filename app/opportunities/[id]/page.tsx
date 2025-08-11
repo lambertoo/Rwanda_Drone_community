@@ -1,14 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { MapPin, Building2, Clock, DollarSign, Calendar, Users, Briefcase, Edit, Trash2, ArrowLeft } from "lucide-react"
+import { MapPin, Building2, Clock, DollarSign, Calendar, Users, Briefcase, Edit, Trash2, ArrowLeft, FormInput, Settings, CheckCircle } from "lucide-react"
 import { deleteOpportunityAction } from "@/lib/actions"
+import DynamicApplicationForm from "@/components/opportunities/dynamic-application-form"
 
 interface Opportunity {
   id: string
@@ -45,13 +46,17 @@ interface Opportunity {
   }[]
 }
 
-export default function OpportunityDetailPage() {
-  const params = useParams()
+export default function OpportunityDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
+  const { id: opportunityId } = use(params)
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null)
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [applicationForm, setApplicationForm] = useState<any>(null)
+  const [hasApplied, setHasApplied] = useState(false)
+  const [showApplicationForm, setShowApplicationForm] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   // Prevent hydration mismatch by ensuring client-side rendering
   useEffect(() => {
@@ -63,14 +68,15 @@ export default function OpportunityDetailPage() {
   }, [])
 
   useEffect(() => {
-    if (mounted && params.id) {
+    if (mounted && opportunityId) {
       fetchOpportunity()
+      fetchApplicationForm()
     }
-  }, [mounted, params.id])
+  }, [mounted, opportunityId])
 
   const fetchOpportunity = async () => {
     try {
-      const response = await fetch(`/api/opportunities/${params.id}`)
+      const response = await fetch(`/api/opportunities/${opportunityId}`)
       if (!response.ok) {
         if (response.status === 404) {
           router.push("/opportunities")
@@ -88,30 +94,64 @@ export default function OpportunityDetailPage() {
     }
   }
 
+  const fetchApplicationForm = async () => {
+    try {
+      const response = await fetch(`/api/opportunities/${opportunityId}/apply`)
+      if (response.ok) {
+        const data = await response.json()
+        setApplicationForm(data.form)
+        setHasApplied(data.hasApplied)
+      }
+    } catch (error) {
+      console.error('Error fetching application form:', error)
+    }
+  }
+
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this opportunity?")) {
       return
     }
 
     try {
-      await deleteOpportunityAction(params.id as string)
+      await deleteOpportunityAction(opportunityId)
       router.push("/opportunities")
     } catch (error) {
       console.error("Error deleting opportunity:", error)
-      alert("Failed to delete opportunity. Please try again.")
+    }
+  }
+
+  const handleApplicationSubmit = async (submission: { formId: string; fieldSubmissions: { fieldId: string; value: string }[] }) => {
+    setSubmitting(true)
+    try {
+      const response = await fetch(`/api/opportunities/${opportunityId}/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submission),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setHasApplied(true)
+        setShowApplicationForm(false)
+        alert('Application submitted successfully!')
+        // Refresh the page to show updated application status
+        window.location.reload()
+      } else {
+        const error = await response.json()
+        alert(`Error submitting application: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error submitting application:', error)
+      alert('Failed to submit application. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
   if (!mounted) {
-    return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-12 bg-gray-200 rounded w-3/4 mb-4"></div>
-          <div className="h-6 bg-gray-200 rounded w-1/2"></div>
-        </div>
-      </div>
-    )
+    return null
   }
 
   if (loading) {
@@ -120,7 +160,6 @@ export default function OpportunityDetailPage() {
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
           <div className="h-12 bg-gray-200 rounded w-3/4 mb-4"></div>
-          <div className="h-6 bg-gray-200 rounded w-1/2"></div>
         </div>
       </div>
     )
@@ -131,14 +170,13 @@ export default function OpportunityDetailPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         <Card>
           <CardContent className="p-12 text-center">
-            <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">Opportunity not found</h3>
             <p className="text-muted-foreground mb-4">
               The opportunity you're looking for doesn't exist or has been removed.
             </p>
-            <Link href="/opportunities">
-              <Button>Back to Opportunities</Button>
-            </Link>
+            <Button onClick={() => router.push('/opportunities')}>
+              Back to Opportunities
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -213,7 +251,13 @@ export default function OpportunityDetailPage() {
         </Link>
         {canEdit && (
           <div className="flex gap-2 ml-auto">
-            <Link href={`/opportunities/${opportunity.id}/edit`}>
+            <Link href={`/opportunities/${opportunityId}/build-form`}>
+              <Button variant="outline" size="sm">
+                <FormInput className="h-4 w-4 mr-2" />
+                Build Form
+              </Button>
+            </Link>
+            <Link href={`/opportunities/${opportunityId}/edit`}>
               <Button variant="outline" size="sm">
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
@@ -363,16 +407,78 @@ export default function OpportunityDetailPage() {
       )}
 
       {/* Action Buttons */}
-      <div className="flex gap-4">
-        <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
-          Apply Now
-        </Button>
-        <Button variant="outline">
-          Save Opportunity
-        </Button>
-        <Button variant="outline">
-          Share
-        </Button>
+      <div className="space-y-4">
+        {/* Application Form Section */}
+        {applicationForm ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FormInput className="h-5 w-5" />
+                Application Form
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {hasApplied ? (
+                <div className="text-center py-6">
+                  <CheckCircle className="h-12 w-12 mx-auto text-green-600 mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Application Submitted!</h3>
+                  <p className="text-muted-foreground mb-4">
+                    You have successfully applied to this opportunity. The employer will review your application.
+                  </p>
+                  <Button variant="outline" onClick={() => setShowApplicationForm(true)}>
+                    View Application
+                  </Button>
+                </div>
+              ) : showApplicationForm ? (
+                <DynamicApplicationForm
+                  form={applicationForm}
+                  onSubmit={handleApplicationSubmit}
+                  isSubmitting={submitting}
+                />
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-muted-foreground mb-4">
+                    This opportunity has a custom application form. Click below to start your application.
+                  </p>
+                  <Button onClick={() => setShowApplicationForm(true)} className="w-full">
+                    Apply Now
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="text-center py-8">
+            <FormInput className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Application Form</h3>
+            <p className="text-muted-foreground mb-4">
+              This opportunity doesn't have a custom application form yet.
+            </p>
+            {currentUser && currentUser.id === opportunity?.poster.id && (
+              <Link href={`/opportunities/${opportunityId}/build-form`}>
+                <Button>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Build Application Form
+                </Button>
+              </Link>
+            )}
+          </div>
+        )}
+
+        {/* Other Action Buttons */}
+        <div className="flex gap-4">
+          {!applicationForm && (
+            <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
+              Apply Now
+            </Button>
+          )}
+          <Button variant="outline">
+            Save Opportunity
+          </Button>
+          <Button variant="outline">
+            Share
+          </Button>
+        </div>
       </div>
     </div>
   )

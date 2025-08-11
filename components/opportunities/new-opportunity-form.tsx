@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,8 +13,37 @@ import { Plus, X } from "lucide-react"
 import { createOpportunityAction } from "@/lib/actions"
 
 export default function NewOpportunityForm() {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [requirements, setRequirements] = useState<string[]>([""])
+  const [selectedTab, setSelectedTab] = useState("job")
+  const [formData, setFormData] = useState({
+    title: "",
+    company: "",
+    description: "",
+    opportunityType: "",
+    category: "",
+    location: "",
+    salary: "",
+    isUrgent: false,
+    isRemote: false
+  })
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      company: "",
+      description: "",
+      opportunityType: "",
+      category: "",
+      location: "",
+      salary: "",
+      isUrgent: false,
+      isRemote: false
+    })
+    setRequirements([""])
+    setSelectedTab("job")
+  }
 
   const addRequirement = () => {
     setRequirements([...requirements, ""])
@@ -38,26 +68,54 @@ export default function NewOpportunityForm() {
     try {
       // Check if user is logged in
       const user = localStorage.getItem("user")
-              if (!user) {
-          alert("Please log in to post an opportunity.")
-          return
-        }
+      if (!user) {
+        alert("Please log in to post an opportunity.")
+        return
+      }
 
-      const formData = new FormData(e.currentTarget)
+      const formDataObj = new FormData(e.currentTarget)
       
       // Add requirements array to form data
       const validRequirements = requirements.filter(req => req.trim() !== "")
-      formData.append("requirements", JSON.stringify(validRequirements))
+      formDataObj.append("requirements", JSON.stringify(validRequirements))
       
       // Add user ID from localStorage
       const userData = JSON.parse(user)
-      formData.append("userId", userData.id)
+      formDataObj.append("userId", userData.id)
+      
+      // Add tab category
+      formDataObj.append("tabCategory", selectedTab)
+      
+      // Debug logging
+      console.log("Form submission details:")
+      console.log("- Selected tab:", selectedTab)
+      console.log("- User ID:", userData.id)
+      console.log("- Requirements:", validRequirements)
+      console.log("- Form data entries:")
+      for (let [key, value] of formDataObj.entries()) {
+        console.log(`  ${key}: ${value}`)
+      }
 
-              console.log("Creating opportunity with user:", userData.id)
-        await createOpportunityAction(formData)
+      console.log("Creating opportunity with user:", userData.id)
+      const result = await createOpportunityAction(formDataObj)
+      
+      if (result.success) {
+        // Reset form after successful submission
+        resetForm()
+        alert("Opportunity created successfully!")
+        router.push(`/opportunities/${result.opportunity.id}`)
+      } else {
+        alert(result.error || "Failed to create opportunity. Please try again.")
+      }
     } catch (error) {
-              console.error("Error creating opportunity:", error)
-              alert("Failed to create opportunity. Please try again.")
+      console.error("Error creating opportunity:", error)
+      
+      // Show more specific error message
+      if (error instanceof Error) {
+        alert(`Error: ${error.message}`)
+      } else {
+        alert("Failed to create opportunity. Please try again.")
+      }
     } finally {
       setLoading(false)
     }
@@ -67,10 +125,10 @@ export default function NewOpportunityForm() {
     <div className="max-w-4xl mx-auto">
       <div className="space-y-6">
         <div className="text-center space-y-4">
-                                <h1 className="text-3xl font-bold">Post an Opportunity</h1>
-                      <p className="text-lg text-muted-foreground">
-                        Find the perfect drone professional for your project
-                      </p>
+          <h1 className="text-3xl font-bold">Post an Opportunity</h1>
+          <p className="text-lg text-muted-foreground">
+            Find the perfect drone professional for your project
+          </p>
         </div>
 
         <Card>
@@ -79,9 +137,49 @@ export default function NewOpportunityForm() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Tab Selection - Main Opportunity Category */}
+              <div className="space-y-2">
+                <Label className="text-base font-semibold">What type of opportunity are you posting? *</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    type="button"
+                    variant={selectedTab === "job" ? "default" : "outline"}
+                    onClick={() => setSelectedTab("job")}
+                    className="w-full h-12"
+                  >
+                    <div className="text-center">
+                      <div className="font-semibold">Jobs</div>
+                      <div className="text-xs text-muted-foreground">Full-time & Part-time</div>
+                    </div>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={selectedTab === "gig" ? "default" : "outline"}
+                    onClick={() => setSelectedTab("gig")}
+                    className="w-full h-12"
+                  >
+                    <div className="text-center">
+                      <div className="font-semibold">Gigs</div>
+                      <div className="text-xs text-muted-foreground">Freelance & Projects</div>
+                    </div>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={selectedTab === "other" ? "default" : "outline"}
+                    onClick={() => setSelectedTab("other")}
+                    className="w-full h-12"
+                  >
+                    <div className="text-center">
+                      <div className="font-semibold">Other</div>
+                      <div className="text-xs text-muted-foreground">Internships & Training</div>
+                    </div>
+                  </Button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                                      <Label htmlFor="title">Opportunity Title *</Label>
+                  <Label htmlFor="title">Opportunity Title *</Label>
                   <Input
                     id="title"
                     name="title"
@@ -114,10 +212,10 @@ export default function NewOpportunityForm() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                                      <Label htmlFor="opportunityType">Opportunity Type *</Label>
-                                      <Select name="opportunityType" required>
+                  <Label htmlFor="opportunityType">Employment Type *</Label>
+                  <Select name="opportunityType" required>
                     <SelectTrigger>
-                                              <SelectValue placeholder="Select opportunity type" />
+                      <SelectValue placeholder="Select employment type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Full-time">Full-time</SelectItem>
@@ -212,9 +310,9 @@ export default function NewOpportunityForm() {
               </div>
 
               <div className="flex gap-4 pt-4">
-                                      <Button type="submit" disabled={loading} className="flex-1 bg-blue-600 hover:bg-blue-700">
-                        {loading ? "Creating..." : "Post Opportunity"}
-                      </Button>
+                <Button type="submit" disabled={loading} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  {loading ? "Creating..." : "Post Opportunity"}
+                </Button>
               </div>
             </form>
           </CardContent>

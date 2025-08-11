@@ -1214,42 +1214,33 @@ export async function deleteServiceAction(serviceId: string) {
 // Opportunity Actions
 export async function createOpportunityAction(formData: FormData) {
   try {
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
-
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
+    // Get user from form data (since we're using localStorage for demo)
+    const userId = formData.get("userId") as string
+    if (!userId) {
+      throw new Error("User ID is required")
     }
 
-    // If no session, try to get user from form data (fallback for demo)
-    if (!user) {
-      const userId = formData.get("userId") as string
-      if (userId) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: userId }
-        })
-        if (dbUser) {
-          user = {
-            id: dbUser.id,
-            username: dbUser.username,
-            email: dbUser.email,
-            fullName: dbUser.fullName,
-            role: dbUser.role,
-            isVerified: dbUser.isVerified
-          }
-        }
-      }
+    // Get user from database
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId }
+    })
+    
+    if (!dbUser) {
+      throw new Error("User not found")
     }
 
-    if (!user) {
-      throw new Error("Authentication required")
+    const user = {
+      id: dbUser.id,
+      username: dbUser.username,
+      email: dbUser.email,
+      fullName: dbUser.fullName,
+      role: dbUser.role,
+      isVerified: dbUser.isVerified
     }
 
     // Check if user can post opportunities
     if (!canPostOpportunities(user)) {
-      throw new Error("You don't have permission to post opportunities")
+      throw new Error(`You don't have permission to post opportunities. Your role (${user.role}) is not authorized.`)
     }
 
     const title = formData.get("title") as string
@@ -1262,10 +1253,22 @@ export async function createOpportunityAction(formData: FormData) {
     const requirements = formData.get("requirements") as string
     const isUrgent = formData.get("isUrgent") === "true"
     const isRemote = formData.get("isRemote") === "true"
+    const tabCategory = formData.get("tabCategory") as string
 
     if (!title || !description || !company || !opportunityType || !category || !location) {
       throw new Error("Missing required fields")
     }
+
+    console.log("Creating opportunity with data:", {
+      title,
+      company,
+      opportunityType,
+      category,
+      location,
+      tabCategory,
+      userId: user.id,
+      userRole: user.role
+    })
 
     const opportunity = await prisma.opportunity.create({
       data: {
@@ -1280,6 +1283,7 @@ export async function createOpportunityAction(formData: FormData) {
         isUrgent,
         isRemote,
         posterId: user.id,
+        tabCategory: tabCategory || "job",
       },
     })
 
@@ -1297,7 +1301,7 @@ export async function createOpportunityAction(formData: FormData) {
     return { success: true, opportunity }
   } catch (error) {
     console.error("Error creating opportunity:", error)
-    throw new Error("Failed to create opportunity. Please try again.")
+    throw new Error(error instanceof Error ? error.message : "Failed to create opportunity. Please try again.")
   }
 }
 

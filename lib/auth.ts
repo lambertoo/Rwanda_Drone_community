@@ -74,7 +74,7 @@ export function canCreateServices(user: AuthUser | null): boolean {
 }
 
 export function canPostOpportunities(user: AuthUser | null): boolean {
-  return user?.role === "service_provider" || user?.role === "pilot"
+  return user?.role === "admin" || user?.role === "regulator" || user?.role === "hobbyist" || user?.role === "pilot" || user?.role === "service_provider"
 }
 
 export function canApplyOpportunities(user: AuthUser | null): boolean {
