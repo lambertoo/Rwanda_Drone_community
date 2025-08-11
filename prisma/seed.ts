@@ -751,28 +751,6 @@ async function main() {
 
   console.log('🔧 Created services')
 
-  // Create resources
-  await Promise.all([
-    prisma.resource.create({
-      data: {
-        title: 'RCAA Drone Registration Guide',
-        description: 'Complete guide to registering your drone with RCAA',
-        fileUrl: '/resources/rcaa-registration-guide.pdf',
-        userId: users[3].id,
-      }
-    }),
-    prisma.resource.create({
-      data: {
-        title: 'Drone Safety Guidelines',
-        description: 'Safety guidelines for safe drone operation in Rwanda',
-        fileUrl: '/resources/drone-safety-guidelines.pdf',
-        userId: users[0].id,
-      }
-    })
-  ])
-
-  console.log('📚 Created resources')
-
   // Create opportunities
   const opportunities = await Promise.all([
     prisma.opportunity.create({
@@ -1056,6 +1034,80 @@ async function main() {
   ])
 
   console.log('📊 Updated category statistics')
+
+  // Create sample resources
+  console.log("Creating sample resources...")
+  
+  const sampleResources = [
+    {
+      title: "RCAA Drone Registration Guidelines",
+      description: "Complete guide for registering your drone with Rwanda Civil Aviation Authority",
+      fileUrl: "https://example.com/rcaa-registration-guide.pdf",
+      fileType: "PDF",
+      fileSize: "2.4 MB",
+      category: "REGULATIONS",
+      isRegulation: true,
+      downloads: 1247,
+      views: 2156,
+      userId: users[0].id // Admin
+    },
+    {
+      title: "Commercial Drone Operations Manual",
+      description: "Requirements and procedures for commercial drone operations in Rwanda",
+      fileUrl: "https://example.com/commercial-operations.pdf",
+      fileType: "PDF",
+      fileSize: "3.1 MB",
+      category: "REGULATIONS",
+      isRegulation: true,
+      downloads: 892,
+      views: 1543,
+      userId: users[3].id // Regulator
+    },
+    {
+      title: "Pre-Flight Safety Checklist",
+      description: "Essential safety checks before every drone flight",
+      fileUrl: "https://example.com/safety-checklist.pdf",
+      fileType: "PDF",
+      fileSize: "1.2 MB",
+      category: "SAFETY",
+      isRegulation: false,
+      downloads: 3421,
+      views: 5678,
+      userId: users[1].id // Hobbyist
+    },
+    {
+      title: "Flight Log Template",
+      description: "Standard template for recording flight activities",
+      fileUrl: "https://example.com/flight-log.xlsx",
+      fileType: "Excel",
+      fileSize: "0.5 MB",
+      category: "TEMPLATES",
+      isRegulation: false,
+      downloads: 2847,
+      views: 4231,
+      userId: users[2].id // Pilot
+    },
+    {
+      title: "Getting Started with Drone Photography",
+      description: "Learn the basics of aerial photography and composition",
+      fileUrl: "https://example.com/photography-tutorial.mp4",
+      fileType: "Video",
+      fileSize: "45.2 MB",
+      category: "TUTORIALS",
+      isRegulation: false,
+      downloads: 5432,
+      views: 8765,
+      userId: users[5].id // Service Provider
+    }
+  ]
+
+  for (const resourceData of sampleResources) {
+    await prisma.resource.create({
+      data: resourceData
+    })
+  }
+
+  console.log("✅ Sample resources created successfully!")
 
   console.log('🎉 Database seeding completed successfully!')
 }

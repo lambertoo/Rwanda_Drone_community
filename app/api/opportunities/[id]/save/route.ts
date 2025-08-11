@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { verifyJWT } from "@/lib/jwt"
+import { verifyToken } from "@/lib/jwt"
 import { prisma } from "@/lib/prisma"
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const decoded = await verifyJWT(token)
+    const decoded = await verifyToken(token)
     if (!decoded || !decoded.userId) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 })
     }
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const decoded = await verifyJWT(token)
+    const decoded = await verifyToken(token)
     if (!decoded || !decoded.userId) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 })
     }

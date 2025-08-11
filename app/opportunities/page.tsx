@@ -132,6 +132,7 @@ export default function OpportunitiesPage() {
 
       if (response.ok) {
         const data = await response.json()
+        console.log("✅ API Response:", data)
         
         // Update local state based on API response
         const newSavedOpportunities = new Set(savedOpportunities)
@@ -145,7 +146,9 @@ export default function OpportunitiesPage() {
         
         setSavedOpportunities(newSavedOpportunities)
       } else {
-        console.error("Failed to save/unsave opportunity")
+        const errorData = await response.text()
+        console.error("❌ Failed to save/unsave opportunity:", response.status, response.statusText)
+        console.error("❌ Error details:", errorData)
       }
     } catch (error) {
       console.error("Error saving/unsaving opportunity:", error)

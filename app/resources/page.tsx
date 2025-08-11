@@ -1,138 +1,165 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Download, FileText, Video, Shield, AlertTriangle, CheckCircle } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Download, FileText, Video, Shield, AlertTriangle, CheckCircle, Plus, Upload, FileUp } from "lucide-react"
+import { NewResourceForm } from "@/components/resources/new-resource-form"
+import { useToast } from "@/hooks/use-toast"
+
+interface Resource {
+  id: string
+  title: string
+  description?: string
+  fileUrl: string
+  fileType: string
+  fileSize?: string
+  fileUpload?: string
+  category: string
+  isRegulation: boolean
+  downloads: number
+  views: number
+  uploadedAt: string
+  uploadedBy: {
+    id: string
+    username: string
+    fullName: string
+    avatar: string
+    role: string
+  }
+}
 
 export default function ResourcesPage() {
-  const regulations = [
-    {
-      title: "RCAA Drone Registration Guidelines",
-      description: "Complete guide for registering your drone with Rwanda Civil Aviation Authority",
-      type: "PDF",
-      size: "2.4 MB",
-      downloads: 1247,
-      updated: "March 2024",
-    },
-    {
-      title: "Commercial Drone Operations Manual",
-      description: "Requirements and procedures for commercial drone operations in Rwanda",
-      type: "PDF",
-      size: "3.1 MB",
-      downloads: 892,
-      updated: "February 2024",
-    },
-    {
-      title: "Airspace Restrictions Map",
-      description: "Interactive map showing no-fly zones and restricted airspace",
-      type: "PDF",
-      size: "5.2 MB",
-      downloads: 2156,
-      updated: "March 2024",
-    },
-  ]
+  const [resources, setResources] = useState<Resource[]>([])
+  const [loading, setLoading] = useState(true)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const { toast } = useToast()
 
-  const safetyGuides = [
-    {
-      title: "Pre-Flight Safety Checklist",
-      description: "Essential safety checks before every drone flight",
-      type: "PDF",
-      size: "1.2 MB",
-      downloads: 3421,
-      updated: "January 2024",
-    },
-    {
-      title: "Weather Conditions Guide",
-      description: "Understanding weather conditions for safe drone operations",
-      type: "PDF",
-      size: "2.8 MB",
-      downloads: 1876,
-      updated: "February 2024",
-    },
-    {
-      title: "Emergency Procedures Manual",
-      description: "What to do when things go wrong during flight",
-      type: "PDF",
-      size: "1.9 MB",
-      downloads: 1543,
-      updated: "March 2024",
-    },
-  ]
+  useEffect(() => {
+    const user = localStorage.getItem("user")
+    if (user) {
+      setCurrentUser(JSON.parse(user))
+    }
+    fetchResources()
+  }, [])
 
-  const templates = [
-    {
-      title: "Flight Log Template",
-      description: "Standard template for recording flight activities",
-      type: "Excel",
-      size: "0.5 MB",
-      downloads: 2847,
-      updated: "January 2024",
-    },
-    {
-      title: "Risk Assessment Form",
-      description: "Template for assessing flight risks and mitigation strategies",
-      type: "Word",
-      size: "0.8 MB",
-      downloads: 1923,
-      updated: "February 2024",
-    },
-    {
-      title: "Maintenance Log",
-      description: "Track your drone maintenance and repairs",
-      type: "Excel",
-      size: "0.6 MB",
-      downloads: 1456,
-      updated: "March 2024",
-    },
-  ]
-
-  const tutorials = [
-    {
-      title: "Getting Started with Drone Photography",
-      description: "Learn the basics of aerial photography and composition",
-      type: "Video",
-      duration: "15 min",
-      views: 5432,
-      updated: "March 2024",
-      thumbnail: "/placeholder.svg?height=120&width=200&text=Photography+Tutorial",
-    },
-    {
-      title: "Agricultural Drone Applications",
-      description: "How to use drones for crop monitoring and precision agriculture",
-      type: "Video",
-      duration: "22 min",
-      views: 3876,
-      updated: "February 2024",
-      thumbnail: "/placeholder.svg?height=120&width=200&text=Agriculture+Tutorial",
-    },
-    {
-      title: "Drone Mapping Fundamentals",
-      description: "Introduction to photogrammetry and 3D mapping",
-      type: "Video",
-      duration: "28 min",
-      views: 4521,
-      updated: "January 2024",
-      thumbnail: "/placeholder.svg?height=120&width=200&text=Mapping+Tutorial",
-    },
-  ]
-
-  const getFileIcon = (type: string) => {
-    switch (type) {
-      case "PDF":
-        return <FileText className="h-5 w-5 text-red-600" />
-      case "Video":
-        return <Video className="h-5 w-5 text-blue-600" />
-      case "Excel":
-        return <FileText className="h-5 w-5 text-green-600" />
-      case "Word":
-        return <FileText className="h-5 w-5 text-blue-600" />
-      default:
-        return <FileText className="h-5 w-5 text-gray-600" />
+  const fetchResources = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch("/api/resources")
+      if (response.ok) {
+        const data = await response.json()
+        setResources(data.resources)
+      } else {
+        console.error("Failed to fetch resources")
+      }
+    } catch (error) {
+      console.error("Error fetching resources:", error)
+    } finally {
+      setLoading(false)
     }
   }
 
+  const handleDownload = async (resourceId: string, resource: Resource) => {
+    try {
+      // Track download
+      await fetch(`/api/resources/${resourceId}/download`, {
+        method: "POST"
+      })
+
+      // Open file in new tab or download
+      if (resource.fileUrl.startsWith('http')) {
+        window.open(resource.fileUrl, '_blank')
+      } else {
+        // For uploaded files, trigger download
+        const link = document.createElement('a')
+        link.href = resource.fileUrl
+        link.download = resource.fileUpload || resource.title
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
+
+      // Update local state
+      setResources(prev => prev.map(r => 
+        r.id === resourceId 
+          ? { ...r, downloads: r.downloads + 1 }
+          : r
+      ))
+
+      toast({
+        title: "Download started",
+        description: "Your download should begin shortly",
+      })
+    } catch (error) {
+      console.error("Error downloading resource:", error)
+      toast({
+        title: "Download failed",
+        description: "Please try again",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleResourceAdded = () => {
+    setIsAddDialogOpen(false)
+    fetchResources()
+    toast({
+      title: "Resource added successfully!",
+      description: "Your resource is now available to the community",
+    })
+  }
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case "REGULATIONS":
+        return <Shield className="h-4 w-4" />
+      case "SAFETY":
+        return <AlertTriangle className="h-4 w-4" />
+      case "TEMPLATES":
+        return <FileText className="h-4 w-4" />
+      case "TUTORIALS":
+        return <Video className="h-4 w-4" />
+      default:
+        return <FileText className="h-4 w-4" />
+    }
+  }
+
+  const getFileTypeIcon = (fileType: string) => {
+    switch (fileType) {
+      case "Video":
+        return <Video className="h-4 w-4" />
+      case "Audio":
+        return <FileText className="h-4 w-4" />
+      case "Image":
+        return <FileText className="h-4 w-4" />
+      default:
+        return <FileText className="h-4 w-4" />
+    }
+  }
+
+  const getCategoryResources = (category: string) => {
+    if (category === "all") return resources
+    return resources.filter(r => r.category === category.toUpperCase())
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading resources...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Resources & Downloads</h1>
@@ -140,11 +167,40 @@ export default function ResourcesPage() {
             Essential documents, guides, and tutorials for drone operators in Rwanda
           </p>
         </div>
-        <Button>Suggest Resource</Button>
+        
+        {currentUser && (
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Share Resource
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <FileUp className="h-5 w-5" />
+                  Share New Resource
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Share valuable resources with the drone community
+                </p>
+              </DialogHeader>
+              <NewResourceForm 
+                onSuccess={handleResourceAdded}
+                onCancel={() => setIsAddDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
-      <Tabs defaultValue="regulations" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="all" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="all" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            All
+          </TabsTrigger>
           <TabsTrigger value="regulations" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Regulations
@@ -163,158 +219,90 @@ export default function ResourcesPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="regulations" className="space-y-4">
-          <div className="grid gap-4">
-            {regulations.map((resource, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 bg-red-50 rounded-lg">{getFileIcon(resource.type)}</div>
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-semibold text-lg">{resource.title}</h3>
-                          <p className="text-sm text-muted-foreground">{resource.description}</p>
-                        </div>
-                        <Badge variant="outline">{resource.type}</Badge>
+        {["all", "regulations", "safety", "templates", "tutorials"].map((category) => (
+          <TabsContent key={category} value={category} className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {getCategoryResources(category).map((resource) => (
+                <Card key={resource.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg line-clamp-2">{resource.title}</CardTitle>
+                        <CardDescription className="line-clamp-2 mt-2">
+                          {resource.description}
+                        </CardDescription>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>{resource.size}</span>
-                        <span>•</span>
-                        <span>{resource.downloads} downloads</span>
-                        <span>•</span>
-                        <span>Updated {resource.updated}</span>
-                      </div>
+                      <Badge 
+                        variant={resource.isRegulation ? "destructive" : "secondary"}
+                        className="ml-2 flex-shrink-0"
+                      >
+                        {resource.isRegulation ? "Regulation" : resource.category}
+                      </Badge>
                     </div>
-                    <Button className="flex items-center gap-2">
-                      <Download className="h-4 w-4" />
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        {getFileTypeIcon(resource.fileType)}
+                        {resource.fileType}
+                      </span>
+                      {resource.fileSize && (
+                        <span>{resource.fileSize}</span>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Download className="h-4 w-4" />
+                        {resource.downloads} downloads
+                      </span>
+                      <span>{resource.views} views</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>By {resource.uploadedBy.fullName}</span>
+                      <span>•</span>
+                      <span>{new Date(resource.uploadedAt).toLocaleDateString()}</span>
+                    </div>
+                    
+                    <Button 
+                      onClick={() => handleDownload(resource.id, resource)}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
                       Download
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="safety" className="space-y-4">
-          <div className="grid gap-4">
-            {safetyGuides.map((resource, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 bg-orange-50 rounded-lg">{getFileIcon(resource.type)}</div>
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-semibold text-lg">{resource.title}</h3>
-                          <p className="text-sm text-muted-foreground">{resource.description}</p>
-                        </div>
-                        <Badge variant="outline">{resource.type}</Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>{resource.size}</span>
-                        <span>•</span>
-                        <span>{resource.downloads} downloads</span>
-                        <span>•</span>
-                        <span>Updated {resource.updated}</span>
-                      </div>
-                    </div>
-                    <Button className="flex items-center gap-2">
-                      <Download className="h-4 w-4" />
-                      Download
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="templates" className="space-y-4">
-          <div className="grid gap-4">
-            {templates.map((resource, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 bg-blue-50 rounded-lg">{getFileIcon(resource.type)}</div>
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-semibold text-lg">{resource.title}</h3>
-                          <p className="text-sm text-muted-foreground">{resource.description}</p>
-                        </div>
-                        <Badge variant="outline">{resource.type}</Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>{resource.size}</span>
-                        <span>•</span>
-                        <span>{resource.downloads} downloads</span>
-                        <span>•</span>
-                        <span>Updated {resource.updated}</span>
-                      </div>
-                    </div>
-                    <Button className="flex items-center gap-2">
-                      <Download className="h-4 w-4" />
-                      Download
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="tutorials" className="space-y-4">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tutorials.map((tutorial, index) => (
-              <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="aspect-video bg-gradient-to-r from-blue-100 to-green-100">
-                  <img
-                    src={tutorial.thumbnail || "/placeholder.svg"}
-                    alt={tutorial.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <CardHeader>
-                  <CardTitle className="text-lg">{tutorial.title}</CardTitle>
-                  <CardDescription>{tutorial.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Video className="h-4 w-4" />
-                      {tutorial.duration}
-                    </span>
-                    <span>{tutorial.views} views</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">Updated {tutorial.updated}</div>
-                  <Button className="w-full">Watch Tutorial</Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            
+            {getCategoryResources(category).length === 0 && (
+              <div className="text-center py-12">
+                <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No resources found</h3>
+                <p className="text-gray-500">
+                  {category === "all" 
+                    ? "No resources have been shared yet." 
+                    : `No ${category} resources available.`
+                  }
+                </p>
+                {currentUser && (
+                  <Button 
+                    onClick={() => setIsAddDialogOpen(true)}
+                    className="mt-4"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Share First Resource
+                  </Button>
+                )}
+              </div>
+            )}
+          </TabsContent>
+        ))}
       </Tabs>
-
-      {/* Featured Resource */}
-      <Card className="bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
-        <CardContent className="p-8">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <CheckCircle className="h-8 w-8 text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-xl font-semibold mb-2">New: RCAA Drone Registration Made Easy</h3>
-              <p className="text-muted-foreground mb-4">
-                Step-by-step video guide to register your drone with Rwanda Civil Aviation Authority. Includes all
-                required forms and documentation.
-              </p>
-              <Button>Watch Now</Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
