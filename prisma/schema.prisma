@@ -142,6 +142,8 @@ model Project {
   objectives      Json?
   challenges      Json?
   outcomes        Json?
+  methodology     String?
+  results         String?
   teamMembers     Json?
   gallery         Json?
   resources       Json?

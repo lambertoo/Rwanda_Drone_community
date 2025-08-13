@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Upload, AlertTriangle, FileText, X, CloudUpload } from "lucide-react"
+import { Upload, AlertTriangle, FileText, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { detectFileType, formatFileSize } from "@/lib/file-upload"
 

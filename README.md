@@ -89,14 +89,53 @@ The Rwanda Drone Community Platform is a comprehensive web application designed 
 - **Frontend:** Next.js 15, React 19, TypeScript
 - **Styling:** Tailwind CSS, shadcn/ui components
 - **Authentication:** Custom role-based system
-- **Database:** Prisma ORM with SQLite (production-ready for PostgreSQL/MySQL)
-- **Deployment:** Vercel
+- **Database:** Prisma ORM with PostgreSQL
+- **Deployment:** Docker with Docker Compose
 - **Icons:** Lucide React
 - **Forms:** React Hook Form with Zod validation
 
+## 📋 Requirements
+
+### System Requirements
+- **Docker Desktop** with at least 4GB RAM allocation
+- **Node.js 18.x** or higher
+- **pnpm** package manager (npm as fallback)
+- **10GB** free disk space
+
+### Required Files
+- All source code files
+- `package.json` and `pnpm-lock.yaml`
+- `Dockerfile` and `docker-compose.prod.yml`
+- `prisma/schema.prisma`
+- Environment variables configured
+
+See [REQUIREMENTS.md](./REQUIREMENTS.md) for a complete checklist.
+
 ## 🚀 Getting Started
 
-### Option 1: Docker (Recommended) 🐳
+### Option 1: Automated Build Scripts (Recommended) 🚀
+
+We provide comprehensive build scripts to ensure all requirements are met:
+
+#### Full Build & Deploy (Recommended for first-time setup)
+```bash
+# Make script executable (first time only)
+chmod +x build-and-deploy.sh
+
+# Run full build with validation
+./build-and-deploy.sh
+```
+
+#### Quick Build (For development iterations)
+```bash
+# Make script executable (first time only)
+chmod +x quick-build.sh
+
+# Run quick build
+./quick-build.sh
+```
+
+### Option 2: Manual Docker Build 🐳
 
 The easiest way to run the application is using Docker:
 

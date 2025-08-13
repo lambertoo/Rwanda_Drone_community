@@ -1,5 +1,5 @@
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
+// Browser-compatible file upload utilities
+// Note: File saving is handled server-side via API routes
 
 export interface FileUploadInfo {
   originalName: string
@@ -49,92 +49,72 @@ export function detectFileType(fileName: string): string {
   return typeMap[extension || ''] || 'Other'
 }
 
-export async function saveUploadedFile(
-  file: File,
-  uploadDir: string = 'uploads/resources'
-): Promise<FileUploadInfo> {
-  try {
-    // Create upload directory if it doesn't exist
-    await mkdir(uploadDir, { recursive: true })
-    
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    
-    // Generate unique filename
-    const timestamp = Date.now()
-    const originalName = file.name
-    const extension = originalName.split('.').pop()
-    const fileName = `resource_${timestamp}.${extension}`
-    const filePath = join(uploadDir, fileName)
-    
-    // Save file
-    await writeFile(filePath, buffer)
-    
-    // Calculate file size
-    const fileSize = formatFileSize(buffer.length)
-    
-    // Detect file type
-    const fileType = detectFileType(originalName)
-    
-    // Generate file URL (in production, this would be your CDN or storage service URL)
-    const fileUrl = `/uploads/resources/${fileName}`
-    
-    return {
-      originalName,
-      fileName,
-      filePath,
-      fileSize,
-      fileType,
-      fileUrl
-    }
-  } catch (error) {
-    console.error('Error saving uploaded file:', error)
-    throw new Error('Failed to save uploaded file')
-  }
-}
-
 export async function processFileUrl(url: string): Promise<{ fileSize: string; fileType: string }> {
   try {
     // For external URLs, we can't always determine the exact file size
     // But we can try to get headers or estimate based on URL patterns
     const response = await fetch(url, { method: 'HEAD' })
     
-    if (response.ok) {
-      const contentLength = response.headers.get('content-length')
-      const contentType = response.headers.get('content-type')
-      
-      let fileSize = 'Unknown'
-      if (contentLength) {
-        fileSize = formatFileSize(parseInt(contentLength))
-      }
-      
-      let fileType = 'Other'
-      if (contentType) {
-        if (contentType.includes('pdf')) fileType = 'PDF'
-        else if (contentType.includes('video')) fileType = 'Video'
-        else if (contentType.includes('audio')) fileType = 'Audio'
-        else if (contentType.includes('image')) fileType = 'Image'
-        else if (contentType.includes('spreadsheet')) fileType = 'Excel'
-        else if (contentType.includes('document')) fileType = 'Word'
-        else if (contentType.includes('presentation')) fileType = 'PowerPoint'
-      }
-      
-      return { fileSize, fileType }
+    if (!response.ok) {
+      throw new Error('Failed to fetch file information')
     }
     
-    // Fallback: try to detect from URL
-    const urlParts = url.split('.')
-    const extension = urlParts[urlParts.length - 1]?.toLowerCase()
-    const fileType = detectFileType(`file.${extension}`)
+    const contentType = response.headers.get('content-type') || ''
+    const contentLength = response.headers.get('content-length')
     
-    return { fileSize: 'Unknown', fileType }
+    // Determine file type from content type
+    let fileType = 'Other'
+    if (contentType.includes('pdf')) fileType = 'PDF'
+    else if (contentType.includes('word') || contentType.includes('document')) fileType = 'Word'
+    else if (contentType.includes('excel') || contentType.includes('spreadsheet')) fileType = 'Excel'
+    else if (contentType.includes('powerpoint') || contentType.includes('presentation')) fileType = 'PowerPoint'
+    else if (contentType.includes('video')) fileType = 'Video'
+    else if (contentType.includes('audio')) fileType = 'Audio'
+    else if (contentType.includes('image')) fileType = 'Image'
+    else if (contentType.includes('text')) fileType = 'Text'
+    else if (contentType.includes('zip') || contentType.includes('rar')) fileType = 'Archive'
+    
+    // Format file size if available
+    const fileSize = contentLength ? formatFileSize(parseInt(contentLength)) : 'Unknown'
+    
+    return { fileSize, fileType }
   } catch (error) {
     console.error('Error processing file URL:', error)
-    // Fallback: detect from URL extension
-    const urlParts = url.split('.')
-    const extension = urlParts[urlParts.length - 1]?.toLowerCase()
-    const fileType = detectFileType(`file.${extension}`)
-    
-    return { fileSize: 'Unknown', fileType }
+    return { fileSize: 'Unknown', fileType: 'Other' }
   }
+}
+
+export function validateFile(file: File, maxSize: number = 100 * 1024 * 1024): { isValid: boolean; error?: string } {
+  if (file.size > maxSize) {
+    return {
+      isValid: false,
+      error: `File size exceeds maximum limit of ${formatFileSize(maxSize)}`
+    }
+  }
+  
+  return { isValid: true }
+}
+
+export function getFileExtension(fileName: string): string {
+  return fileName.split('.').pop()?.toLowerCase() || ''
+}
+
+export function isImageFile(fileName: string): boolean {
+  const extension = getFileExtension(fileName)
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension)
+}
+
+export function isVideoFile(fileName: string): boolean {
+  const extension = getFileExtension(fileName)
+  return ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'].includes(extension)
+}
+
+export function isAudioFile(fileName: string): boolean {
+  const extension = getFileExtension(fileName)
+  return ['mp3', 'wav', 'ogg', 'aac', 'flac'].includes(extension)
+}
+
+export function isDocumentFile(fileName: string): boolean {
+  const extension = getFileExtension(fileName)
+  return ['pdf', 'doc', 'docx', 'txt', 'rtf'].includes(extension)
 } 

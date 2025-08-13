@@ -328,4 +328,12 @@ function ProjectCategoriesContent() {
       </div>
     </div>
   )
+}
+
+export default function ProjectCategoriesPage() {
+  return (
+    <AdminOnly>
+      <ProjectCategoriesContent />
+    </AdminOnly>
+  )
 } 

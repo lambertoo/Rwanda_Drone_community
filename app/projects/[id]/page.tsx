@@ -1,123 +1,205 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Share2, ArrowLeft, ThumbsUp, MessageSquare, Loader } from "lucide-react"
+import { formatDistanceToNow } from "date-fns"
 import { Textarea } from "@/components/ui/textarea"
-import { 
-  Calendar, 
-  MapPin, 
-  Users, 
-  Target, 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
-  Edit,
-  Trash2,
-  ArrowLeft,
-  Heart,
-  Share2,
-  Download,
-  FileText,
-  Database,
-  BookOpen,
-  Smartphone,
-  Eye,
-  MessageSquare,
-  Send,
-  Copy,
-  ExternalLink,
-  Video
-} from "lucide-react"
-import Link from "next/link"
-import { IfLoggedIn, IfAdmin } from "@/components/auth-guard"
-import { AuthUser } from "@prisma/client"
+
+interface User {
+  id: string
+  username: string
+  email: string
+  fullName: string
+  avatar: string
+  bio: string
+  location: string
+  website: string | null
+  phone: string | null
+  joinedAt: string
+  reputation: number
+  isVerified: boolean
+  isActive: boolean
+  role: string
+  lastActive: string
+  postsCount: number
+  commentsCount: number
+  projectsCount: number
+  eventsCount: number
+  servicesCount: number
+  opportunitiesCount: number
+  pilotLicense: string | null
+  organization: string
+  experience: string
+  specializations: string[]
+  certifications: string[]
+}
 
 interface Project {
   id: string
   title: string
   description: string
-  fullDescription?: string
-  category?: {
-    id: string
-    name: string
-    slug: string
-    icon?: string
-  }
-  categoryId?: string
+  fullDescription: string | null
+  categoryId: string
   status: string
-  location?: string
-  duration?: string
-  startDate?: string
-  endDate?: string
-  funding?: string
-  technologies?: string
-  objectives?: string
-  challenges?: string
-  outcomes?: string
-  teamMembers?: string
-  gallery?: string
-  resources?: string
+  authorId: string
+  location: string
+  duration: string
+  startDate: string
+  endDate: string
+  funding: string
+  technologies: string[]
+  objectives: string[]
+  challenges: string[]
+  outcomes: string[]
+  teamMembers: TeamMember[]
+  gallery: string
+  resources: string | null
   createdAt: string
+  updatedAt: string
   viewsCount: number
   likesCount: number
   isFeatured: boolean
-  author: {
+  author: User
+  category: Category
+  methodology: string | null
+  results: string | null
+}
+
+interface Category {
     id: string
-    fullName: string
-    username: string
-    avatar?: string
+  name: string
+  description: string
+  slug: string
+  icon: string
+  color: string
+  createdAt: string
+  updatedAt: string
+}
+
+interface TeamMember {
+  id: string
+  name: string
     role: string
-    organization?: string
-  }
+  organization: string
+  email: string
+  expertise: string
+  bio: string
 }
 
 interface Comment {
   id: string
   content: string
+  authorId: string
+  projectId: string
   createdAt: string
+  updatedAt: string
   likesCount: number
-  author: {
-    id: string
-    fullName: string
-    avatar?: string
-  }
+  author: User
   replies?: Comment[]
 }
 
-export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
+interface GalleryItem {
+    id: string
+  url: string
+  caption?: string
+  type: 'image' | 'video'
+}
+
+interface ProjectResource {
+  id: string
+  title: string
+  description: string
+  type: 'file' | 'link' | 'video'
+  url: string
+  size?: string
+  fileType?: string
+  downloads?: number
+}
+
+export default function ProjectDetailPage() {
   const router = useRouter()
   const [project, setProject] = useState<Project | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
   const [comments, setComments] = useState<Comment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(null)
+  const [liked, setLiked] = useState(false)
+  const [likesCount, setLikesCount] = useState(0)
+  const [commentLikes, setCommentLikes] = useState<Set<string>>(new Set())
   const [newComment, setNewComment] = useState("")
+  const [submittingComment, setSubmittingComment] = useState(false)
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyContent, setReplyContent] = useState("")
-  const [isLiked, setIsLiked] = useState(false)
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false)
-  const [isLiking, setIsLiking] = useState(false)
   const [isSubmittingReply, setIsSubmittingReply] = useState(false)
-  const [commentLikes, setCommentLikes] = useState<Record<string, boolean>>({})
-  const [showShareModal, setShowShareModal] = useState(false)
+  const [parsedGallery, setParsedGallery] = useState<GalleryItem[]>([])
+  const [parsedResources, setParsedResources] = useState<ProjectResource[]>([])
+
+  // Tab navigation state
+  const [activeTab, setActiveTab] = useState('overview')
+
+  // Helper function to get resource icon
+  const getResourceIconByType = (type: string) => {
+    switch (type) {
+      case 'file':
+        return "💾" // Download
+      case 'link':
+        return "🔗" // ExternalLink
+      case 'video':
+        return "🎥" // Video
+      default:
+        return "📄" // FileText
+    }
+  }
+
+  const getCategoryIcon = (category: any) => {
+    // If category is a string, map by the string value
+    if (typeof category === 'string') {
+      switch (category.toLowerCase()) {
+        case "agriculture": return "🌾"
+        case "surveillance": return "🛡️"
+        case "mapping": return "🗺️"
+        case "delivery": return "📦"
+        case "emergency": return "🚨"
+        case "research": return "🔬"
+        case "education": return "🎓"
+        case "environmental": return "🌍"
+        default: return "🚁"
+      }
+    }
+    
+    // If category is an object with name property, map by name
+    if (typeof category === 'object' && category.name) {
+      switch (category.name.toLowerCase()) {
+        case "agriculture": return "🌾"
+        case "surveillance": return "🛡️"
+        case "mapping": return "🗺️"
+        case "delivery": return "📦"
+        case "emergency": return "🚨"
+        case "research": return "🔬"
+        case "education": return "🎓"
+        case "environmental": return "🌍"
+        default: return "🚁"
+      }
+    }
+    
+    return "🚁"
+  }
 
   useEffect(() => {
     const initializePage = async () => {
       try {
-        const { id } = await params
-        console.log("Initializing page with project ID:", id)
+        // Get project ID from URL path
+        const pathSegments = window.location.pathname.split('/')
+        const id = pathSegments[pathSegments.length - 1]
         
         // First, just load the project data
         await fetchProject(id)
-        
-        // Set loading to false after project is loaded
-        setLoading(false)
-        console.log("Project loaded successfully")
         
         // Then load comments and user data in the background
         fetchComments(id)
@@ -144,7 +226,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     }
     
     initializePage()
-  }, [params])
+  }, [])
 
   const fetchProject = async (projectId: string) => {
     try {
@@ -152,11 +234,35 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
       if (response.ok) {
         const data = await response.json()
         setProject(data)
+        setLikesCount(data.likesCount || 0)
+        
+        // Parse gallery and resources data
+        try {
+          if (data.gallery) {
+            const galleryData = typeof data.gallery === 'string' ? JSON.parse(data.gallery) : data.gallery
+            setParsedGallery(Array.isArray(galleryData) ? galleryData : [])
+          }
+          if (data.resources) {
+            const resourcesData = typeof data.resources === 'string' ? JSON.parse(data.resources) : data.resources
+            setParsedResources(Array.isArray(resourcesData) ? resourcesData : [])
+          } else {
+            setParsedResources([])
+          }
+        } catch (parseError) {
+          console.error("Error parsing gallery or resources:", parseError)
+          setParsedGallery([])
+          setParsedResources([])
+        }
       } else {
         console.error("Failed to fetch project")
+        setProject(null)
       }
     } catch (error) {
       console.error("Error fetching project:", error)
+      setProject(null)
+    } finally {
+      // Always set loading to false after fetchProject completes
+      setLoading(false)
     }
   }
 
@@ -177,113 +283,98 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
       const response = await fetch(`/api/projects/${projectId}/like/check?userId=${userId}`)
       if (response.ok) {
         const data = await response.json()
-        setIsLiked(data.isLiked)
+        setLiked(data.liked)
       }
     } catch (error) {
-      console.error("Error checking like status:", error)
-    }
-  }
-
-  const handleLike = async () => {
-    if (!user) {
-      alert("Please log in to like projects")
-      return
-    }
-
-    setIsLiking(true)
-    try {
-      const { id } = await params
-      const response = await fetch(`/api/projects/${id}/like`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userId: user.id }),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setIsLiked(data.isLiked)
-        setProject(prev => prev ? { ...prev, likesCount: data.likesCount } : null)
-      }
-    } catch (error) {
-      console.error("Error liking project:", error)
-    } finally {
-      setIsLiking(false)
+      console.error("Error checking if liked:", error)
     }
   }
 
   const checkCommentLikes = async (userId: string, projectId: string) => {
     try {
-      // Fetch comments first if not already loaded
-      if (comments.length === 0) {
-        const response = await fetch(`/api/projects/${projectId}/comments`)
-        if (response.ok) {
-          const data = await response.json()
-          const fetchedComments = data.comments || []
-          setComments(fetchedComments)
-          
-          // Check likes for the fetched comments
-          if (fetchedComments.length > 0) {
-            const allComments = fetchedComments.flatMap(comment => [comment, ...(comment.replies || [])])
-            const likePromises = allComments.map(comment =>
-              fetch(`/api/comments/${comment.id}/like/check?userId=${userId}`)
-                .then(res => res.json())
-                .then(data => ({ commentId: comment.id, isLiked: data.isLiked }))
-            )
-            
-            const results = await Promise.all(likePromises)
-            const likesMap = results.reduce((acc, { commentId, isLiked }) => {
-              acc[commentId] = isLiked
-              return acc
-            }, {} as Record<string, boolean>)
-            
-            setCommentLikes(likesMap)
+      const response = await fetch(`/api/projects/${projectId}/comments`)
+      if (response.ok) {
+        const data = await response.json()
+        const likedComments = new Set<string>()
+        
+        // Check which comments the user has liked
+        if (data.comments && data.comments.length > 0) {
+          // Get all comments including nested replies at all levels
+          const getAllReplies = (replies: Comment[]): Comment[] => {
+            let allReplies: Comment[] = []
+            replies.forEach(reply => {
+              allReplies.push(reply)
+              if (reply.replies && reply.replies.length > 0) {
+                allReplies.push(...getAllReplies(reply.replies))
+              }
+            })
+            return allReplies
           }
-        }
-      } else {
-        // Comments already loaded, check likes
-        const allComments = comments.flatMap(comment => [comment, ...(comment.replies || [])])
-        if (allComments.length > 0) {
+          
+          const allComments = data.comments.flatMap((comment: Comment) => [
+            comment, 
+            ...(comment.replies || []),
+            ...getAllReplies(comment.replies || [])
+          ])
+          
           const likePromises = allComments.map(comment =>
-            fetch(`/api/comments/${comment.id}/like/check?userId=${userId}`)
+            fetch(`/api/projects/${projectId}/comments/${comment.id}/like/check?userId=${userId}`)
               .then(res => res.json())
               .then(data => ({ commentId: comment.id, isLiked: data.isLiked }))
           )
           
           const results = await Promise.all(likePromises)
-          const likesMap = results.reduce((acc, { commentId, isLiked }) => {
-            acc[commentId] = isLiked
-            return acc
-          }, {} as Record<string, boolean>)
-          
-          setCommentLikes(likesMap)
+          results.forEach(({ commentId, isLiked }) => {
+            if (isLiked) {
+              likedComments.add(commentId)
+            }
+          })
         }
+        
+        setCommentLikes(likedComments)
       }
     } catch (error) {
       console.error("Error checking comment likes:", error)
     }
   }
 
-  const handleComment = async () => {
-    if (!user) {
-      alert("Please log in to comment")
-      return
-    }
 
-    if (!newComment.trim()) return
 
-    setIsSubmittingComment(true)
+  const handleLike = async () => {
+    if (!user || !project) return
+
     try {
-      const { id } = await params
-      const response = await fetch(`/api/projects/${id}/comments`, {
-        method: "POST",
+      const response = await fetch(`/api/projects/${project.id}/like`, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id }),
+      })
+
+      if (response.ok) {
+        setLiked(!liked)
+        setLikesCount(prev => liked ? prev - 1 : prev + 1)
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error)
+    }
+  }
+
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user || !project || !newComment.trim()) return
+
+    setSubmittingComment(true)
+    try {
+      const response = await fetch(`/api/projects/${project.id}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          content: newComment,
-          userId: user.id 
+          content: newComment.trim(),
+          userId: user.id,
         }),
       })
 
@@ -291,34 +382,56 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
         const data = await response.json()
         setComments(prev => [data.comment, ...prev])
         setNewComment("")
-        // Refresh comments to get updated structure
-        await fetchComments(id)
+        await fetchComments(project.id)
+      }
+    } catch (error) {
+      console.error("Error submitting comment:", error)
+    } finally {
+      setSubmittingComment(false)
+    }
+  }
+
+  const handleComment = async () => {
+    if (!user || !project || !newComment.trim()) return
+
+    setSubmittingComment(true)
+    try {
+      const response = await fetch(`/api/projects/${project.id}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          content: newComment.trim(),
+          userId: user.id,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setComments(prev => [data.comment, ...prev])
+        setNewComment("")
+        await fetchComments(project.id)
       }
     } catch (error) {
       console.error("Error posting comment:", error)
     } finally {
-      setIsSubmittingComment(false)
+      setSubmittingComment(false)
     }
   }
 
-  const handleReply = async (parentId: string) => {
-    if (!user) {
-      alert("Please log in to reply")
-      return
-    }
-
-    if (!replyContent.trim()) return
+  const handleReply = async (parentId: string, parentCommentId?: string) => {
+    if (!user || !project || !replyContent.trim()) return
 
     setIsSubmittingReply(true)
     try {
-      const { id } = await params
-      const response = await fetch(`/api/projects/${id}/comments`, {
-        method: "POST",
+      const response = await fetch(`/api/projects/${project.id}/comments`, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          content: replyContent,
+          content: replyContent.trim(),
           userId: user.id,
           parentId: parentId
         }),
@@ -326,10 +439,46 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
       if (response.ok) {
         const data = await response.json()
+        
+        // Update comments state to add the new reply
+        setComments(prev => prev.map(comment => {
+          if (comment.id === parentCommentId || comment.id === parentId) {
+            // If this is the top-level comment, add reply to its replies array
+            if (comment.id === parentCommentId) {
+              return {
+                ...comment,
+                replies: [...(comment.replies || []), data.comment]
+              }
+            }
+            // If this is the comment being replied to, add reply to its replies array
+            if (comment.id === parentId) {
+              return {
+                ...comment,
+                replies: [...(comment.replies || []), data.comment]
+              }
+            }
+          }
+          // Check if this comment has nested replies that need updating
+          if (comment.replies) {
+            return {
+              ...comment,
+              replies: comment.replies.map(reply => {
+                if (reply.id === parentId) {
+                  return {
+                    ...reply,
+                    replies: [...(reply.replies || []), data.comment]
+                  }
+                }
+                return reply
+              })
+            }
+          }
+          return comment
+        }))
+        
         setReplyContent("")
         setReplyingTo(null)
-        // Refresh comments to get updated structure
-        await fetchComments(id)
+        await fetchComments(project.id)
       }
     } catch (error) {
       console.error("Error posting reply:", error)
@@ -339,210 +488,73 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   }
 
   const handleCommentLike = async (commentId: string) => {
-    if (!user) {
-      alert("Please log in to like comments")
-      return
-    }
+    if (!user || !project) return
 
     try {
-      const response = await fetch(`/api/comments/${commentId}/like`, {
-        method: "POST",
+      const response = await fetch(`/api/projects/${project.id}/comments/${commentId}/like`, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ userId: user.id }),
       })
 
       if (response.ok) {
         const data = await response.json()
-        setCommentLikes(prev => ({ ...prev, [commentId]: data.isLiked }))
+        // Update the comment like status
+        setCommentLikes(prev => {
+          const newSet = new Set(prev)
+          if (data.isLiked) {
+            newSet.add(commentId)
+          } else {
+            newSet.delete(commentId)
+          }
+          return newSet
+        })
         
-        // Update the comment's like count in the state
-        setComments(prev => prev.map(comment => {
-          if (comment.id === commentId) {
-            return { ...comment, likesCount: data.likesCount }
-          }
-          if (comment.replies) {
-            return {
-              ...comment,
-              replies: comment.replies.map(reply => 
-                reply.id === commentId 
-                  ? { ...reply, likesCount: data.likesCount }
-                  : reply
-              )
+        // Update the comment likes count - handle all nesting levels
+        const updateCommentLikes = (comments: Comment[]): Comment[] => {
+          return comments.map(comment => {
+            if (comment.id === commentId) {
+              return { ...comment, likesCount: data.likesCount }
             }
-          }
-          return comment
-        }))
+            if (comment.replies) {
+              return {
+                ...comment,
+                replies: updateCommentLikes(comment.replies)
+              }
+            }
+            return comment
+          })
+        }
+        
+        setComments(prev => updateCommentLikes(prev))
       }
     } catch (error) {
       console.error("Error liking comment:", error)
     }
   }
 
-  const handleShare = async () => {
-    const url = window.location.href
-    const title = project?.title || "Check out this drone project"
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title,
-          url,
-        })
-      } catch (error) {
-        console.error("Error sharing:", error)
-      }
-    } else {
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(url)
-        alert("Link copied to clipboard!")
-      } catch (error) {
-        console.error("Error copying to clipboard:", error)
-      }
-    }
-  }
-
-  const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this project?")) return
-
-    try {
-      const { id } = await params
-      const response = await fetch(`/api/projects/${id}`, {
-        method: "DELETE",
-      })
-
-      if (response.ok) {
-        router.push("/projects")
-      } else {
-        console.error("Failed to delete project")
-      }
-    } catch (error) {
-      console.error("Error deleting project:", error)
-    }
-  }
-
-  // Check if user can edit or delete this project
-  // Check if user can edit or delete this project
-  const canEdit = user && project && (user.role === 'ADMIN' || user.id === project.authorId)
-  const canDelete = user && user.role === 'ADMIN'
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
-
-  if (!project) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Project Not Found</h1>
-          <p className="text-muted-foreground mb-4">The project you're looking for doesn't exist.</p>
-          <Button asChild>
-            <Link href="/projects">Back to Projects</Link>
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  const teamMembers = project.teamMembers ? 
-    (typeof project.teamMembers === 'string' ? JSON.parse(project.teamMembers) : project.teamMembers) : []
-  const gallery = project.gallery ? 
-    (typeof project.gallery === 'string' ? JSON.parse(project.gallery) : project.gallery) : []
-  const resources = project.resources ? 
-    (typeof project.resources === 'string' ? JSON.parse(project.resources) : project.resources) : []
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed": return "bg-green-100 text-green-800"
-      case "in_progress": return "bg-blue-100 text-blue-800"
-      case "planning": return "bg-yellow-100 text-yellow-800"
-      case "on_hold": return "bg-gray-100 text-gray-800"
-      case "cancelled": return "bg-red-100 text-red-800"
-      default: return "bg-gray-100 text-gray-800"
-    }
-  }
-
-  const getStatusDisplay = (status: string) => {
-    switch (status) {
-      case "in_progress": return "In Progress"
-      case "on_hold": return "On Hold"
-      case "planning": return "Planning"
-      case "completed": return "Completed"
-      case "cancelled": return "Cancelled"
-      default: return status
-    }
-  }
-
-  const getCategoryIcon = (category: any) => {
-    if (!category) return "🚁"
-    
-    // If category is an object with icon property, use it
-    if (typeof category === 'object' && category.icon) {
-      return category.icon
-    }
-    
-    // If category is an object with name property, map by name
-    if (typeof category === 'object' && category.name) {
-      switch (category.name.toLowerCase()) {
-        case "agriculture": return "🌾"
-        case "surveillance": return "🛡️"
-        case "mapping": return "🗺️"
-        case "delivery": return "📦"
-        case "emergency": return "🚨"
-        case "research": return "🔬"
-        case "education": return "🎓"
-        case "environmental": return "🌍"
-        default: return "🚁"
-      }
-    }
-    
-    // If category is a string, use the old logic
-    if (typeof category === 'string') {
-      switch (category.toLowerCase()) {
-        case "agriculture": return "🌾"
-        case "surveillance": return "🛡️"
-        case "mapping": return "🗺️"
-        case "delivery": return "📦"
-        case "emergency": return "🚨"
-        case "research": return "🔬"
-        case "education": return "🎓"
-        case "environmental": return "🌍"
-        default: return "🚁"
-      }
-    }
-    
-    return "🚁"
-  }
-
-  // Get resource icon based on type
-  const getResourceIcon = (type: string) => {
-    switch (type) {
-      case "file":
-        return FileText
-      case "link":
-        return ExternalLink
-      case "video":
-        return Video
-      default:
-        return FileText
-    }
-  }
-
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading project...</p>
-              <p className="text-sm text-muted-foreground mt-2">This may take a few seconds</p>
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-6">
+                <div className="h-64 bg-gray-200 rounded"></div>
+                <div className="space-y-4">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+        </div>
+      </div>
+              <div className="space-y-6">
+                <div className="h-32 bg-gray-200 rounded"></div>
+                <div className="h-32 bg-gray-200 rounded"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -553,680 +565,858 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   if (!project) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold mb-4">Project Not Found</h1>
-              <p className="text-muted-foreground">The project you're looking for doesn't exist.</p>
-            </div>
-          </div>
+        <div className="max-w-6xl mx-auto text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Project Not Found</h1>
+          <p className="text-gray-600">The project you're looking for doesn't exist or has been removed.</p>
         </div>
       </div>
     )
   }
-
-
 
   return (
+    <div className="min-h-screen bg-gray-50">
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-6">
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/projects">
+          {/* Back Button */}
+          <Link 
+            href="/projects"
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+          >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Projects
+            <span className="hidden sm:inline">Back to Projects</span>
+            <span className="sm:hidden">Back</span>
               </Link>
-            </Button>
-            
-            <IfLoggedIn fallback={null}>
-              {canEdit && (
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/projects/${project.id}/edit`}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Link>
-                </Button>
-              )}
-              {canDelete && (
-                <Button variant="outline" size="sm" onClick={handleDelete}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
-              )}
-            </IfLoggedIn>
+
+          {/* Hero Section with Thumbnail */}
+          <div className="relative">
+            <div className="aspect-[2/1] rounded-lg overflow-hidden">
+              <img 
+                src={parsedGallery && parsedGallery.length > 0 ? parsedGallery[0].url : "/placeholder.svg?height=400&width=800&text=" + encodeURIComponent(project.title)} 
+                alt={project.title} 
+                className="w-full h-full object-cover"
+              />
           </div>
-
-          {/* Project Header */}
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-2xl">{getCategoryIcon(project.category)}</span>
-                <Badge variant="outline" className="text-sm">
-                  {project.category?.name || 'Uncategorized'}
-                </Badge>
-                <Badge className={`text-sm ${getStatusColor(project.status)}`}>
-                  {getStatusDisplay(project.status)}
-                </Badge>
-                {project.isFeatured && (
-                  <Badge variant="secondary" className="text-sm">Featured</Badge>
-                )}
+            <div className="absolute inset-0 bg-black/40 rounded-lg"></div>
+            <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6 text-white">
+              <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border-transparent hover:bg-primary/80 mb-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                {project.category?.name || 'Project'}
               </div>
-
-              <h1 className="text-4xl font-bold mb-4">{project.title}</h1>
-              <p className="text-xl text-muted-foreground mb-6 max-w-4xl">{project.description}</p>
-
-              {/* Project Meta */}
-              <div className="grid md:grid-cols-3 gap-6 text-sm text-muted-foreground mb-6">
-                {project.startDate && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-blue-600" />
-                    <span>
-                      {new Date(project.startDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} 
-                      {project.endDate && ` - ${new Date(project.endDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}
-                    </span>
-                  </div>
-                )}
-                {project.location && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-red-600" />
-                    <span>{project.location}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-purple-600" />
-                  <span>Led by {project.author.fullName}</span>
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Eye className="h-4 w-4" />
-                  <span>{project.viewsCount}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Heart className="h-4 w-4" />
-                  <span>{project.likesCount}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <MessageSquare className="h-4 w-4" />
-                  <span>{comments.length}</span>
-                </div>
-              </div>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">{project.title}</h1>
+              <p className="text-base sm:text-lg opacity-90 line-clamp-2">{project.description}</p>
             </div>
+              </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <Button 
-                variant={isLiked ? "default" : "outline"} 
-                size="sm"
-                onClick={handleLike}
-                disabled={isLiking}
-              >
-                <Heart className={`h-4 w-4 mr-2 ${isLiked ? "fill-current" : ""}`} />
-                {isLiked ? "Liked" : "Like"}
+          {/* Project Stats Bar */}
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold text-gray-900">{project.viewsCount}</span>
+                  <span className="text-sm text-gray-600">views</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold text-gray-900">{project.likesCount}</span>
+                  <span className="text-sm text-gray-600">likes</span>
+                  </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold text-gray-900">{comments.length}</span>
+                  <span className="text-sm text-gray-600">comments</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  Like
               </Button>
-              <Button variant="outline" size="sm" onClick={handleShare}>
-                <Share2 className="h-4 w-4 mr-2" />
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Share2 className="w-4 h-4" />
                 Share
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-3">
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+            {/* Left Column - Project Content */}
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="methodology">Methodology</TabsTrigger>
-                <TabsTrigger value="results">Results</TabsTrigger>
-                <TabsTrigger value="team">Team</TabsTrigger>
-                <TabsTrigger value="gallery">Gallery</TabsTrigger>
+                <TabsList className="h-auto sm:h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground grid w-full grid-cols-4 gap-1">
+                  <TabsTrigger value="overview" className="text-xs sm:text-sm px-2 sm:px-3 py-2">Overview</TabsTrigger>
+                  <TabsTrigger value="methodology" className="text-xs sm:text-sm px-2 sm:px-3 py-2">Methodology</TabsTrigger>
+                  <TabsTrigger value="results" className="text-xs sm:text-sm px-2 sm:px-3 py-2">Results</TabsTrigger>
+                  <TabsTrigger value="gallery" className="text-xs sm:text-sm px-2 sm:px-3 py-2">Gallery</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="overview" className="space-y-6 mt-6">
-                {project.fullDescription && (
-                  <div className="prose prose-lg max-w-none">
-                    <div dangerouslySetInnerHTML={{ __html: project.fullDescription }} />
-                  </div>
-                )}
-                
-                {!project.fullDescription && (
-                  <div className="prose prose-lg max-w-none">
-                    <h2>Project Overview</h2>
-                    <p>The {project.title} project represents a groundbreaking initiative to revolutionize practices in Rwanda through advanced drone technology and precision techniques.</p>
-                    
-                    <h3>Objectives</h3>
-                    <h4>Primary Goals</h4>
-                    <ul>
-                      <li>Implement comprehensive monitoring system using drone technology</li>
-                      <li>Provide real-time data analytics to improve decision-making</li>
-                      <li>Increase efficiency by 25% through precision techniques</li>
-                      <li>Train local operators in modern techniques</li>
-                      <li>Establish sustainable monitoring protocols</li>
-                    </ul>
-                    
-                    <h4>Secondary Goals</h4>
-                    <ul>
-                      <li>Create employment opportunities for local drone operators</li>
-                      <li>Develop replicable model for other regions</li>
-                      <li>Build partnerships with local cooperatives</li>
-                      <li>Promote climate-smart practices</li>
-                    </ul>
-                    
-                    <h3>Project Scope</h3>
-                    <p>The project covers extensive areas and directly benefits numerous stakeholders. Our comprehensive approach includes:</p>
-                    <ul>
-                      <li><strong>Monitoring</strong>: Regular aerial surveys to assess conditions and identify issues</li>
-                      <li><strong>Analysis</strong>: Multispectral imaging to analyze composition and levels</li>
-                      <li><strong>Prediction</strong>: AI-powered analytics to forecast outcomes and optimize planning</li>
-                      <li><strong>Detection</strong>: Early identification of problems and outbreaks</li>
-                      <li><strong>Optimization</strong>: Usage analysis and scheduling recommendations</li>
-                    </ul>
-                    
-                    <h3>Technology Stack</h3>
-                    <h4>Hardware</h4>
-                    <ul>
-                      <li>12x DJI Matrice 300 RTK drones</li>
-                      <li>Multispectral cameras (MicaSense RedEdge-MX)</li>
-                      <li>Thermal imaging sensors</li>
-                      <li>Ground control stations</li>
-                      <li>Weather monitoring equipment</li>
-                    </ul>
-                    
-                    <h4>Software</h4>
-                    <ul>
-                      <li>Custom data processing pipeline</li>
-                      <li>Machine learning models for analysis</li>
-                      <li>Mobile applications for users</li>
-                      <li>Web-based dashboard for administrators</li>
-                      <li>Integration with existing databases</li>
-                    </ul>
-                    
-                    <h3>Impact Metrics</h3>
-                    <p>The project has achieved significant measurable outcomes:</p>
-                    <ul>
-                      <li><strong>Efficiency Increase</strong>: Average 28% improvement in outcomes</li>
-                      <li><strong>Resource Efficiency</strong>: 35% reduction in resource usage through optimization</li>
-                      <li><strong>Early Detection</strong>: 90% success rate in early problem identification</li>
-                      <li><strong>User Adoption</strong>: 85% of participating users continue using the system</li>
-                      <li><strong>Cost Reduction</strong>: 20% decrease in input costs through precision application</li>
-                    </ul>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="methodology" className="space-y-6 mt-6">
-                <div className="prose prose-lg max-w-none">
-                  <h2>Methodology</h2>
-                  <p>Our comprehensive methodology combines cutting-edge drone technology with traditional expertise to deliver exceptional results.</p>
-                  
-                  <h3>Data Collection Process</h3>
-                  <p>We employ a systematic approach to data collection using advanced drone technology:</p>
-                  <ul>
-                    <li><strong>Aerial Surveys</strong>: Regular drone flights capture high-resolution imagery</li>
-                    <li><strong>Multispectral Imaging</strong>: Specialized cameras capture data across multiple wavelengths</li>
-                    <li><strong>Ground Truthing</strong>: Field measurements validate aerial data</li>
-                    <li><strong>Weather Integration</strong>: Real-time weather data enhances analysis accuracy</li>
-                  </ul>
-                  
-                  <h3>Analysis Framework</h3>
-                  <p>Our analysis framework processes collected data through multiple stages:</p>
-                  <ol>
-                    <li><strong>Preprocessing</strong>: Raw data is cleaned and calibrated</li>
-                    <li><strong>Feature Extraction</strong>: Key indicators are identified and measured</li>
-                    <li><strong>Machine Learning</strong>: AI models predict outcomes and identify patterns</li>
-                    <li><strong>Validation</strong>: Results are cross-validated with ground data</li>
-                  </ol>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="results" className="space-y-6 mt-6">
-                <div className="prose prose-lg max-w-none">
-                  <h2>Results & Impact</h2>
-                  <p>The project has delivered exceptional results that exceed initial expectations and demonstrate the transformative potential of drone technology.</p>
-                  
-                  <h3>Quantitative Results</h3>
-                  <ul>
-                    <li><strong>28% Improvement</strong> in overall efficiency</li>
-                    <li><strong>35% Reduction</strong> in resource consumption</li>
-                    <li><strong>90% Accuracy</strong> in early detection systems</li>
-                    <li><strong>85% Adoption Rate</strong> among target users</li>
-                    <li><strong>20% Cost Reduction</strong> in operational expenses</li>
-                  </ul>
-                  
-                  <h3>Qualitative Impact</h3>
-                  <p>Beyond the numbers, the project has created lasting positive change:</p>
-                  <ul>
-                    <li>Enhanced local capacity in drone technology</li>
-                    <li>Improved decision-making processes</li>
-                    <li>Strengthened community partnerships</li>
-                    <li>Created new employment opportunities</li>
-                    <li>Established sustainable monitoring protocols</li>
-                  </ul>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="team" className="space-y-6 mt-6">
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-4">Project Team</h2>
-                    <p className="text-muted-foreground mb-6">Meet the dedicated team behind this innovative project.</p>
-                  </div>
-
-                  {/* Project Lead */}
+                <TabsContent value="overview" className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-4 sm:space-y-6">
+                  {/* Project Overview */}
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Users className="h-5 w-5" />
-                        Project Lead
-                      </CardTitle>
+                    <CardHeader className="p-4 sm:p-6">
+                      <CardTitle className="text-lg sm:text-xl"># Project Overview</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="flex items-start gap-4">
-                        <Avatar className="h-16 w-16">
-                          <AvatarImage src={project.author.avatar || "/placeholder-user.jpg"} />
-                          <AvatarFallback className="text-lg">
-                            {project.author.fullName.split(" ").map(n => n[0]).join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-lg">{project.author.fullName}</h4>
-                          <p className="text-sm text-blue-600 font-medium">{project.author.role || "Project Lead"}</p>
-                          {project.author.organization && (
-                            <p className="text-sm text-muted-foreground">{project.author.organization}</p>
-                          )}
-                          <p className="text-sm text-muted-foreground mt-2">
-                            Leading the project with expertise in drone technology and project management.
-                          </p>
-                        </div>
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="prose prose-sm max-w-none dark:prose-invert">
+                        <p className="text-sm sm:text-base mb-6">{project.fullDescription || project.description}</p>
+                        
+                        {/* Objectives Section */}
+                        {project.objectives && project.objectives.length > 0 && (
+                          <div className="mb-6">
+                            <h3 className="text-lg font-semibold mb-3">## Objectives</h3>
+                            <h4 className="text-md font-semibold mb-2">### Primary Goals</h4>
+                            <ul className="space-y-2 mb-4">
+                              {project.objectives.slice(0, Math.ceil(project.objectives.length / 2)).map((objective, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                                  <span className="text-sm">{objective}</span>
+                                </li>
+                              ))}
+                    </ul>
+                            {project.objectives.length > Math.ceil(project.objectives.length / 2) && (
+                              <>
+                                <h4 className="text-md font-semibold mb-2">### Secondary Goals</h4>
+                                <ul className="space-y-2">
+                                  {project.objectives.slice(Math.ceil(project.objectives.length / 2)).map((objective, index) => (
+                                    <li key={index} className="flex items-start gap-2">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></div>
+                                      <span className="text-sm">{objective}</span>
+                                    </li>
+                                  ))}
+                    </ul>
+                              </>
+                            )}
+                  </div>
+                )}
+
+                        {/* Project Scope */}
+                        <div className="mb-6">
+                          <h3 className="text-lg font-semibold mb-3">## Project Scope</h3>
+                          <p className="text-sm sm:text-base mb-3">The project covers comprehensive areas including:</p>
+                          <ul className="space-y-2">
+                            <li className="flex items-start gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0"></div>
+                              <span className="text-sm"><strong>Crop Health Monitoring:</strong> Regular aerial surveys to assess plant health, identify diseases, and monitor growth patterns</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0"></div>
+                              <span className="text-sm"><strong>Soil Analysis:</strong> Multispectral imaging to analyze soil composition and moisture levels</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0"></div>
+                              <span className="text-sm"><strong>Yield Prediction:</strong> AI-powered analytics to forecast harvest yields and optimize planning</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0"></div>
+                              <span className="text-sm"><strong>Pest Detection:</strong> Early identification of pest infestations and disease outbreaks</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0"></div>
+                              <span className="text-sm"><strong>Irrigation Optimization:</strong> Water usage analysis and irrigation scheduling recommendations</span>
+                            </li>
+                  </ul>
+                </div>
+
+                        {/* Technology Stack */}
+                        {project.technologies && project.technologies.length > 0 && (
+                          <div className="mb-6">
+                            <h3 className="text-lg font-semibold mb-3">## Technology Stack</h3>
+                            <h4 className="text-md font-semibold mb-2">### Hardware</h4>
+                            <ul className="space-y-2 mb-4">
+                              {project.technologies.slice(0, Math.ceil(project.technologies.length / 2)).map((tech, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 flex-shrink-0"></div>
+                                  <span className="text-sm">{tech}</span>
+                                </li>
+                              ))}
+                  </ul>
+                            {project.technologies.length > Math.ceil(project.technologies.length / 2) && (
+                              <>
+                                <h4 className="text-md font-semibold mb-2">### Software</h4>
+                                <ul className="space-y-2">
+                                  {project.technologies.slice(Math.ceil(project.technologies.length / 2)).map((tech, index) => (
+                                    <li key={index} className="flex items-start gap-2">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 flex-shrink-0"></div>
+                                      <span className="text-sm">{tech}</span>
+                                    </li>
+                                  ))}
+                  </ul>
+                              </>
+                            )}
+                </div>
+                        )}
+
+                        {/* Impact Metrics */}
+                        {project.outcomes && project.outcomes.length > 0 && (
+                  <div>
+                            <h3 className="text-lg font-semibold mb-3">## Impact Metrics</h3>
+                            <p className="text-sm sm:text-base mb-3">The project has achieved significant measurable outcomes:</p>
+                            <ul className="space-y-2">
+                              {project.outcomes.map((outcome, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0"></div>
+                                  <span className="text-sm">{outcome}</span>
+                                </li>
+                              ))}
+                            </ul>
+                  </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
+                </TabsContent>
 
-                  {/* Team Members Grid */}
-                  {teamMembers.length > 0 ? (
-                    <div>
-                      <div className="flex items-center gap-2 mb-4">
-                        <Users className="h-5 w-5" />
-                        <h3 className="text-lg font-semibold">Team Members ({teamMembers.length})</h3>
+                <TabsContent value="methodology" className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-4">
+                  <Card>
+                    <CardHeader className="p-4 sm:p-6">
+                      <CardTitle className="text-lg sm:text-xl">Project Methodology</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 sm:p-6">
+                      {project.methodology ? (
+                        <div className="prose prose-sm max-w-none dark:prose-invert">
+                          <div className="whitespace-pre-wrap text-sm sm:text-base">{project.methodology}</div>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {teamMembers.map((member: any, index: number) => (
-                          <Card key={index} className="hover:shadow-md transition-shadow">
-                            <CardContent className="p-6">
-                              <div className="text-center">
-                                <Avatar className="h-20 w-20 mx-auto mb-4">
-                                  <AvatarImage src={member.avatar || "/placeholder-user.jpg"} />
-                                  <AvatarFallback className="text-xl">
-                                    {member.name ? member.name.split(" ").map((n: string) => n[0]).join("") : "TM"}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <h4 className="font-semibold text-lg mb-1">{member.name || `Team Member ${index + 1}`}</h4>
-                                <p className="text-sm text-blue-600 font-medium mb-2">{member.role || "Team Member"}</p>
-                                {member.organization && (
-                                  <p className="text-sm text-muted-foreground mb-3">{member.organization}</p>
-                                )}
-                                {member.description && (
-                                  <p className="text-sm text-muted-foreground leading-relaxed">{member.description}</p>
-                                )}
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground text-sm sm:text-base">No methodology information available for this project.</p>
+                          <p className="text-xs text-muted-foreground mt-2">Project methodology details will be displayed here when available.</p>
                               </div>
+                      )}
                             </CardContent>
                           </Card>
-                        ))}
-                      </div>
+                </TabsContent>
+
+                <TabsContent value="results" className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-4">
+                  <Card>
+                    <CardHeader className="p-4 sm:p-6">
+                      <CardTitle className="text-lg sm:text-xl">Project Results</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 sm:p-6">
+                      {project.results ? (
+                        <div className="prose prose-sm max-w-none dark:prose-invert">
+                          <div className="whitespace-pre-wrap text-sm sm:text-base">{project.results}</div>
                     </div>
                   ) : (
-                    <Card>
-                      <CardContent className="text-center py-12">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Users className="h-8 w-8 text-gray-400" />
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground text-sm sm:text-base">No results information available for this project.</p>
+                          <p className="text-xs text-muted-foreground mt-2">Project results and outcomes will be displayed here when available.</p>
                         </div>
-                        <p className="text-muted-foreground">No additional team members listed</p>
+                      )}
                       </CardContent>
                     </Card>
-                  )}
-                </div>
               </TabsContent>
 
-              <TabsContent value="gallery" className="space-y-6 mt-6">
-                {gallery.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {gallery.map((image: any, index: number) => (
-                      <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                        <img 
-                          src={image.url || image} 
-                          alt={image.caption || `Project image ${index + 1}`}
-                          className="w-full h-full object-cover"
+                <TabsContent value="gallery" className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-4">
+                  <Card>
+                    <CardHeader className="p-4 sm:p-6">
+                      <CardTitle className="text-lg sm:text-xl">Project Gallery</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 sm:p-6">
+                      {parsedGallery.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {parsedGallery.map((item, index) => (
+                            <div key={index} className="aspect-square rounded-lg overflow-hidden">
+                              <img
+                                src={item.url}
+                                alt={item.caption || `Gallery image ${index + 1}`}
+                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
                         />
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Eye className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <p className="text-muted-foreground">No gallery images available</p>
-                  </div>
-                )}
+                        <p className="text-muted-foreground text-sm sm:text-base">No gallery images available.</p>
+                      )}
+                    </CardContent>
+                  </Card>
               </TabsContent>
             </Tabs>
+            </div>
 
-            {/* Comments Section */}
-            <div className="mt-12">
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Project Information Card */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5" />
-                    Comments ({comments.length})
-                  </CardTitle>
+                  <CardTitle className="text-lg">Project Information</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Add Comment */}
-                  {user && (
-                    <div className="space-y-4">
-                      <Textarea
-                        id="new-comment"
-                        name="new-comment"
-                        placeholder="Share your thoughts about this project..."
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        className="min-h-[100px]"
-                      />
-                      <div className="flex justify-end">
-                        <Button 
-                          onClick={handleComment}
-                          disabled={isSubmittingComment || !newComment.trim()}
-                        >
-                          {isSubmittingComment ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                              Posting...
-                            </>
-                          ) : (
-                            <>
-                              <Send className="h-4 w-4 mr-2" />
-                              Post Comment
-                            </>
-                          )}
-                        </Button>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Duration:</span>
+                    <span className="font-semibold text-sm">{project.duration || 'Not specified'}</span>
                       </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Funding:</span>
+                    <span className="font-semibold text-sm">{project.funding || 'Not specified'}</span>
                     </div>
-                  )}
-
-                  {!user && (
-                    <div className="text-center py-6">
-                      <p className="text-muted-foreground">Please log in to comment on this project.</p>
-                      <Button asChild className="mt-2">
-                        <Link href="/login">Log In</Link>
-                      </Button>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Status:</span>
+                    <Badge variant={project.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
+                      {project.status}
+                    </Badge>
                     </div>
-                  )}
-
-                  <Separator />
-
-                  {/* Comments List */}
-                  <div className="space-y-4">
-                    {comments.length === 0 ? (
-                      <div className="text-center py-8">
-                        <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                        <p className="text-muted-foreground">No comments yet. Be the first to share your thoughts!</p>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Location:</span>
+                    <span className="font-semibold text-sm">{project.location || 'Not specified'}</span>
                       </div>
-                    ) : (
-                      comments.map((comment) => (
-                        <div key={comment.id} className="space-y-3">
-                          {/* Main Comment */}
-                          <div className="flex gap-4">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={comment.author.avatar || "/placeholder-user.jpg"} />
-                              <AvatarFallback>
-                                {comment.author.fullName.split(" ").map(n => n[0]).join("")}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-sm">{comment.author.fullName}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {new Date(comment.createdAt).toLocaleDateString()}
-                                </span>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Start Date:</span>
+                    <span className="font-semibold text-sm">{project.startDate || 'Not specified'}</span>
                               </div>
-                              <p className="text-sm mb-2">{comment.content}</p>
-                              
-                              {/* Comment Actions */}
-                              <div className="flex items-center gap-4 text-xs">
-                                <button
-                                  onClick={() => handleCommentLike(comment.id)}
-                                  className={`flex items-center gap-1 hover:text-blue-600 transition-colors ${
-                                    commentLikes[comment.id] ? 'text-blue-600' : 'text-muted-foreground'
-                                  }`}
-                                >
-                                  <Heart className={`h-3 w-3 ${commentLikes[comment.id] ? 'fill-current' : ''}`} />
-                                  <span>{comment.likesCount}</span>
-                                </button>
-                                <button
-                                  onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                                  className="flex items-center gap-1 text-muted-foreground hover:text-blue-600 transition-colors"
-                                >
-                                  <MessageSquare className="h-3 w-3" />
-                                  <span>Reply</span>
-                                </button>
-                              </div>
-
-                              {/* Reply Form */}
-                              {replyingTo === comment.id && (
-                                <div className="mt-3 space-y-2">
-                                  <Textarea
-                                    id="reply-content"
-                                    name="reply-content"
-                                    placeholder="Write a reply..."
-                                    value={replyContent}
-                                    onChange={(e) => setReplyContent(e.target.value)}
-                                    className="min-h-[80px] text-sm"
-                                  />
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      onClick={() => handleReply(comment.id)}
-                                      disabled={isSubmittingReply || !replyContent.trim()}
-                                    >
-                                      {isSubmittingReply ? (
-                                        <>
-                                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
-                                          Posting...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Send className="h-3 w-3 mr-1" />
-                                          Reply
-                                        </>
-                                      )}
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => {
-                                        setReplyingTo(null)
-                                        setReplyContent("")
-                                      }}
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Replies */}
-                          {comment.replies && comment.replies.length > 0 && (
-                            <div className="ml-14 space-y-3">
-                              {comment.replies.map((reply) => (
-                                <div key={reply.id} className="flex gap-3">
-                                  <Avatar className="h-8 w-8">
-                                    <AvatarImage src={reply.author.avatar || "/placeholder-user.jpg"} />
-                                    <AvatarFallback className="text-xs">
-                                      {reply.author.fullName.split(" ").map(n => n[0]).join("")}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="font-semibold text-xs">{reply.author.fullName}</span>
-                                      <span className="text-xs text-muted-foreground">
-                                        {new Date(reply.createdAt).toLocaleDateString()}
-                                      </span>
-                                    </div>
-                                    <p className="text-sm mb-2">{reply.content}</p>
-                                    
-                                    {/* Reply Actions */}
-                                    <div className="flex items-center gap-4 text-xs">
-                                      <button
-                                        onClick={() => handleCommentLike(reply.id)}
-                                        className={`flex items-center gap-1 hover:text-blue-600 transition-colors ${
-                                          commentLikes[reply.id] ? 'text-blue-600' : 'text-muted-foreground'
-                                        }`}
-                                      >
-                                        <Heart className={`h-3 w-3 ${commentLikes[reply.id] ? 'fill-current' : ''}`} />
-                                        <span>{reply.likesCount}</span>
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    )}
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">End Date:</span>
+                    <span className="font-semibold text-sm">{project.endDate || 'Not specified'}</span>
                   </div>
                 </CardContent>
               </Card>
-            </div>
-          </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Project Lead */}
+              {/* Project Lead Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Project Lead</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage src={project.author.avatar || "/placeholder-user.jpg"} />
-                    <AvatarFallback className="text-lg">
-                      {project.author.fullName.split(" ").map(n => n[0]).join("")}
-                    </AvatarFallback>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={project.author.avatar} />
+                      <AvatarFallback>{project.author.fullName?.charAt(0) || project.author.username.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-lg">{project.author.fullName}</h4>
-                    <p className="text-sm text-blue-600 font-medium">{project.author.role || "Project Lead"}</p>
-                    {project.author.organization && (
-                      <p className="text-sm text-muted-foreground">{project.author.organization}</p>
-                    )}
+                    <div>
+                      <h4 className="font-semibold text-sm">{project.author.fullName || project.author.username}</h4>
+                      <p className="text-xs text-gray-600">{project.author.organization}</p>
+                      <p className="text-xs text-gray-500">{project.author.experience}</p>
                   </div>
+                </div>
+                  <div className="flex flex-wrap gap-2">
+                    {project.author.specializations.map((spec, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">{spec}</Badge>
+                    ))}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Project Information */}
+              {/* Teams Card */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Project Information</CardTitle>
+                  <CardTitle className="text-lg">Teams</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {project.duration && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Duration:</span>
-                    <span className="text-sm font-medium">{project.duration}</span>
+                  {/* Project Author */}
+                  <div className="border-b pb-4">
+                    <h4 className="font-semibold text-sm mb-3 text-gray-700">Project Author</h4>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={project.author.avatar} />
+                        <AvatarFallback>{project.author.fullName?.charAt(0) || project.author.username.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h5 className="font-medium text-sm">{project.author.fullName || project.author.username}</h5>
+                        <p className="text-xs text-gray-600">{project.author.organization}</p>
+                        <p className="text-xs text-gray-500">{project.author.experience}</p>
                   </div>
-                )}
-                
-                {project.funding && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Funding:</span>
-                    <span className="text-sm font-medium">{project.funding}</span>
                   </div>
-                )}
-                
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Status:</span>
-                  <Badge className={getStatusColor(project.status)}>
-                    {getStatusDisplay(project.status)}
-                  </Badge>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {project.author.specializations.map((spec, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">{spec}</Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Team Members */}
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3 text-gray-700">Team Members ({project.teamMembers.length})</h4>
+                    <div className="space-y-3">
+                      {project.teamMembers.map((member) => (
+                        <div key={member.id} className="flex items-center gap-3 p-2 border rounded-lg">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <h5 className="font-medium text-sm">{member.name}</h5>
+                            <p className="text-xs text-gray-600">{member.role}</p>
+                            <p className="text-xs text-gray-500">{member.organization}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Project Resources */}
+              {/* Resources Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Project Resources</CardTitle>
+                  <p className="text-sm text-muted-foreground">Documents, presentations, and files related to this project</p>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {resources.length > 0 ? (
-                  resources.map((resource, index) => {
-                    const IconComponent = getResourceIcon(resource.type)
+                <CardContent>
+                  {parsedResources && parsedResources.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {parsedResources.map((resource, index) => {
+                        const icon = getResourceIconByType(resource.type)
+                        const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(resource.type.toLowerCase())
+                        
                     return (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 bg-blue-100 rounded-lg">
-                            <IconComponent className="h-4 w-4 text-blue-600" />
+                          <div key={index} className="group relative border rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-gray-800">
+                            {/* Resource Preview */}
+                            <div className="flex items-start gap-3 mb-3">
+                              <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg">
+                                <span className="text-2xl">{icon}</span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm mb-1">{resource.title}</h4>
-                            <p className="text-xs text-muted-foreground mb-2">{resource.description}</p>
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span>
-                                {resource.size && `${resource.size} • `}
-                                {resource.type}
-                              </span>
+                                <h5 className="font-semibold text-sm mb-1 text-gray-900 dark:text-gray-100">
+                                  {resource.title}
+                                </h5>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
+                                  {resource.description || 'No description available'}
+                                </p>
                             </div>
                           </div>
+                            
+                            {/* File Info */}
+                            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
+                              <span className="flex items-center gap-1">
+                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                {resource.type.toUpperCase()}
+                                {resource.size && (
+                                  <span className="text-gray-400">• {resource.size}</span>
+                                )}
+                              </span>
+                              <span className="text-blue-600 dark:text-blue-400 font-medium">
+                                {resource.downloads || 0} downloads
+                              </span>
                         </div>
+                            
+                            {/* Action Buttons */}
+                            <div className="flex gap-2">
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="w-full mt-3"
+                                className="flex-1 text-xs"
                           onClick={() => {
-                            if (resource.type === "file") {
-                              // Handle file download
+                                  if (isImage) {
+                                    // For images, open in new tab
                               window.open(resource.url, '_blank')
-                            } else if (resource.type === "link" || resource.type === "video") {
-                              // Handle external link/video
-                              window.open(resource.url, '_blank')
-                            }
-                          }}
-                        >
-                          {resource.type === "file" ? (
-                            <>
-                              <Download className="h-4 w-4 mr-2" />
-                              Download
-                            </>
-                          ) : (
-                            <>
-                              <ExternalLink className="h-4 w-4 mr-2" />
-                              Open
-                            </>
-                          )}
-                        </Button>
+                                  } else {
+                                    // For other files, trigger download
+                                    const link = document.createElement('a')
+                                    link.href = resource.url
+                                    link.download = resource.title || 'download'
+                                    link.target = '_blank'
+                                    document.body.appendChild(link)
+                                    link.click()
+                                    document.body.removeChild(link)
+                                  }
+                                }}
+                              >
+                                {isImage ? 'View' : 'Download'}
+                              </Button>
+                              
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-xs"
+                                onClick={() => {
+                                  // Copy link to clipboard
+                                  navigator.clipboard.writeText(resource.url)
+                                  // You could add a toast notification here
+                                }}
+                              >
+                                Copy Link
+                              </Button>
+                            </div>
+                            
+                            {/* Hover Effect */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg pointer-events-none"></div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                        <span className="text-2xl">📁</span>
                       </div>
-                    )
-                  })
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No resources available for this project.
-                  </p>
-                )}
+                      <p className="text-sm text-muted-foreground mb-2">No resources available</p>
+                      <p className="text-xs text-muted-foreground">Project resources will appear here when added</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Project Actions Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Project Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => {
+                      // Navigate to edit page
+                      router.push(`/projects/${project?.id}/edit`)
+                    }}
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit Project
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => {
+                      // Handle share action
+                      console.log('Share project')
+                    }}
+                  >
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Share Project
+                  </Button>
+                  
+                  <Button 
+                    variant="destructive" 
+                    className="w-full justify-start"
+                    onClick={() => {
+                      // Handle delete action
+                      if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+                        console.log('Delete project')
+                      }
+                    }}
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete Project
+                  </Button>
               </CardContent>
             </Card>
+            </div>
           </div>
+        </div>
+
+        {/* Comments Section */}
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Comments ({comments.length})</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Comment Form */}
+              {user && (
+                <div className="space-y-4">
+                  <Textarea 
+                    placeholder="Share your thoughts, ask questions, or provide feedback..." 
+                    rows={4} 
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                  />
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">Be respectful and constructive in your responses</div>
+                    <Button 
+                      onClick={handleComment}
+                      disabled={submittingComment || !newComment.trim()}
+                    >
+                      {submittingComment ? (
+                        <>
+                          <Loader className="h-4 w-4 mr-2 animate-spin" />
+                          Posting...
+                        </>
+                      ) : (
+                        'Post Comment'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Comments List */}
+              <div className="space-y-4">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="border-b pb-4 last:border-b-0">
+                    <div className="flex items-start gap-4">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={comment.author?.avatar || "/placeholder.svg"} alt={comment.author?.fullName} />
+                        <AvatarFallback>
+                          {comment.author?.fullName
+                            ?.split(" ")
+                            .map((n: string) => n[0])
+                            .join("") || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-semibold">{comment.author?.fullName || "Unknown User"}</span>
+                          <span className="text-sm text-muted-foreground">•</span>
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(comment.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        <div className="prose prose-sm max-w-none mb-4">
+                          <p className="whitespace-pre-wrap">{comment.content}</p>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <Button 
+                            variant={commentLikes[comment.id] ? "default" : "ghost"} 
+                            size="sm" 
+                            className="flex items-center gap-2 h-8 px-2"
+                            onClick={() => handleCommentLike(comment.id)}
+                          >
+                            <ThumbsUp className={`h-3 w-3 ${commentLikes[comment.id] ? "fill-current" : ""}`} />
+                            {comment.likesCount || 0}
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 px-2"
+                            onClick={() => setReplyingTo(comment.id)}
+                          >
+                            Reply
+                          </Button>
+                        </div>
+
+                        {/* Reply Form */}
+                        {replyingTo === comment.id && (
+                          <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <Textarea
+                              placeholder="Write your reply..."
+                              value={replyContent}
+                              onChange={(e) => setReplyContent(e.target.value)}
+                              rows={3}
+                              className="mb-3"
+                            />
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                size="sm"
+                                onClick={() => handleReply(comment.id)}
+                                disabled={isSubmittingReply || !replyContent.trim()}
+                              >
+                                {isSubmittingReply ? (
+                                  <>
+                                    <Loader className="h-3 w-3 mr-1 animate-spin" />
+                                    Posting...
+                                  </>
+                                ) : (
+                                  'Post Reply'
+                                )}
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  setReplyingTo(null)
+                                  setReplyContent("")
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Nested Replies */}
+                        {comment.replies && comment.replies.length > 0 && (
+                          <div className="mt-4 pl-4 border-l-2 border-gray-200 dark:border-gray-700 space-y-4">
+                            {comment.replies.map((nestedReply) => (
+                              <div key={nestedReply.id} className="flex items-start gap-3">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage
+                                    src={nestedReply.author?.avatar || "/placeholder.svg"}
+                                    alt={nestedReply.author?.fullName}
+                                  />
+                                  <AvatarFallback>
+                                    {nestedReply.author?.fullName
+                                      ?.split(" ")
+                                      .map((n: string) => n[0])
+                                      .join("") || "U"}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-medium text-sm">{nestedReply.author?.fullName || "Unknown User"}</span>
+                                    <span className="text-xs text-muted-foreground">•</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {new Date(nestedReply.createdAt).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm mb-2">{nestedReply.content}</p>
+                                  <div className="flex items-center gap-3">
+                                    <Button 
+                                      variant={commentLikes[nestedReply.id] ? "default" : "ghost"} 
+                                      size="sm" 
+                                      className="flex items-center gap-1 h-6 px-2 text-xs"
+                                      onClick={() => handleCommentLike(nestedReply.id)}
+                                    >
+                                      <ThumbsUp className={`h-3 w-3 ${commentLikes[nestedReply.id] ? "fill-current" : ""}`} />
+                                      {nestedReply.likesCount || 0}
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-6 px-2 text-xs"
+                                      onClick={() => setReplyingTo(nestedReply.id)}
+                                    >
+                                      Reply
+                                    </Button>
+                                  </div>
+
+                                  {/* Reply Form for Nested Reply */}
+                                  {replyingTo === nestedReply.id && (
+                                    <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                      <Textarea
+                                        placeholder="Write your reply..."
+                                        value={replyContent}
+                                        onChange={(e) => setReplyContent(e.target.value)}
+                                        rows={3}
+                                        className="mb-3"
+                                      />
+                                      <div className="flex items-center gap-2">
+                                        <Button 
+                                          size="sm"
+                                          onClick={() => handleReply(nestedReply.id, comment.id)}
+                                          disabled={isSubmittingReply || !replyContent.trim()}
+                                        >
+                                          {isSubmittingReply ? (
+                                            <>
+                                              <Loader className="h-3 w-3 mr-1 animate-spin" />
+                                              Posting...
+                                            </>
+                                          ) : (
+                                            'Post Reply'
+                                          )}
+                                        </Button>
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm"
+                                          onClick={() => {
+                                            setReplyingTo(null)
+                                            setReplyContent("")
+                                          }}
+                                        >
+                                          Cancel
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Deep Nested Replies (replies to replies) */}
+                                  {nestedReply.replies && nestedReply.replies.length > 0 && (
+                                    <div className="mt-4 pl-4 border-l-2 border-gray-300 dark:border-gray-600 space-y-3">
+                                      {nestedReply.replies.map((deepReply) => (
+                                        <div key={deepReply.id} className="flex items-start gap-2">
+                                          <Avatar className="h-6 w-6">
+                                            <AvatarImage
+                                              src={deepReply.author?.avatar || "/placeholder.svg"}
+                                              alt={deepReply.author?.fullName}
+                                            />
+                                            <AvatarFallback>
+                                              {deepReply.author?.fullName
+                                                ?.split(" ")
+                                                .map((n: string) => n[0])
+                                                .join("") || "U"}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                              <span className="font-medium text-xs">{deepReply.author?.fullName || "Unknown User"}</span>
+                                              <span className="text-xs text-muted-foreground">•</span>
+                                              <span className="text-xs text-muted-foreground">
+                                                {new Date(deepReply.createdAt).toLocaleDateString()}
+                                              </span>
+                                            </div>
+                                            <p className="text-xs mb-2">{deepReply.content}</p>
+                                            <div className="flex items-center gap-2">
+                                              <Button 
+                                                variant={commentLikes[deepReply.id] ? "default" : "ghost"} 
+                                                size="sm" 
+                                                className="flex items-center gap-1 h-5 px-2 text-xs"
+                                                onClick={() => handleCommentLike(deepReply.id)}
+                                              >
+                                                <ThumbsUp className={`h-3 w-3 ${commentLikes[deepReply.id] ? "fill-current" : ""}`} />
+                                                {deepReply.likesCount || 0}
+                                              </Button>
+                                              <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="h-5 px-2 text-xs"
+                                                onClick={() => setReplyingTo(deepReply.id)}
+                                              >
+                                                Reply
+                                              </Button>
+                                            </div>
+
+                                            {/* Reply Form for Deep Nested Reply */}
+                                            {replyingTo === deepReply.id && (
+                                              <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                                <Textarea
+                                                  placeholder="Write your reply..."
+                                                  value={replyContent}
+                                                  onChange={(e) => setReplyContent(e.target.value)}
+                                                  rows={2}
+                                                  className="mb-2 text-xs"
+                                                />
+                                                <div className="flex items-center gap-2">
+                                                  <Button 
+                                                    size="sm"
+                                                    onClick={() => handleReply(deepReply.id, comment.id)}
+                                                    disabled={isSubmittingReply || !replyContent.trim()}
+                                                    className="h-6 px-2 text-xs"
+                                                  >
+                                                    {isSubmittingReply ? (
+                                                      <>
+                                                        <Loader className="h-2 w-2 mr-1 animate-spin" />
+                                                        Posting...
+                                                      </>
+                                                    ) : (
+                                                      'Post Reply'
+                                                    )}
+                                                  </Button>
+                                                  <Button 
+                                                    variant="outline" 
+                                                    size="sm"
+                                                    onClick={() => {
+                                                      setReplyingTo(null)
+                                                      setReplyContent("")
+                                                    }}
+                                                    className="h-6 px-2 text-xs"
+                                                  >
+                                                    Cancel
+                                                  </Button>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {comments.length === 0 && (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                    <MessageSquare className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">No comments yet</p>
+                  <p className="text-xs text-muted-foreground">Be the first to share your thoughts on this project</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

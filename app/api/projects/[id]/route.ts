@@ -1,5 +1,8 @@
-import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { NextRequest, NextResponse } from "next/server"
+import { PrismaClient } from "@prisma/client"
+import { requireAuth } from "@/lib/auth-middleware"
+
+const prisma = new PrismaClient()
 
 export async function GET(
   request: Request,
@@ -66,6 +69,59 @@ export async function DELETE(
     console.error('Error deleting project:', error)
     return NextResponse.json(
       { error: 'Failed to delete project' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Check authentication
+    const user = await requireAuth()
+
+    const { id } = params
+    const body = await request.json()
+
+    // Update the project
+    const updatedProject = await prisma.project.update({
+      where: { id },
+      data: {
+        title: body.title,
+        description: body.description,
+        fullDescription: body.overview,
+        status: body.status,
+        location: body.location,
+        duration: body.duration,
+        startDate: body.startDate,
+        endDate: body.endDate,
+        funding: body.funding,
+        methodology: body.methodology,
+        results: body.results,
+        technologies: body.technologies,
+        objectives: body.objectives,
+        challenges: body.challenges,
+        outcomes: body.outcomes,
+        teamMembers: body.teamMembers,
+        gallery: body.gallery,
+        resources: body.resources,
+        thumbnail: body.thumbnail,
+        updatedAt: new Date(),
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      project: updatedProject,
+      message: "Project updated successfully"
+    })
+
+  } catch (error) {
+    console.error("Error updating project:", error)
+    return NextResponse.json(
+      { error: "Failed to update project" },
       { status: 500 }
     )
   }

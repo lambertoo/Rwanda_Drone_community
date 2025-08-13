@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Plus, X, Upload, Eye, Calendar, MapPin, Users, CheckCircle, AlertCircle } from "lucide-react"
-import { createProjectAction } from "@/lib/actions"
+// import { createProjectAction } from "@/lib/actions"
 
 interface TeamMember {
   id: string
@@ -64,6 +64,7 @@ export default function NewProjectForm() {
     objectives: [] as string[],
     challenges: [] as string[],
     outcomes: [] as string[],
+    thumbnail: "",
   })
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
@@ -93,6 +94,13 @@ export default function NewProjectForm() {
     title: "",
     description: "",
     type: "file" as "file" | "link" | "video",
+    url: "",
+    file: null as File | null,
+  })
+
+  const [newGalleryItem, setNewGalleryItem] = useState({
+    caption: "",
+    type: "image" as "image" | "video",
     url: "",
     file: null as File | null,
   })
@@ -260,7 +268,7 @@ export default function NewProjectForm() {
   }
 
   const addResource = () => {
-    if (!newResource.title || !newResource.description || (!newResource.url && !newResource.file)) {
+    if (!newResource.title || !newResource.description || !newResource.url) {
       return
     }
 
@@ -269,9 +277,9 @@ export default function NewProjectForm() {
       title: newResource.title,
       description: newResource.description,
       type: newResource.type,
-      url: newResource.url || "",
-      size: newResource.file ? `${(newResource.file.size / 1024 / 1024).toFixed(2)} MB` : undefined,
-      fileType: newResource.file ? newResource.file.type : undefined,
+      url: newResource.url,
+      size: undefined, // Size will be available from the upload response if needed
+      fileType: undefined, // File type will be available from the upload response if needed
     }
 
     setResources([...resources, resource])
@@ -288,7 +296,7 @@ export default function NewProjectForm() {
     setResources(resources.filter(resource => resource.id !== id))
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       // Check file size (10MB limit)
@@ -296,8 +304,95 @@ export default function NewProjectForm() {
         alert("File size must be less than 10MB")
         return
       }
-      setNewResource({ ...newResource, file })
+      
+      try {
+        // Upload file to server
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('type', 'resource')
+        
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          setNewResource({ 
+            ...newResource, 
+            file: null, // Clear file input
+            url: result.fileUrl // Store the uploaded file URL
+          })
+        } else {
+          const error = await response.json()
+          alert(`Upload failed: ${error.error}`)
+        }
+      } catch (error) {
+        console.error('Upload error:', error)
+        alert('Failed to upload file')
+      }
     }
+  }
+
+  const handleGalleryImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Check file size (5MB limit for images)
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Image file size must be less than 5MB")
+        return
+      }
+      
+      try {
+        // Upload file to server
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('type', 'image')
+        
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          setNewGalleryItem({ 
+            ...newGalleryItem, 
+            file: null, // Clear file input
+            url: result.fileUrl // Store the uploaded file URL
+          })
+        } else {
+          const error = await response.json()
+          alert(`Upload failed: ${error.error}`)
+        }
+      } catch (error) {
+        console.error('Upload error:', error)
+        alert('Failed to upload image')
+      }
+    }
+  }
+
+  const addGalleryItem = () => {
+    if (newGalleryItem.caption && ((newGalleryItem.type === "image" && newGalleryItem.url) || (newGalleryItem.type === "video" && newGalleryItem.url))) {
+      const galleryItem: ProjectGalleryItem = {
+        id: crypto.randomUUID(),
+        caption: newGalleryItem.caption,
+        type: newGalleryItem.type,
+        url: newGalleryItem.url,
+      }
+      setGallery((prev) => [...prev, galleryItem])
+      // Clear the form after adding gallery item
+      setNewGalleryItem({
+        caption: "",
+        type: "image",
+        url: "",
+        file: null,
+      })
+    }
+  }
+
+  const removeGalleryItem = (id: string) => {
+    setGallery((prev) => prev.filter((item) => item.id !== id))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -317,6 +412,7 @@ export default function NewProjectForm() {
         teamMembers,
         gallery,
         resources,
+        thumbnail: formData.thumbnail,
       }
 
       const formDataToSend = new FormData()
@@ -328,9 +424,24 @@ export default function NewProjectForm() {
         }
       })
 
-      const result = await createProjectAction(formDataToSend)
+      // Convert FormData to JSON for API call
+      const projectDataJson = {}
+      for (const [key, value] of formDataToSend.entries()) {
+        projectDataJson[key] = value
+      }
+
+      // Use API route instead of server action
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(projectDataJson),
+      })
+
+      const result = await response.json()
       
-      if (result.success && result.project) {
+      if (response.ok && result.success && result.project) {
         setNotification({ 
           type: 'success', 
           message: 'Project published successfully! Redirecting to project page...' 
@@ -475,7 +586,51 @@ export default function NewProjectForm() {
                     rows={3}
                     required
                   />
-                  <p className="text-xs text-muted-foreground">{formData.description.length}/300 characters</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="thumbnail">Project Thumbnail</Label>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      id="thumbnail"
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          try {
+                            const formData = new FormData()
+                            formData.append('file', file)
+                            formData.append('type', 'image')
+                            
+                            const response = await fetch('/api/upload', {
+                              method: 'POST',
+                              body: formData
+                            })
+                            
+                            if (response.ok) {
+                              const data = await response.json()
+                              setFormData(prev => ({ ...prev, thumbnail: data.url }))
+                            }
+                          } catch (error) {
+                            console.error('Error uploading thumbnail:', error)
+                          }
+                        }
+                      }}
+                    />
+                    {formData.thumbnail && (
+                      <div className="w-16 h-16 rounded-lg overflow-hidden border">
+                        <img 
+                          src={formData.thumbnail} 
+                          alt="Thumbnail preview" 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Upload a thumbnail image for your project (recommended: 800x400px)
+                  </p>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-4">
@@ -587,7 +742,6 @@ export default function NewProjectForm() {
                     rows={6}
                     required
                   />
-                  <p className="text-xs text-muted-foreground">{formData.overview.length}/2000 characters</p>
                 </div>
 
                 <div className="space-y-2">
@@ -810,14 +964,111 @@ export default function NewProjectForm() {
               <CardHeader>
                 <CardTitle>Project Gallery</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Add images and videos to showcase your project (coming soon)
+                  Add images and videos to showcase your project
                 </p>
               </CardHeader>
-              <CardContent>
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                  <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Image and video upload functionality will be available soon.</p>
+              <CardContent className="space-y-6">
+                {/* Add New Gallery Item */}
+                <div className="space-y-4 p-4 border rounded-lg">
+                  <h4 className="font-semibold">Add New Gallery Item</h4>
+                  
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="gallery-caption">Caption</Label>
+                      <Input
+                        id="gallery-caption"
+                        value={newGalleryItem.caption}
+                        onChange={(e) => setNewGalleryItem({ ...newGalleryItem, caption: e.target.value })}
+                        placeholder="Describe this image/video"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="gallery-type">Type</Label>
+                      <Select value={newGalleryItem.type} onValueChange={(value: "image" | "video") => setNewGalleryItem({ ...newGalleryItem, type: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="image">Image</SelectItem>
+                          <SelectItem value="video">Video</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {newGalleryItem.type === "image" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="gallery-image">Upload Image</Label>
+                      <Input
+                        id="gallery-image"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleGalleryImageChange}
+                      />
+                      <p className="text-xs text-muted-foreground">Maximum file size: 5MB</p>
+                    </div>
+                  )}
+
+                  {newGalleryItem.type === "video" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="gallery-video-url">Video URL</Label>
+                      <Input
+                        id="gallery-video-url"
+                        type="url"
+                        value={newGalleryItem.url}
+                        onChange={(e) => setNewGalleryItem({ ...newGalleryItem, url: e.target.value })}
+                        placeholder="https://www.youtube.com/watch?v=..."
+                      />
+                    </div>
+                  )}
+
+                  <Button type="button" onClick={addGalleryItem} disabled={!newGalleryItem.caption || !newGalleryItem.url}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add to Gallery
+                  </Button>
                 </div>
+
+                {/* Existing Gallery Items */}
+                {gallery.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">Project Gallery ({gallery.length})</h4>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {gallery.map((item) => (
+                        <div key={item.id} className="border rounded-lg overflow-hidden">
+                          {item.type === "image" && item.url && (
+                            <img src={item.url} alt={item.caption} className="w-full h-32 object-cover" />
+                          )}
+                          {item.type === "video" && item.url && (
+                            <div className="w-full h-32 bg-gray-100 flex items-center justify-center">
+                              <div className="text-center">
+                                <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                                  <span className="text-white text-lg">▶</span>
+                                </div>
+                                <p className="text-xs text-gray-600">Video</p>
+                              </div>
+                            </div>
+                          )}
+                          <div className="p-3">
+                            <p className="text-sm font-medium">{item.caption}</p>
+                            <div className="flex items-center justify-between mt-2">
+                              <Badge variant="outline" className="text-xs">
+                                {item.type}
+                              </Badge>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeGalleryItem(item.id)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -900,7 +1151,7 @@ export default function NewProjectForm() {
                     </div>
                   )}
 
-                  <Button type="button" onClick={addResource} disabled={!newResource.title || !newResource.description || (!newResource.url && !newResource.file)}>
+                  <Button type="button" onClick={addResource} disabled={!newResource.title || !newResource.description || !newResource.url}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Resource
                   </Button>
@@ -968,6 +1219,17 @@ export default function NewProjectForm() {
                   </div>
 
                   <h1 className="text-3xl font-bold">{formData.title || "Project Title"}</h1>
+                  
+                  {formData.thumbnail && (
+                    <div className="aspect-[2/1] rounded-lg overflow-hidden border">
+                      <img 
+                        src={formData.thumbnail} 
+                        alt="Project thumbnail" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  
                   <p className="text-lg text-muted-foreground">
                     {formData.description || "Project description will appear here..."}
                   </p>
