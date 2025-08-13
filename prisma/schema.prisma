@@ -444,7 +444,6 @@ model rsvp {
 
 enum UserRole {
   admin
-  hobbyist
   pilot
   regulator
   student

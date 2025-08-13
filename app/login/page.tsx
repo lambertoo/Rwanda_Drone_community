@@ -9,13 +9,12 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader, Eye, EyeOff, Shield, Users, Plane, GraduationCap, Wrench, Camera, CheckCircle } from "lucide-react"
+import { Loader, Eye, EyeOff, Shield, Users, Plane, GraduationCap, Wrench, CheckCircle } from "lucide-react"
 import Link from "next/link"
 
 // Demo credentials for each role
 const demoCredentials = {
   admin: { email: "admin@drone.com", password: "admin123" },
-  hobbyist: { email: "hobbyist@drone.com", password: "password123" },
   pilot: { email: "pilot@drone.com", password: "password123" },
   regulator: { email: "regulator@drone.com", password: "password123" },
   student: { email: "student@drone.com", password: "password123" },
@@ -30,14 +29,6 @@ const roleInfo = {
     color: "bg-red-500",
     bgColor: "bg-red-50",
     borderColor: "border-red-200",
-  },
-  hobbyist: {
-    name: "Hobbyist",
-    description: "Drone enthusiasts and recreational pilots",
-    icon: Camera,
-    color: "bg-blue-500",
-    bgColor: "bg-blue-50",
-    borderColor: "border-blue-200",
   },
   pilot: {
     name: "Commercial Pilot",
