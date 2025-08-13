@@ -1,0 +1,49 @@
+# Use the official Node.js runtime as the base image
+FROM node:18-alpine
+
+# Install build dependencies and essential packages
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    git \
+    libc6-compat \
+    curl \
+    bash \
+    && rm -rf /var/cache/apk/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml* ./
+
+# Install pnpm globally and verify installation
+RUN npm install -g pnpm && \
+    pnpm --version
+
+# Install all dependencies
+RUN pnpm install --frozen-lockfile --prefer-offline
+
+# Copy source code
+COPY . .
+
+# Create uploads directory
+RUN mkdir -p public/uploads
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build the application
+RUN npm run build
+
+# Expose port
+EXPOSE 3000
+
+# Set environment variables
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+ENV NODE_ENV=production
+
+# Start the application
+CMD ["npm", "start"] 
