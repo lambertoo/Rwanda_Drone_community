@@ -12,7 +12,7 @@ async function setupAdminUser() {
       where: {
         OR: [
           { email: 'admin@rwandadrone.com' },
-          { role: 'ADMIN' }
+          { role: 'admin' }
         ]
       }
     });
@@ -27,23 +27,22 @@ async function setupAdminUser() {
     
     const adminUser = await prisma.user.create({
       data: {
+        username: 'admin',
         email: 'admin@rwandadrone.com',
         password: hashedPassword,
-        name: 'System Administrator',
-        role: 'ADMIN',
-        emailVerified: true,
-        profile: {
-          create: {
-            bio: 'System Administrator for Rwanda Drone Community Platform',
-            location: 'Rwanda',
-            website: 'https://rwandadrone.com',
-            avatar: null
-          }
-        }
+        fullName: 'System Administrator',
+        role: 'admin',
+        isVerified: true,
+        isActive: true,
+        reputation: 100,
+        location: 'UNKNOWN',
+        bio: 'System Administrator for Rwanda Drone Community Platform',
+        website: 'https://rwandadrone.com'
       }
     });
 
     console.log('✅ Admin user created successfully!');
+    console.log('👤 Username:', adminUser.username);
     console.log('📧 Email:', adminUser.email);
     console.log('🔑 Password: Admin@2024!');
     console.log('⚠️  Please change this password after first login!');

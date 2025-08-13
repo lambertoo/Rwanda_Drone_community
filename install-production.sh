@@ -669,7 +669,7 @@ run_migrations() {
 
 # Function to display final information
 display_final_info() {
-    print_success "🎉 Installation completed successfully!"
+    print_success "🎉 Production installation completed successfully!"
     echo
     echo "📋 Service Information:"
     echo "   🌐 Application URL: http://$DOMAIN (via Nginx)"
@@ -680,6 +680,7 @@ display_final_info() {
     echo "🔑 Credentials (save these securely!):"
     echo "   Database Password: $DB_PASSWORD"
     echo "   NEXTAUTH_SECRET: $NEXTAUTH_SECRET"
+    echo "   JWT_SECRET: $JWT_SECRET"
     echo
     echo "👤 Admin User Created:"
     echo "   Email: admin@rwandadrone.com"
@@ -691,7 +692,7 @@ display_final_info() {
     echo "   Stop services: docker-compose -f docker-compose.prod.yml down"
     echo "   Start services: docker-compose -f docker-compose.prod.yml --env-file .env.production up -d"
     echo "   Restart services: docker-compose -f docker-compose.prod.yml restart"
-    echo "   Update application: git pull && docker-compose -f docker-compose.prod.yml --env-file .env.production up --build -d"
+    echo "   🔨 Rebuild app: ./rebuild-production.sh"
     echo
     echo "📊 Monitoring:"
     echo "   Container status: docker-compose -f docker-compose.prod.yml ps"
@@ -710,6 +711,10 @@ display_final_info() {
     echo "   3. Configure firewall rules (only ports 80/443 open)"
     echo "   4. Set up monitoring and backups"
     echo "   5. Login as admin and change default password"
+    echo
+    echo "🔄 For future updates:"
+    echo "   - Pull latest code: git pull"
+    echo "   - Rebuild app: ./rebuild-production.sh"
     echo
     print_success "Your Rwanda Drone Community Platform is now live in production! 🚀"
 }
