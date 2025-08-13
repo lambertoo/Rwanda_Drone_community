@@ -124,7 +124,7 @@ export async function POST(request: Request) {
     // Step 2: Input Validation
     const title = body.title?.trim()
     const description = body.description?.trim()
-    const fullDescription = body.fullDescription?.trim()
+    const fullDescription = body.overview?.trim() || body.fullDescription?.trim() // Map overview to fullDescription
     const categoryId = body.category
     const status = body.status
     const location = body.location?.trim()
@@ -136,8 +136,12 @@ export async function POST(request: Request) {
     const objectives = body.objectives
     const challenges = body.challenges
     const outcomes = body.outcomes
+    const methodology = body.methodology?.trim() // Add methodology
+    const results = body.results?.trim() // Add results
     const teamMembers = body.teamMembers
     const gallery = body.gallery
+    const resources = body.resources // Add resources
+    const thumbnail = body.thumbnail // Add thumbnail
 
     // Validate title
     if (!title) {
@@ -210,6 +214,7 @@ export async function POST(request: Request) {
     let parsedOutcomes = []
     let parsedTeamMembers = []
     let parsedGallery = []
+    let parsedResources = []
 
     if (technologies) {
       try {
@@ -277,6 +282,17 @@ export async function POST(request: Request) {
       }
     }
 
+    if (resources) {
+      try {
+        const parsed = typeof resources === 'string' ? JSON.parse(resources) : resources
+        if (Array.isArray(parsed)) {
+          parsedResources = parsed
+        }
+      } catch (error) {
+        parsedResources = []
+      }
+    }
+
     // Step 4: Map status values to enum
     const mappedStatus = status === "in-progress" ? "in_progress" : 
                         status === "on-hold" ? "on_hold" : 
@@ -300,8 +316,12 @@ export async function POST(request: Request) {
         objectives: parsedObjectives,
         challenges: parsedChallenges,
         outcomes: parsedOutcomes,
+        methodology: methodology || null,
+        results: results || null,
         teamMembers: parsedTeamMembers,
         gallery: parsedGallery,
+        resources: parsedResources,
+        thumbnail: thumbnail || null,
       },
       include: {
         author: {

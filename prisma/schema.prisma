@@ -147,6 +147,7 @@ model Project {
   teamMembers     Json?
   gallery         Json?
   resources       Json?
+  thumbnail       String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   viewsCount      Int              @default(0)
