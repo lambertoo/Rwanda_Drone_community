@@ -27,9 +27,9 @@ chmod +x install-production.sh
 
 1. **System Check** - Verifies OS, memory, disk space
 2. **Docker Installation** - Installs Docker and Docker Compose
-3. **Project Setup** - Creates project directory and downloads files
+3. **Project Setup** - Creates project directory and downloads configuration files
 4. **Environment Configuration** - Sets up secure environment variables
-5. **Source Code** - Downloads your application from Git repository
+5. **Source Code Check** - Uses existing code or downloads from Git repository
 6. **Build & Deploy** - Builds Docker images and starts services
 7. **Health Monitoring** - Waits for all services to be ready
 8. **Database Setup** - Runs migrations and initializes database
@@ -41,13 +41,14 @@ chmod +x install-production.sh
 - **Disk**: Minimum 10GB free space
 - **Network**: Internet access for downloads
 - **User**: Non-root user with sudo privileges
+- **Code**: Your application code (already pulled or will be downloaded)
 
 ## 📝 During Installation
 
 The script will ask you for:
 - **Project Directory**: Where to install (default: `/opt/rwanda-drone-platform`)
 - **Domain**: Your domain name or localhost
-- **Git Repository**: URL to your application code
+- **Git Repository**: Only if you don't have existing code (can skip if code is present)
 
 ## 🎯 After Installation
 

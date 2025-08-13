@@ -477,21 +477,36 @@ EOF
 
 # Function to download application source
 download_application_source() {
-    print_status "Downloading application source code..."
+    print_status "Checking application source code..."
     
-    # Get repository URL
-    get_input "Enter your Git repository URL" "https://github.com/yourusername/rwanda_drone_community_platform.git" "REPO_URL"
-    
-    # Clone repository
+    # Check if we're already in a git repository
     if [ -d ".git" ]; then
-        print_status "Git repository already exists, pulling latest changes..."
-        git pull
-    else
-        print_status "Cloning repository..."
-        git clone "$REPO_URL" .
+        print_success "Git repository already exists - using existing code"
+        
+        # Check if we need to pull latest changes
+        read -p "Pull latest changes from remote? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            print_status "Pulling latest changes..."
+            git pull
+        else
+            print_status "Using existing code without pulling"
+        fi
+        
+        return 0
     fi
     
-    print_success "Application source code downloaded"
+    # Only ask for repository URL if no git repo exists
+    get_input "Enter your Git repository URL (or press Enter to skip if code is already present)" "" "REPO_URL"
+    
+    if [ -n "$REPO_URL" ]; then
+        print_status "Cloning repository..."
+        git clone "$REPO_URL" .
+    else
+        print_status "Skipping repository clone - using existing code"
+    fi
+    
+    print_success "Application source code ready"
 }
 
 # Function to build and deploy
@@ -627,6 +642,9 @@ main() {
     echo "🚀 Rwanda Drone Community Platform - Production Installation"
     echo "=========================================================="
     echo
+    echo "This script will set up your production environment."
+    echo "If you already have the app code, it will use your existing files."
+    echo
     
     # Check system requirements
     check_system_requirements
@@ -646,7 +664,7 @@ main() {
     # Setup environment variables
     setup_environment
     
-    # Download application source
+    # Check application source
     download_application_source
     
     # Build and deploy
