@@ -53,9 +53,10 @@ The script will ask you for:
 ## 🎯 After Installation
 
 Your application will be available at:
-- **Web App**: `http://your-domain` or `http://localhost`
-- **API**: `http://your-domain/api`
+- **Web App**: `http://your-domain` or `http://localhost` (via Nginx only)
+- **API**: `http://your-domain/api` (via Nginx only)
 - **Health Check**: `http://your-domain/health`
+- **Direct App Access**: Not available (security feature)
 
 ## 🔑 Generated Credentials
 
@@ -64,6 +65,23 @@ The script automatically generates:
 - **NEXTAUTH_SECRET**: Secure authentication secret
 
 **⚠️ Save these credentials securely!**
+
+## 👤 Admin User
+
+**Automatically Created:**
+- **Email**: `admin@rwandadrone.com`
+- **Password**: `Admin@2024!`
+- **Role**: System Administrator
+
+**⚠️ Change this password after first login!**
+
+## 🔒 Security Features
+
+- **No Direct Access**: App only accessible through Nginx proxy
+- **Database Isolation**: PostgreSQL not exposed externally
+- **Rate Limiting**: API endpoints protected against abuse
+- **Security Headers**: XSS protection, CSRF prevention, etc.
+- **Port Restrictions**: Only ports 80 (HTTP) and 443 (HTTPS) open
 
 ## 🛠️ Management Commands
 

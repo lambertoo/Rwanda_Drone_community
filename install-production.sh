@@ -61,8 +61,66 @@ check_system_requirements() {
     # Check OS
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         print_success "OS: Linux detected"
+        
+        # Check available memory (Linux)
+        local mem_total=$(free -m | awk 'NR==2{printf "%.0f", $2/1024}')
+        if [ "$mem_total" -lt 2 ]; then
+            print_warning "Low memory detected: ${mem_total}GB (recommended: 2GB+)"
+            read -p "Continue anyway? (y/N): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                print_error "Insufficient memory for production deployment"
+                exit 1
+            fi
+        else
+            print_success "Memory: ${mem_total}GB available"
+        fi
+        
+        # Check available disk space (Linux)
+        local disk_free=$(df -BG . | awk 'NR==2{print $4}' | sed 's/G//')
+        if [ "$disk_free" -lt 10 ]; then
+            print_warning "Low disk space detected: ${disk_free}GB (recommended: 10GB+)"
+            read -p "Continue anyway? (y/N): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                print_error "Insufficient disk space for production deployment"
+                exit 1
+            fi
+        else
+            print_success "Disk space: ${disk_free}GB available"
+        fi
+        
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         print_success "OS: macOS detected"
+        
+        # Check available memory (macOS)
+        local mem_total=$(sysctl -n hw.memsize | awk '{print int($1/1024/1024/1024)}')
+        if [ "$mem_total" -lt 2 ]; then
+            print_warning "Low memory detected: ${mem_total}GB (recommended: 2GB+)"
+            read -p "Continue anyway? (y/N): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                print_error "Insufficient memory for production deployment"
+                exit 1
+            fi
+        else
+            print_success "Memory: ${mem_total}GB available"
+        fi
+        
+        # Check available disk space (macOS)
+        local disk_free=$(df -g . | awk 'NR==2{print $4}')
+        if [ "$disk_free" -lt 10 ]; then
+            print_warning "Low disk space detected: ${disk_free}GB (recommended: 10GB+)"
+            read -p "Continue anyway? (y/N): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                print_error "Insufficient disk space for production deployment"
+                exit 1
+            fi
+        else
+            print_success "Disk space: ${disk_free}GB available"
+        fi
+        
     else
         print_warning "OS: $OSTYPE detected (may not be fully supported)"
     fi
@@ -76,34 +134,6 @@ check_system_requirements() {
             print_error "Please run as a non-root user with sudo privileges"
             exit 1
         fi
-    fi
-    
-    # Check available memory
-    local mem_total=$(free -m | awk 'NR==2{printf "%.0f", $2/1024}')
-    if [ "$mem_total" -lt 2 ]; then
-        print_warning "Low memory detected: ${mem_total}GB (recommended: 2GB+)"
-        read -p "Continue anyway? (y/N): " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            print_error "Insufficient memory for production deployment"
-            exit 1
-        fi
-    else
-        print_success "Memory: ${mem_total}GB available"
-    fi
-    
-    # Check available disk space
-    local disk_free=$(df -BG . | awk 'NR==2{print $4}' | sed 's/G//')
-    if [ "$disk_free" -lt 10 ]; then
-        print_warning "Low disk space detected: ${disk_free}GB (recommended: 10GB+)"
-        read -p "Continue anyway? (y/N): " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            print_error "Insufficient disk space for production deployment"
-            exit 1
-        fi
-    else
-        print_success "Disk space: ${disk_free}GB available"
     fi
 }
 
@@ -169,14 +199,49 @@ create_project_directory() {
     print_status "Setting up project directory..."
     
     # Get project directory
-    get_input "Enter project directory path" "/opt/rwanda-drone-platform" "PROJECT_DIR"
+    get_input "Enter project directory path" "$(pwd)" "PROJECT_DIR"
     
-    # Create directory
-    sudo mkdir -p "$PROJECT_DIR"
-    sudo chown $USER:$USER "$PROJECT_DIR"
-    cd "$PROJECT_DIR"
+    # Check if directory exists and we have write access
+    if [ -d "$PROJECT_DIR" ]; then
+        if [ -w "$PROJECT_DIR" ]; then
+            print_success "Using existing directory: $PROJECT_DIR"
+            cd "$PROJECT_DIR"
+            return 0
+        else
+            print_warning "Directory exists but not writable: $PROJECT_DIR"
+            read -p "Try to fix permissions? (y/N): " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                sudo chown $USER:$USER "$PROJECT_DIR"
+                if [ $? -eq 0 ]; then
+                    print_success "Permissions fixed for: $PROJECT_DIR"
+                    cd "$PROJECT_DIR"
+                    return 0
+                else
+                    print_error "Failed to fix permissions"
+                    exit 1
+                fi
+            else
+                print_error "Cannot proceed without write access"
+                exit 1
+            fi
+        fi
+    fi
     
-    print_success "Project directory created: $PROJECT_DIR"
+    # Create directory if it doesn't exist
+    if [ "$PROJECT_DIR" != "$(pwd)" ]; then
+        print_status "Creating project directory: $PROJECT_DIR"
+        mkdir -p "$PROJECT_DIR"
+        if [ $? -eq 0 ]; then
+            cd "$PROJECT_DIR"
+            print_success "Project directory created: $PROJECT_DIR"
+        else
+            print_error "Failed to create directory: $PROJECT_DIR"
+            exit 1
+        fi
+    else
+        print_success "Using current directory: $PROJECT_DIR"
+    fi
 }
 
 # Function to download project files
@@ -607,34 +672,46 @@ display_final_info() {
     print_success "🎉 Installation completed successfully!"
     echo
     echo "📋 Service Information:"
-    echo "   🌐 Application URL: http://$DOMAIN"
+    echo "   🌐 Application URL: http://$DOMAIN (via Nginx)"
     echo "   🌐 Nginx URL: http://localhost"
-    echo "   🗄️  Database: localhost:5432"
+    echo "   🗄️  Database: Internal only (no external access)"
     echo "   📁 Project Directory: $PROJECT_DIR"
     echo
     echo "🔑 Credentials (save these securely!):"
     echo "   Database Password: $DB_PASSWORD"
     echo "   NEXTAUTH_SECRET: $NEXTAUTH_SECRET"
     echo
+    echo "👤 Admin User Created:"
+    echo "   Email: admin@rwandadrone.com"
+    echo "   Password: Admin@2024!"
+    echo "   ⚠️  Change this password after first login!"
+    echo
     echo "🔧 Management Commands:"
     echo "   View logs: docker-compose -f docker-compose.prod.yml logs -f"
     echo "   Stop services: docker-compose -f docker-compose.prod.yml down"
-    echo "   Start services: docker-compose -f docker-compose.prod.yml up -d"
+    echo "   Start services: docker-compose -f docker-compose.prod.yml --env-file .env.production up -d"
     echo "   Restart services: docker-compose -f docker-compose.prod.yml restart"
-    echo "   Update application: git pull && docker-compose -f docker-compose.prod.yml up --build -d"
+    echo "   Update application: git pull && docker-compose -f docker-compose.prod.yml --env-file .env.production up --build -d"
     echo
     echo "📊 Monitoring:"
     echo "   Container status: docker-compose -f docker-compose.prod.yml ps"
     echo "   Resource usage: docker stats"
     echo "   Health check: curl http://localhost/health"
     echo
+    echo "🔒 Security Features:"
+    echo "   ✅ App only accessible through Nginx (ports 80/443)"
+    echo "   ✅ Database not exposed externally"
+    echo "   ✅ Rate limiting and security headers enabled"
+    echo "   ✅ Admin user automatically created"
+    echo
     echo "⚠️  Next Steps:"
     echo "   1. Configure your domain DNS to point to this server"
     echo "   2. Set up SSL certificate (recommended)"
-    echo "   3. Configure firewall rules"
+    echo "   3. Configure firewall rules (only ports 80/443 open)"
     echo "   4. Set up monitoring and backups"
+    echo "   5. Login as admin and change default password"
     echo
-    print_success "Your Rwanda Drone Community Platform is now live! 🚀"
+    print_success "Your Rwanda Drone Community Platform is now live in production! 🚀"
 }
 
 # Main installation function

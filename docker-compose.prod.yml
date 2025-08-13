@@ -5,16 +5,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.prod
-      target: production
     container_name: rwanda_drone_app_prod
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    # Remove direct port exposure - only accessible through Nginx
+    # ports:
+    #   - "3000:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD:-password}@db:5432/rwanda_drone_community
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-your-production-secret-key-here}
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@db:5432/rwanda_drone_community
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
     depends_on:
       db:
         condition: service_healthy
@@ -37,12 +37,12 @@ services:
     environment:
       - POSTGRES_DB=rwanda_drone_community
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-password}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./prisma/init.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
-      - "5432:5432"
+    # Remove direct database port exposure for security
+    # ports:
+    #   - "5432:5432"
     networks:
       - drone_network
     healthcheck:
@@ -60,7 +60,6 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
       - app_uploads:/var/www/uploads:ro
     depends_on:
       - app
@@ -85,4 +84,4 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/16 
+        - subnet: 172.20.0.0/16

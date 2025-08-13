@@ -37,6 +37,15 @@ RUN npx prisma generate
 # Build the application
 RUN npm run build
 
+# Create startup script
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'echo "🚀 Starting Rwanda Drone Community Platform..."' >> /app/start.sh && \
+    echo 'echo "🔧 Setting up admin user..."' >> /app/start.sh && \
+    echo 'node setup-admin-user.js' >> /app/start.sh && \
+    echo 'echo "🌐 Starting application..."' >> /app/start.sh && \
+    echo 'npm start' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
 # Expose port
 EXPOSE 3000
 
@@ -45,5 +54,5 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 ENV NODE_ENV=production
 
-# Start the application
-CMD ["npm", "start"] 
+# Start the application with admin user setup
+CMD ["/app/start.sh"]
