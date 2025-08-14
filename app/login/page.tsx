@@ -151,6 +151,9 @@ export default function LoginPage() {
         localStorage.setItem("user", JSON.stringify(data.user))
         localStorage.setItem("token", data.token)
         
+        // Set auth-token cookie for server-side authentication
+        document.cookie = `auth-token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict`
+        
         // Show success notification
         showNotification('success', `Welcome back, ${data.user.fullName}!`, 'Login successful. Redirecting...')
         

@@ -9,6 +9,7 @@ export interface AuthenticatedUser {
   fullName: string
   role: string
   isVerified: boolean
+  isActive: boolean
   avatar?: string
   organization?: string
   pilotLicense?: string
@@ -41,6 +42,7 @@ export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> 
         fullName: true,
         role: true,
         isVerified: true,
+        isActive: true,
         avatar: true,
         organization: true,
         pilotLicense: true,

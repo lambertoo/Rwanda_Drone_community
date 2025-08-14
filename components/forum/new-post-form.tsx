@@ -57,8 +57,7 @@ export function NewPostForm({ categories, onCancel }: NewPostFormProps) {
 
   // Check user authentication on mount
   useEffect(() => {
-    // For now, use localStorage as the primary auth method
-    // The server-side JWT authentication will handle the actual verification
+    // Check both localStorage and cookies for user authentication
     const userStr = localStorage.getItem("user")
     if (userStr) {
       try {
@@ -68,6 +67,24 @@ export function NewPostForm({ categories, onCancel }: NewPostFormProps) {
         console.error("Error parsing user:", error)
         setUser(null)
       }
+    }
+    
+    // Also check if auth-token cookie exists
+    const hasAuthToken = document.cookie.includes('auth-token=')
+    if (!userStr && hasAuthToken) {
+      // If we have auth token but no user in localStorage, try to get user info
+      // This handles cases where the page was refreshed
+      fetch('/api/auth/me')
+        .then(response => response.json())
+        .then(data => {
+          if (data.user) {
+            setUser(data.user)
+            localStorage.setItem("user", JSON.stringify(data.user))
+          }
+        })
+        .catch(error => {
+          console.error("Error fetching user info:", error)
+        })
     }
   }, [])
 

@@ -406,7 +406,9 @@ export default function ForumPostPage({ params }: PageProps) {
       <Card>
         <CardContent className="p-6">
           <div className="prose prose-sm max-w-none mb-6">
-            <div className="whitespace-pre-wrap">{post.content}</div>
+            <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere leading-relaxed max-w-full">
+              {post.content}
+            </div>
           </div>
 
           <Separator className="my-6" />
@@ -512,7 +514,7 @@ export default function ForumPostPage({ params }: PageProps) {
                   </div>
 
                   <div className="prose prose-sm max-w-none mb-4">
-                    <p className="whitespace-pre-wrap">{comment.content}</p>
+                    <p className="whitespace-pre-wrap break-words overflow-wrap-anywhere leading-relaxed">{comment.content}</p>
                   </div>
 
                   <div className="flex items-center gap-4">
@@ -600,7 +602,7 @@ export default function ForumPostPage({ params }: PageProps) {
                                 {formatTimeAgo(nestedReply.createdAt)}
                               </span>
                             </div>
-                            <p className="text-sm mb-2">{nestedReply.content}</p>
+                            <p className="text-sm mb-2 break-words overflow-wrap-anywhere leading-relaxed">{nestedReply.content}</p>
                             <div className="flex items-center gap-3">
                               <Button 
                                 variant={commentLikes[nestedReply.id] ? "default" : "ghost"} 

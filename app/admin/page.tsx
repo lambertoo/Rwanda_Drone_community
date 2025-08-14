@@ -274,6 +274,10 @@ function AdminDashboard() {
                     <Calendar className="mr-2 h-4 w-4" />
                     Manage Event Categories
                   </Button>
+                  <Button variant="outline" className="justify-start" onClick={() => window.location.href = '/admin/settings/opportunity-categories'}>
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Manage Opportunity Categories
+                  </Button>
                   <Button variant="outline" className="justify-start">
                     <Settings className="mr-2 h-4 w-4" />
                     General Settings

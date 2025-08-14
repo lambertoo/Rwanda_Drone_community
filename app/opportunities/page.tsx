@@ -15,7 +15,14 @@ interface Opportunity {
   description: string
   company: string
   opportunityType: string
-  category: string
+  categoryId: string | null
+  category?: {
+    id: string
+    name: string
+    description: string
+    icon: string
+    color: string
+  } | null
   location: string
   salary: string | null
   requirements: string | null
@@ -43,14 +50,17 @@ export default function OpportunitiesPage() {
   const [category, setCategory] = useState("all")
   const [location, setLocation] = useState("all")
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
   // Prevent hydration mismatch by ensuring client-side rendering
   useEffect(() => {
     setMounted(true)
-    // Get current user from localStorage
-    const user = localStorage.getItem("user")
-    if (user) {
-      setCurrentUser(JSON.parse(user))
+    // Get current user from localStorage only on client side
+    if (typeof window !== 'undefined') {
+      const user = localStorage.getItem("user")
+      if (user) {
+        setCurrentUser(JSON.parse(user))
+      }
     }
   }, [])
 
@@ -63,6 +73,8 @@ export default function OpportunitiesPage() {
 
   const fetchSavedOpportunities = async () => {
     try {
+      if (typeof window === 'undefined') return
+      
       const token = localStorage.getItem("token")
       if (!token) return
 
@@ -87,7 +99,7 @@ export default function OpportunitiesPage() {
       const params = new URLSearchParams()
       if (activeTab !== "all") params.append("tabCategory", activeTab)
       if (opportunityType !== "all") params.append("opportunityType", opportunityType)
-      if (category !== "all") params.append("category", category)
+      if (category !== "all") params.append("categoryId", category)
       if (location !== "all") params.append("location", location)
 
       const response = await fetch(`/api/opportunities?${params.toString()}`)
@@ -111,14 +123,20 @@ export default function OpportunitiesPage() {
   const handleSaveOpportunity = async (opportunityId: string) => {
     if (!currentUser) {
       // Redirect to login if user is not authenticated
-      window.location.href = '/login'
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
+      }
       return
     }
 
     try {
+      if (typeof window === 'undefined') return
+      
       const token = localStorage.getItem("token")
       if (!token) {
-        window.location.href = '/login'
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login'
+        }
         return
       }
 
@@ -220,7 +238,7 @@ export default function OpportunitiesPage() {
   const renderOpportunities = () => {
     if (loading) {
       return (
-        <div className="space-y-4">
+        <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
           {[...Array(6)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardContent className="p-6">
@@ -253,15 +271,138 @@ export default function OpportunitiesPage() {
       )
     }
 
+    if (viewMode === "grid") {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {opportunities.map((opportunity) => {
+            let requirements: string[] = []
+            
+            if (opportunity.requirements) {
+              try {
+                if (typeof opportunity.requirements === 'string') {
+                  requirements = JSON.parse(opportunity.requirements)
+                } else if (Array.isArray(opportunity.requirements)) {
+                  requirements = opportunity.requirements
+                } else {
+                  requirements = []
+                }
+              } catch (error) {
+                if (typeof opportunity.requirements === 'string') {
+                  if (opportunity.requirements.includes(',')) {
+                    requirements = opportunity.requirements.split(',').map(req => req.trim()).filter(req => req.length > 0)
+                  } else {
+                    requirements = [opportunity.requirements.trim()]
+                  }
+                } else {
+                  requirements = []
+                }
+              }
+            }
+
+            const isSaved = isOpportunitySaved(opportunity.id)
+
+            return (
+              <Card key={opportunity.id} className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
+                <CardContent className="p-6 flex-1 flex flex-col">
+                  <div className="flex-1 space-y-3">
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg line-clamp-2">{opportunity.title}</h3>
+                          <p className="text-muted-foreground text-sm">{opportunity.company}</p>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          {opportunity.isUrgent && (
+                            <Badge variant="destructive" className="text-xs">
+                              Urgent
+                            </Badge>
+                          )}
+                          <Badge className={getOpportunityTypeColor(opportunity.opportunityType)}>{opportunity.opportunityType}</Badge>
+                        </div>
+                      </div>
+                      
+                      <Badge className={getCategoryColor(opportunity.category?.name || "Uncategorized")}>
+                        {opportunity.category?.name || "Uncategorized"}
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-4 w-4" />
+                        <span className="truncate">{opportunity.location}</span>
+                      </div>
+                      {opportunity.salary && (
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-4 w-4" />
+                          <span>{opportunity.salary}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        <span>{formatDate(opportunity.createdAt)}</span>
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-muted-foreground line-clamp-3">{opportunity.description}</p>
+
+                    {requirements.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-sm">Requirements:</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {requirements.slice(0, 3).map((req, reqIndex) => (
+                            <Badge key={reqIndex} variant="outline" className="text-xs">
+                              {req}
+                            </Badge>
+                          ))}
+                          {requirements.length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{requirements.length - 3} more
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-2 mt-4 pt-4 border-t">
+                    <Link href={`/opportunities/${opportunity.id}`}>
+                      <Button className="w-full">Apply Now</Button>
+                    </Link>
+                    <Button 
+                      variant={isSaved ? "default" : "outline"} 
+                      size="sm"
+                      onClick={() => handleSaveOpportunity(opportunity.id)}
+                      className={isSaved ? "bg-blue-600 hover:bg-blue-700" : ""}
+                    >
+                      {isSaved ? (
+                        <>
+                          <BookmarkCheck className="h-4 w-4 mr-2" />
+                          Saved
+                        </>
+                      ) : (
+                        <>
+                          <Bookmark className="h-4 w-4 mr-2" />
+                          Save
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )
+    }
+
+    // List view
     return (
       <div className="space-y-4">
         {opportunities.map((opportunity) => {
           let requirements: string[] = []
           
-          // Handle requirements parsing more robustly
           if (opportunity.requirements) {
             try {
-              // Try to parse as JSON first
               if (typeof opportunity.requirements === 'string') {
                 requirements = JSON.parse(opportunity.requirements)
               } else if (Array.isArray(opportunity.requirements)) {
@@ -270,13 +411,10 @@ export default function OpportunitiesPage() {
                 requirements = []
               }
             } catch (error) {
-              // If JSON parsing fails, try to handle as plain text
               if (typeof opportunity.requirements === 'string') {
-                // Check if it looks like a comma-separated list
                 if (opportunity.requirements.includes(',')) {
                   requirements = opportunity.requirements.split(',').map(req => req.trim()).filter(req => req.length > 0)
                 } else {
-                  // Single requirement
                   requirements = [opportunity.requirements.trim()]
                 }
               } else {
@@ -304,7 +442,9 @@ export default function OpportunitiesPage() {
                           </Badge>
                         )}
                         <Badge className={getOpportunityTypeColor(opportunity.opportunityType)}>{opportunity.opportunityType}</Badge>
-                        <Badge className={getCategoryColor(opportunity.category)}>{opportunity.category}</Badge>
+                        <Badge className={getCategoryColor(opportunity.category?.name || "Uncategorized")}>
+                          {opportunity.category?.name || "Uncategorized"}
+                        </Badge>
                       </div>
                     </div>
 
@@ -313,10 +453,12 @@ export default function OpportunitiesPage() {
                         <MapPin className="h-4 w-4" />
                         {opportunity.location}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="h-4 w-4" />
-                        {opportunity.salary}
-                      </div>
+                      {opportunity.salary && (
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-4 w-4" />
+                          {opportunity.salary}
+                        </div>
+                      )}
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
                         {formatDate(opportunity.createdAt)}
@@ -325,16 +467,18 @@ export default function OpportunitiesPage() {
 
                     <p className="text-sm text-muted-foreground">{opportunity.description}</p>
 
-                    <div className="space-y-2">
-                      <h4 className="font-semibold text-sm">Requirements:</h4>
-                      <div className="flex flex-wrap gap-1">
-                        {requirements.map((req, reqIndex) => (
-                          <Badge key={reqIndex} variant="outline" className="text-xs">
-                            {req}
-                          </Badge>
-                        ))}
+                    {requirements.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-sm">Requirements:</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {requirements.map((req, reqIndex) => (
+                            <Badge key={reqIndex} variant="outline" className="text-xs">
+                              {req}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-2">
@@ -413,7 +557,7 @@ export default function OpportunitiesPage() {
       </Tabs>
 
       {/* Filters and Actions */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
         <div className="flex flex-col sm:flex-row gap-4">
           <Select value={opportunityType} onValueChange={setOpportunityType}>
             <SelectTrigger className="w-[200px]">
@@ -434,12 +578,11 @@ export default function OpportunitiesPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="Agriculture">Agriculture</SelectItem>
-              <SelectItem value="Photography">Photography</SelectItem>
-              <SelectItem value="Construction">Construction</SelectItem>
-              <SelectItem value="Technical">Technical</SelectItem>
-              <SelectItem value="Conservation">Conservation</SelectItem>
-              <SelectItem value="Education">Education</SelectItem>
+              <SelectItem value="cat_001">Software Development</SelectItem>
+              <SelectItem value="cat_002">Drone Operations</SelectItem>
+              <SelectItem value="cat_003">Research & Development</SelectItem>
+              <SelectItem value="cat_004">Business & Management</SelectItem>
+              <SelectItem value="cat_005">Marketing & Sales</SelectItem>
             </SelectContent>
           </Select>
 
@@ -457,11 +600,37 @@ export default function OpportunitiesPage() {
           </Select>
         </div>
 
-        <Link href="/opportunities/new">
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            Post Opportunity
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* View Toggle */}
+          <div className="flex items-center border rounded-md">
+            <Button
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("grid")}
+              className="rounded-r-none"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className="rounded-l-none"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+            </Button>
+          </div>
+          
+          <Link href="/opportunities/new">
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              Post Opportunity
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Call to Action */}

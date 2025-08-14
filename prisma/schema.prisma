@@ -241,6 +241,20 @@ model EventCategory {
   @@map("event_categories")
 }
 
+model OpportunityCategory {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  description String
+  icon        String        @default("💼")
+  color       String        @default("#3B82F6")
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  opportunities Opportunity[]
+
+  @@map("opportunity_categories")
+}
+
 model Event {
   id                   String         @id @default(cuid())
   title                String
@@ -326,7 +340,7 @@ model Opportunity {
   description      String
   company          String
   opportunityType  String
-  category         String
+  categoryId       String?
   location         String
   salary           String?
   requirements     Json?
@@ -338,6 +352,7 @@ model Opportunity {
   updatedAt        DateTime         @updatedAt
   posterId         String
   poster           User             @relation(fields: [posterId], references: [id], onDelete: Cascade)
+  category         OpportunityCategory? @relation(fields: [categoryId], references: [id])
   applications     JobApplication[]
   savedBy          SavedOpportunity[]
   applicationForm  ApplicationForm? // One-to-one relationship

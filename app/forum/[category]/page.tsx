@@ -17,9 +17,9 @@ interface PageProps {
 export default async function ForumCategoryPage({ params }: PageProps) {
   const { category } = await params
 
-  // Fetch category from database
+  // Fetch category from database by slug
   const categoryData = await prisma.forumCategory.findUnique({
-    where: { id: category },
+    where: { slug: category },
     include: {
       _count: {
         select: { posts: true }
@@ -54,7 +54,11 @@ export default async function ForumCategoryPage({ params }: PageProps) {
 
   // Fetch posts for this category from database
   const posts = await prisma.forumPost.findMany({
-    where: { categoryId: category },
+    where: { 
+      category: {
+        slug: category
+      }
+    },
     include: {
       author: {
         select: {

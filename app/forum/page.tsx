@@ -80,13 +80,15 @@ export default function ForumPage() {
       }
     }
 
-    // Get user from localStorage
-    const storedUser = localStorage.getItem("user")
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser))
-      } catch (error) {
-        console.error("Error parsing user from localStorage:", error)
+    // Get user from localStorage only on client side
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem("user")
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser))
+        } catch (error) {
+          console.error("Error parsing user from localStorage:", error)
+        }
       }
     }
 
@@ -126,7 +128,7 @@ export default function ForumPage() {
   // Filtering function
   const filterPosts = (posts: ForumPost[], category: string) => {
     if (category === "all") return posts
-    return posts.filter(post => post.categorySlug === category)
+    return posts.filter(post => post.category === category)
   }
 
   // Grouping function
@@ -301,12 +303,11 @@ export default function ForumPage() {
               className="px-3 py-1 text-sm border rounded-md bg-background"
             >
               <option value="all">All Categories</option>
-              <option value="general">General Discussion</option>
-              <option value="jobs">Jobs & Opportunities</option>
-              <option value="regulations">Regulations & Legal</option>
-              <option value="events">Events & Meetups</option>
-              <option value="showcase">Showcase</option>
-              <option value="technical">Technical Support</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.title}>
+                  {category.title}
+                </option>
+              ))}
             </select>
             
             <select
