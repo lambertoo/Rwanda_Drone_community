@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Heart, MessageSquare, Share2, Bookmark, Flag, ThumbsUp, Calendar, Eye, Send, Loader } from "lucide-react"
 import Link from "next/link"
+import { useNotification } from "@/components/ui/notification"
 
 interface PageProps {
   params: Promise<{
@@ -29,6 +30,7 @@ export default function ForumPostPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [commentLikes, setCommentLikes] = useState<Record<string, boolean>>({})
+  const { showNotification } = useNotification()
 
   useEffect(() => {
     const initializePage = async () => {
@@ -118,7 +120,7 @@ export default function ForumPostPage({ params }: PageProps) {
 
   const handleLike = async () => {
     if (!user) {
-      alert("Please log in to like posts")
+      showNotification('error', 'Authentication Required', 'Please log in to like posts')
       return
     }
 
@@ -144,7 +146,7 @@ export default function ForumPostPage({ params }: PageProps) {
 
   const handleComment = async () => {
     if (!user) {
-      alert("Please log in to comment")
+      showNotification('error', 'Authentication Required', 'Please log in to comment')
       return
     }
 
@@ -176,7 +178,7 @@ export default function ForumPostPage({ params }: PageProps) {
 
   const handleReply = async (parentId: string) => {
     if (!user) {
-      alert("Please log in to reply")
+      showNotification('error', 'Authentication Required', 'Please log in to reply')
       return
     }
 
@@ -212,7 +214,7 @@ export default function ForumPostPage({ params }: PageProps) {
 
   const handleCommentLike = async (commentId: string) => {
     if (!user) {
-      alert("Please log in to like comments")
+      showNotification('error', 'Authentication Required', 'Please log in to like comments')
       return
     }
 
@@ -266,7 +268,7 @@ export default function ForumPostPage({ params }: PageProps) {
     } else {
       // Fallback for browsers that don't support Web Share API
       navigator.clipboard.writeText(window.location.href)
-      alert("Link copied to clipboard!")
+      showNotification('success', 'Success', 'Link copied to clipboard!')
     }
   }
 

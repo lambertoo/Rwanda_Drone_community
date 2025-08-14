@@ -8,6 +8,7 @@ import { Header } from "@/components/header"
 import { ThemeProvider } from "@/components/theme-provider"
 import { LoginLayout } from "@/components/login-layout"
 import { Toaster } from "@/components/ui/toaster"
+import { NotificationProvider } from "@/components/ui/notification"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -33,10 +34,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <LoginLayout>
-            {children}
-          </LoginLayout>
-          <Toaster />
+          <NotificationProvider>
+            <LoginLayout>
+              {children}
+            </LoginLayout>
+            <Toaster />
+          </NotificationProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader, Eye, EyeOff, Shield, Users, Plane, GraduationCap, Wrench, CheckCircle } from "lucide-react"
 import Link from "next/link"
+import { useNotification } from "@/components/ui/notification"
 
 // Demo credentials for each role
 const demoCredentials = {
@@ -73,7 +74,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
-  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info', message: string, description?: string } | null>(null)
+  const { showNotification } = useNotification()
 
   // Check if user is already logged in
   useEffect(() => {
@@ -110,11 +111,7 @@ export default function LoginPage() {
     return () => clearTimeout(timeoutId)
   }, [])
 
-  const showNotification = (type: 'success' | 'error' | 'info', message: string, description?: string) => {
-    setNotification({ type, message, description })
-    // Auto-hide after 5 seconds
-    setTimeout(() => setNotification(null), 5000)
-  }
+
 
   const handleRoleSelect = (role: string) => {
     setSelectedRole(role)
@@ -190,38 +187,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[calc(100vh-120px)] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      {/* Notification Popup */}
-      {notification && (
-        <div className="fixed top-4 right-4 z-50 max-w-sm">
-          <div className={`p-4 rounded-lg shadow-lg border ${
-            notification.type === 'success' 
-              ? 'bg-green-50 border-green-200 text-green-800' 
-              : notification.type === 'error'
-              ? 'bg-red-50 border-red-200 text-red-800'
-              : 'bg-blue-50 border-blue-200 text-blue-800'
-          }`}>
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                {notification.type === 'success' && <CheckCircle className="h-5 w-5 text-green-400" />}
-                {notification.type === 'error' && <div className="h-5 w-5 text-red-400">✕</div>}
-                {notification.type === 'info' && <div className="h-5 w-5 text-blue-400">ℹ</div>}
-              </div>
-              <div className="ml-3 flex-1">
-                <p className="text-sm font-medium">{notification.message}</p>
-                {notification.description && (
-                  <p className="text-sm mt-1 opacity-90">{notification.description}</p>
-                )}
-              </div>
-              <button
-                onClick={() => setNotification(null)}
-                className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8">
         {/* Left Side - Welcome & Role Selection */}

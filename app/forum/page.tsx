@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, MessageSquare, Users, TrendingUp, Plus, Heart, Share2, Eye, Loader } from "lucide-react"
 import Link from "next/link"
+import { useNotification } from "@/components/ui/notification"
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -54,6 +55,7 @@ export default function ForumPage() {
   const [filterCategory, setFilterCategory] = useState("all")
   const [groupBy, setGroupBy] = useState("none")
   const [viewMode, setViewMode] = useState<"list" | "grid">("list")
+  const { showNotification } = useNotification()
   // Fetch data from API
   useEffect(() => {
     const fetchData = async () => {
@@ -199,7 +201,7 @@ export default function ForumPage() {
 
   const handleLike = async (postId: string) => {
     if (!user) {
-      alert("Please log in to like posts")
+      showNotification('error', 'Authentication Required', 'Please log in to like posts')
       return
     }
 
@@ -239,7 +241,7 @@ export default function ForumPage() {
     } else {
       // Fallback for browsers that don't support Web Share API
       navigator.clipboard.writeText(`${window.location.origin}/forum/${categorySlug}/${postId}`)
-      alert("Link copied to clipboard!")
+      showNotification('success', 'Success', 'Link copied to clipboard!')
     }
   }
 

@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { X, Plus, Hash, AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import { createForumPostAction } from "@/lib/actions"
 import { useRouter } from "next/navigation"
+import { useNotification } from "@/components/ui/notification"
 
 interface NewPostFormProps {
   categories: Array<{
@@ -52,7 +53,7 @@ export function NewPostForm({ categories, onCancel }: NewPostFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
   const [user, setUser] = useState<any>(null)
-  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info', message: string, description?: string } | null>(null)
+  const { showNotification } = useNotification()
   const router = useRouter()
 
   // Check user authentication on mount
@@ -88,11 +89,7 @@ export function NewPostForm({ categories, onCancel }: NewPostFormProps) {
     }
   }, [])
 
-  const showNotification = (type: 'success' | 'error' | 'info', message: string, description?: string) => {
-    setNotification({ type, message, description })
-    // Auto-hide after 5 seconds
-    setTimeout(() => setNotification(null), 5000)
-  }
+
 
   const handleInputChange = (field: keyof FormState, value: string | string[]) => {
     setFormState(prev => ({ ...prev, [field]: value }))
@@ -211,38 +208,7 @@ export function NewPostForm({ categories, onCancel }: NewPostFormProps) {
       </CardHeader>
 
       <CardContent>
-        {/* Notification Popup */}
-        {notification && (
-          <div className="mb-6">
-            <div className={`p-4 rounded-lg shadow-lg border ${
-              notification.type === 'success' 
-                ? 'bg-green-100 border-green-300 text-green-900 shadow-green-100' 
-                : notification.type === 'error'
-                ? 'bg-red-50 border-red-200 text-red-800'
-                : 'bg-blue-50 border-blue-200 text-blue-800'
-            }`}>
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  {notification.type === 'success' && <CheckCircle className="h-5 w-5 text-green-600" />}
-                  {notification.type === 'error' && <AlertCircle className="h-5 w-5 text-red-400" />}
-                  {notification.type === 'info' && <div className="h-5 w-5 text-blue-400">ℹ</div>}
-                </div>
-                <div className="ml-3 flex-1">
-                  <p className="text-sm font-semibold">{notification.message}</p>
-                  {notification.description && (
-                    <p className="text-sm mt-1 opacity-90">{notification.description}</p>
-                  )}
-                </div>
-                <button
-                  onClick={() => setNotification(null)}
-                  className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+
 
         {/* Authentication Warning */}
         {!user && (
