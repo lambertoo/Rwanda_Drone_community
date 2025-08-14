@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MapPin, Building2, Clock, DollarSign, Calendar, Users, Briefcase, Edit, Trash2, Plus, Search, Filter, FormInput, Eye, Grid3X3, List, BarChart3, Settings, Share2, FileText, UserCheck, Bookmark, BookmarkCheck } from "lucide-react"
 import { deleteOpportunityAction } from "@/lib/actions"
+import { AuthGuard } from "@/components/auth-guard"
 
 interface Opportunity {
   id: string
@@ -78,7 +79,7 @@ interface SavedOpportunity {
   savedAt: string
 }
 
-export default function MyOpportunitiesPage() {
+function MyOpportunitiesPage() {
   const router = useRouter()
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [appliedOpportunities, setAppliedOpportunities] = useState<AppliedOpportunity[]>([])
@@ -685,5 +686,14 @@ export default function MyOpportunitiesPage() {
         </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+// Wrap the entire page with AuthGuard
+export default function ProtectedMyOpportunitiesPage() {
+  return (
+    <AuthGuard>
+      <MyOpportunitiesPage />
+    </AuthGuard>
   )
 } 

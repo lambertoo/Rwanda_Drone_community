@@ -517,8 +517,9 @@ setup_environment() {
     # Generate secure password
     DB_PASSWORD=$(generate_random_string)
     
-    # Generate secure secret
+    # Generate secure secrets
     NEXTAUTH_SECRET=$(generate_random_string)
+    JWT_SECRET=$(generate_random_string)
     
     # Create .env.production
     cat > .env.production << EOF
@@ -526,6 +527,7 @@ setup_environment() {
 DB_PASSWORD=$DB_PASSWORD
 DATABASE_URL=postgresql://postgres:$DB_PASSWORD@db:5432/rwanda_drone_community
 NEXTAUTH_SECRET=$NEXTAUTH_SECRET
+JWT_SECRET=$JWT_SECRET
 NEXTAUTH_URL=http://$DOMAIN
 NODE_ENV=production
 PORT=3000
@@ -537,6 +539,7 @@ EOF
     print_success "Environment variables configured"
     print_warning "Database password: $DB_PASSWORD"
     print_warning "NEXTAUTH_SECRET: $NEXTAUTH_SECRET"
+    print_warning "JWT_SECRET: $JWT_SECRET"
     print_warning "Please save these credentials securely!"
 }
 

@@ -1,9 +1,43 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { 
+  User, 
+  Mail, 
+  MapPin, 
+  Globe, 
+  Phone, 
+  Calendar, 
+  Shield, 
+  Star, 
+  MessageSquare, 
+  Briefcase, 
+  Calendar as CalendarIcon,
+  FileText,
+  Users,
+  Settings,
+  Edit,
+  Plus,
+  Trash2,
+  Eye,
+  Heart,
+  Share2,
+  Bookmark,
+  Award,
+  Certificate,
+  Plane,
+  Building2
+} from "lucide-react"
+import { AuthGuard } from "@/components/auth-guard"
 
-export default function ProfilePage() {
+function ProfilePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
 
@@ -38,4 +72,13 @@ export default function ProfilePage() {
   }
 
   return null
+}
+
+// Wrap the entire page with AuthGuard
+export default function ProtectedProfilePage() {
+  return (
+    <AuthGuard>
+      <ProfilePage />
+    </AuthGuard>
+  )
 } 

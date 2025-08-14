@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader, Eye, EyeOff, Shield, Users, Plane, GraduationCap, Wrench, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { useNotification } from "@/components/ui/notification"
+import { useAuth } from "@/lib/auth-context"
 
 // Demo credentials for each role
 const demoCredentials = {
@@ -74,28 +75,21 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [hasShownRedirectNotification, setHasShownRedirectNotification] = useState(false)
   const { showNotification } = useNotification()
+  const { user, login } = useAuth()
 
   // Check if user is already logged in
   useEffect(() => {
     const checkAuth = () => {
-      try {
-        const userStr = localStorage.getItem("user")
-        if (userStr) {
-          const user = JSON.parse(userStr)
-          if (user && user.email) {
-            // User is logged in, redirect them to home page
-            showNotification('info', 'You are already logged in!', 'Redirecting to home page...')
-            setTimeout(() => {
-              window.location.href = "/"
-            }, 2000)
-            return
-          }
-        }
-      } catch (error) {
-        console.error("Error checking auth:", error)
-        // Clear invalid data
-        localStorage.removeItem("user")
+      if (user && !hasShownRedirectNotification) {
+        // User is logged in, show notification only once and redirect
+        setHasShownRedirectNotification(true)
+        showNotification('info', 'You are already logged in!', 'Redirecting to home page...')
+        setTimeout(() => {
+          window.location.href = "/"
+        }, 2000)
+        return
       }
       // Always set to false to prevent getting stuck
       setIsCheckingAuth(false)
@@ -109,7 +103,7 @@ export default function LoginPage() {
     checkAuth()
 
     return () => clearTimeout(timeoutId)
-  }, [])
+  }, [user, hasShownRedirectNotification]) // Added hasShownRedirectNotification to dependencies
 
 
 
@@ -133,34 +127,19 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        // Store user info and token in localStorage
-        localStorage.setItem("user", JSON.stringify(data.user))
-        localStorage.setItem("token", data.token)
-        
-        // Set auth-token cookie for server-side authentication
-        document.cookie = `auth-token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict`
-        
+      const result = await login(email, password)
+      
+      if (result.success) {
         // Show success notification
-        showNotification('success', `Welcome back, ${data.user.fullName}!`, 'Login successful. Redirecting...')
+        showNotification('success', `Welcome back!`, 'Login successful. Redirecting...')
         
         // Redirect after notification
         setTimeout(() => {
           console.log('Redirecting to home page')
-          window.location.href = "/"
+          router.push("/")
         }, 2000)
       } else {
-        showNotification('error', 'Login Failed', data.error || 'Invalid credentials')
+        showNotification('error', 'Login Failed', result.error || 'Invalid credentials')
       }
     } catch (err) {
       console.error("Login error:", err)

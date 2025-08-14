@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator"
 import { MapPin, Building2, Clock, DollarSign, Calendar, Users, Briefcase, Edit, Trash2, ArrowLeft, FormInput, Settings, CheckCircle } from "lucide-react"
 import { deleteOpportunityAction } from "@/lib/actions"
 import DynamicApplicationForm from "@/components/opportunities/dynamic-application-form"
+import { AuthGuard } from "@/components/auth-guard"
 
 interface Opportunity {
   id: string
@@ -46,7 +47,7 @@ interface Opportunity {
   }[]
 }
 
-export default function OpportunityDetailPage({ params }: { params: Promise<{ id: string }> }) {
+function OpportunityDetailPage() {
   const router = useRouter()
   const { id: opportunityId } = use(params)
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null)
@@ -482,4 +483,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
       </div>
     </div>
   )
-} 
+}
+
+// Wrap the entire page with AuthGuard
+export default OpportunityDetailPage 

@@ -1,15 +1,16 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Lock, Shield, User, Users, Calendar, FileText, Briefcase, Settings } from "lucide-react"
 import Link from "next/link"
 import { UserRole } from "@prisma/client"
+import { useAuth } from "@/lib/auth-context"
 
-// Define a more flexible user type that matches what's stored in localStorage
-interface LocalUser {
+// Define user type that matches our JWT payload and API response
+interface AuthenticatedUser {
   id: string
   email: string
   username: string
@@ -40,37 +41,17 @@ export function AuthGuard({
   fallback,
   showLoginPrompt = true 
 }: AuthGuardProps) {
-  const [user, setUser] = useState<LocalUser | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, loading } = useAuth()
 
-  useEffect(() => {
-    // Get user from localStorage (for demo purposes)
-    const storedUser = localStorage.getItem("user")
-    console.log("AuthGuard - Stored user data:", storedUser) // Debug log
-    
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser)
-        console.log("AuthGuard - Parsed user data:", parsedUser) // Debug log
-        
-        // Validate that we have the minimum required fields
-        if (parsedUser && parsedUser.id && parsedUser.role) {
-          console.log("AuthGuard - User data is valid, setting user") // Debug log
-          setUser(parsedUser)
-        } else {
-          console.error("AuthGuard - User data is missing required fields:", parsedUser) // Debug log
-          setUser(null)
-        }
-      } catch (error) {
-        console.error("AuthGuard - Error parsing user from localStorage:", error)
-        setUser(null)
-      }
-    } else {
-      console.log("AuthGuard - No user data found in localStorage") // Debug log
-      setUser(null)
-    }
-    setLoading(false)
-  }, [])
+  // Enhanced debug logging
+  console.log("AuthGuard - Current state:", { 
+    user: user ? { id: user.id, email: user.email, role: user.role } : null, 
+    loading, 
+    requiredRole,
+    hasUser: !!user,
+    userRole: user?.role,
+    timestamp: new Date().toISOString()
+  })
 
   if (loading) {
     return (

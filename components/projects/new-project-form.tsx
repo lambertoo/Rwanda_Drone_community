@@ -15,7 +15,9 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Plus, X, Upload, Eye, Calendar, MapPin, Users, CheckCircle, AlertCircle } from "lucide-react"
-// import { createProjectAction } from "@/lib/actions"
+import { useAuth } from "@/lib/auth-context"
+import { createProjectAction } from "@/lib/actions"
+import { useNotification } from "@/components/ui/notification"
 
 interface TeamMember {
   id: string
@@ -25,6 +27,7 @@ interface TeamMember {
   email: string
   expertise: string
   bio: string
+  projectLead: boolean
 }
 
 interface ProjectGalleryItem {
@@ -76,8 +79,8 @@ export default function NewProjectForm() {
   const [currentOutcome, setCurrentOutcome] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("basic")
-  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null)
-  const [user, setUser] = useState<any>(null)
+  const { user, loading: authLoading } = useAuth()
+  const { showNotification } = useNotification()
   const [categories, setCategories] = useState<Array<{ value: string, label: string, icon: string }>>([])
   const [loadingCategories, setLoadingCategories] = useState(true)
 
@@ -88,6 +91,7 @@ export default function NewProjectForm() {
     email: "",
     expertise: "",
     bio: "",
+    projectLead: false,
   })
 
   const [newResource, setNewResource] = useState({
@@ -105,21 +109,14 @@ export default function NewProjectForm() {
     file: null as File | null,
   })
 
-  // Check user authentication on mount
-  useEffect(() => {
-    // For now, use localStorage as the primary auth method
-    // The server-side JWT authentication will handle the actual verification
-    const userStr = localStorage.getItem("user")
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr)
-        setUser(user)
-      } catch (error) {
-        console.error("Error parsing user:", error)
-        setUser(null)
-      }
-    }
-  }, [])
+  // Show loading state while authentication is being checked
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
 
   // Fetch categories from database
   useEffect(() => {
@@ -259,6 +256,7 @@ export default function NewProjectForm() {
         email: "",
         expertise: "",
         bio: "",
+        projectLead: false,
       })
     }
   }
@@ -404,7 +402,6 @@ export default function NewProjectForm() {
     }
     
     setIsSubmitting(true)
-    setNotification(null)
 
     try {
       const projectData = {
@@ -424,45 +421,22 @@ export default function NewProjectForm() {
         }
       })
 
-      // Convert FormData to JSON for API call
-      const projectDataJson = {}
-      for (const [key, value] of formDataToSend.entries()) {
-        projectDataJson[key] = value
-      }
-
-      // Use API route instead of server action
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(projectDataJson),
-      })
-
-      const result = await response.json()
+      // Use server action
+      const result = await createProjectAction(formDataToSend)
       
-      if (response.ok && result.success && result.project) {
-        setNotification({ 
-          type: 'success', 
-          message: 'Project published successfully! Redirecting to project page...' 
-        })
+      if (result.success && result.project) {
+        showNotification('success', 'Project Created!', 'Project published successfully! Redirecting to project page...')
         
         // Redirect to the project page after a short delay
         setTimeout(() => {
           router.push(`/projects/${result.project.id}`)
         }, 2000)
       } else {
-        setNotification({ 
-          type: 'error', 
-          message: result.error || 'Failed to publish project. Please try again.' 
-        })
+        showNotification('error', 'Creation Failed', result.error || 'Failed to publish project. Please try again.')
       }
     } catch (error) {
       console.error("Error creating project:", error)
-      setNotification({ 
-        type: 'error', 
-        message: error instanceof Error ? error.message : 'Failed to publish project. Please try again.' 
-      })
+      showNotification('error', 'Creation Failed', 'An unexpected error occurred. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -473,30 +447,6 @@ export default function NewProjectForm() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Notification */}
-      {notification && (
-        <div className={`p-4 rounded-lg border ${
-          notification.type === 'success' 
-            ? 'bg-green-50 border-green-200 text-green-800' 
-            : 'bg-red-50 border-red-200 text-red-800'
-        }`}>
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              {notification.type === 'success' && <CheckCircle className="h-5 w-5 text-green-400" />}
-              {notification.type === 'error' && <div className="h-5 w-5 text-red-400">✕</div>}
-            </div>
-            <div className="ml-3 flex-1">
-              <p className="text-sm font-medium">{notification.message}</p>
-            </div>
-            <button
-              onClick={() => setNotification(null)}
-              className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Authentication Warning */}
       {!user && (
@@ -916,6 +866,18 @@ export default function NewProjectForm() {
                     </div>
                   </div>
                   <div className="md:col-span-2">
+                    <div className="flex items-center space-x-2 mb-4">
+                      <input
+                        type="checkbox"
+                        id="projectLead"
+                        checked={newTeamMember.projectLead}
+                        onChange={(e) => setNewTeamMember((prev) => ({ ...prev, projectLead: e.target.checked }))}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <Label htmlFor="projectLead" className="text-sm font-medium">
+                        This person is the Project Lead
+                      </Label>
+                    </div>
                     <Button type="button" onClick={addTeamMember} className="w-full">
                       <Plus className="h-4 w-4 mr-2" />
                       Add Team Member
@@ -939,7 +901,14 @@ export default function NewProjectForm() {
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
-                            <h5 className="font-semibold">{member.name}</h5>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h5 className="font-semibold">{member.name}</h5>
+                              {member.projectLead && (
+                                <Badge variant="default" className="bg-green-100 text-green-800 text-xs">
+                                  Project Lead
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-sm text-blue-600">{member.role}</p>
                             {member.organization && (
                               <p className="text-sm text-muted-foreground">{member.organization}</p>

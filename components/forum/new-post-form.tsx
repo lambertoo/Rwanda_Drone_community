@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,6 +15,7 @@ import { X, Plus, Hash, AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import { createForumPostAction } from "@/lib/actions"
 import { useRouter } from "next/navigation"
 import { useNotification } from "@/components/ui/notification"
+import { useAuth } from "@/lib/auth-context"
 
 interface NewPostFormProps {
   categories: Array<{
@@ -52,42 +53,18 @@ export function NewPostForm({ categories, onCancel }: NewPostFormProps) {
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
-  const [user, setUser] = useState<any>(null)
+  const { user, loading } = useAuth()
   const { showNotification } = useNotification()
   const router = useRouter()
 
-  // Check user authentication on mount
-  useEffect(() => {
-    // Check both localStorage and cookies for user authentication
-    const userStr = localStorage.getItem("user")
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr)
-        setUser(user)
-      } catch (error) {
-        console.error("Error parsing user:", error)
-        setUser(null)
-      }
-    }
-    
-    // Also check if auth-token cookie exists
-    const hasAuthToken = document.cookie.includes('auth-token=')
-    if (!userStr && hasAuthToken) {
-      // If we have auth token but no user in localStorage, try to get user info
-      // This handles cases where the page was refreshed
-      fetch('/api/auth/me')
-        .then(response => response.json())
-        .then(data => {
-          if (data.user) {
-            setUser(data.user)
-            localStorage.setItem("user", JSON.stringify(data.user))
-          }
-        })
-        .catch(error => {
-          console.error("Error fetching user info:", error)
-        })
-    }
-  }, [])
+  // Show loading state while authentication is being checked
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
 
 
 

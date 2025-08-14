@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Bell, Search, LogOut, User, Settings, Shield, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
+import { useAuth } from "@/lib/auth-context"
 
 interface User {
   id: string
@@ -35,29 +36,11 @@ interface HeaderProps {
 
 export function Header({ onMobileMenuToggle }: HeaderProps) {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
-
-  useEffect(() => {
-    // Get user from localStorage (demo purposes)
-    const storedUser = localStorage.getItem("user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    }
-  }, [])
+  const { user, logout, loading } = useAuth()
 
   const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      })
-    } catch (error) {
-      console.error("Logout error:", error)
-    }
-    
-    // Clear local storage
-    localStorage.removeItem("user")
-    setUser(null)
+    await logout()
     router.push("/login")
   }
 
@@ -165,7 +148,11 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                 <span className="sr-only">Notifications</span>
               </Button>
 
-              {user ? (
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 animate-pulse bg-gray-200 rounded-full"></div>
+                </div>
+              ) : user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">

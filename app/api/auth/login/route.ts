@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { generateToken } from "@/lib/jwt"
+import { generateTokens, setSecureCookies } from "@/lib/jwt-utils"
 import { verifyPassword } from "@/lib/auth"
 import { userLoginSchema } from "@/lib/validation"
 import { authRateLimit } from "@/lib/rate-limit"
@@ -54,11 +54,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Account is blocked. Please contact an administrator." }, { status: 403 })
     }
 
-    // Generate JWT token
-    const token = generateToken({
+    // Generate JWT tokens
+    const tokens = generateTokens({
       userId: user.id,
       email: user.email,
-      username: user.username,
       role: user.role,
     })
 
@@ -84,19 +83,11 @@ export async function POST(request: NextRequest) {
         experience: user.experience,
         specializations: user.specializations,
         certifications: user.certifications,
-      },
-      token: token,
+      }
     })
 
-    // Set HTTP-only cookie with JWT token
-    response.cookies.set("auth-token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-    })
-
-    return response
+    // Set secure HTTP-only cookies with JWT tokens
+    return setSecureCookies(response, tokens)
   } catch (error) {
     console.error("Login error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
