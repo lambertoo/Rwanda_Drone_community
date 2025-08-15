@@ -153,7 +153,51 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
   // Fetch comments
   useEffect(() => {
-    if (project) {
+    if (project && isAuthenticated) {
+      const fetchComments = async () => {
+        try {
+          const response = await fetch(`/api/projects/${params.id}/comments`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.success) {
+              // Check like status for each comment and reply
+              const commentsWithLikes = await Promise.all(
+                data.comments.map(async (comment: Comment) => {
+                  // Check main comment like status
+                  const commentLikeResponse = await fetch(`/api/comments/${comment.id}/like/check`, {
+                    credentials: 'include'
+                  })
+                  const commentLikeData = commentLikeResponse.ok ? await commentLikeResponse.json() : { isLiked: false }
+                  
+                  // Check reply like status
+                  const repliesWithLikes = await Promise.all(
+                    comment.replies.map(async (reply: Comment) => {
+                      const replyLikeResponse = await fetch(`/api/comments/${reply.id}/like/check`, {
+                        credentials: 'include'
+                      })
+                      const replyLikeData = replyLikeResponse.ok ? await replyLikeResponse.json() : { isLiked: false }
+                      return { ...reply, isLiked: replyLikeData.isLiked }
+                    })
+                  )
+                  
+                  return {
+                    ...comment,
+                    isLiked: commentLikeData.isLiked,
+                    replies: repliesWithLikes
+                  }
+                })
+              )
+              
+              setComments(commentsWithLikes)
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching comments:', error)
+        }
+      }
+      fetchComments()
+    } else if (project) {
+      // If not authenticated, just fetch comments without like status
       const fetchComments = async () => {
         try {
           const response = await fetch(`/api/projects/${params.id}/comments`)
@@ -169,7 +213,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       }
       fetchComments()
     }
-  }, [project, params.id])
+  }, [project, params.id, isAuthenticated])
 
   // Handle project like
   const handleProjectLike = async () => {
@@ -200,6 +244,51 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     }
   }
 
+  // Refresh comments with like status
+  const refreshComments = async () => {
+    try {
+      const response = await fetch(`/api/projects/${params.id}/comments`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && isAuthenticated) {
+          // Check like status for each comment and reply
+          const commentsWithLikes = await Promise.all(
+            data.comments.map(async (comment: Comment) => {
+              // Check main comment like status
+              const commentLikeResponse = await fetch(`/api/comments/${comment.id}/like/check`, {
+                credentials: 'include'
+              })
+              const commentLikeData = commentLikeResponse.ok ? await commentLikeResponse.json() : { isLiked: false }
+              
+              // Check reply like status
+              const repliesWithLikes = await Promise.all(
+                comment.replies.map(async (reply: Comment) => {
+                  const replyLikeResponse = await fetch(`/api/comments/${reply.id}/like/check`, {
+                    credentials: 'include'
+                  })
+                  const replyLikeData = replyLikeResponse.ok ? await replyLikeResponse.json() : { isLiked: false }
+                  return { ...reply, isLiked: replyLikeData.isLiked }
+                })
+              )
+              
+              return {
+                ...comment,
+                isLiked: commentLikeData.isLiked,
+                replies: repliesWithLikes
+              }
+            })
+          )
+          
+          setComments(commentsWithLikes)
+        } else {
+          setComments(data.comments)
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing comments:', error)
+    }
+  }
+
   // Handle comment submission
   const handleCommentSubmit = async () => {
     if (!isAuthenticated) {
@@ -216,18 +305,28 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       const response = await fetch(`/api/projects/${params.id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
+        credentials: 'include',
+        body: JSON.stringify({
+          content: newComment.trim()
+        })
       })
 
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
-          setComments(prev => [data.comment, ...prev])
           setNewComment("")
+          // Refresh comments to get the new comment with proper structure
+          await refreshComments()
           alert("Comment posted successfully!")
+        } else {
+          alert(data.error || "Failed to post comment")
         }
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || "Failed to post comment")
       }
     } catch (error) {
+      console.error('Comment submission error:', error)
       alert("Failed to post comment")
     }
   }
@@ -250,7 +349,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          content: replyContent,
+          content: replyContent.trim(),
           parentId: parentId
         })
       })
@@ -258,17 +357,20 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
-          setComments(prev => prev.map(comment =>
-            comment.id === parentId
-              ? { ...comment, replies: [...comment.replies, data.comment] }
-              : comment
-          ))
           setReplyContent("")
           setReplyingTo(null)
+          // Refresh comments to get the new reply with proper structure
+          await refreshComments()
           alert("Reply posted successfully!")
+        } else {
+          alert(data.error || "Failed to post reply")
         }
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || "Failed to post reply")
       }
     } catch (error) {
+      console.error('Reply submission error:', error)
       alert("Failed to post reply")
     }
   }
@@ -305,8 +407,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               : comment
           ))
         }
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || "Failed to update like")
       }
     } catch (error) {
+      console.error('Comment like error:', error)
       alert("Failed to update like")
     }
   }
