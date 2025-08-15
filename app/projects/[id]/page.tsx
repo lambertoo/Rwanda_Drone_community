@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,10 +27,366 @@ import {
   Download,
   Eye,
   ThumbsUp,
-  MessageCircle
+  MessageCircle,
+  Loader2
 } from "lucide-react"
 
-export default function ProjectDetailPage() {
+interface Project {
+  id: string
+  title: string
+  description: string
+  fullDescription?: string
+  status: 'planning' | 'in_progress' | 'completed' | 'on_hold' | 'cancelled'
+  location?: string
+  duration?: string
+  startDate?: string
+  endDate?: string
+  funding?: string
+  technologies?: any[]
+  objectives?: any[]
+  challenges?: any[]
+  outcomes?: any[]
+  methodology?: string
+  results?: string
+  teamMembers?: any[]
+  gallery?: any[]
+  resources?: any[]
+  thumbnail?: string
+  viewsCount: number
+  likesCount: number
+  createdAt: string
+  updatedAt: string
+  author: {
+    id: string
+    fullName: string
+    avatar?: string
+    role: string
+  }
+  category?: {
+    id: string
+    name: string
+    color: string
+    icon: string
+  }
+}
+
+interface Comment {
+  id: string
+  content: string
+  author: {
+    id: string
+    username: string
+    fullName: string
+    avatar?: string
+    role: string
+  }
+  createdAt: string
+  likesCount: number
+  replies: Comment[]
+  isLiked?: boolean
+}
+
+export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+  const [project, setProject] = useState<Project | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [comments, setComments] = useState<Comment[]>([])
+  const [newComment, setNewComment] = useState("")
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyContent, setReplyContent] = useState("")
+  const [user, setUser] = useState<any>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLiked, setIsLiked] = useState(false)
+
+  // Check if user is logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/profile', {
+          credentials: 'include'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setUser(data.user)
+          setIsAuthenticated(true)
+        }
+      } catch (error) {
+        console.log('User not authenticated')
+      }
+    }
+    checkAuth()
+  }, [])
+
+  // Fetch project data
+  useEffect(() => {
+    const fetchProject = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch(`/api/projects/${params.id}`)
+        
+        if (response.ok) {
+          const data = await response.json()
+          setProject(data)
+          
+          // Check if user has liked this project
+          if (isAuthenticated) {
+            const likeResponse = await fetch(`/api/projects/${params.id}/like/check`, {
+              credentials: 'include'
+            })
+            if (likeResponse.ok) {
+              const likeData = await likeResponse.json()
+              setIsLiked(likeData.isLiked)
+            }
+          }
+        } else {
+          setError(`Failed to fetch project: ${response.statusText}`)
+        }
+      } catch (error) {
+        console.error('Fetch error:', error)
+        setError(`Fetch error: ${error}`)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProject()
+  }, [params.id, isAuthenticated])
+
+  // Fetch comments
+  useEffect(() => {
+    if (project) {
+      const fetchComments = async () => {
+        try {
+          const response = await fetch(`/api/projects/${params.id}/comments`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.success) {
+              setComments(data.comments)
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching comments:', error)
+        }
+      }
+      fetchComments()
+    }
+  }, [project, params.id])
+
+  // Handle project like
+  const handleProjectLike = async () => {
+    if (!isAuthenticated) {
+      window.location.href = '/login'
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${params.id}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setIsLiked(data.isLiked)
+        if (project) {
+          setProject(prev => prev ? {
+            ...prev,
+            likesCount: data.isLiked ? prev.likesCount + 1 : prev.likesCount - 1
+          } : null)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update like:', error)
+    }
+  }
+
+  // Handle comment submission
+  const handleCommentSubmit = async () => {
+    if (!isAuthenticated) {
+      window.location.href = '/login'
+      return
+    }
+
+    if (!newComment.trim()) {
+      alert("Please enter a comment")
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${params.id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setComments(prev => [data.comment, ...prev])
+          setNewComment("")
+          alert("Comment posted successfully!")
+        }
+      }
+    } catch (error) {
+      alert("Failed to post comment")
+    }
+  }
+
+  // Handle reply submission
+  const handleReplySubmit = async (parentId: string) => {
+    if (!isAuthenticated) {
+      window.location.href = '/login'
+      return
+    }
+
+    if (!replyContent.trim()) {
+      alert("Please enter a reply")
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${params.id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          content: replyContent,
+          parentId: parentId
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setComments(prev => prev.map(comment =>
+            comment.id === parentId
+              ? { ...comment, replies: [...comment.replies, data.comment] }
+              : comment
+          ))
+          setReplyContent("")
+          setReplyingTo(null)
+          alert("Reply posted successfully!")
+        }
+      }
+    } catch (error) {
+      alert("Failed to post reply")
+    }
+  }
+
+  // Handle comment like
+  const handleCommentLike = async (commentId: string, isReply = false) => {
+    if (!isAuthenticated) {
+      window.location.href = '/login'
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/comments/${commentId}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (isReply) {
+          setComments(prev => prev.map(comment => ({
+            ...comment,
+            replies: comment.replies.map(reply =>
+              reply.id === commentId
+                ? { ...reply, isLiked: data.isLiked, likesCount: data.likesCount }
+                : reply
+            )
+          })))
+        } else {
+          setComments(prev => prev.map(comment =>
+            comment.id === commentId
+              ? { ...comment, isLiked: data.isLiked, likesCount: data.likesCount }
+              : comment
+          ))
+        }
+      }
+    } catch (error) {
+      alert("Failed to update like")
+    }
+  }
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+
+    if (diffInHours < 1) return "Just now"
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`
+    if (diffInHours < 48) return "Yesterday"
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  // Get status badge variant
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'default'
+      case 'in_progress':
+        return 'secondary'
+      case 'planning':
+        return 'outline'
+      case 'on_hold':
+        return 'destructive'
+      case 'cancelled':
+        return 'destructive'
+      default:
+        return 'outline'
+    }
+  }
+
+  // Get status color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-500/80 text-white border-green-400/50 hover:bg-green-500'
+      case 'in_progress':
+        return 'bg-blue-500/80 text-white border-blue-400/50 hover:bg-blue-500'
+      case 'planning':
+        return 'bg-yellow-500/80 text-white border-yellow-400/50 hover:bg-yellow-500'
+      case 'on_hold':
+        return 'bg-orange-500/80 text-white border-orange-400/50 hover:bg-orange-500'
+      case 'cancelled':
+        return 'bg-red-500/80 text-white border-red-400/50 hover:bg-red-500'
+      default:
+        return 'bg-gray-500/80 text-white border-gray-400/50 hover:bg-gray-500'
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Loader2 className="animate-spin h-12 w-12 text-primary" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !project) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center py-8">
+            <h1 className="text-2xl font-bold text-red-600">Error</h1>
+            <p className="text-muted-foreground mt-2">{error || 'Project not found'}</p>
+            <Link href="/projects" className="mt-4 inline-block">
+              <Button>Back to Projects</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-6xl mx-auto">
@@ -45,7 +402,9 @@ export default function ProjectDetailPage() {
           <div 
             className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-gradient-to-br from-green-800 to-blue-900"
             style={{
-              backgroundImage: "url('https://images.unsplash.com/photo-1581094794329-c8112a89af12?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')",
+              backgroundImage: project.thumbnail 
+                ? `url('${project.thumbnail}')`
+                : "url('https://images.unsplash.com/photo-1581094794329-c8112a89af12?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')",
               filter: "brightness(0.3)"
             }}
           />
@@ -56,32 +415,38 @@ export default function ProjectDetailPage() {
           {/* Content */}
           <div className="relative z-10 p-8 text-white">
             <div className="flex items-center gap-2 mb-4">
-              <Badge variant="secondary" className="text-sm bg-white/20 text-white border-white/30 hover:bg-white/30">
-                Agriculture
-              </Badge>
-              <Badge variant="default" className="bg-green-500/80 text-white border-green-400/50 hover:bg-green-500">
-                Completed
+              {project.category && (
+                <Badge variant="secondary" className="text-sm bg-white/20 text-white border-white/30 hover:bg-white/30">
+                  {project.category.icon} {project.category.name}
+                </Badge>
+              )}
+              <Badge className={`${getStatusColor(project.status)}`}>
+                {project.status.replace('_', ' ').charAt(0).toUpperCase() + project.status.replace('_', ' ').slice(1)}
               </Badge>
             </div>
 
-            <h1 className="text-4xl font-bold mb-4 text-white">Agricultural Monitoring System - Musanze District</h1>
+            <h1 className="text-4xl font-bold mb-4 text-white">{project.title}</h1>
             <p className="text-xl text-white/90 mb-6 max-w-3xl">
-              Comprehensive drone-based crop monitoring and analysis system for smallholder farmers in Musanze District, focusing on potato and maize cultivation optimization.
+              {project.description}
             </p>
 
             {/* Project Stats */}
             <div className="flex items-center gap-6 text-sm text-white/80 mb-6">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-white/80" />
-                <span>January 2024 - June 2024</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-white/80" />
-                <span>Musanze District, Rwanda</span>
-              </div>
+              {project.startDate && project.endDate && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-white/80" />
+                  <span>{project.startDate} - {project.endDate}</span>
+                </div>
+              )}
+              {project.location && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-white/80" />
+                  <span>{project.location}</span>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-white/80" />
-                <span>Led by Dr. Agnes Mukamana</span>
+                <span>Led by {project.author.fullName}</span>
               </div>
             </div>
 
@@ -89,26 +454,29 @@ export default function ProjectDetailPage() {
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <Eye className="h-4 w-4 text-white/80" />
-                <span className="font-semibold text-white">1234</span>
+                <span className="font-semibold text-white">{project.viewsCount}</span>
                 <span className="text-white/80">views</span>
               </div>
               <div className="flex items-center gap-2">
                 <Heart className="h-4 w-4 text-white/80" />
-                <span className="font-semibold text-white">89</span>
+                <span className="font-semibold text-white">{project.likesCount}</span>
                 <span className="text-white/80">likes</span>
               </div>
               <div className="flex items-center gap-2">
                 <MessageCircle className="h-4 w-4 text-white/80" />
-                <span className="font-semibold text-white">23</span>
+                <span className="font-semibold text-white">{comments.length}</span>
                 <span className="text-white/80">comments</span>
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="flex gap-3 mt-6">
-              <Button className="bg-white/20 text-white border-white/30 hover:bg-white/30 hover:text-white">
-                <Heart className="h-4 w-4 mr-2" />
-                Like
+              <Button 
+                className={`${isLiked ? 'bg-red-500 hover:bg-red-600' : 'bg-white/20 hover:bg-white/30'} text-white border-white/30`}
+                onClick={handleProjectLike}
+              >
+                <Heart className={`h-4 w-4 mr-2 ${isLiked ? 'fill-current' : ''}`} />
+                {isLiked ? 'Liked' : 'Like'}
               </Button>
               <Button variant="outline" className="text-white border-white/30 hover:bg-white/20 hover:text-white">
                 <Share2 className="h-4 w-4 mr-2" />
@@ -124,13 +492,13 @@ export default function ProjectDetailPage() {
           <div className="lg:col-span-3">
             {/* Tabs */}
             <Tabs defaultValue="overview" className="mb-6">
-                          <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="methodology">Methodology</TabsTrigger>
-              <TabsTrigger value="results">Results</TabsTrigger>
-              <TabsTrigger value="team">Team</TabsTrigger>
-              <TabsTrigger value="gallery">Gallery</TabsTrigger>
-            </TabsList>
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="methodology">Methodology</TabsTrigger>
+                <TabsTrigger value="results">Results</TabsTrigger>
+                <TabsTrigger value="team">Team</TabsTrigger>
+                <TabsTrigger value="gallery">Gallery</TabsTrigger>
+              </TabsList>
 
               <TabsContent value="overview" className="space-y-6">
                 <Card>
@@ -139,131 +507,79 @@ export default function ProjectDetailPage() {
                   </CardHeader>
                   <CardContent className="prose max-w-none">
                     <p className="text-muted-foreground mb-6">
-                      The Agricultural Monitoring System project represents a groundbreaking initiative to revolutionize farming practices in Rwanda's Musanze District through advanced drone technology and precision agriculture techniques.
+                      {project.fullDescription || project.description}
                     </p>
 
                     <div className="space-y-6">
-                      <div>
-                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                          <Target className="h-5 w-5 text-blue-500" />
-                          Primary Goals
-                        </h3>
-                        <ul className="space-y-2 ml-6">
-                          <li className="flex items-center gap-2">
-                            <span className="text-green-500">•</span>
-                            Implement comprehensive crop monitoring system using drone technology
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <span className="text-green-500">•</span>
-                            Provide real-time data analytics to improve farming decisions
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <span className="text-green-500">•</span>
-                            Increase crop yields by 25% through precision agriculture
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <span className="text-green-500">•</span>
-                            Train local farmers in modern agricultural techniques
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <span className="text-green-500">•</span>
-                            Establish sustainable monitoring protocols
-                          </li>
-                        </ul>
-                      </div>
-
-                      <div>
-                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                          <Users className="h-5 w-5 text-purple-500" />
-                          Project Scope
-                        </h3>
-                        <p className="mb-3">
-                          The project covers <strong>2,500 hectares</strong> of agricultural land across <strong>15 sectors</strong> in Musanze District, directly benefiting over <strong>1,200 smallholder farmers</strong>.
-                        </p>
-                        <ul className="space-y-2 ml-6">
-                          <li className="flex items-center gap-2">
-                            <span className="text-blue-500">•</span>
-                            <strong>Crop Health Monitoring:</strong> Regular aerial surveys to assess plant health, identify diseases, and monitor growth patterns
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <span className="text-blue-500">•</span>
-                            <strong>Soil Analysis:</strong> Multispectral imaging to analyze soil composition and moisture levels
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <span className="text-blue-500">•</span>
-                            <strong>Yield Prediction:</strong> AI-powered analytics to forecast harvest yields and optimize planning
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <span className="text-blue-500">•</span>
-                            <strong>Pest Detection:</strong> Early identification of pest infestations and disease outbreaks
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <span className="text-blue-500">•</span>
-                            <strong>Irrigation Optimization:</strong> Water usage analysis and irrigation scheduling recommendations
-                          </li>
-                        </ul>
-                      </div>
-
-                      <div>
-                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                          <Code className="h-5 w-5 text-orange-500" />
-                          Technology Stack
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <h4 className="font-medium mb-2">Hardware</h4>
-                            <ul className="space-y-1 text-sm">
-                              <li>• 12x DJI Matrice 300 RTK drones</li>
-                              <li>• Multispectral cameras (MicaSense RedEdge-MX)</li>
-                              <li>• Thermal imaging sensors</li>
-                              <li>• Ground control stations</li>
-                              <li>• Weather monitoring equipment</li>
-                            </ul>
-                          </div>
-                          <div>
-                            <h4 className="font-medium mb-2">Software</h4>
-                            <ul className="space-y-1 text-sm">
-                              <li>• Custom data processing pipeline</li>
-                              <li>• Machine learning models for crop analysis</li>
-                              <li>• Li>• Web-based dashboard for administrators</li>
-                              <li>• Integration with existing agricultural databases</li>
-                            </ul>
-                          </div>
+                      {project.objectives && project.objectives.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                            <Target className="h-5 w-5 text-blue-500" />
+                            Primary Goals
+                          </h3>
+                          <ul className="space-y-2 ml-6">
+                            {project.objectives.map((objective: string, index: number) => (
+                              <li key={index} className="flex items-center gap-2">
+                                <span className="text-green-500">•</span>
+                                {objective}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                      </div>
+                      )}
 
-                      <div>
-                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                          <Trophy className="h-5 w-5 text-yellow-500" />
-                          Impact Metrics
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm">Crop Yield Increase</span>
-                              <Badge variant="default" className="bg-green-100 text-green-800">28%</Badge>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm">Water Efficiency</span>
-                              <Badge variant="default" className="bg-blue-100 text-blue-800">35%</Badge>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm">Early Detection</span>
-                              <Badge variant="default" className="bg-purple-100 text-purple-800">90%</Badge>
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm">Farmer Adoption</span>
-                              <Badge variant="default" className="bg-indigo-100 text-indigo-800">85%</Badge>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm">Cost Reduction</span>
-                              <Badge variant="default" className="bg-orange-100 text-orange-800">20%</Badge>
+                      {project.technologies && project.technologies.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                            <Code className="h-5 w-5 text-orange-500" />
+                            Technology Stack
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <h4 className="font-medium mb-2">Technologies Used</h4>
+                              <ul className="space-y-1 text-sm">
+                                {project.technologies.map((tech: string, index: number) => (
+                                  <li key={index}>• {tech}</li>
+                                ))}
+                              </ul>
                             </div>
                           </div>
                         </div>
-                      </div>
+                      )}
+
+                      {project.challenges && project.challenges.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-red-500" />
+                            Challenges Faced
+                          </h3>
+                          <ul className="space-y-2 ml-6">
+                            {project.challenges.map((challenge: string, index: number) => (
+                              <li key={index} className="flex items-center gap-2">
+                                <span className="text-red-500">•</span>
+                                {challenge}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {project.outcomes && project.outcomes.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                            <Trophy className="h-5 w-5 text-yellow-500" />
+                            Key Outcomes
+                          </h3>
+                          <ul className="space-y-2 ml-6">
+                            {project.outcomes.map((outcome: string, index: number) => (
+                              <li key={index} className="flex items-center gap-2">
+                                <span className="text-yellow-500">•</span>
+                                {outcome}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -272,49 +588,16 @@ export default function ProjectDetailPage() {
               <TabsContent value="methodology" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Project Methodology</CardTitle>
+                    <CardTitle>Methodology</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-6">
-                      <div>
-                        <h3 className="text-lg font-semibold mb-3">Phase 1: Planning & Setup</h3>
-                        <p className="text-muted-foreground mb-3">
-                          Initial project planning, stakeholder engagement, and technical infrastructure setup.
-                        </p>
-                        <ul className="space-y-2 ml-6">
-                          <li>• Stakeholder mapping and engagement</li>
-                          <li>• Technical requirements analysis</li>
-                          <li>• Drone fleet procurement and setup</li>
-                          <li>• Training program development</li>
-                        </ul>
+                    {project.methodology ? (
+                      <div className="prose max-w-none">
+                        {project.methodology}
                       </div>
-
-                      <div>
-                        <h3 className="text-lg font-semibold mb-3">Phase 2: Implementation</h3>
-                        <p className="text-muted-foreground mb-3">
-                          Core project implementation including drone operations, data collection, and farmer training.
-                        </p>
-                        <ul className="space-y-2 ml-6">
-                          <li>• Drone flight operations and data collection</li>
-                          <li>• Data processing and analysis</li>
-                          <li>• Farmer training and capacity building</li>
-                          <li>• Continuous monitoring and optimization</li>
-                        </ul>
-                      </div>
-
-                      <div>
-                        <h3 className="text-lg font-semibold mb-3">Phase 3: Evaluation & Scaling</h3>
-                        <p className="text-muted-foreground mb-3">
-                          Project evaluation, impact assessment, and preparation for scaling to other districts.
-                        </p>
-                        <ul className="space-y-2 ml-6">
-                          <li>• Impact assessment and evaluation</li>
-                          <li>• Knowledge sharing and documentation</li>
-                          <li>• Scaling strategy development</li>
-                          <li>• Sustainability planning</li>
-                        </ul>
-                      </div>
-                    </div>
+                    ) : (
+                      <p className="text-muted-foreground">Methodology details not available.</p>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -322,43 +605,16 @@ export default function ProjectDetailPage() {
               <TabsContent value="results" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Project Results</CardTitle>
+                    <CardTitle>Results</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-6">
-                      <div>
-                        <h3 className="text-lg font-semibold mb-3">Quantitative Results</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="p-4 border rounded-lg">
-                            <div className="text-2xl font-bold text-green-600">28%</div>
-                            <div className="text-sm text-muted-foreground">Average increase in potato yields</div>
-                          </div>
-                          <div className="p-4 border rounded-lg">
-                            <div className="text-2xl font-bold text-blue-600">35%</div>
-                            <div className="text-sm text-muted-foreground">Reduction in water usage</div>
-                          </div>
-                          <div className="p-4 border rounded-lg">
-                            <div className="text-2xl font-bold text-purple-600">90%</div>
-                            <div className="text-sm text-muted-foreground">Success rate in early pest detection</div>
-                          </div>
-                          <div className="p-4 border rounded-lg">
-                            <div className="text-2xl font-bold text-orange-600">1,200+</div>
-                            <div className="text-sm text-muted-foreground">Farmers directly benefited</div>
-                          </div>
-                        </div>
+                    {project.results ? (
+                      <div className="prose max-w-none">
+                        {project.results}
                       </div>
-
-                      <div>
-                        <h3 className="text-lg font-semibold mb-3">Qualitative Results</h3>
-                        <ul className="space-y-2 ml-6">
-                          <li>• Improved farmer knowledge and skills in modern agriculture</li>
-                          <li>• Enhanced community engagement and collaboration</li>
-                          <li>• Established sustainable monitoring protocols</li>
-                          <li>• Created employment opportunities for local drone operators</li>
-                          <li>• Built strong partnerships with agricultural cooperatives</li>
-                        </ul>
-                      </div>
-                    </div>
+                    ) : (
+                      <p className="text-muted-foreground">Results not available.</p>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -366,112 +622,27 @@ export default function ProjectDetailPage() {
               <TabsContent value="team" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Project Team</CardTitle>
+                    <CardTitle>Team Members</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-6">
-                      {/* Project Lead */}
-                      <div className="border-b pb-6">
-                        <h3 className="text-lg font-semibold mb-4 text-green-600">Project Lead</h3>
-                        <div className="flex items-center gap-4 p-4 border rounded-lg bg-green-50">
-                          <Avatar className="h-16 w-16">
-                            <AvatarImage src="/placeholder.svg" alt="Dr. Agnes Mukamana" />
-                            <AvatarFallback>AM</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <h4 className="text-xl font-semibold">Dr. Agnes Mukamana</h4>
-                            <p className="text-lg text-muted-foreground mb-2">Project Lead & Agricultural Expert</p>
-                            <p className="text-sm text-muted-foreground mb-3">University of Rwanda - Agriculture</p>
-                            <div className="flex items-center gap-4">
-                              <div className="flex items-center gap-1">
-                                <Star className="h-4 w-4 fill-current text-yellow-400" />
-                                <span className="text-sm text-muted-foreground">4.9 (12 projects)</span>
-                              </div>
-                              <Badge variant="default" className="bg-green-100 text-green-800">Lead</Badge>
+                    {project.teamMembers && project.teamMembers.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {project.teamMembers.map((member: any, index: number) => (
+                          <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={member.avatar || "/placeholder.svg"} alt={member.name} />
+                              <AvatarFallback>{member.name?.charAt(0) || "T"}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{member.name}</p>
+                              <p className="text-sm text-muted-foreground">{member.role}</p>
                             </div>
                           </div>
-                        </div>
+                        ))}
                       </div>
-
-                      {/* Core Team */}
-                      <div>
-                        <h3 className="text-lg font-semibold mb-4 text-blue-600">Core Team</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="flex items-center gap-4 p-4 border rounded-lg">
-                            <Avatar className="h-12 w-12">
-                              <AvatarImage src="/placeholder.svg" alt="Drone Engineer" />
-                              <AvatarFallback>DE</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <h4 className="font-semibold">Sarah Mukamana</h4>
-                              <p className="text-sm text-muted-foreground">Drone Engineer & Pilot</p>
-                              <p className="text-xs text-muted-foreground">Rwanda Drone Academy</p>
-                              <Badge variant="outline" className="mt-1">Drone Operations</Badge>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-4 p-4 border rounded-lg">
-                            <Avatar className="h-12 w-12">
-                              <AvatarImage src="/placeholder.svg" alt="Software Developer" />
-                              <AvatarFallback>SD</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <h4 className="font-semibold">Eric Niyonsenga</h4>
-                              <p className="text-sm text-muted-foreground">Software Developer & AI Specialist</p>
-                              <p className="text-xs text-muted-foreground">Kigali Innovation Hub</p>
-                              <Badge variant="outline" className="mt-1">AI & Software</Badge>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-4 p-4 border rounded-lg">
-                            <Avatar className="h-12 w-12">
-                              <AvatarImage src="/placeholder.svg" alt="Data Analyst" />
-                              <AvatarFallback>DA</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <h4 className="font-semibold">Marie Uwimana</h4>
-                              <p className="text-sm text-muted-foreground">Data Analyst & Researcher</p>
-                              <p className="text-xs text-muted-foreground">Rwanda Agriculture Board</p>
-                              <Badge variant="outline" className="mt-1">Data Analysis</Badge>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-4 p-4 border rounded-lg">
-                            <Avatar className="h-12 w-12">
-                              <AvatarImage src="/placeholder.svg" alt="Field Coordinator" />
-                              <AvatarFallback>FC</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <h4 className="font-semibold">Jean Pierre Habimana</h4>
-                              <p className="text-sm text-muted-foreground">Field Coordinator</p>
-                              <p className="text-xs text-muted-foreground">Musanze District Office</p>
-                              <Badge variant="outline" className="mt-1">Field Operations</Badge>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-
-
-                      {/* Team Stats */}
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h3 className="text-lg font-semibold mb-3">Team Statistics</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                          <div>
-                            <div className="text-2xl font-bold text-blue-600">6</div>
-                            <div className="text-sm text-muted-foreground">Core Members</div>
-                          </div>
-                          <div>
-                            <div className="text-2xl font-bold text-purple-600">15+</div>
-                            <div className="text-sm text-muted-foreground">Years Experience</div>
-                          </div>
-                          <div>
-                            <div className="text-2xl font-bold text-orange-600">8</div>
-                            <div className="text-sm text-muted-foreground">Institutions</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    ) : (
+                      <p className="text-muted-foreground">Team information not available.</p>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -479,13 +650,24 @@ export default function ProjectDetailPage() {
               <TabsContent value="gallery" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Project Gallery</CardTitle>
+                    <CardTitle>Gallery</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-center py-12 text-muted-foreground">
-                      <ImageIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>Project images and videos coming soon...</p>
-                    </div>
+                    {project.gallery && project.gallery.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {project.gallery.map((image: any, index: number) => (
+                          <div key={index} className="aspect-square rounded-lg overflow-hidden">
+                            <img 
+                              src={image.url || image} 
+                              alt={image.caption || `Project image ${index + 1}`}
+                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">Gallery images not available.</p>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -497,7 +679,7 @@ export default function ProjectDetailPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MessageCircle className="h-5 w-5" />
-                    Comments & Discussion
+                    Comments & Discussion ({comments.length})
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     Share your thoughts, ask questions, or discuss this project with the community.
@@ -508,191 +690,220 @@ export default function ProjectDetailPage() {
                   <div className="mb-6 p-4 border rounded-lg">
                     <div className="flex items-start gap-3">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage src="/placeholder.svg" alt="User" />
-                        <AvatarFallback>U</AvatarFallback>
+                        <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.fullName || "User"} />
+                        <AvatarFallback>{user?.fullName ? user.fullName.split(" ").map((n: string) => n[0]).join("") : "U"}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <textarea
-                          placeholder="Write a comment..."
-                          className="w-full p-3 border rounded-lg resize-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                          rows={3}
-                        />
-                        <div className="flex justify-between items-center mt-3">
-                          <div className="text-sm text-muted-foreground">
-                            Press Ctrl+Enter to submit
+                        {!isAuthenticated ? (
+                          <div className="text-center py-4">
+                            <p className="text-muted-foreground mb-3">Please log in to comment</p>
+                            <Link href="/login">
+                              <Button size="sm">Login to Comment</Button>
+                            </Link>
                           </div>
-                          <Button size="sm">
-                            <MessageSquare className="h-4 w-4 mr-2" />
-                            Post Comment
-                          </Button>
-                        </div>
+                        ) : (
+                          <>
+                            <textarea
+                              value={newComment}
+                              onChange={(e) => setNewComment(e.target.value)}
+                              placeholder="Write a comment..."
+                              className="w-full p-3 border rounded-lg resize-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                              rows={3}
+                            />
+                            <div className="flex justify-between items-center mt-3">
+                              <div className="text-sm text-muted-foreground">
+                                Press Ctrl+Enter to submit
+                              </div>
+                              <Button onClick={handleCommentSubmit} size="sm">
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                Post Comment
+                              </Button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   {/* Comments List */}
                   <div className="space-y-4">
-                    <div className="flex items-start gap-3 p-4 border rounded-lg">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="/placeholder.svg" alt="User" />
-                        <AvatarFallback>JD</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="font-medium text-sm">John Doe</span>
-                          <span className="text-xs text-muted-foreground">2 hours ago</span>
-                          <Badge variant="outline" className="text-xs">Project Lead</Badge>
-                        </div>
-                        <p className="text-sm mb-2">
-                          This is an excellent project! The use of drone technology for agricultural monitoring is really innovative. 
-                          I'm particularly impressed with the 28% yield increase achieved.
-                        </p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <button className="flex items-center gap-1 hover:text-primary">
-                            <ThumbsUp className="h-3 w-3" />
-                            Like (5)
-                          </button>
-                          <button className="flex items-center gap-1 hover:text-primary">
-                            <MessageSquare className="h-3 w-3" />
-                            Reply
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                    {comments.length > 0 ? (
+                      comments.map((comment) => (
+                        <div key={comment.id} className="flex items-start gap-3 p-4 border rounded-lg">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={comment.author.avatar || "/placeholder.svg"} alt={comment.author.fullName} />
+                            <AvatarFallback>
+                              {comment.author.fullName.split(" ").map((n: string) => n[0]).join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="font-medium text-sm">{comment.author.fullName}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDate(comment.createdAt)}
+                              </span>
+                              {comment.author.role === 'admin' && (
+                                <Badge variant="outline" className="text-xs">Admin</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm mb-2">{comment.content}</p>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              <button
+                                onClick={() => handleCommentLike(comment.id)}
+                                className={`flex items-center gap-1 hover:text-primary ${comment.isLiked ? 'text-primary' : ''}`}
+                              >
+                                <ThumbsUp className={`h-3 w-3 ${comment.isLiked ? 'fill-current' : ''}`} />
+                                Like ({comment.likesCount})
+                              </button>
+                              <button
+                                onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                                className="flex items-center gap-1 hover:text-primary"
+                              >
+                                <MessageSquare className="h-3 w-3" />
+                                Reply
+                              </button>
+                            </div>
 
-                    <div className="flex items-start gap-3 p-4 border rounded-lg ml-8">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src="/placeholder.svg" alt="User" />
-                        <AvatarFallback>JS</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="font-medium text-sm">Jane Smith</span>
-                          <span className="text-xs text-muted-foreground">1 hour ago</span>
-                        </div>
-                        <p className="text-sm mb-2">
-                          Great response! I'd love to learn more about the AI models used for crop analysis. 
-                          Are there plans to make this technology available to other districts?
-                        </p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <button className="flex items-center gap-1 hover:text-primary">
-                            <ThumbsUp className="h-3 w-3" />
-                            Like (2)
-                          </button>
-                          <button className="flex items-center gap-1 hover:text-primary">
-                            <MessageSquare className="h-3 w-3" />
-                            Reply
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                            {/* Reply Form */}
+                            {replyingTo === comment.id && (
+                              <div className="mt-3 p-3 border rounded-lg bg-gray-50">
+                                <div className="flex items-start gap-2">
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.fullName || "User"} />
+                                    <AvatarFallback>{user?.fullName ? user.fullName.split(" ").map((n: string) => n[0]).join("") : "U"}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1">
+                                    <textarea
+                                      value={replyContent}
+                                      onChange={(e) => setReplyContent(e.target.value)}
+                                      placeholder="Write a reply..."
+                                      className="w-full p-2 border rounded-lg resize-none text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
+                                      rows={2}
+                                    />
+                                    <div className="flex justify-between items-center mt-2">
+                                      <Button
+                                        onClick={() => handleReplySubmit(comment.id)}
+                                        size="sm"
+                                        className="h-7 px-2 text-xs"
+                                      >
+                                        Reply
+                                      </Button>
+                                      <Button
+                                        onClick={() => setReplyingTo(null)}
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-7 px-2 text-xs"
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
 
-                    <div className="flex items-start gap-3 p-4 border rounded-lg">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="/placeholder.svg" alt="User" />
-                        <AvatarFallback>MK</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="font-medium text-sm">Mike Johnson</span>
-                          <span className="text-xs text-muted-foreground">30 minutes ago</span>
+                            {/* Replies */}
+                            {comment.replies.length > 0 && (
+                              <div className="mt-3 space-y-3">
+                                {comment.replies.map((reply) => (
+                                  <div key={reply.id} className="flex items-start gap-3 p-3 border rounded-lg ml-8 bg-gray-50">
+                                    <Avatar className="h-6 w-6">
+                                      <AvatarImage src={reply.author.avatar || "/placeholder.svg"} alt={reply.author.fullName} />
+                                      <AvatarFallback>
+                                        {reply.author.fullName.split(" ").map((n: string) => n[0]).join("")}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <span className="font-medium text-sm">{reply.author.fullName}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {formatDate(reply.createdAt)}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm mb-2">{reply.content}</p>
+                                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                        <button
+                                          onClick={() => handleCommentLike(reply.id, true)}
+                                          className={`flex items-center gap-1 hover:text-primary ${reply.isLiked ? 'text-primary' : ''}`}
+                                        >
+                                          <ThumbsUp className={`h-3 w-3 ${reply.isLiked ? 'fill-current' : ''}`} />
+                                          Like ({reply.likesCount})
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-sm mb-2">
-                          The water efficiency improvements are impressive! 35% reduction is significant. 
-                          How did you handle the initial setup costs for the drone infrastructure?
-                        </p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <button className="flex items-center gap-1 hover:text-primary">
-                            <ThumbsUp className="h-3 w-3" />
-                            Like (1)
-                          </button>
-                          <button className="flex items-center gap-1 hover:text-primary">
-                            <MessageCircle className="h-3 w-3" />
-                            Reply
-                          </button>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No comments yet. Be the first to start the discussion!</p>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             </div>
           </div>
 
-          {/* Right Column - Project Resources */}
+          {/* Right Column - Project Resources & Info */}
           <div className="space-y-6">
-
             {/* Project Resources */}
+            {project.resources && project.resources.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Project Resources</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {project.resources.map((resource: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-blue-500" />
+                        <div>
+                          <p className="font-medium text-sm">{resource.name || `Resource ${index + 1}`}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {resource.size || 'Unknown size'} • {resource.type || 'File'} • {resource.downloads || 0} downloads
+                          </p>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Project Info */}
             <Card>
               <CardHeader>
-                <CardTitle>Project Resources</CardTitle>
+                <CardTitle>Project Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-blue-500" />
-                      <div>
-                        <p className="font-medium text-sm">Final Project Report</p>
-                        <p className="text-xs text-muted-foreground">12.3 MB • PDF • 89 downloads</p>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="outline">
-                      <Download className="h-4 w-4" />
-                    </Button>
+                {project.funding && (
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Funding: {project.funding}</span>
                   </div>
-
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-green-500" />
-                      <div>
-                        <p className="font-medium text-sm">Dataset - Crop Yield Analysis</p>
-                        <p className="text-xs text-muted-foreground">245 MB • CSV/ZIP • 34 downloads</p>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="outline">
-                      <Download className="h-4 w-4" />
-                    </Button>
+                )}
+                {project.duration && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Duration: {project.duration}</span>
                   </div>
-
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-purple-500" />
-                      <div>
-                        <p className="font-medium text-sm">Drone Flight Logs</p>
-                        <p className="text-xs text-muted-foreground">8.7 MB • JSON • 23 downloads</p>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="outline">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-orange-500" />
-                      <div>
-                        <p className="font-medium text-sm">Training Materials</p>
-                        <p className="text-xs text-muted-foreground">45 MB • PDF/PPT • 67 downloads</p>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="outline">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Code className="h-5 w-5 text-red-500" />
-                      <div>
-                        <p className="font-medium text-sm">Software Tools</p>
-                        <p className="text-xs text-muted-foreground">156 MB • APK/EXE • 45 downloads</p>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="outline">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">Created: {new Date(project.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">Author: {project.author.fullName}</span>
                 </div>
               </CardContent>
             </Card>
