@@ -7,18 +7,20 @@ services:
       dockerfile: Dockerfile.prod
     container_name: rwanda_drone_app_prod
     restart: unless-stopped
-    # Remove direct port exposure - only accessible through Nginx
-    # ports:
-    #   - "3000:3000"
+    env_file:
+      - docker.env
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@db:5432/rwanda_drone_community
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - JWT_SECRET=${JWT_SECRET}
       - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - DB_PASSWORD=${DB_PASSWORD}
     depends_on:
       db:
         condition: service_healthy
+      init-db:
+        condition: service_completed_successfully
     volumes:
       - app_uploads:/app/public/uploads
       - app_data:/app/data
@@ -35,15 +37,14 @@ services:
     image: postgres:15-alpine
     container_name: rwanda_drone_db_prod
     restart: unless-stopped
+    env_file:
+      - docker.env
     environment:
       - POSTGRES_DB=rwanda_drone_community
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # Remove direct database port exposure for security
-    # ports:
-    #   - "5432:5432"
     networks:
       - drone_network
     healthcheck:
@@ -51,6 +52,39 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  init-db:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: rwanda_drone_init_db
+    restart: "no"
+    env_file:
+      - docker.env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@db:5432/rwanda_drone_community
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - JWT_SECRET=${JWT_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - DB_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - app_data:/app/data
+    networks:
+      - drone_network
+    command: >
+      sh -c "
+        echo '🔄 Waiting for database to be ready...' &&
+        sleep 10 &&
+        echo '📊 Setting up database schema...' &&
+        npx prisma db push --force-reset &&
+        echo '👤 Creating admin user...' &&
+        node setup-admin-user.js &&
+        echo '✅ Database initialization completed!'
+      "
 
   nginx:
     image: nginx:alpine
