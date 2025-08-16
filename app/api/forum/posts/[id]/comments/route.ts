@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { getAuthenticatedUser } from "@/lib/auth-middleware"
 
 export async function GET(
   request: Request,
@@ -64,12 +65,21 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const { content, userId, parentId } = await request.json()
+    const { content, parentId } = await request.json()
 
-    if (!content || !userId) {
+    if (!content) {
       return NextResponse.json(
-        { error: 'Content and user ID are required' },
+        { error: 'Content is required' },
         { status: 400 }
+      )
+    }
+
+    // Get authenticated user from server-side
+    const user = await getAuthenticatedUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
       )
     }
 
@@ -78,7 +88,7 @@ export async function POST(
       data: {
         content,
         postId: id,
-        authorId: userId,
+        authorId: user.id,
         parentId: parentId || null
       },
       include: {

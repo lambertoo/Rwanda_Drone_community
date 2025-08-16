@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { getAuthenticatedUser } from "@/lib/auth-middleware"
 
 export async function POST(
   request: Request,
@@ -7,12 +8,13 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const { userId } = await request.json()
-
-    if (!userId) {
+    
+    // Get authenticated user from server-side
+    const user = await getAuthenticatedUser()
+    if (!user) {
       return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
+        { error: 'Authentication required' },
+        { status: 401 }
       )
     }
 
@@ -20,7 +22,7 @@ export async function POST(
     const existingLike = await prisma.forumPostLike.findUnique({
       where: {
         userId_postId: {
-          userId,
+          userId: user.id,
           postId: id
         }
       }
@@ -31,7 +33,7 @@ export async function POST(
       await prisma.forumPostLike.delete({
         where: {
           userId_postId: {
-            userId,
+            userId: user.id,
             postId: id
           }
         }
@@ -55,7 +57,7 @@ export async function POST(
       // Like the post
       await prisma.forumPostLike.create({
         data: {
-          userId,
+          userId: user.id,
           postId: id
         }
       })

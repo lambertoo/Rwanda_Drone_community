@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Heart, MessageSquare, Share2, Bookmark, Flag, ThumbsUp, Calendar, Eye, Send, Loader } from "lucide-react"
 import Link from "next/link"
 import { useNotification } from "@/components/ui/notification"
+import { useAuth } from "@/lib/auth-context"
 
 interface PageProps {
   params: Promise<{
@@ -28,31 +29,24 @@ export default function ForumPostPage({ params }: PageProps) {
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [isSubmittingReply, setIsSubmittingReply] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
   const [commentLikes, setCommentLikes] = useState<Record<string, boolean>>({})
   const { showNotification } = useNotification()
+  const { user, loading: authLoading } = useAuth()
 
   useEffect(() => {
     const initializePage = async () => {
       await fetchPost(postId)
       await fetchComments(postId)
       
-      // Get user from localStorage
-      const storedUser = localStorage.getItem("user")
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser)
-          setUser(userData)
-          await checkIfLiked(userData.id, postId)
-          await checkCommentLikes(userData.id, postId)
-        } catch (error) {
-          console.error("Error parsing user from localStorage:", error)
-        }
+      // Check likes after user is loaded
+      if (user && !authLoading) {
+        await checkIfLiked(postId)
+        await checkCommentLikes(postId)
       }
     }
     
     initializePage()
-  }, [postId])
+  }, [postId, user, authLoading])
 
   const fetchPost = async (postId: string) => {
     try {
@@ -82,9 +76,11 @@ export default function ForumPostPage({ params }: PageProps) {
     }
   }
 
-  const checkIfLiked = async (userId: string, postId: string) => {
+  const checkIfLiked = async (postId: string) => {
+    if (!user) return
+    
     try {
-      const response = await fetch(`/api/forum/posts/${postId}/like/check?userId=${userId}`)
+      const response = await fetch(`/api/forum/posts/${postId}/like/check`)
       if (response.ok) {
         const data = await response.json()
         setIsLiked(data.isLiked)
@@ -94,14 +90,13 @@ export default function ForumPostPage({ params }: PageProps) {
     }
   }
 
-  const checkCommentLikes = async (userId: string, postId: string) => {
+  const checkCommentLikes = async (postId: string) => {
+    if (!user || comments.length === 0) return
+    
     try {
-      // Only check likes if comments are loaded
-      if (comments.length === 0) return
-      
       const allComments = comments.flatMap(comment => [comment, ...(comment.replies || [])])
       const likePromises = allComments.map(comment =>
-        fetch(`/api/forum/comments/${comment.id}/like/check?userId=${userId}`)
+        fetch(`/api/forum/comments/${comment.id}/like/check`)
           .then(res => res.json())
           .then(data => ({ commentId: comment.id, isLiked: data.isLiked }))
       )
@@ -131,7 +126,6 @@ export default function ForumPostPage({ params }: PageProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ userId: user.id }),
       })
 
       if (response.ok) {
@@ -160,7 +154,7 @@ export default function ForumPostPage({ params }: PageProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ content: newComment, userId: user.id }),
+        body: JSON.stringify({ content: newComment }),
       })
 
       if (response.ok) {
@@ -194,7 +188,6 @@ export default function ForumPostPage({ params }: PageProps) {
         },
         body: JSON.stringify({ 
           content: replyContent,
-          userId: user.id,
           parentId: parentId
         }),
       })

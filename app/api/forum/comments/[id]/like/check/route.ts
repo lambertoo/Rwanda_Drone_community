@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { getAuthenticatedUser } from "@/lib/auth-middleware"
 
 export async function GET(
   request: Request,
@@ -7,13 +8,13 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-
-    if (!userId) {
+    
+    // Get authenticated user from server-side
+    const user = await getAuthenticatedUser()
+    if (!user) {
       return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
+        { error: 'Authentication required' },
+        { status: 401 }
       )
     }
 
@@ -21,7 +22,7 @@ export async function GET(
     const like = await prisma.forumCommentLike.findUnique({
       where: {
         userId_commentId: {
-          userId,
+          userId: user.id,
           commentId: id
         }
       }
