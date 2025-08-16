@@ -6,10 +6,11 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Heart, MessageSquare, Share2, Bookmark, Flag, ThumbsUp, Calendar, Eye, Send, Loader } from "lucide-react"
+import { ArrowLeft, Heart, MessageSquare, Share2, Bookmark, Flag, ThumbsUp, Calendar, Eye, Send, Loader, Edit, X } from "lucide-react"
 import Link from "next/link"
 import { useNotification } from "@/components/ui/notification"
 import { useAuth } from "@/lib/auth-context"
+import { EditPostForm } from "@/components/forum/edit-post-form"
 
 interface PageProps {
   params: Promise<{
@@ -30,6 +31,7 @@ export default function ForumPostPage({ params }: PageProps) {
   const [isSubmittingReply, setIsSubmittingReply] = useState(false)
   const [loading, setLoading] = useState(true)
   const [commentLikes, setCommentLikes] = useState<Record<string, boolean>>({})
+  const [isEditing, setIsEditing] = useState(false)
   const { showNotification } = useNotification()
   const { user, loading: authLoading } = useAuth()
 
@@ -217,7 +219,6 @@ export default function ForumPostPage({ params }: PageProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ userId: user.id }),
       })
 
       if (response.ok) {
@@ -264,6 +265,15 @@ export default function ForumPostPage({ params }: PageProps) {
       showNotification('success', 'Success', 'Link copied to clipboard!')
     }
   }
+
+  const handleEditSuccess = () => {
+    setIsEditing(false)
+    // Refresh the post data
+    fetchPost(postId)
+  }
+
+  // Check if user can edit the post
+  const canEdit = user && (user.id === post?.authorId || user.role === 'admin')
 
   // Helper function to format date
   const formatDate = (date: Date) => {
@@ -313,6 +323,33 @@ export default function ForumPostPage({ params }: PageProps) {
 
   // Handle tags - they are already JSON objects from the database
   const tags = Array.isArray(post.tags) ? post.tags : []
+
+  // If editing, show the edit form
+  if (isEditing) {
+    return (
+      <div className="space-y-6">
+        {/* Navigation */}
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setIsEditing(false)}
+            className="flex items-center gap-2 bg-transparent"
+          >
+            <X className="h-4 w-4" />
+            Cancel Edit
+          </Button>
+        </div>
+
+        {/* Edit Form */}
+        <EditPostForm
+          post={post}
+          onCancel={() => setIsEditing(false)}
+          onSuccess={handleEditSuccess}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -376,7 +413,7 @@ export default function ForumPostPage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* Post Stats */}
+            {/* Post Stats and Edit Button */}
             <div className="flex flex-col gap-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1">
@@ -392,6 +429,18 @@ export default function ForumPostPage({ params }: PageProps) {
                 <Calendar className="h-3 w-3" />
                 {formatDate(post.createdAt)}
               </div>
+              {/* Edit Button - Only visible to creator and admin */}
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-2 mt-2"
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit Post
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
