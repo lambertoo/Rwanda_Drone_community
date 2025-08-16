@@ -321,6 +321,8 @@ export async function createProjectAction(formData: FormData) {
     const startDate = (formData.get("startDate") as string)?.trim()
     const endDate = (formData.get("endDate") as string)?.trim()
     const funding = (formData.get("funding") as string)?.trim()
+    const methodology = (formData.get("methodology") as string)?.trim()
+    const results = (formData.get("results") as string)?.trim()
     const technologies = formData.get("technologies") as string
     const objectives = formData.get("objectives") as string
     const challenges = formData.get("challenges") as string
@@ -358,10 +360,10 @@ export async function createProjectAction(formData: FormData) {
       }
     }
 
-    if (description.length < 20) {
+    if (description.length < 10) {
       return { 
         success: false, 
-        error: "Project description must be at least 20 characters long. Please provide more details." 
+        error: "Project description must be at least 10 characters long. Please provide more details." 
       }
     }
 
@@ -500,6 +502,8 @@ export async function createProjectAction(formData: FormData) {
         startDate: startDate || null,
         endDate: endDate || null,
         funding: funding || null,
+        methodology: methodology || null,
+        results: results || null,
         technologies: parsedTechnologies,
         objectives: parsedObjectives,
         challenges: parsedChallenges,
