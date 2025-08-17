@@ -100,6 +100,7 @@ export default function NewProjectForm() {
     type: "file" as "file" | "link" | "video",
     url: "",
     file: null as File | null,
+    filePath: "", // Track the actual file path for moving
   })
 
   const [newGalleryItem, setNewGalleryItem] = useState({
@@ -304,10 +305,12 @@ export default function NewProjectForm() {
       }
       
       try {
-        // Upload file to server
+        // Upload file to server with proper structure
         const formData = new FormData()
         formData.append('file', file)
-        formData.append('type', 'resource')
+        formData.append('type', 'projects')
+        formData.append('entityId', 'projects')
+        formData.append('subfolder', 'resources')
         
         const response = await fetch('/api/upload', {
           method: 'POST',
@@ -319,7 +322,8 @@ export default function NewProjectForm() {
           setNewResource({ 
             ...newResource, 
             file: null, // Clear file input
-            url: result.fileUrl // Store the uploaded file URL
+            url: result.fileUrl, // Store the uploaded file URL
+            filePath: result.fileUrl // Store the file path
           })
         } else {
           const error = await response.json()
@@ -342,10 +346,12 @@ export default function NewProjectForm() {
       }
       
       try {
-        // Upload file to server
+        // Upload file to server with proper structure
         const formData = new FormData()
         formData.append('file', file)
-        formData.append('type', 'image')
+        formData.append('type', 'projects')
+        formData.append('entityId', 'projects')
+        formData.append('subfolder', 'images')
         
         const response = await fetch('/api/upload', {
           method: 'POST',
@@ -425,6 +431,8 @@ export default function NewProjectForm() {
       const result = await createProjectAction(formDataToSend)
       
       if (result.success && result.project) {
+        // Files are already uploaded to the correct project directory structure
+        
         showNotification('success', 'Project Created!', 'Project published successfully! Redirecting to project page...')
         
         // Redirect to the project page after a short delay
@@ -551,7 +559,9 @@ export default function NewProjectForm() {
                           try {
                             const formData = new FormData()
                             formData.append('file', file)
-                            formData.append('type', 'image')
+                            formData.append('type', 'projects')
+                            formData.append('entityId', 'projects')
+                            formData.append('subfolder', 'images')
                             
                             const response = await fetch('/api/upload', {
                               method: 'POST',
@@ -560,7 +570,7 @@ export default function NewProjectForm() {
                             
                             if (response.ok) {
                               const data = await response.json()
-                              setFormData(prev => ({ ...prev, thumbnail: data.url }))
+                              setFormData(prev => ({ ...prev, thumbnail: data.fileUrl }))
                             }
                           } catch (error) {
                             console.error('Error uploading thumbnail:', error)

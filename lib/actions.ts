@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { getAuthenticatedUser } from "@/lib/auth-middleware"
 import { canCreateProjects, canCreateServices, canPostOpportunities, canCreateEvents, canEditOwnContent, canDeleteAnyContent, getSession } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
+import { organizeMultipleFiles, UploadedFile } from "@/lib/file-utils"
 
 // Forum Post Actions
 export async function createForumPostAction(formData: FormData) {
@@ -540,6 +541,8 @@ export async function createProjectAction(formData: FormData) {
         },
       },
     })
+
+    // Files are already uploaded to the correct project directory structure
 
     // Step 7: Revalidate and Return Success
     revalidatePath("/projects")
@@ -1440,3 +1443,5 @@ export async function deleteOpportunityAction(opportunityId: string) {
     throw new Error("Failed to delete opportunity. Please try again.")
   }
 }
+
+

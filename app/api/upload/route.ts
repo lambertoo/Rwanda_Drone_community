@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,17 +50,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create upload directory if it doesn't exist
-    const uploadDir = join(process.cwd(), 'public', 'uploads', type)
+    // Get entity ID and subfolder from form data
+    const entityId = formData.get('entityId') as string || 'general'
+    const subfolder = formData.get('subfolder') as string || type
+    
+    // Create upload directory with new structure
+    const uploadDir = join(process.cwd(), 'public', 'uploads', entityId, entityId, subfolder)
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true })
     }
 
-    // Generate unique filename
-    const timestamp = Date.now()
-    const randomString = Math.random().toString(36).substring(2, 15)
+    // Generate unique filename while preserving original name
     const fileExtension = file.name.split('.').pop()
-    const fileName = `${type}_${timestamp}_${randomString}.${fileExtension}`
+    const baseName = file.name.substring(0, file.name.lastIndexOf('.'))
+    
+    // Sanitize filename: replace spaces with underscores and remove special characters
+    const sanitizedBaseName = baseName
+      .replace(/\s+/g, '_')           // Replace spaces with underscores
+      .replace(/[^a-zA-Z0-9_-]/g, '') // Remove special characters except underscore and dash
+      .replace(/_+/g, '_')            // Replace multiple underscores with single
+      .replace(/^_+|_+$/g, '')        // Remove leading/trailing underscores
+    
+    const uniqueId = uuidv4().substring(0, 8)
+    const fileName = `${sanitizedBaseName}_${uniqueId}.${fileExtension}`
     const filePath = join(uploadDir, fileName)
 
     // Convert file to buffer and save
@@ -67,16 +80,18 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes)
     await writeFile(filePath, buffer)
 
-    // Return the file URL
-    const fileUrl = `/uploads/${type}/${fileName}`
+    // Return the file URL with new structure
+    const fileUrl = `/uploads/${entityId}/${entityId}/${subfolder}/${fileName}`
     
     return NextResponse.json({
       success: true,
       fileUrl,
-      fileName,
+      fileName: fileName, // This should be the sanitized filename
       originalName: file.name,
       size: file.size,
-      type: file.type
+      type: file.type,
+      entityId: entityId,
+      subfolder
     })
 
   } catch (error) {

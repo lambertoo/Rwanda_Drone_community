@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAuth } from "@/lib/auth-context"
 import {
   ArrowLeft,
   Calendar,
@@ -28,7 +29,8 @@ import {
   Eye,
   ThumbsUp,
   MessageCircle,
-  Loader2
+  Loader2,
+  Edit
 } from "lucide-react"
 
 interface Project {
@@ -87,6 +89,7 @@ interface Comment {
 }
 
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+  const { user, isAuthenticated } = useAuth()
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -94,28 +97,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [newComment, setNewComment] = useState("")
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyContent, setReplyContent] = useState("")
-  const [user, setUser] = useState<any>(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
-
-  // Check if user is logged in
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/auth/profile', {
-          credentials: 'include'
-        })
-        if (response.ok) {
-          const data = await response.json()
-          setUser(data.user)
-          setIsAuthenticated(true)
-        }
-      } catch (error) {
-        console.log('User not authenticated')
-      }
-    }
-    checkAuth()
-  }, [])
 
   // Fetch project data
   useEffect(() => {
@@ -134,7 +116,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               credentials: 'include'
             })
             if (likeResponse.ok) {
-              const likeData = await likeResponse.json()
+              const likeData = await response.json()
               setIsLiked(likeData.isLiked)
             }
           }
@@ -552,7 +534,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               )}
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-white/80" />
-                <span>Led by {project.author.fullName}</span>
+                <span>
+                  {(() => {
+                    const projectLead = project.teamMembers?.find((member: any) => member.projectLead);
+                    return projectLead ? `Led by ${projectLead.name}` : `Led by ${project.author.fullName}`;
+                  })()}
+                </span>
               </div>
             </div>
 
@@ -588,6 +575,15 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 <Share2 className="h-4 w-4 mr-2" />
                 Share
               </Button>
+              {/* Edit Button - Only show for admin or project author */}
+              {isAuthenticated && (user?.role === 'admin' || user?.id === project.author.id) && (
+                <Link href={`/projects/${project.id}/edit`}>
+                  <Button variant="outline" className="text-white border-white/30 hover:bg-white/20 hover:text-white">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -598,12 +594,13 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           <div className="lg:col-span-3">
             {/* Tabs */}
             <Tabs defaultValue="overview" className="mb-6">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="methodology">Methodology</TabsTrigger>
                 <TabsTrigger value="results">Results</TabsTrigger>
                 <TabsTrigger value="team">Team</TabsTrigger>
                 <TabsTrigger value="gallery">Gallery</TabsTrigger>
+                <TabsTrigger value="resources">Resources</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6">
@@ -734,14 +731,24 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                     {project.teamMembers && project.teamMembers.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {project.teamMembers.map((member: any, index: number) => (
-                          <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
+                          <div key={index} className={`flex items-center gap-3 p-3 border rounded-lg ${member.projectLead ? 'bg-blue-50 border-blue-200' : ''}`}>
                             <Avatar className="h-10 w-10">
                               <AvatarImage src={member.avatar || "/placeholder.svg"} alt={member.name} />
                               <AvatarFallback>{member.name?.charAt(0) || "T"}</AvatarFallback>
                             </Avatar>
-                            <div>
-                              <p className="font-medium">{member.name}</p>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">{member.name}</p>
+                                {member.projectLead && (
+                                  <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+                                    Project Lead
+                                  </Badge>
+                                )}
+                              </div>
                               <p className="text-sm text-muted-foreground">{member.role}</p>
+                              {member.organization && (
+                                <p className="text-xs text-muted-foreground">{member.organization}</p>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -773,6 +780,50 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                       </div>
                     ) : (
                       <p className="text-muted-foreground">Gallery images not available.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="resources" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Project Resources</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Download project resources, documents, and materials
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    {project.resources && project.resources.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {project.resources.map((resource: any, index: number) => (
+                          <div key={index} className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                            <div className="flex-shrink-0">
+                              <FileText className="h-8 w-8 text-blue-500" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{resource.title || `Resource ${index + 1}`}</p>
+                              {resource.description && (
+                                <p className="text-xs text-muted-foreground truncate">{resource.description}</p>
+                              )}
+                              {resource.fileType && (
+                                <p className="text-xs text-muted-foreground">{resource.fileType}</p>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => window.open(resource.url, '_blank')}
+                              className="flex-shrink-0"
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Download
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">No resources available for this project.</p>
                     )}
                   </CardContent>
                 </Card>
