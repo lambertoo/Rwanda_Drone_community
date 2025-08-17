@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Plus, X, Upload, Eye, Calendar, MapPin, Users, CheckCircle, AlertCircle } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { createProjectAction } from "@/lib/actions"
+import { createProjectAction, updateProjectAction } from "@/lib/actions"
 import { useNotification } from "@/components/ui/notification"
 
 interface TeamMember {
@@ -49,7 +49,7 @@ interface ProjectResource {
   filePath?: string
 }
 
-export default function NewProjectForm() {
+export default function NewProjectForm({ project, isEdit = false }: { project?: any, isEdit?: boolean }) {
   const router = useRouter()
   const [formData, setFormData] = useState({
     title: "",
@@ -119,6 +119,34 @@ export default function NewProjectForm() {
       </div>
     )
   }
+
+  // Load project data if in edit mode
+  useEffect(() => {
+    if (isEdit && project) {
+      setFormData({
+        title: project.title || "",
+        description: project.description || "",
+        category: project.categoryId || "",
+        status: project.status || "",
+        location: project.location || "",
+        duration: project.duration || "",
+        startDate: project.startDate || "",
+        endDate: project.endDate || "",
+        funding: project.funding || "",
+        overview: project.fullDescription || "",
+        methodology: project.methodology || "",
+        results: project.results || "",
+        technologies: project.technologies || [],
+        objectives: project.objectives || [],
+        challenges: project.challenges || [],
+        outcomes: project.outcomes || [],
+        thumbnail: project.thumbnail || "",
+      })
+      setTeamMembers(project.teamMembers || [])
+      setGallery(project.gallery || [])
+      setResources(project.resources || [])
+    }
+  }, [isEdit, project])
 
   // Fetch categories from database
   useEffect(() => {
@@ -430,19 +458,24 @@ export default function NewProjectForm() {
       })
 
       // Use server action
-      const result = await createProjectAction(formDataToSend)
+      let result
+      if (isEdit && project) {
+        result = await updateProjectAction(project.id, formDataToSend)
+      } else {
+        result = await createProjectAction(formDataToSend)
+      }
       
       if (result.success && result.project) {
         // Files are already uploaded to the correct project directory structure
         
-        showNotification('success', 'Project Created!', 'Project published successfully! Redirecting to project page...')
+        showNotification('success', isEdit ? 'Project Updated!' : 'Project Created!', isEdit ? 'Project updated successfully! Redirecting to project page...' : 'Project published successfully! Redirecting to project page...')
         
         // Redirect to the project page after a short delay
         setTimeout(() => {
           router.push(`/projects/${result.project.id}`)
         }, 2000)
       } else {
-        showNotification('error', 'Creation Failed', result.error || 'Failed to publish project. Please try again.')
+        showNotification('error', isEdit ? 'Update Failed' : 'Creation Failed', result.error || `Failed to ${isEdit ? 'update' : 'publish'} project. Please try again.`)
       }
     } catch (error) {
       console.error("Error creating project:", error)
@@ -472,11 +505,10 @@ export default function NewProjectForm() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            Share Your Project
+            {isEdit ? 'Edit Project' : 'Share Your Project'}
           </CardTitle>
           <p className="text-muted-foreground">
-            Share your drone project with the Rwanda drone community. Help others learn from your experience and
-            showcase your innovations.
+            {isEdit ? 'Update your drone project information and share the latest developments with the community.' : 'Share your drone project with the Rwanda drone community. Help others learn from your experience and showcase your innovations.'}
           </p>
         </CardHeader>
       </Card>

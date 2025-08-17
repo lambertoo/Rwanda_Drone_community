@@ -1,7 +1,7 @@
 import { cookies } from "next/headers"
 import { UserRole } from "@prisma/client"
 import bcrypt from "bcryptjs"
-import { verifyToken } from "./jwt"
+import { verifyToken } from "./jwt-utils"
 
 export interface AuthUser {
   id: string
@@ -113,7 +113,7 @@ export function canUploadPortfolio(user: AuthUser | null): boolean {
 export async function getCurrentUser(): Promise<AuthUser | null> {
   try {
     const cookieStore = await cookies()
-    const token = cookieStore.get("auth-token")?.value
+    const token = cookieStore.get("accessToken")?.value
     
     if (!token) {
       return null

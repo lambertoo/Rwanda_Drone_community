@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { verifyToken } from "@/lib/jwt"
+import { verifyToken } from "@/lib/jwt-utils"
 import { prisma } from "@/lib/prisma"
 import { processFileUrl } from "@/lib/file-upload"
 

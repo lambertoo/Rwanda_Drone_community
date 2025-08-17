@@ -53,7 +53,7 @@ export default function EditProjectPage() {
   // Check if user can edit this project
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-[200px]>
+      <div className="flex items-center justify-center min-h-[200px]">
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle className="text-center text-red-600">Access Denied</CardTitle>
@@ -69,7 +69,7 @@ export default function EditProjectPage() {
 
   if (!project) {
     return (
-      <div className="flex items-center justify-center min-h-[200px]>
+      <div className="flex items-center justify-center min-h-[200px]">
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle className="text-center text-red-600">Project Not Found</CardTitle>
@@ -86,7 +86,7 @@ export default function EditProjectPage() {
   // Check if user can edit this project (admin or project author)
   if (!user.role.includes('admin') && project.authorId !== user.id) {
     return (
-      <div className="flex items-center justify-center min-h-[200px]>
+      <div className="flex items-center justify-center min-h-[200px]">
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle className="text-center text-red-600 flex items-center justify-center gap-2">

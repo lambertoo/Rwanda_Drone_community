@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/lib/auth-context"
 
 interface Speaker {
   id: string
@@ -48,6 +49,7 @@ interface EventCategory {
 export default function NewEventForm() {
   const router = useRouter()
   const { toast } = useToast()
+  const { user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentTab, setCurrentTab] = useState("basic")
   const [categories, setCategories] = useState<EventCategory[]>([])
@@ -237,9 +239,8 @@ export default function NewEventForm() {
     setIsSubmitting(true)
 
     try {
-      // Get user from localStorage
-      const storedUser = localStorage.getItem("user")
-      if (!storedUser) {
+      // Check if user is authenticated
+      if (!user) {
         toast({
           title: "Authentication Error",
           description: "Please log in to create an event",
@@ -247,8 +248,6 @@ export default function NewEventForm() {
         })
         return
       }
-
-      const user = JSON.parse(storedUser)
 
       // Create FormData for file upload
       const formData = new FormData()
@@ -273,7 +272,7 @@ export default function NewEventForm() {
       formData.append('gallery', JSON.stringify([]))
       formData.append('isPublished', 'true')
       formData.append('isFeatured', 'false')
-      formData.append('userId', user.id)
+
 
       // Add flyer file if uploaded
       if (flyerFile) {
@@ -282,6 +281,7 @@ export default function NewEventForm() {
 
       const response = await fetch('/api/events', {
         method: 'POST',
+        credentials: 'include', // Include cookies for authentication
         body: formData,
       })
 

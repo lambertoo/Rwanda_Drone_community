@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getSession } from "@/lib/auth"
+import { getCurrentUser, canCreateEvents } from "@/lib/auth"
 
 // READ - Get all events
 export async function GET(request: NextRequest) {
@@ -75,6 +75,17 @@ export async function GET(request: NextRequest) {
 // CREATE - Create a new event
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    }
+
+    // Check if user can create events
+    if (!canCreateEvents(currentUser)) {
+      return NextResponse.json({ error: "Insufficient permissions to create events" }, { status: 403 })
+    }
+
     // Check if the request is multipart/form-data (file upload)
     const contentType = request.headers.get('content-type') || ''
     
@@ -103,7 +114,6 @@ export async function POST(request: NextRequest) {
         gallery: formData.get('gallery') as string,
         isPublished: formData.get('isPublished') as string,
         isFeatured: formData.get('isFeatured') as string,
-        userId: formData.get('userId') as string,
       }
 
       // Extract file
@@ -116,18 +126,7 @@ export async function POST(request: NextRequest) {
       eventData = await request.json()
     }
 
-    if (!eventData.userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 })
-    }
 
-    // Verify user exists
-    const user = await prisma.user.findUnique({
-      where: { id: eventData.userId }
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
 
     if (!eventData.title || !eventData.description || !eventData.startDate || !eventData.location) {
       return NextResponse.json({ error: "Title, description, start date, and location are required" }, { status: 400 })
@@ -211,7 +210,7 @@ export async function POST(request: NextRequest) {
         flyer: flyerUrl,
         isPublished: eventData.isPublished === 'true',
         isFeatured: eventData.isFeatured === 'true',
-        organizerId: user.id,
+        organizerId: currentUser.id, // Use authenticated user's ID
       },
       include: {
         organizer: true,
@@ -221,7 +220,7 @@ export async function POST(request: NextRequest) {
 
     // Update user's events count
     await prisma.user.update({
-      where: { id: user.id },
+      where: { id: currentUser.id },
       data: { eventsCount: { increment: 1 } }
     })
 

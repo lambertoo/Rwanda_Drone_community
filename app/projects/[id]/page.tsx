@@ -116,7 +116,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               credentials: 'include'
             })
             if (likeResponse.ok) {
-              const likeData = await response.json()
+              const likeData = await likeResponse.json()
               setIsLiked(likeData.isLiked)
             }
           }
