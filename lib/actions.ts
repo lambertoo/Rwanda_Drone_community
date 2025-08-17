@@ -6,6 +6,64 @@ import { getAuthenticatedUser } from "@/lib/auth-middleware"
 import { canCreateProjects, canCreateServices, canPostOpportunities, canCreateEvents, canEditOwnContent, canDeleteAnyContent, getSession } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 import { organizeMultipleFiles, UploadedFile } from "@/lib/file-utils"
+import { rename, mkdir, join } from "fs/promises"
+import { existsSync } from "fs"
+import path from "path"
+
+// File utility functions
+async function moveFilesFromTemp(projectId: string, resources: any[], gallery: any[]) {
+  try {
+    const baseDir = process.cwd()
+    
+    // Move resources
+    for (const resource of resources) {
+      if (resource.url && resource.url.includes('/uploads/projects/temp/')) {
+        const oldPath = join(baseDir, 'public', resource.url)
+        const newPath = join(baseDir, 'public', 'uploads', 'projects', projectId, 'resources', path.basename(resource.url))
+        
+        // Create directory if it doesn't exist
+        const newDir = path.dirname(newPath)
+        if (!existsSync(newDir)) {
+          await mkdir(newDir, { recursive: true })
+        }
+        
+        // Move file
+        if (existsSync(oldPath)) {
+          await rename(oldPath, newPath)
+          // Update URL in resource object
+          resource.url = `/uploads/projects/${projectId}/resources/${path.basename(resource.url)}`
+        }
+      }
+    }
+    
+    // Move gallery images
+    for (const image of gallery) {
+      if (image.url && image.url.includes('/uploads/projects/temp/')) {
+        const oldPath = join(baseDir, 'public', image.url)
+        const newPath = join(baseDir, 'public', 'uploads', 'projects', projectId, 'images', path.basename(image.url))
+        
+        // Create directory if it doesn't exist
+        const newDir = path.dirname(newPath)
+        if (!existsSync(newDir)) {
+          await mkdir(newDir, { recursive: true })
+        }
+        
+        // Move file
+        if (existsSync(oldPath)) {
+          await rename(oldPath, newPath)
+          // Update URL in image object
+          image.url = `/uploads/projects/${projectId}/images/${path.basename(image.url)}`
+        }
+      }
+    }
+    
+    return { resources, gallery }
+  } catch (error) {
+    console.error('Error moving files:', error)
+    // Return original arrays if moving fails
+    return { resources, gallery }
+  }
+}
 
 // Forum Post Actions
 export async function createForumPostAction(formData: FormData) {
@@ -542,7 +600,17 @@ export async function createProjectAction(formData: FormData) {
       },
     })
 
-    // Files are already uploaded to the correct project directory structure
+    // Move files from temp to project-specific folders
+    const { resources: updatedResources, gallery: updatedGallery } = await moveFilesFromTemp(project.id, parsedResources, parsedGallery)
+    
+    // Update project with correct file URLs
+    await prisma.project.update({
+      where: { id: project.id },
+      data: {
+        resources: updatedResources,
+        gallery: updatedGallery,
+      },
+    })
 
     // Step 7: Revalidate and Return Success
     revalidatePath("/projects")

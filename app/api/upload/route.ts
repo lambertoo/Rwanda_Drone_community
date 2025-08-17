@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     const subfolder = formData.get('subfolder') as string || type
     
     // Create upload directory with new structure
-    const uploadDir = join(process.cwd(), 'public', 'uploads', entityId, entityId, subfolder)
+    const uploadDir = join(process.cwd(), 'public', 'uploads', type, entityId, subfolder)
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true })
     }
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     await writeFile(filePath, buffer)
 
     // Return the file URL with new structure
-    const fileUrl = `/uploads/${entityId}/${entityId}/${subfolder}/${fileName}`
+    const fileUrl = `/uploads/${type}/${entityId}/${subfolder}/${fileName}`
     
     return NextResponse.json({
       success: true,

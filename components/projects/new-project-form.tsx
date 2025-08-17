@@ -46,6 +46,7 @@ interface ProjectResource {
   size?: string
   fileType?: string
   embedCode?: string
+  filePath?: string
 }
 
 export default function NewProjectForm() {
@@ -279,6 +280,7 @@ export default function NewProjectForm() {
       url: newResource.url,
       size: undefined, // Size will be available from the upload response if needed
       fileType: undefined, // File type will be available from the upload response if needed
+      filePath: newResource.filePath, // Store the file path for moving
     }
 
     setResources([...resources, resource])
@@ -305,11 +307,11 @@ export default function NewProjectForm() {
       }
       
       try {
-        // Upload file to server with proper structure
+        // Upload file to server with temp structure (will be moved after project creation)
         const formData = new FormData()
         formData.append('file', file)
         formData.append('type', 'projects')
-        formData.append('entityId', 'projects')
+        formData.append('entityId', 'temp')
         formData.append('subfolder', 'resources')
         
         const response = await fetch('/api/upload', {
@@ -346,11 +348,11 @@ export default function NewProjectForm() {
       }
       
       try {
-        // Upload file to server with proper structure
+        // Upload file to server with temp structure (will be moved after project creation)
         const formData = new FormData()
         formData.append('file', file)
         formData.append('type', 'projects')
-        formData.append('entityId', 'projects')
+        formData.append('entityId', 'temp')
         formData.append('subfolder', 'images')
         
         const response = await fetch('/api/upload', {
