@@ -29,25 +29,8 @@ export async function POST(request: NextRequest) {
     const {
       fullName,
       email,
-      username,
       password,
-      role,
-      organization,
-      bio,
-      location,
-      pilotLicense,
-      experience,
-      website,
-      phone,
     } = validationResult.data
-
-    // Security: Prevent registration with admin or regulator roles
-    if (role === 'admin' || role === 'regulator') {
-      return NextResponse.json(
-        { error: "Admin and Regulator roles cannot be assigned during registration" },
-        { status: 403 }
-      )
-    }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -60,42 +43,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if username already exists
-    const existingUsername = await prisma.user.findUnique({
-      where: { username }
-    })
-    if (existingUsername) {
-      return NextResponse.json(
-        { error: "Username already taken" },
-        { status: 409 }
-      )
-    }
-
     // Hash the password
     const hashedPassword = await hashPassword(password)
 
-    // Create new user
+    // Create new user with simplified data (no role - user will set it later)
     const newUser = await prisma.user.create({
       data: {
-        username,
+        username: `${email.split('@')[0]}_${Math.random().toString(36).substring(2, 8)}`, // Generate unique username from email
         email,
         fullName,
-        password: hashedPassword, // Store hashed password
+        password: hashedPassword,
         avatar: `/placeholder.svg?height=40&width=40&text=${fullName.split(" ").map(n => n[0]).join("")}`,
-        bio,
-        location,
-        organization,
-        pilotLicense,
-        experience,
-        role,
-        website,
-        phone,
         reputation: 0,
         isVerified: true,
         isActive: true,
         postsCount: 0,
         commentsCount: 0,
         projectsCount: 0,
+        eventsCount: 0,
+        servicesCount: 0,
+        opportunitiesCount: 0,
         specializations: JSON.stringify([]),
         certifications: JSON.stringify([]),
       }
@@ -106,11 +73,11 @@ export async function POST(request: NextRequest) {
       user: {
         id: newUser.id,
         email: newUser.email,
-        username: newUser.username,
         fullName: newUser.fullName,
-        role: newUser.role,
         isVerified: newUser.isVerified,
+        role: newUser.role,
       },
+      redirectTo: "/complete-profile"
     })
   } catch (error) {
     console.error("Registration error:", error)

@@ -1,26 +1,10 @@
 import { z } from "zod"
 
-// User registration validation
+// User registration validation - simplified to only essential fields
 export const userRegistrationSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters").max(100),
   email: z.string().email("Invalid email address"),
-  username: z.string().min(3, "Username must be at least 3 characters").max(30).regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
   password: z.string().min(8, "Password must be at least 8 characters").regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must contain at least 1 uppercase letter, 1 lowercase letter, and 1 number"),
-  role: z.enum(["hobbyist", "pilot", "student", "service_provider"]),
-  organization: z.string().optional(),
-  bio: z.string().max(500).optional(),
-  location: z.enum([
-    "KIGALI_NYARUGENGE", "KIGALI_KICUKIRO", "KIGALI_GASABO",
-    "SOUTH_HUYE", "SOUTH_NYAMAGABE", "SOUTH_NYARUGURU", "SOUTH_MUHANGA", "SOUTH_KAMONYI", "SOUTH_GISAGARA", "SOUTH_NYANZA", "SOUTH_RUHANGO",
-    "NORTH_MUSANZE", "NORTH_GICUMBI", "NORTH_RULINDO", "NORTH_BURERA", "NORTH_GAKENKE",
-    "EAST_KAYONZA", "EAST_NGOMA", "EAST_KIREHE", "EAST_NYAGATARE", "EAST_BUGESERA", "EAST_RWAMAGANA", "EAST_GATSIBO",
-    "WEST_RUBAVU", "WEST_RUSIZI", "WEST_NYAMASHEKE", "WEST_RUTSIRO", "WEST_KARONGI", "WEST_NGORORERO", "WEST_NYABIHU",
-    "UNKNOWN"
-  ]).optional(),
-  pilotLicense: z.string().optional(),
-  experience: z.string().max(200).optional(),
-  website: z.string().url().optional(),
-  phone: z.string().optional(),
 })
 
 // User login validation

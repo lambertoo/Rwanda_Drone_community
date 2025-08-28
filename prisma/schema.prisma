@@ -22,7 +22,7 @@ model User {
   reputation        Int                @default(0)
   isVerified        Boolean            @default(true)
   isActive          Boolean            @default(true)
-  role              UserRole
+  role              UserRole?
   lastActive        DateTime           @default(now())
   postsCount        Int                @default(0)
   commentsCount     Int                @default(0)
@@ -458,6 +458,7 @@ model rsvp {
 }
 
 enum UserRole {
+  hobbyist
   admin
   pilot
   regulator

@@ -83,7 +83,9 @@ export async function POST(request: NextRequest) {
         experience: user.experience,
         specializations: user.specializations,
         certifications: user.certifications,
-      }
+      },
+      // Include redirect information based on user role
+      redirectTo: user.role === null ? "/complete-profile" : "/"
     })
 
     // Set secure HTTP-only cookies with JWT tokens

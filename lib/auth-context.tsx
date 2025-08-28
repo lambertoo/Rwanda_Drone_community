@@ -9,7 +9,7 @@ export interface AuthenticatedUser {
   email: string
   username: string
   fullName: string
-  role: UserRole
+  role: UserRole | null
   isVerified?: boolean
   isActive?: boolean
   avatar?: string
@@ -24,7 +24,7 @@ export interface AuthenticatedUser {
 interface AuthContextType {
   user: AuthenticatedUser | null
   loading: boolean
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: any }>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
   isAuthenticated: boolean
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // Login function
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string; user?: any }> => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -97,7 +97,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json()
         // Fetch fresh user profile after successful login
         await fetchUserProfile()
-        return { success: true }
+        return { 
+          success: true, 
+          user: data.user
+        }
       } else {
         const errorData = await response.json()
         return { success: false, error: errorData.error || 'Login failed' }
@@ -130,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check authentication status on mount
   useEffect(() => {
+    // Automatically fetch profile to check if user is already authenticated
     fetchUserProfile()
   }, [])
 

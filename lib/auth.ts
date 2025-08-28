@@ -8,7 +8,7 @@ export interface AuthUser {
   username: string
   email: string
   fullName: string
-  role: UserRole
+  role: UserRole | null
   isVerified: boolean
 }
 
@@ -62,15 +62,15 @@ export function canCreateResources(user: AuthUser | null): boolean {
 }
 
 export function canPostForum(user: AuthUser | null): boolean {
-  return user !== null && user.role !== "visitor"
+  return user !== null && user.role !== null && user.role !== "visitor"
 }
 
 export function canCreateProjects(user: AuthUser | null): boolean {
-  return user !== null && ["hobbyist", "pilot", "student", "service_provider", "admin", "regulator"].includes(user.role)
+  return user !== null && user.role !== null && ["hobbyist", "pilot", "student", "service_provider", "admin", "regulator"].includes(user.role)
 }
 
 export function canCreateServices(user: AuthUser | null): boolean {
-  return user?.role === "service_provider" || user?.role === "pilot"
+  return user?.role === "service_provider" || user?.role === "pilot" || user?.role === "admin"
 }
 
 export function canPostOpportunities(user: AuthUser | null): boolean {
@@ -82,7 +82,7 @@ export function canApplyOpportunities(user: AuthUser | null): boolean {
 }
 
 export function canRSVPEvents(user: AuthUser | null): boolean {
-  return user !== null && ["hobbyist", "pilot", "student", "service_provider"].includes(user.role)
+  return user !== null && user.role !== null && ["hobbyist", "pilot", "student", "service_provider"].includes(user.role)
 }
 
 export function canEditOwnContent(user: AuthUser | null, contentAuthorId: string): boolean {
@@ -131,7 +131,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       username: payload.username,
       email: payload.email,
       fullName: payload.username, // We'll need to get this from database if needed
-      role: payload.role as UserRole,
+      role: payload.role as UserRole | null,
       isVerified: false, // We'll need to get this from database if needed
     }
   } catch (error) {
@@ -146,7 +146,9 @@ export function isLoggedIn(user: AuthUser | null): boolean {
 }
 
 // Helper function to get user role display name
-export function getRoleDisplayName(role: UserRole): string {
+export function getRoleDisplayName(role: UserRole | null): string {
+  if (!role) return "No Role Assigned"
+  
   const roleNames = {
     admin: "Admin",
     hobbyist: "Hobbyist", 
