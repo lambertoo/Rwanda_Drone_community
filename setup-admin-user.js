@@ -23,7 +23,7 @@ async function setupAdminUser() {
     }
 
     // Create admin user
-    const hashedPassword = await bcrypt.hash('Admin@2024!', 12);
+    const hashedPassword = await bcrypt.hash('password', 12);
     
     const adminUser = await prisma.user.create({
       data: {
@@ -44,7 +44,7 @@ async function setupAdminUser() {
     console.log('✅ Admin user created successfully!');
     console.log('👤 Username:', adminUser.username);
     console.log('📧 Email:', adminUser.email);
-    console.log('🔑 Password: Admin@2024!');
+    console.log('🔑 Password: password');
     console.log('⚠️  Please change this password after first login!');
     
   } catch (error) {

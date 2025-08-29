@@ -43,10 +43,10 @@ interface ProjectResource {
   description: string
   type: "file" | "link" | "video"
   url: string
-  size?: string
+  size?: number
   fileType?: string
   embedCode?: string
-  filePath?: string
+  filePath?: string | undefined
 }
 
 export default function NewProjectForm({ project, isEdit = false }: { project?: any, isEdit?: boolean }) {
@@ -102,6 +102,8 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
     url: "",
     file: null as File | null,
     filePath: "", // Track the actual file path for moving
+    size: undefined as number | undefined,
+    fileType: undefined as string | undefined,
   })
 
   const [newGalleryItem, setNewGalleryItem] = useState({
@@ -306,8 +308,8 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
       description: newResource.description,
       type: newResource.type,
       url: newResource.url,
-      size: undefined, // Size will be available from the upload response if needed
-      fileType: undefined, // File type will be available from the upload response if needed
+      size: newResource.size, // Size from upload response
+      fileType: newResource.fileType, // File type from upload response
       filePath: newResource.filePath, // Store the file path for moving
     }
 
@@ -318,6 +320,9 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
       type: "file",
       url: "",
       file: null,
+      size: undefined,
+      fileType: undefined,
+      filePath: "",
     })
   }
 
@@ -353,7 +358,9 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
             ...newResource, 
             file: null, // Clear file input
             url: result.fileUrl, // Store the uploaded file URL
-            filePath: result.fileUrl // Store the file path
+            filePath: result.fileUrl, // Store the file path
+            size: result.size, // Store file size
+            fileType: result.fileType, // Store file type
           })
         } else {
           const error = await response.json()
@@ -379,7 +386,7 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
         // Upload file to server with temp structure (will be moved after project creation)
         const formData = new FormData()
         formData.append('file', file)
-        formData.append('type', 'image')
+        formData.append('type', 'projects')
         formData.append('entityId', 'temp')
         formData.append('subfolder', 'images')
         
@@ -440,6 +447,13 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
     setIsSubmitting(true)
 
     try {
+      // Validate that a thumbnail is selected
+      if (!formData.thumbnail) {
+        showNotification('error', 'Thumbnail Required', 'Please select a thumbnail from your project gallery before submitting.')
+        setIsSubmitting(false)
+        return
+      }
+
       const projectData = {
         ...formData,
         teamMembers,
@@ -447,6 +461,9 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
         resources,
         thumbnail: formData.thumbnail,
       }
+
+      console.log('Form data being sent:', projectData)
+      console.log('Thumbnail value:', formData.thumbnail)
 
       const formDataToSend = new FormData()
       Object.entries(projectData).forEach(([key, value]) => {
@@ -456,6 +473,11 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
           formDataToSend.append(key, value as string)
         }
       })
+
+      console.log('FormData entries:')
+      for (let [key, value] of formDataToSend.entries()) {
+        console.log(`${key}: ${value}`)
+      }
 
       // Use server action
       let result
@@ -475,7 +497,8 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
           router.push(`/projects/${result.project.id}`)
         }, 2000)
       } else {
-        showNotification('error', isEdit ? 'Update Failed' : 'Creation Failed', result.error || `Failed to ${isEdit ? 'update' : 'publish'} project. Please try again.`)
+        const errorMessage = 'error' in result ? result.error : `Failed to ${isEdit ? 'update' : 'publish'} project. Please try again.`
+        showNotification('error', isEdit ? 'Update Failed' : 'Creation Failed', errorMessage)
       }
     } catch (error) {
       console.error("Error creating project:", error)
@@ -581,49 +604,38 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="thumbnail">Project Thumbnail</Label>
+                  <Label>Project Thumbnail</Label>
                   <div className="flex items-center gap-4">
-                    <Input
-                      id="thumbnail"
-                      type="file"
-                      accept="image/*"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0]
-                        if (file) {
-                          try {
-                            const formData = new FormData()
-                            formData.append('file', file)
-                            formData.append('type', 'projects')
-                            formData.append('entityId', 'projects')
-                            formData.append('subfolder', 'images')
-                            
-                            const response = await fetch('/api/upload', {
-                              method: 'POST',
-                              body: formData
-                            })
-                            
-                            if (response.ok) {
-                              const data = await response.json()
-                              setFormData(prev => ({ ...prev, thumbnail: data.fileUrl }))
-                            }
-                          } catch (error) {
-                            console.error('Error uploading thumbnail:', error)
-                          }
-                        }
-                      }}
-                    />
-                    {formData.thumbnail && (
-                      <div className="w-16 h-16 rounded-lg overflow-hidden border">
-                        <img 
-                          src={formData.thumbnail} 
-                          alt="Thumbnail preview" 
-                          className="w-full h-full object-cover"
-                        />
+                    {formData.thumbnail ? (
+                      <div className="flex items-center gap-3">
+                        <div className="w-16 h-16 rounded-lg overflow-hidden border">
+                          <img 
+                            src={formData.thumbnail} 
+                            alt="Selected thumbnail" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="text-sm">
+                          <p className="font-medium">Thumbnail selected</p>
+                          <p className="text-muted-foreground">From project gallery</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setFormData(prev => ({ ...prev, thumbnail: '' }))}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">
+                        Upload images to the gallery below, then select one as your thumbnail
                       </div>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Upload a thumbnail image for your project (recommended: 800x400px)
+                    Select a thumbnail from your project gallery images (recommended: 800x400px)
                   </p>
                 </div>
 
@@ -1047,7 +1059,9 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
                     <h4 className="font-semibold">Project Gallery ({gallery.length})</h4>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {gallery.map((item) => (
-                        <div key={item.id} className="border rounded-lg overflow-hidden">
+                        <div key={item.id} className={`border rounded-lg overflow-hidden ${
+                          formData.thumbnail === item.url ? 'ring-2 ring-blue-500 border-blue-500' : ''
+                        }`}>
                           {item.type === "image" && item.url && (
                             <img src={item.url} alt={item.caption} className="w-full h-32 object-cover" />
                           )}
@@ -1067,14 +1081,30 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
                               <Badge variant="outline" className="text-xs">
                                 {item.type}
                               </Badge>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => removeGalleryItem(item.id)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                              <div className="flex items-center gap-1">
+                                {item.type === "image" && (
+                                  <Button
+                                    type="button"
+                                    variant={formData.thumbnail === item.url ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => setFormData(prev => ({ 
+                                      ...prev, 
+                                      thumbnail: formData.thumbnail === item.url ? '' : item.url 
+                                    }))}
+                                    className="text-xs"
+                                  >
+                                    {formData.thumbnail === item.url ? "✓ Thumbnail" : "Set as Thumbnail"}
+                                  </Button>
+                                )}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => removeGalleryItem(item.id)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>

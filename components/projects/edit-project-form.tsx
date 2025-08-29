@@ -480,6 +480,13 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
     setIsSubmitting(true)
 
     try {
+      // Validate that a thumbnail is selected
+      if (!formData.thumbnail) {
+        showNotification('error', 'Thumbnail Required', 'Please select a thumbnail from your project gallery before submitting.')
+        setIsSubmitting(false)
+        return
+      }
+
       const projectData = {
         ...formData,
         teamMembers,
@@ -629,49 +636,38 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="thumbnail">Project Thumbnail</Label>
+                  <Label>Project Thumbnail</Label>
                   <div className="flex items-center gap-4">
-                    <Input
-                      id="thumbnail"
-                      type="file"
-                      accept="image/*"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0]
-                        if (file) {
-                          try {
-                            const formData = new FormData()
-                            formData.append('file', file)
-                            formData.append('type', 'projects')
-                            formData.append('entityId', 'projects')
-                            formData.append('subfolder', 'images')
-                            
-                            const response = await fetch('/api/upload', {
-                              method: 'POST',
-                              body: formData
-                            })
-                            
-                            if (response.ok) {
-                              const data = await response.json()
-                              setFormData(prev => ({ ...prev, thumbnail: data.fileUrl }))
-                            }
-                          } catch (error) {
-                            console.error('Error uploading thumbnail:', error)
-                          }
-                        }
-                      }}
-                    />
-                    {formData.thumbnail && (
-                      <div className="w-16 h-16 rounded-lg overflow-hidden border">
-                        <img 
-                          src={formData.thumbnail} 
-                          alt="Thumbnail preview" 
-                          className="w-full h-full object-cover"
-                        />
+                    {formData.thumbnail ? (
+                      <div className="flex items-center gap-3">
+                        <div className="w-16 h-16 rounded-lg overflow-hidden border">
+                          <img 
+                            src={formData.thumbnail} 
+                            alt="Selected thumbnail" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="text-sm">
+                          <p className="font-medium">Thumbnail selected</p>
+                          <p className="text-muted-foreground">From project gallery</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setFormData(prev => ({ ...prev, thumbnail: '' }))}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">
+                        Select a thumbnail from your project gallery below
                       </div>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Upload a thumbnail image for your project (recommended: 800x400px)
+                    Select a thumbnail from your project gallery images (recommended: 800x400px)
                   </p>
                 </div>
 
@@ -1095,7 +1091,9 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
                     <h4 className="font-semibold">Project Gallery ({gallery.length})</h4>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {gallery.map((item) => (
-                        <div key={item.id} className="border rounded-lg overflow-hidden">
+                        <div key={item.id} className={`border rounded-lg overflow-hidden ${
+                          formData.thumbnail === item.url ? 'ring-2 ring-blue-500 border-blue-500' : ''
+                        }`}>
                           {item.type === "image" && item.url && (
                             <img src={item.url} alt={item.caption} className="w-full h-32 object-cover" />
                           )}
@@ -1115,14 +1113,30 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
                               <Badge variant="outline" className="text-xs">
                                 {item.type}
                               </Badge>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => removeGalleryItem(item.id)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                              <div className="flex items-center gap-1">
+                                {item.type === "image" && (
+                                  <Button
+                                    type="button"
+                                    variant={formData.thumbnail === item.url ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => setFormData(prev => ({ 
+                                      ...prev, 
+                                      thumbnail: formData.thumbnail === item.url ? '' : item.url 
+                                    }))}
+                                    className="text-xs"
+                                  >
+                                    {formData.thumbnail === item.url ? "✓ Thumbnail" : "Set as Thumbnail"}
+                                  </Button>
+                                )}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => removeGalleryItem(item.id)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>

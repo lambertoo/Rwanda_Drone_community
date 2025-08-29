@@ -490,7 +490,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           <div 
             className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-gradient-to-br from-green-800 to-blue-900"
             style={{
-              backgroundImage: project.thumbnail 
+              backgroundImage: project.thumbnail && project.thumbnail !== "" && project.thumbnail !== "/placeholder.svg"
                 ? `url('${project.thumbnail}')`
                 : "url('https://images.unsplash.com/photo-1581094794329-c8112a89af12?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')",
               filter: "brightness(0.3)"
@@ -806,9 +806,9 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                               {resource.description && (
                                 <p className="text-xs text-muted-foreground truncate">{resource.description}</p>
                               )}
-                              {resource.fileType && (
-                                <p className="text-xs text-muted-foreground">{resource.fileType}</p>
-                              )}
+                              <p className="text-xs text-muted-foreground">
+                                {resource.fileType || 'File'} • {resource.size ? `${(resource.size / 1024 / 1024).toFixed(2)} MB` : 'Size unknown'}
+                              </p>
                             </div>
                             <Button
                               size="sm"
@@ -816,8 +816,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                               onClick={() => window.open(resource.url, '_blank')}
                               className="flex-shrink-0"
                             >
-                              <Download className="h-4 w-4 mr-2" />
-                              Download
+                              <Download className="h-4 w-4" />
                             </Button>
                           </div>
                         ))}
@@ -1017,17 +1016,22 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {project.resources.map((resource: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div key={`${resource.id || index}-${resource.title}`} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center gap-3">
                         <FileText className="h-5 w-5 text-blue-500" />
                         <div>
-                          <p className="font-medium text-sm">{resource.name || `Resource ${index + 1}`}</p>
+                          <p className="font-medium text-sm">{resource.title || `Resource ${index + 1}`}</p>
                           <p className="text-xs text-muted-foreground">
-                            {resource.size || 'Unknown size'} • {resource.type || 'File'} • {resource.downloads || 0} downloads
+                            {resource.description || 'No description available'} • {resource.fileType || 'File'} • {resource.size ? `${(resource.size / 1024 / 1024).toFixed(2)} MB` : 'Size unknown'}
                           </p>
                         </div>
                       </div>
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => window.open(resource.url, '_blank')}
+                        className="flex-shrink-0"
+                      >
                         <Download className="h-4 w-4" />
                       </Button>
                     </div>

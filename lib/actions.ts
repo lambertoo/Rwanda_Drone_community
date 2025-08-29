@@ -6,7 +6,7 @@ import { getAuthenticatedUser } from "@/lib/auth-middleware"
 import { canCreateProjects, canCreateServices, canPostOpportunities, canCreateEvents, canEditOwnContent, canDeleteAnyContent, getSession } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 import { organizeMultipleFiles, UploadedFile } from "@/lib/file-utils"
-import { rename, mkdir, join } from "fs/promises"
+import { rename, mkdir } from "fs/promises"
 import { existsSync } from "fs"
 import path from "path"
 
@@ -18,8 +18,8 @@ async function moveFilesFromTemp(projectId: string, resources: any[], gallery: a
     // Move resources
     for (const resource of resources) {
       if (resource.url && resource.url.includes('/uploads/projects/temp/')) {
-        const oldPath = join(baseDir, 'public', resource.url)
-        const newPath = join(baseDir, 'public', 'uploads', 'projects', projectId, 'resources', path.basename(resource.url))
+        const oldPath = path.join(baseDir, 'public', resource.url)
+        const newPath = path.join(baseDir, 'public', 'uploads', 'projects', projectId, 'resources', path.basename(resource.url))
         
         // Create directory if it doesn't exist
         const newDir = path.dirname(newPath)
@@ -39,8 +39,8 @@ async function moveFilesFromTemp(projectId: string, resources: any[], gallery: a
     // Move gallery images
     for (const image of gallery) {
       if (image.url && image.url.includes('/uploads/projects/temp/')) {
-        const oldPath = join(baseDir, 'public', image.url)
-        const newPath = join(baseDir, 'public', 'uploads', 'projects', projectId, 'images', path.basename(image.url))
+        const oldPath = path.join(baseDir, 'public', image.url)
+        const newPath = path.join(baseDir, 'public', 'uploads', 'projects', projectId, 'images', path.basename(image.url))
         
         // Create directory if it doesn't exist
         const newDir = path.dirname(newPath)
@@ -388,6 +388,7 @@ export async function createProjectAction(formData: FormData) {
     const outcomes = formData.get("outcomes") as string
     const teamMembers = formData.get("teamMembers") as string
     const gallery = formData.get("gallery") as string
+    const thumbnail = formData.get("thumbnail") as string | null
 
     // Validate title
     if (!title) {
@@ -570,6 +571,7 @@ export async function createProjectAction(formData: FormData) {
         teamMembers: parsedTeamMembers,
         gallery: parsedGallery,
         resources: parsedResources,
+        thumbnail: thumbnail || null,
       },
       include: {
         author: {
@@ -624,6 +626,11 @@ export async function createProjectAction(formData: FormData) {
 
   } catch (error) {
     console.error("Error creating project:", error)
+    console.error("Error details:", {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace',
+      name: error instanceof Error ? error.name : 'Unknown error type'
+    })
     
     // Handle specific database errors
     if (error instanceof Error) {
@@ -1511,5 +1518,4 @@ export async function deleteOpportunityAction(opportunityId: string) {
     throw new Error("Failed to delete opportunity. Please try again.")
   }
 }
-
 

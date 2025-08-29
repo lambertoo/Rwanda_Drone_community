@@ -17,16 +17,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file size (5MB for images, 10MB for resources)
-    const maxSize = type === 'image' ? 5 * 1024 * 1024 : 10 * 1024 * 1024
-    if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: `File size must be less than ${maxSize / (1024 * 1024)}MB` },
-        { status: 400 }
-      )
-    }
-
-    // Validate file type
+    // Validate file type first
     const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
     const allowedResourceTypes = [
       'application/pdf', 'application/zip', 'application/msword', 
@@ -36,16 +27,26 @@ export async function POST(request: NextRequest) {
       'text/plain', 'text/csv'
     ]
     
-    if (type === 'image' && !allowedImageTypes.includes(file.type)) {
+    // Check if it's an image file (regardless of type parameter)
+    const isImageFile = allowedImageTypes.includes(file.type)
+    const isResourceFile = allowedResourceTypes.includes(file.type)
+    
+    if (isImageFile && !isResourceFile) {
+      // This is an image file, allow it regardless of type parameter
+    } else if (isResourceFile) {
+      // This is a resource file, allow it regardless of type parameter
+    } else {
       return NextResponse.json(
-        { error: `Invalid image type. Allowed: JPEG, PNG, GIF, WebP. Received: ${file.type}` },
+        { error: `Invalid file type. Allowed: Images (JPEG, PNG, GIF, WebP) or Resources (PDF, ZIP, Word, Excel, PowerPoint, TXT, CSV). Received: ${file.type}` },
         { status: 400 }
       )
     }
-    
-    if (type === 'resource' && !allowedResourceTypes.includes(file.type)) {
+
+    // Validate file size (5MB for images, 10MB for resources)
+    const maxSize = isImageFile ? 5 * 1024 * 1024 : 10 * 1024 * 1024
+    if (file.size > maxSize) {
       return NextResponse.json(
-        { error: `Invalid resource type. Allowed: PDF, ZIP, Word, Excel, PowerPoint, TXT, CSV. Received: ${file.type}` },
+        { error: `File size must be less than ${maxSize / (1024 * 1024)}MB` },
         { status: 400 }
       )
     }

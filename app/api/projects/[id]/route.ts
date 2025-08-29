@@ -14,9 +14,47 @@ export async function GET(
       where: {
         id,
       },
-      include: {
-        author: true,
-        category: true,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        fullDescription: true,
+        status: true,
+        location: true,
+        duration: true,
+        startDate: true,
+        endDate: true,
+        funding: true,
+        technologies: true,
+        objectives: true,
+        challenges: true,
+        outcomes: true,
+        methodology: true,
+        results: true,
+        teamMembers: true,
+        gallery: true,
+        resources: true,
+        thumbnail: true,
+        viewsCount: true,
+        likesCount: true,
+        createdAt: true,
+        updatedAt: true,
+        author: {
+          select: {
+            id: true,
+            fullName: true,
+            avatar: true,
+            role: true,
+          }
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+            icon: true,
+          }
+        },
       },
     })
 
