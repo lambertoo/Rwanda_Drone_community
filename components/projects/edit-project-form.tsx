@@ -375,12 +375,12 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
       }
       
       try {
-        // Upload file to server with proper structure
+        // Upload file to server with temp structure (will be moved after project creation)
         const formData = new FormData()
         formData.append('file', file)
-        formData.append('type', 'projects')
-        formData.append('entityId', 'projects')
-        formData.append('subfolder', 'resources')
+        formData.append('type', 'image')
+        formData.append('entityId', 'temp')
+        formData.append('subfolder', 'images')
         
         const response = await fetch('/api/upload', {
           method: 'POST',

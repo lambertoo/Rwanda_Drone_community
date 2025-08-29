@@ -379,7 +379,7 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
         // Upload file to server with temp structure (will be moved after project creation)
         const formData = new FormData()
         formData.append('file', file)
-        formData.append('type', 'projects')
+        formData.append('type', 'image')
         formData.append('entityId', 'temp')
         formData.append('subfolder', 'images')
         

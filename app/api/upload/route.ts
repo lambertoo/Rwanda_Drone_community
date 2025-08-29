@@ -38,14 +38,14 @@ export async function POST(request: NextRequest) {
     
     if (type === 'image' && !allowedImageTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Invalid image type. Allowed: JPEG, PNG, GIF, WebP' },
+        { error: `Invalid image type. Allowed: JPEG, PNG, GIF, WebP. Received: ${file.type}` },
         { status: 400 }
       )
     }
     
     if (type === 'resource' && !allowedResourceTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Invalid resource type. Allowed: PDF, ZIP, Word, Excel, PowerPoint, TXT, CSV' },
+        { error: `Invalid resource type. Allowed: PDF, ZIP, Word, Excel, PowerPoint, TXT, CSV. Received: ${file.type}` },
         { status: 400 }
       )
     }
