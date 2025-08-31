@@ -43,17 +43,17 @@ interface ProjectResource {
   description: string
   type: "file" | "link" | "video"
   url: string
-  size?: string
+  size?: number
   fileType?: string
   embedCode?: string
+  filePath?: string | undefined
 }
 
-export default function EditProjectForm({ projectId }: { projectId: string }) {
+export default function EditProjectForm({ projectId, initialData }: { projectId: string, initialData?: any }) {
   const router = useRouter()
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    fullDescription: "",
     category: "",
     status: "",
     location: "",
@@ -70,8 +70,6 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
     outcomes: [] as string[],
     thumbnail: "",
   })
-  const [loading, setLoading] = useState(true)
-  const [project, setProject] = useState<any>(null)
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [gallery, setGallery] = useState<ProjectGalleryItem[]>([])
@@ -104,6 +102,8 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
     url: "",
     file: null as File | null,
     filePath: "", // Track the actual file path for moving
+    size: undefined as number | undefined,
+    fileType: undefined as string | undefined,
   })
 
   const [newGalleryItem, setNewGalleryItem] = useState({
@@ -114,7 +114,7 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
   })
 
   // Show loading state while authentication is being checked
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -122,70 +122,49 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
     )
   }
 
-  // Check if user can edit this project
-  if (!user || (!user.role.includes('admin') && project?.authorId !== user.id)) {
-    return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-2">Access Denied</h2>
-          <p className="text-muted-foreground">You don't have permission to edit this project.</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Load project data
-  const loadProject = async () => {
-    try {
-      const response = await fetch(`/api/projects/${projectId}`)
-      if (response.ok) {
-        const projectData = await response.json()
-        setProject(projectData)
-        
-        // Populate form with existing data
-        setFormData({
-          title: projectData.title || "",
-          description: projectData.description || "",
-          fullDescription: projectData.overview || "",
-          category: projectData.categoryId || "",
-          status: projectData.status || "",
-          location: projectData.location || "",
-          duration: projectData.duration || "",
-          startDate: projectData.startDate ? new Date(projectData.startDate).toISOString().split('T')[0] : "",
-          endDate: projectData.endDate ? new Date(projectData.endDate).toISOString().split('T')[0] : "",
-          funding: projectData.funding || "",
-          overview: projectData.overview || "",
-          methodology: projectData.methodology || "",
-          results: projectData.results || "",
-          technologies: projectData.technologies || [],
-          objectives: projectData.objectives || [],
-          challenges: projectData.challenges || [],
-          outcomes: projectData.outcomes || [],
-          thumbnail: projectData.thumbnail || "",
-        })
-        
-        // Load team members, gallery, and resources
-        if (projectData.teamMembers) {
-          setTeamMembers(projectData.teamMembers)
-        }
-        if (projectData.gallery) {
-          setGallery(projectData.gallery)
-        }
-        if (projectData.resources) {
-          setResources(projectData.resources)
-        }
-      } else {
-        showNotification('error', 'Error', 'Failed to load project data')
+  // Load project data when initialData is available
+  useEffect(() => {
+    if (initialData) {
+      console.log('=== FORM INITIALIZATION DEBUG ===')
+      console.log('initialData received:', initialData)
+      console.log('fullDescription field:', initialData.fullDescription)
+      console.log('fullDescription length:', initialData.fullDescription ? initialData.fullDescription.length : 'null/undefined')
+      
+      const newFormData = {
+        title: initialData.title || "",
+        description: initialData.description || "",
+        category: initialData.categoryId || "",
+        status: initialData.status || "",
+        location: initialData.location || "",
+        duration: initialData.duration || "",
+        startDate: initialData.startDate ? new Date(initialData.startDate).toISOString().split('T')[0] : "",
+        endDate: initialData.endDate ? new Date(initialData.endDate).toISOString().split('T')[0] : "",
+        funding: initialData.funding || "",
+        overview: initialData.fullDescription || "",
+        methodology: initialData.methodology || "",
+        results: initialData.results || "",
+        technologies: initialData.technologies || [],
+        objectives: initialData.objectives || [],
+        challenges: initialData.challenges || [],
+        outcomes: initialData.outcomes || [],
+        thumbnail: initialData.thumbnail || "",
       }
-    } catch (error) {
-      console.error('Error loading project:', error)
-      showNotification('error', 'Error', 'Failed to load project data')
-    } finally {
-      setLoading(false)
+      
+      console.log('Setting form data - overview field:', newFormData.overview)
+      console.log('Overview field length:', newFormData.overview.length)
+      
+      setFormData(newFormData)
+      setTeamMembers(initialData.teamMembers || [])
+      setGallery(initialData.gallery || [])
+      setResources(initialData.resources || [])
+      
+      console.log('=== END FORM INITIALIZATION DEBUG ===')
+    } else {
+      console.log('initialData is null/undefined')
     }
-  }
+  }, [initialData])
 
-  // Load project data and categories
+  // Fetch categories from database
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -202,43 +181,70 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
           console.error('Failed to fetch categories')
           // Fallback to database IDs if API fails
           setCategories([
-            { value: "cme0ed4om000csd6otbk9r3ok", label: "Agriculture", icon: "🌾" },
-            { value: "cme0ed4om000hsd6o6bk6z6gy", label: "Delivery & Logistics", icon: "📦" },
-            { value: "cme0ed4om000fsd6o6uks87km", label: "Mapping & Surveying", icon: "🗺️" },
-            { value: "cme0ed4om000dsd6otbk84p04", label: "Photography & Videography", icon: "📸" },
-            { value: "cme0ed4om000gsd6oh0ggaq5b", label: "Research & Development", icon: "🔬" },
-            { value: "cme0ed4om000esd6oi5l9hlvd", label: "Search & Rescue", icon: "🚨" },
+            { value: "cat_projects_1", label: "Aerial Photography", icon: "📸" },
+            { value: "cat_projects_2", label: "Agriculture", icon: "🌾" },
+            { value: "cat_projects_3", label: "Mapping & Surveying", icon: "🗺️" },
+            { value: "cat_projects_4", label: "Delivery & Transport", icon: "📦" },
+            { value: "cat_projects_5", label: "Research & Development", icon: "🔬" },
           ])
         }
       } catch (error) {
         console.error('Error fetching categories:', error)
         // Fallback to database IDs if API fails
         setCategories([
-          { value: "cme0ed4om000csd6otbk9r3ok", label: "Agriculture", icon: "🌾" },
-          { value: "cme0ed4om000hsd6o6bk6z6gy", label: "Delivery & Logistics", icon: "📦" },
-          { value: "cme0ed4om000fsd6o6uks87km", label: "Mapping & Surveying", icon: "🗺️" },
-          { value: "cme0ed4om000dsd6otbk84p04", label: "Photography & Videography", icon: "📸" },
-          { value: "cme0ed4om000gsd6oh0ggaq5b", label: "Research & Development", icon: "🔬" },
-          { value: "cme0ed4om000esd6oi5l9hlvd", label: "Search & Rescue", icon: "🚨" },
+          { value: "cat_projects_1", label: "Aerial Photography", icon: "📸" },
+          { value: "cat_projects_2", label: "Agriculture", icon: "🌾" },
+          { value: "cat_projects_3", label: "Mapping & Surveying", icon: "🗺️" },
+          { value: "cat_projects_4", label: "Delivery & Transport", icon: "📦" },
+          { value: "cat_projects_5", label: "Research & Development", icon: "🔬" },
         ])
       } finally {
         setLoadingCategories(false)
       }
     }
 
-    if (projectId) {
-      loadProject()
-      fetchCategories()
-    }
-  }, [projectId, showNotification])
+    fetchCategories()
+  }, [])
 
-  const statusOptions = [
-    { value: "planning", label: "Planning", color: "bg-blue-100 text-blue-800" },
-    { value: "in-progress", label: "In Progress", color: "bg-yellow-100 text-yellow-800" },
-    { value: "completed", label: "Completed", color: "bg-green-100 text-green-800" },
-    { value: "on-hold", label: "On Hold", color: "bg-gray-100 text-gray-800" },
-    { value: "cancelled", label: "Cancelled", color: "bg-red-100 text-red-800" },
-  ]
+  // Fetch project statuses
+  useEffect(() => {
+    const fetchStatuses = async () => {
+      try {
+        const response = await fetch('/api/project-statuses')
+        if (response.ok) {
+          const data = await response.json()
+          setStatusOptions(data.statuses)
+        } else {
+          console.error('Failed to fetch statuses')
+          // Fallback to default statuses if API fails
+          setStatusOptions([
+            { value: "planning", label: "Planning", color: "bg-blue-100 text-blue-800" },
+            { value: "in_progress", label: "In Progress", color: "bg-yellow-100 text-yellow-800" },
+            { value: "completed", label: "Completed", color: "bg-green-100 text-green-800" },
+            { value: "on_hold", label: "On Hold", color: "bg-gray-100 text-gray-800" },
+            { value: "cancelled", label: "Cancelled", color: "bg-red-100 text-red-800" },
+          ])
+        }
+      } catch (error) {
+        console.error('Error fetching statuses:', error)
+        // Fallback to default statuses if API fails
+        setStatusOptions([
+          { value: "planning", label: "Planning", color: "bg-blue-100 text-blue-800" },
+          { value: "in_progress", label: "In Progress", color: "bg-yellow-100 text-yellow-800" },
+          { value: "completed", label: "Completed", color: "bg-green-100 text-green-800" },
+          { value: "on_hold", label: "On Hold", color: "bg-gray-100 text-gray-800" },
+          { value: "cancelled", label: "Cancelled", color: "bg-red-100 text-red-800" },
+        ])
+      } finally {
+        setLoadingStatuses(false)
+      }
+    }
+
+    fetchStatuses()
+  }, [])
+
+  const [statusOptions, setStatusOptions] = useState<Array<{ value: string, label: string, color: string }>>([])
+  const [loadingStatuses, setLoadingStatuses] = useState(true)
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -346,8 +352,9 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
       description: newResource.description,
       type: newResource.type,
       url: newResource.url,
-      size: undefined, // Size will be available from the upload response if needed
-      fileType: undefined, // File type will be available from the upload response if needed
+      size: newResource.size, // Size from upload response
+      fileType: newResource.fileType, // File type from upload response
+      filePath: newResource.filePath, // Store the file path for moving
     }
 
     setResources([...resources, resource])
@@ -357,6 +364,8 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
       type: "file",
       url: "",
       file: null,
+      size: undefined,
+      fileType: undefined,
       filePath: "",
     })
   }
@@ -378,9 +387,9 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
         // Upload file to server with temp structure (will be moved after project creation)
         const formData = new FormData()
         formData.append('file', file)
-        formData.append('type', 'image')
+        formData.append('type', 'projects')
         formData.append('entityId', 'temp')
-        formData.append('subfolder', 'images')
+        formData.append('subfolder', 'resources')
         
         const response = await fetch('/api/upload', {
           method: 'POST',
@@ -393,7 +402,9 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
             ...newResource, 
             file: null, // Clear file input
             url: result.fileUrl, // Store the uploaded file URL
-            filePath: result.fileUrl // Store the file path
+            filePath: result.fileUrl, // Store the file path
+            size: result.size, // Store file size
+            fileType: result.fileType, // Store file type
           })
         } else {
           const error = await response.json()
@@ -416,11 +427,11 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
       }
       
       try {
-        // Upload file to server with proper structure
+        // Upload file to server with temp structure (will be moved after project creation)
         const formData = new FormData()
         formData.append('file', file)
         formData.append('type', 'projects')
-        formData.append('entityId', 'projects')
+        formData.append('entityId', 'temp')
         formData.append('subfolder', 'images')
         
         const response = await fetch('/api/upload', {
@@ -495,19 +506,24 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
         thumbnail: formData.thumbnail,
       }
 
+      console.log('Form data being sent:', projectData)
+      console.log('Thumbnail value:', formData.thumbnail)
+
       const formDataToSend = new FormData()
       Object.entries(projectData).forEach(([key, value]) => {
-        if (key === 'fullDescription') {
-          // Map fullDescription to overview for the server
-          formDataToSend.append('overview', value as string)
-        } else if (Array.isArray(value)) {
+        if (Array.isArray(value)) {
           formDataToSend.append(key, JSON.stringify(value))
         } else {
           formDataToSend.append(key, value as string)
         }
       })
 
-      // Use server action
+      console.log('FormData entries:')
+      for (let [key, value] of formDataToSend.entries()) {
+        console.log(`${key}: ${value}`)
+      }
+
+      // Use update action for editing
       const result = await updateProjectAction(projectId, formDataToSend)
       
       if (result.success && result.project) {
@@ -519,10 +535,13 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
         setTimeout(() => {
           router.push(`/projects/${projectId}`)
         }, 2000)
+      } else {
+        const errorMessage = 'error' in result ? result.error : 'Failed to update project. Please try again.'
+        showNotification('error', 'Update Failed', errorMessage)
       }
     } catch (error) {
-      console.error("Error updating project:", error)
-      showNotification('error', 'Update Failed', error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.')
+      console.error("Error creating project:", error)
+      showNotification('error', 'Creation Failed', 'An unexpected error occurred. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -539,7 +558,7 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
         <Alert className="mb-6">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            You must be logged in to create a project. Please sign in first.
+            You must be logged in to edit a project. Please sign in first.
           </AlertDescription>
         </Alert>
       )}
@@ -548,10 +567,10 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Edit className="h-5 w-5" />
-            Edit Your Project
+            Edit Project
           </CardTitle>
           <p className="text-muted-foreground">
-            Update your drone project details. Make changes to any field below and save your updates.
+            Update your drone project information and share the latest developments with the community.
           </p>
         </CardHeader>
       </Card>
@@ -624,18 +643,6 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="fullDescription">Full Description *</Label>
-                  <Textarea
-                    id="fullDescription"
-                    value={formData.fullDescription}
-                    onChange={(e) => handleInputChange("fullDescription", e.target.value)}
-                    placeholder="Detailed description of your project, its goals, and significance..."
-                    rows={6}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label>Project Thumbnail</Label>
                   <div className="flex items-center gap-4">
                     {formData.thumbnail ? (
@@ -662,7 +669,7 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
                       </div>
                     ) : (
                       <div className="text-sm text-muted-foreground">
-                        Select a thumbnail from your project gallery below
+                        Upload images to the gallery below, then select one as your thumbnail
                       </div>
                     )}
                   </div>
@@ -674,16 +681,23 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
                 <div className="grid md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="status">Project Status *</Label>
-                    <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                    <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)} disabled={loadingStatuses}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
+                        <SelectValue placeholder={loadingStatuses ? "Loading statuses..." : "Select status"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {statusOptions.map((status) => (
-                          <SelectItem key={status.value} value={status.value}>
-                            {status.label}
-                          </SelectItem>
-                        ))}
+                        {loadingStatuses ? (
+                          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
+                            <span>⏳</span>
+                            Loading statuses...
+                          </div>
+                        ) : (
+                          statusOptions.map((status) => (
+                            <SelectItem key={status.value} value={status.value}>
+                              {status.label}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -1442,10 +1456,10 @@ export default function EditProjectForm({ projectId }: { projectId: string }) {
             {isSubmitting ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Updating...
+                Publishing...
               </>
             ) : (
-              "Update Project"
+              "Publish Project"
             )}
           </Button>
         </div>

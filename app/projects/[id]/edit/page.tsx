@@ -1,128 +1,148 @@
-"use client"
+'use client'
 
-import { useParams } from 'next/navigation'
-import { useAuth } from '@/lib/auth-context'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import EditProjectForm from '@/components/projects/edit-project-form'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft, AlertTriangle } from 'lucide-react'
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
+import EditProjectForm from "@/components/projects/edit-project-form"
 
-export default function EditProjectPage() {
-  const params = useParams()
-  const { user, loading: authLoading } = useAuth()
+interface Project {
+  id: string
+  title: string
+  description: string
+  fullDescription?: string
+  status: 'planning' | 'in_progress' | 'completed' | 'on_hold' | 'cancelled'
+  location?: string
+  duration?: string
+  startDate?: string
+  endDate?: string
+  funding?: string
+  technologies?: any[]
+  objectives?: any[]
+  challenges?: any[]
+  outcomes?: any[]
+  methodology?: string
+  results?: string
+  teamMembers?: any[]
+  gallery?: any[]
+  resources?: any[]
+  thumbnail?: string
+  categoryId?: string
+  author: {
+    id: string
+    fullName: string
+    avatar?: string
+    role: string
+  }
+  category?: {
+    id: string
+    name: string
+    color: string
+    icon: string
+  }
+}
+
+export default function EditProjectPage({ params }: { params: { id: string } }) {
+  const { user, isAuthenticated, loading: authLoading } = useAuth()
   const router = useRouter()
-  const [project, setProject] = useState<any>(null)
+  const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const projectId = params.id as string
-
+  // Fetch project data
   useEffect(() => {
-    const loadProject = async () => {
+    const fetchProject = async () => {
       try {
-        const response = await fetch(`/api/projects/${projectId}`)
+        setLoading(true)
+        const response = await fetch(`/api/projects/${params.id}`)
+        
         if (response.ok) {
-          const projectData = await response.json()
-          setProject(projectData)
+          const data = await response.json()
+          setProject(data)
         } else {
-          setError('Project not found')
+          setError(`Failed to fetch project: ${response.statusText}`)
         }
       } catch (error) {
-        setError('Failed to load project')
+        console.error('Fetch error:', error)
+        setError(`Fetch error: ${error}`)
       } finally {
         setLoading(false)
       }
     }
 
-    if (projectId) {
-      loadProject()
+    if (params.id) {
+      fetchProject()
     }
-  }, [projectId])
+  }, [params.id])
 
-  // Show loading state while authentication is being checked
+  // Check if user can edit this project
+  useEffect(() => {
+    if (project && isAuthenticated && user && !authLoading) {
+      const canEdit = user.role === 'admin' || user.id === project.author.id
+      if (!canEdit) {
+        router.push(`/projects/${params.id}`)
+      }
+    }
+  }, [project, isAuthenticated, user, authLoading, router, params.id])
+
+  // Show loading state while authentication is being checked or project is being fetched
   if (authLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !project) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center py-8">
+            <h1 className="text-2xl font-bold text-red-600">Error</h1>
+            <p className="text-muted-foreground mt-2">{error || 'Project not found'}</p>
+            <button 
+              onClick={() => router.back()} 
+              className="mt-4 inline-block px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
 
   // Check if user can edit this project
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle className="text-center text-red-600">Access Denied</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-muted-foreground mb-4">You must be logged in to edit projects.</p>
-            <Button onClick={() => router.push('/login')}>Login</Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
+  if (!isAuthenticated || !user) {
+    router.push('/login')
+    return null
   }
 
-  if (!project) {
-    return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle className="text-center text-red-600">Project Not Found</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-muted-foreground mb-4">The project you're looking for doesn't exist.</p>
-            <Button onClick={() => router.push('/projects')}>Back to Projects</Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  // Check if user can edit this project (admin or project author)
-  if (!user.role.includes('admin') && project.authorId !== user.id) {
-    return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle className="text-center text-red-600 flex items-center justify-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Access Denied
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-muted-foreground mb-4">
-              You don't have permission to edit this project. Only the project author and administrators can edit projects.
-            </p>
-            <Button onClick={() => router.push(`/projects/${projectId}`)}>View Project</Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
+  const canEdit = user.role === 'admin' || user.id === project.author.id
+  if (!canEdit) {
+    router.push(`/projects/${params.id}`)
+    return null
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="flex items-center gap-4 mb-6">
-        <Button
-          variant="outline"
-          onClick={() => router.push(`/projects/${projectId}`)}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Project
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold">Edit Project</h1>
-          <p className="text-muted-foreground">Update your project details</p>
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Edit Project</h1>
+          <p className="text-muted-foreground">
+            Update your drone project information and share the latest developments with the community.
+          </p>
         </div>
-      </div>
 
-      <EditProjectForm projectId={projectId} />
+        <EditProjectForm 
+          projectId={params.id}
+          initialData={project}
+        />
+      </div>
     </div>
   )
 } 
