@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getSession } from "@/lib/auth"
+import { getCurrentUser, canCreateEvents } from "@/lib/auth"
 
-// READ - Get a single event
+// READ - Get a single event (PUBLIC - no authentication required)
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
@@ -60,18 +60,20 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-// UPDATE - Update an event
+// UPDATE - Update an event (REQUIRES AUTHENTICATION)
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const sessionId = request.cookies.get("session-id")?.value
-    if (!sessionId) {
+    
+    // Authenticate user
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
 
-    const user = getSession(sessionId)
-    if (!user) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 })
+    // Check if user can create events
+    if (!canCreateEvents(currentUser)) {
+      return NextResponse.json({ error: "Insufficient permissions to edit events" }, { status: 403 })
     }
 
     // Check if event exists and user owns it
@@ -84,7 +86,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Event not found" }, { status: 404 })
     }
 
-    if (existingEvent.organizerId !== user.id && user.role !== "admin") {
+    if (existingEvent.organizerId !== currentUser.id && currentUser.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
@@ -261,16 +263,20 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-// DELETE - Delete an event
+// DELETE - Delete an event (REQUIRES AUTHENTICATION)
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const sessionId = request.cookies.get("session-id")?.value
-    if (!sessionId) return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    
+    // Authenticate user
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    }
 
-    const user = getSession(sessionId)
-    if (!user) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 })
+    // Check if user can create events
+    if (!canCreateEvents(currentUser)) {
+      return NextResponse.json({ error: "Insufficient permissions to delete events" }, { status: 403 })
     }
 
     // Check if event exists and user owns it
@@ -283,7 +289,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Event not found" }, { status: 404 })
     }
 
-    if (existingEvent.organizerId !== user.id && user.role !== "admin") {
+    if (existingEvent.organizerId !== currentUser.id && currentUser.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 

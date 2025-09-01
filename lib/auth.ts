@@ -54,7 +54,7 @@ export function canPostAnnouncements(user: AuthUser | null): boolean {
 }
 
 export function canCreateEvents(user: AuthUser | null): boolean {
-  return user?.role === "admin" || user?.role === "regulator"
+  return user !== null && user.role !== null && user.role !== "visitor"
 }
 
 export function canCreateResources(user: AuthUser | null): boolean {

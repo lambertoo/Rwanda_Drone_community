@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Users, Search, Grid, List, Plus } from "lucide-react"
+import { Calendar, Clock, MapPin, Users, Search, Grid, List, Plus, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { useAuth } from "@/lib/auth-context"
 
 interface Event {
   id: string
@@ -43,6 +44,8 @@ interface Event {
     avatar?: string
     organization?: string
   }
+  allowRegistration?: boolean
+  flyer?: string
 }
 
 export default function EventsPage() {
@@ -53,6 +56,8 @@ export default function EventsPage() {
   const [selectedLocation, setSelectedLocation] = useState("all")
   const [viewMode, setViewMode] = useState<"grid" | "list" | "calendar">("grid")
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
+  const [rsvpStatuses, setRsvpStatuses] = useState<Record<string, 'none' | 'registered' | 'loading'>>({})
+  const { user } = useAuth()
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -61,6 +66,10 @@ export default function EventsPage() {
         if (response.ok) {
           const data = await response.json()
           setEvents(data.events || [])
+          // Check RSVP status for each event if user is logged in
+          if (user) {
+            checkAllRsvpStatuses(data.events || [])
+          }
         }
       } catch (error) {
         console.error('Error fetching events:', error)
@@ -70,7 +79,73 @@ export default function EventsPage() {
     }
 
     fetchEvents()
-  }, [])
+  }, [user])
+
+  const checkAllRsvpStatuses = async (eventsList: Event[]) => {
+    const statuses: Record<string, 'none' | 'registered' | 'loading'> = {}
+    
+    for (const event of eventsList) {
+      try {
+        const response = await fetch(`/api/events/${event.id}/rsvp`)
+        statuses[event.id] = response.ok ? 'registered' : 'none'
+      } catch (err) {
+        statuses[event.id] = 'none'
+      }
+    }
+    
+    setRsvpStatuses(statuses)
+  }
+
+  const handleRSVP = async (eventId: string) => {
+    if (!user) {
+      window.location.href = '/login'
+      return
+    }
+
+    setRsvpStatuses(prev => ({ ...prev, [eventId]: 'loading' }))
+    
+    try {
+      const response = await fetch(`/api/events/${eventId}/rsvp`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        setRsvpStatuses(prev => ({ ...prev, [eventId]: 'registered' }))
+        // Refresh events to update counts
+        const eventsResponse = await fetch('/api/events')
+        if (eventsResponse.ok) {
+          const data = await eventsResponse.json()
+          setEvents(data.events || [])
+        }
+      }
+    } catch (err) {
+      setRsvpStatuses(prev => ({ ...prev, [eventId]: 'none' }))
+    }
+  }
+
+  const handleCancelRSVP = async (eventId: string) => {
+    setRsvpStatuses(prev => ({ ...prev, [eventId]: 'loading' }))
+    
+    try {
+      const response = await fetch(`/api/events/${eventId}/rsvp`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        setRsvpStatuses(prev => ({ ...prev, [eventId]: 'none' }))
+        // Refresh events to update counts
+        const eventsResponse = await fetch('/api/events')
+        if (eventsResponse.ok) {
+          const data = await eventsResponse.json()
+          setEvents(data.events || [])
+        }
+      }
+    } catch (err) {
+      setRsvpStatuses(prev => ({ ...prev, [eventId]: 'registered' }))
+    }
+  }
 
   const categories = ["all", ...Array.from(new Set(events.map(event => event.category?.name).filter(Boolean)))]
   const locations = ["all", ...Array.from(new Set(events.map(event => event.location)))]
@@ -93,10 +168,58 @@ export default function EventsPage() {
     return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
 
+  const renderRSVPButton = (event: Event) => {
+    if (!event.allowRegistration) {
+      return (
+        <Button variant="outline" disabled>
+          Registration Closed
+        </Button>
+      )
+    }
+
+    if (!user) {
+      return (
+        <Button variant="outline" asChild>
+          <Link href="/login">Login to Register</Link>
+        </Button>
+      )
+    }
+
+    const status = rsvpStatuses[event.id] || 'none'
+
+    if (status === 'registered') {
+      return (
+        <Button 
+          variant="outline" 
+          className="text-green-600 border-green-600 hover:bg-green-50"
+          onClick={() => handleCancelRSVP(event.id)}
+          disabled={status === 'loading'}
+        >
+          <CheckCircle className="h-4 w-4 mr-2" />
+          {status === 'loading' ? 'Canceling...' : 'Registered'}
+        </Button>
+      )
+    }
+
+    return (
+      <Button 
+        variant="outline"
+        onClick={() => handleRSVP(event.id)}
+        disabled={status === 'loading'}
+      >
+        {status === 'loading' ? 'Registering...' : 'Register'}
+      </Button>
+    )
+  }
+
   const EventCard = ({ event }: { event: Event }) => (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
       <div className="aspect-video relative">
-        <img src="/placeholder.svg" alt={event.title} className="w-full h-full object-cover" />
+        <img 
+          src={event.flyer || "/placeholder.svg"} 
+          alt={event.title} 
+          className="w-full h-full object-cover" 
+        />
         <Badge className="absolute top-2 right-2" variant="secondary">
           {event.category?.name || 'Uncategorized'}
         </Badge>
@@ -148,7 +271,7 @@ export default function EventsPage() {
           <Button asChild className="flex-1">
             <Link href={`/events/${event.id}`}>View Details</Link>
           </Button>
-          <Button variant="outline">Register</Button>
+          {renderRSVPButton(event)}
         </div>
       </CardContent>
     </Card>
@@ -175,37 +298,29 @@ export default function EventsPage() {
             </div>
             <p className="text-muted-foreground text-sm mb-3 line-clamp-2">{event.description}</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-              <div className="flex items-center gap-1">
-                <Calendar className="h-3 w-3 text-blue-600" />
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-blue-600" />
                 <span>{formatDate(event.startDate)}</span>
               </div>
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3 text-green-600" />
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-green-600" />
                 <span>{formatTime(event.startDate)}</span>
               </div>
-              <div className="flex items-center gap-1">
-                <MapPin className="h-3 w-3 text-red-600" />
-                <span>{event.location}</span>
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-red-600" />
+                <span>{event.venue}, {event.location}</span>
               </div>
-              <div className="flex items-center gap-1">
-                <Users className="h-3 w-3 text-purple-600" />
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-purple-600" />
                 <span>{event.organizer.fullName}</span>
               </div>
             </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            {event.price === 0 ? (
-              <Badge variant="outline" className="text-green-600">
-                Free
-              </Badge>
-            ) : (
-              <span className="font-semibold text-sm">
-                {event.price.toLocaleString()} {event.currency}
-              </span>
-            )}
-            <Button asChild size="sm">
-              <Link href={`/events/${event.id}`}>View Details</Link>
-            </Button>
+            <div className="mt-4 flex gap-2">
+              <Button asChild variant="outline">
+                <Link href={`/events/${event.id}`}>View Details</Link>
+              </Button>
+              {renderRSVPButton(event)}
+            </div>
           </div>
         </div>
       </CardContent>
@@ -214,10 +329,10 @@ export default function EventsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center items-center min-h-64">
           <div className="text-center">
-            <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-spin" />
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Loading events...</p>
           </div>
         </div>
@@ -226,12 +341,13 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Events</h1>
-          <p className="text-muted-foreground mt-2">
-            Discover and join drone community events, workshops, and competitions
+          <h1 className="text-3xl font-bold mb-2">Events</h1>
+          <p className="text-muted-foreground">
+            Discover and join drone events, workshops, and meetups
           </p>
         </div>
         <Button asChild>
