@@ -1,6 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
 import Link from "next/link"
 import { Calendar, Clock, MapPin, Users, Search, Grid, List, Plus, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"

@@ -1,6 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -51,6 +54,13 @@ export default function OpportunitiesPage() {
   const [location, setLocation] = useState("all")
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [categories, setCategories] = useState<Array<{
+    id: string
+    name: string
+    description: string
+    color: string
+    icon: string
+  }>>([])
 
   // Prevent hydration mismatch by ensuring client-side rendering
   useEffect(() => {
@@ -62,7 +72,21 @@ export default function OpportunitiesPage() {
         setCurrentUser(JSON.parse(user))
       }
     }
+    // Fetch categories
+    fetchCategories()
   }, [])
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/opportunity-categories")
+      if (response.ok) {
+        const data = await response.json()
+        setCategories(data)
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error)
+    }
+  }
 
   // Fetch saved opportunities when user is available
   useEffect(() => {
@@ -74,14 +98,9 @@ export default function OpportunitiesPage() {
   const fetchSavedOpportunities = async () => {
     try {
       if (typeof window === 'undefined') return
-      
-      const token = localStorage.getItem("token")
-      if (!token) return
 
       const response = await fetch("/api/opportunities/saved", {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        credentials: 'include' // Include cookies for authentication
       })
 
       if (response.ok) {
@@ -131,20 +150,12 @@ export default function OpportunitiesPage() {
 
     try {
       if (typeof window === 'undefined') return
-      
-      const token = localStorage.getItem("token")
-      if (!token) {
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login'
-        }
-        return
-      }
 
       const response = await fetch(`/api/opportunities/${opportunityId}/save`, {
         method: "POST",
+        credentials: 'include', // Include cookies for authentication
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          "Content-Type": "application/json"
         }
       })
 
@@ -578,11 +589,11 @@ export default function OpportunitiesPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="cat_001">Software Development</SelectItem>
-              <SelectItem value="cat_002">Drone Operations</SelectItem>
-              <SelectItem value="cat_003">Research & Development</SelectItem>
-              <SelectItem value="cat_004">Business & Management</SelectItem>
-              <SelectItem value="cat_005">Marketing & Sales</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.icon} {cat.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 

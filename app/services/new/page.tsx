@@ -1,6 +1,9 @@
 import NewServiceForm from "@/components/services/new-service-form"
 import { AuthGuard } from "@/components/auth-guard"
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 export default function NewServicePage() {
   return (
     <div className="container mx-auto px-4 py-8">

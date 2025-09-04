@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect } from "react"
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -287,9 +290,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         {/* Event Header */}
         <div className="mb-8">
           {event.category && (
-            <Badge variant="secondary" className="mb-4">
+          <Badge variant="secondary" className="mb-4">
               {event.category.name}
-            </Badge>
+          </Badge>
           )}
           
           {/* Event Flyer/Thumbnail */}
@@ -334,11 +337,11 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               <TabsContent value="overview" className="space-y-6">
                 {/* About This Event */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle>About This Event</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground mb-4">
+              <CardHeader>
+                <CardTitle>About This Event</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
                       {event.fullDescription || event.description}
                     </p>
                     
@@ -350,16 +353,16 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                             <li key={index} className="flex items-start gap-2">
                               <span className="text-primary mt-1">•</span>
                               <span>{req.label || req}</span>
-                            </li>
+                  </li>
                           ))}
-                        </ul>
+                </ul>
                       </div>
                     )}
 
                     {event.tags && event.tags.length > 0 && (
-                      <div className="mt-6">
+                <div className="mt-6">
                         <h4 className="font-semibold mb-3">Tags</h4>
-                        <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2">
                           {event.tags.map((tag: string, index: number) => (
                             <Badge key={index} variant="outline">
                               #{tag}
@@ -391,8 +394,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                             <div className="flex-1">
                               <h4 className="font-semibold mb-1">{item.title}</h4>
                               <p className="text-muted-foreground">{item.description}</p>
-                            </div>
-                          </div>
+                  </div>
+                </div>
                         ))}
                       </div>
                     ) : (
@@ -451,8 +454,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                     ) : (
                       <p className="text-muted-foreground">No gallery images available yet.</p>
                     )}
-                  </CardContent>
-                </Card>
+              </CardContent>
+            </Card>
               </TabsContent>
             </Tabs>
           </div>
@@ -585,7 +588,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 <div className="text-center py-8 text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No participants registered yet</p>
-                </div>
+        </div>
               )}
             </CardContent>
           </Card>
@@ -593,4 +596,4 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       </div>
     </div>
   )
-}
+} 

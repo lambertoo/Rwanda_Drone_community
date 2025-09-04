@@ -66,16 +66,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json()
         console.log('AuthContext - User data received:', data.user)
         setUser(data.user)
+        try {
+          localStorage.setItem('user', JSON.stringify(data.user))
+        } catch (e) {
+          console.warn('AuthContext - Failed to persist user to localStorage')
+        }
       } else if (response.status === 401) {
         console.log('AuthContext - User not authenticated (401)')
         setUser(null)
+        try {
+          localStorage.removeItem('user')
+        } catch {}
       } else {
         console.error('AuthContext - Failed to fetch user profile:', response.status)
         setUser(null)
+        try {
+          localStorage.removeItem('user')
+        } catch {}
       }
     } catch (error) {
       console.error('AuthContext - Error fetching user profile:', error)
       setUser(null)
+      try {
+        localStorage.removeItem('user')
+      } catch {}
     } finally {
       setLoading(false)
     }
@@ -95,8 +109,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (response.ok) {
         const data = await response.json()
-        // Fetch fresh user profile after successful login
-        await fetchUserProfile()
+        // Immediately update state so UI reflects login without refresh
+        setUser(data.user)
+        try {
+          localStorage.setItem('user', JSON.stringify(data.user))
+        } catch {}
+        // Then fetch a fresh profile to normalize fields
+        fetchUserProfile()
         return { 
           success: true, 
           user: data.user
@@ -119,10 +138,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: 'include',
       })
       setUser(null)
+      try {
+        localStorage.removeItem('user')
+      } catch {}
     } catch (error) {
       console.error('Logout error:', error)
       // Even if logout fails, clear local state
       setUser(null)
+      try {
+        localStorage.removeItem('user')
+      } catch {}
     }
   }
 

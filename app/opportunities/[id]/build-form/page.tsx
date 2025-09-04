@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Settings, FormInput, Users, CheckCircle } from "lucide-react"
-import FormBuilder from "@/components/opportunities/form-builder"
+import AdvancedFormBuilder from "@/components/opportunities/advanced-form-builder"
 
 interface Opportunity {
   id: string
@@ -63,7 +63,7 @@ export default function BuildFormPage({ params }: { params: Promise<{ id: string
     }
   }
 
-  const handleSaveForm = async (formData: { title: string; description: string; fields: any[] }) => {
+  const handleSaveForm = async (formData: { title: string; description: string; sections: any[] }) => {
     setSaving(true)
     try {
       const response = await fetch(`/api/opportunities/${opportunityId}/application-form`, {
@@ -153,7 +153,7 @@ export default function BuildFormPage({ params }: { params: Promise<{ id: string
       </Card>
 
       {/* Form Builder */}
-      <FormBuilder
+      <AdvancedFormBuilder
         opportunityId={opportunityId}
         onSave={handleSaveForm}
         initialForm={existingForm}

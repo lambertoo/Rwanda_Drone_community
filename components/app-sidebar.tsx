@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/lib/auth-context"
 import { 
   Home, 
   MessageSquare, 
@@ -27,19 +28,7 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export function AppSidebar({ className, onItemClick }: SidebarProps) {
   const pathname = usePathname()
-  const [user, setUser] = useState<AuthUser | null>(null)
-
-  useEffect(() => {
-    // Get user from localStorage
-    const storedUser = localStorage.getItem("user")
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser))
-      } catch (error) {
-        console.error("Error parsing user from localStorage:", error)
-      }
-    }
-  }, [])
+  const { user } = useAuth()
 
   const getRoleBasedNavItems = () => {
     const baseItems = [

@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getSession } from "@/lib/auth"
+import { getSession, getCurrentUser } from "@/lib/auth"
 import { cookies } from "next/headers"
+import { verifyToken, extractTokenFromRequest } from "@/lib/jwt-utils"
 
 // READ - Get all opportunities
 export async function GET(request: NextRequest) {
@@ -72,8 +73,30 @@ export async function GET(request: NextRequest) {
 // CREATE - Create a new opportunity
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession(cookies())
-    if (!session) {
+    // Extract token from Authorization header or Cookie
+    const token = extractTokenFromRequest(request)
+    let user = null
+    
+    if (token) {
+      const payload = verifyToken(token)
+      if (payload) {
+        user = {
+          id: payload.userId,
+          username: payload.username,
+          email: payload.email,
+          fullName: payload.username,
+          role: payload.role,
+          isVerified: false
+        }
+      }
+    }
+    
+    // If no token found, try getCurrentUser as fallback
+    if (!user) {
+      user = await getCurrentUser()
+    }
+    
+    if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -81,12 +104,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    console.log('Request body:', body)
     const {
       title,
       description,
       company,
       opportunityType,
-      category,
+      categoryId,
       location,
       salary,
       requirements,
@@ -94,8 +118,11 @@ export async function POST(request: NextRequest) {
       isRemote = false
     } = body
 
+    console.log('Extracted fields:', { title, description, company, opportunityType, categoryId, location })
+
     // Validate required fields
-    if (!title || !description || !company || !opportunityType || !category || !location) {
+    if (!title || !description || !company || !opportunityType || !location) {
+      console.log('Missing fields:', { title: !!title, description: !!description, company: !!company, opportunityType: !!opportunityType, location: !!location })
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -108,13 +135,13 @@ export async function POST(request: NextRequest) {
         description,
         company,
         opportunityType,
-        category,
+        categoryId,
         location,
         salary,
         requirements: requirements ? JSON.stringify(requirements) : null,
         isUrgent,
         isRemote,
-        posterId: session.userId
+        posterId: user.id
       },
       include: {
         poster: {
@@ -131,7 +158,7 @@ export async function POST(request: NextRequest) {
 
     // Increment user's opportunity count
     await prisma.user.update({
-      where: { id: session.userId },
+      where: { id: user.id },
       data: {
         opportunitiesCount: {
           increment: 1
@@ -147,4 +174,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}

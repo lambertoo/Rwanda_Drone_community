@@ -1,18 +1,31 @@
 import { NextRequest, NextResponse } from "next/server"
-import { verifyToken } from "@/lib/jwt-utils"
+import { verifyToken, extractTokenFromRequest } from "@/lib/jwt-utils"
+import { getCurrentUser } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const token = request.headers.get("authorization")?.replace("Bearer ", "")
-    
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // Try Authorization header or accessToken cookie
+    const token = extractTokenFromRequest(request)
+    let userId: string | null = null
+
+    if (token) {
+      const decoded = verifyToken(token)
+      if (decoded?.userId) {
+        userId = decoded.userId
+      }
     }
 
-    const decoded = await verifyToken(token)
-    if (!decoded || !decoded.userId) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 })
+    // Fallback to cookie-based auth helper
+    if (!userId) {
+      const user = await getCurrentUser()
+      if (user?.id) {
+        userId = user.id
+      }
+    }
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const { id: opportunityId } = params
@@ -30,7 +43,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const existingSave = await prisma.savedOpportunity.findUnique({
       where: {
         userId_opportunityId: {
-          userId: decoded.userId,
+          userId: userId,
           opportunityId: opportunityId
         }
       }
@@ -41,7 +54,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       await prisma.savedOpportunity.delete({
         where: {
           userId_opportunityId: {
-            userId: decoded.userId,
+            userId: userId,
             opportunityId: opportunityId
           }
         }
@@ -55,7 +68,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       // Not saved, save it
       await prisma.savedOpportunity.create({
         data: {
-          userId: decoded.userId,
+          userId: userId,
           opportunityId: opportunityId
         }
       })
@@ -76,15 +89,27 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const token = request.headers.get("authorization")?.replace("Bearer ", "")
-    
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // Try Authorization header or accessToken cookie
+    const token = extractTokenFromRequest(request)
+    let userId: string | null = null
+
+    if (token) {
+      const decoded = verifyToken(token)
+      if (decoded?.userId) {
+        userId = decoded.userId
+      }
     }
 
-    const decoded = await verifyToken(token)
-    if (!decoded || !decoded.userId) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 })
+    // Fallback to cookie-based auth helper
+    if (!userId) {
+      const user = await getCurrentUser()
+      if (user?.id) {
+        userId = user.id
+      }
+    }
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const { id: opportunityId } = params
@@ -93,7 +118,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const savedOpportunity = await prisma.savedOpportunity.findUnique({
       where: {
         userId_opportunityId: {
-          userId: decoded.userId,
+          userId: userId,
           opportunityId: opportunityId
         }
       }

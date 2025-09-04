@@ -10,13 +10,17 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, X } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createOpportunityAction } from "@/lib/actions"
+import AdvancedFormBuilder from "./advanced-form-builder"
 
 export default function NewOpportunityForm() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [requirements, setRequirements] = useState<string[]>([""])
   const [selectedTab, setSelectedTab] = useState("job")
+  const [activeFormTab, setActiveFormTab] = useState("basic")
+  const [applicationForm, setApplicationForm] = useState<any>(null)
   const [formData, setFormData] = useState({
     title: "",
     company: "",
@@ -59,6 +63,11 @@ export default function NewOpportunityForm() {
     const newRequirements = [...requirements]
     newRequirements[index] = value
     setRequirements(newRequirements)
+  }
+
+  const handleFormBuilderSave = (form: { title: string; description: string; sections: any[] }) => {
+    setApplicationForm(form)
+    alert("Application form saved successfully!")
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -131,12 +140,19 @@ export default function NewOpportunityForm() {
           </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Opportunity Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+        <Tabs value={activeFormTab} onValueChange={setActiveFormTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="basic">Basic Information</TabsTrigger>
+            <TabsTrigger value="form">Application Form</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="basic">
+            <Card>
+              <CardHeader>
+                <CardTitle>Opportunity Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
               {/* Tab Selection - Main Opportunity Category */}
               <div className="space-y-2">
                 <Label className="text-base font-semibold">What type of opportunity are you posting? *</Label>
@@ -309,14 +325,24 @@ export default function NewOpportunityForm() {
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-4">
-                <Button type="submit" disabled={loading} className="flex-1 bg-blue-600 hover:bg-blue-700">
-                  {loading ? "Creating..." : "Post Opportunity"}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+                  <div className="flex gap-4 pt-4">
+                    <Button type="submit" disabled={loading} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                      {loading ? "Creating..." : "Post Opportunity"}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="form">
+            <AdvancedFormBuilder
+              opportunityId="new"
+              onSave={handleFormBuilderSave}
+              initialForm={applicationForm}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

@@ -122,6 +122,7 @@ export default function NewEventForm() {
       operator: string | null
       value: string | null
       action: 'show' | 'hide' | 'require' | 'jump_to'
+      target?: string | null
     }
   }>>([
     { id: '1', label: 'Full Name', type: 'text', required: true, placeholder: 'Enter your full name' },
@@ -139,7 +140,8 @@ export default function NewEventForm() {
       showWhen: null as string | null,
       operator: null as string | null,
       value: null as string | null,
-      action: 'show' as 'show' | 'hide' | 'require' | 'jump_to'
+      action: 'show' as 'show' | 'hide' | 'require' | 'jump_to',
+      target: null as string | null
     }
   })
   const [showAddField, setShowAddField] = useState(false)
@@ -162,6 +164,7 @@ export default function NewEventForm() {
         operator: string | null
         value: string | null
         action: 'show' | 'hide' | 'require' | 'jump_to'
+        target?: string | null
       }
     }>
   }>>([])
@@ -1212,17 +1215,68 @@ export default function NewEventForm() {
                               </div>
                               <div>
                                 <Label>Value</Label>
-                                <Input
-                                  value={newField.conditionalLogic?.value || ''}
-                                  onChange={(e) => setNewField({ 
-                                    ...newField, 
-                                    conditionalLogic: { 
-                                      ...newField.conditionalLogic, 
-                                      value: e.target.value 
-                                    } 
-                                  })}
-                                  placeholder="Value to compare"
-                                />
+                                {(() => {
+                                  const targetField = getAllFields().find(f => f.id === newField.conditionalLogic?.showWhen)
+                                  if (targetField?.type === 'select' && targetField.options) {
+                                    return (
+                                      <Select
+                                        value={newField.conditionalLogic?.value || ''}
+                                        onValueChange={(value) => setNewField({ 
+                                          ...newField, 
+                                          conditionalLogic: { 
+                                            ...newField.conditionalLogic, 
+                                            value: value 
+                                          } 
+                                        })}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select value" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {targetField.options.map(option => (
+                                            <SelectItem key={option} value={option}>{option}</SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    )
+                                  } else if (targetField?.type === 'checkbox' || targetField?.type === 'radio') {
+                                    return (
+                                      <Select
+                                        value={newField.conditionalLogic?.value || ''}
+                                        onValueChange={(value) => setNewField({ 
+                                          ...newField, 
+                                          conditionalLogic: { 
+                                            ...newField.conditionalLogic, 
+                                            value: value 
+                                          } 
+                                        })}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select value" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {targetField.options?.map(option => (
+                                            <SelectItem key={option} value={option}>{option}</SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    )
+                                  } else {
+                                    return (
+                                      <Input
+                                        value={newField.conditionalLogic?.value || ''}
+                                        onChange={(e) => setNewField({ 
+                                          ...newField, 
+                                          conditionalLogic: { 
+                                            ...newField.conditionalLogic, 
+                                            value: e.target.value 
+                                          } 
+                                        })}
+                                        placeholder="Value to compare"
+                                      />
+                                    )
+                                  }
+                                })()}
                               </div>
                             </div>
                             <div className="mt-3">
@@ -1248,6 +1302,32 @@ export default function NewEventForm() {
                                 </SelectContent>
                               </Select>
                             </div>
+                            
+                            {/* Show section selector when action is jump_to */}
+                            {newField.conditionalLogic?.action === 'jump_to' && (
+                              <div className="mt-3">
+                                <Label>Target Section</Label>
+                                <Select 
+                                  value={newField.conditionalLogic?.target || ''} 
+                                  onValueChange={(value) => setNewField({ 
+                                    ...newField, 
+                                    conditionalLogic: { 
+                                      ...newField.conditionalLogic, 
+                                      target: value 
+                                    } 
+                                  })}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select section to jump to" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {formSections.map(section => (
+                                      <SelectItem key={section.id} value={section.id}>{section.title}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
                           </div>
 
                           {/* Field-specific options */}
@@ -1290,7 +1370,8 @@ export default function NewEventForm() {
                                       showWhen: null,
                                       operator: null,
                                       value: null,
-                                      action: 'show'
+                                      action: 'show',
+                                      target: null
                                     }
                                   })
                                   setFormSections(updatedSections)
@@ -1305,7 +1386,8 @@ export default function NewEventForm() {
                                       showWhen: null,
                                       operator: null,
                                       value: null,
-                                      action: 'show'
+                                      action: 'show',
+                                      target: null
                                     }
                                   })
                                   setActiveSection(-1)
@@ -1453,17 +1535,68 @@ export default function NewEventForm() {
                             </div>
                             <div>
                               <Label>Value</Label>
-                              <Input
-                                value={newField.conditionalLogic?.value || ''}
-                                onChange={(e) => setNewField({ 
-                                  ...newField, 
-                                  conditionalLogic: { 
-                                    ...newField.conditionalLogic, 
-                                    value: e.target.value 
-                                  } 
-                                })}
-                                placeholder="Value to compare"
-                              />
+                              {(() => {
+                                const targetField = getAllFields().find(f => f.id === newField.conditionalLogic?.showWhen)
+                                if (targetField?.type === 'select' && targetField.options) {
+                                  return (
+                                    <Select
+                                      value={newField.conditionalLogic?.value || ''}
+                                      onValueChange={(value) => setNewField({ 
+                                        ...newField, 
+                                        conditionalLogic: { 
+                                          ...newField.conditionalLogic, 
+                                          value: value 
+                                        } 
+                                      })}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select value" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {targetField.options.map(option => (
+                                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  )
+                                } else if (targetField?.type === 'checkbox' || targetField?.type === 'radio') {
+                                  return (
+                                    <Select
+                                      value={newField.conditionalLogic?.value || ''}
+                                      onValueChange={(value) => setNewField({ 
+                                        ...newField, 
+                                        conditionalLogic: { 
+                                          ...newField.conditionalLogic, 
+                                          value: value 
+                                        } 
+                                      })}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select value" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {targetField.options?.map(option => (
+                                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  )
+                                } else {
+                                  return (
+                                    <Input
+                                      value={newField.conditionalLogic?.value || ''}
+                                      onChange={(e) => setNewField({ 
+                                        ...newField, 
+                                        conditionalLogic: { 
+                                          ...newField.conditionalLogic, 
+                                          value: e.target.value 
+                                        } 
+                                      })}
+                                      placeholder="Value to compare"
+                                    />
+                                  )
+                                }
+                              })()}
                             </div>
                           </div>
                           <div className="mt-3">
@@ -1489,6 +1622,32 @@ export default function NewEventForm() {
                               </SelectContent>
                             </Select>
                           </div>
+                          
+                          {/* Show section selector when action is jump_to */}
+                          {newField.conditionalLogic?.action === 'jump_to' && (
+                            <div className="mt-3">
+                              <Label>Target Section</Label>
+                              <Select 
+                                value={newField.conditionalLogic?.target || ''} 
+                                onValueChange={(value) => setNewField({ 
+                                  ...newField, 
+                                  conditionalLogic: { 
+                                    ...newField.conditionalLogic, 
+                                    target: value 
+                                  } 
+                                })}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select section to jump to" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {formSections.map(section => (
+                                    <SelectItem key={section.id} value={section.id}>{section.title}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
                         </div>
 
                         {/* Field-specific options */}
@@ -1530,7 +1689,8 @@ export default function NewEventForm() {
                                     showWhen: null,
                                     operator: null,
                                     value: null,
-                                    action: 'show'
+                                    action: 'show',
+                                    target: null
                                   }
                                 }])
                                 setNewField({ 
@@ -1544,7 +1704,8 @@ export default function NewEventForm() {
                                     showWhen: null,
                                     operator: null,
                                     value: null,
-                                    action: 'show'
+                                    action: 'show',
+                                    target: null
                                   }
                                 })
                                 setShowAddField(false)
