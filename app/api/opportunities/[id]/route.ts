@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getSession } from "@/lib/auth"
+import { getSession, getCurrentUser } from "@/lib/auth"
 import { cookies } from "next/headers"
+import { verifyToken, extractTokenFromRequest } from "@/lib/jwt-utils"
 
 // READ - Get a single opportunity
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -58,8 +59,29 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const session = await getSession(cookies())
-    if (!session) {
+    
+    // Extract token from Authorization header or Cookie
+    const token = extractTokenFromRequest(request)
+    let user = null
+    
+    if (token) {
+      const payload = verifyToken(token)
+      if (payload) {
+        user = {
+          id: payload.userId,
+          email: payload.email,
+          role: payload.role,
+          isVerified: false
+        }
+      }
+    }
+    
+    // If no token found, try getCurrentUser as fallback
+    if (!user) {
+      user = await getCurrentUser()
+    }
+    
+    if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -79,12 +101,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       )
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.userId },
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
       select: { role: true }
     })
 
-    if (existingOpportunity.posterId !== session.userId && user?.role !== 'admin') {
+    if (existingOpportunity.posterId !== user.id && dbUser?.role !== 'admin') {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
@@ -97,13 +119,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       description,
       company,
       opportunityType,
+      subType,
       category,
       location,
       salary,
       requirements,
       isUrgent,
       isRemote,
-      isActive
+      isActive,
+      tabCategory
     } = body
 
     const opportunity = await prisma.opportunity.update({
@@ -113,13 +137,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         description,
         company,
         opportunityType,
+        subType,
         category,
         location,
         salary,
         requirements: requirements ? JSON.stringify(requirements) : null,
         isUrgent,
         isRemote,
-        isActive
+        isActive,
+        tabCategory
       },
       include: {
         poster: {
@@ -169,12 +195,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       )
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.userId },
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
       select: { role: true }
     })
 
-    if (existingOpportunity.posterId !== session.userId && user?.role !== 'admin') {
+    if (existingOpportunity.posterId !== user.id && dbUser?.role !== 'admin') {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }

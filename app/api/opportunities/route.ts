@@ -48,6 +48,15 @@ export async function GET(request: NextRequest) {
             organization: true
           }
         },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            icon: true,
+            color: true
+          }
+        },
         applications: {
           select: {
             id: true
@@ -82,9 +91,7 @@ export async function POST(request: NextRequest) {
       if (payload) {
         user = {
           id: payload.userId,
-          username: payload.username,
           email: payload.email,
-          fullName: payload.username,
           role: payload.role,
           isVerified: false
         }
@@ -110,6 +117,7 @@ export async function POST(request: NextRequest) {
       description,
       company,
       opportunityType,
+      subType,
       categoryId,
       location,
       salary,
@@ -135,10 +143,11 @@ export async function POST(request: NextRequest) {
         description,
         company,
         opportunityType,
+        subType,
         categoryId,
         location,
         salary,
-        requirements: requirements ? JSON.stringify(requirements) : null,
+        requirements: requirements ? JSON.stringify(requirements) : undefined,
         isUrgent,
         isRemote,
         posterId: user.id

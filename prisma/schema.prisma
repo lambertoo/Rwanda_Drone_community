@@ -340,6 +340,7 @@ model Opportunity {
   description      String
   company          String
   opportunityType  String
+  subType          String?
   categoryId       String?
   location         String
   salary           String?
@@ -564,4 +565,19 @@ enum ResourceCategory {
   TEMPLATES
   TUTORIALS
   OTHER
+}
+
+enum OpportunityMainType {
+  JOB
+  GIG
+  OTHER
+}
+
+enum OpportunitySubType {
+  FULL_TIME
+  PART_TIME
+  FREELANCE
+  PROJECT
+  INTERNSHIP
+  TRAINING
 }

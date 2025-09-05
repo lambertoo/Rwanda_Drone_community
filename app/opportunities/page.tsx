@@ -18,6 +18,7 @@ interface Opportunity {
   description: string
   company: string
   opportunityType: string
+  subType?: string
   categoryId: string | null
   category?: {
     id: string
@@ -72,8 +73,9 @@ export default function OpportunitiesPage() {
         setCurrentUser(JSON.parse(user))
       }
     }
-    // Fetch categories
+    // Fetch categories and opportunities
     fetchCategories()
+    fetchOpportunities()
   }, [])
 
   const fetchCategories = async () => {
@@ -90,10 +92,10 @@ export default function OpportunitiesPage() {
 
   // Fetch saved opportunities when user is available
   useEffect(() => {
-    if (currentUser && mounted) {
+    if (currentUser) {
       fetchSavedOpportunities()
     }
-  }, [currentUser, mounted])
+  }, [currentUser])
 
   const fetchSavedOpportunities = async () => {
     try {
@@ -115,29 +117,49 @@ export default function OpportunitiesPage() {
 
   const fetchOpportunities = async () => {
     try {
+      setLoading(true)
       const params = new URLSearchParams()
-      if (activeTab !== "all") params.append("tabCategory", activeTab)
-      if (opportunityType !== "all") params.append("opportunityType", opportunityType)
-      if (category !== "all") params.append("categoryId", category)
-      if (location !== "all") params.append("location", location)
+      if (activeTab !== "all") {
+        params.append('tabCategory', activeTab)
+      }
+      if (opportunityType !== "all") {
+        params.append('opportunityType', opportunityType)
+      }
+      if (category !== "all") {
+        params.append('category', category)
+      }
+      if (location !== "all") {
+        params.append('location', location)
+      }
 
-      const response = await fetch(`/api/opportunities?${params.toString()}`)
-      if (!response.ok) throw new Error("Failed to fetch opportunities")
-      
+      const url = `/api/opportunities${params.toString() ? `?${params.toString()}` : ''}`
+      const response = await fetch(url)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
       const data = await response.json()
+
+      // Ensure data is an array
+      if (!Array.isArray(data)) {
+        console.error("Expected array of opportunities, got:", data)
+        setOpportunities([])
+        return
+      }
+
       setOpportunities(data)
     } catch (error) {
       console.error("Error fetching opportunities:", error)
+      setOpportunities([])
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    if (mounted) {
-      fetchOpportunities()
-    }
-  }, [activeTab, opportunityType, category, location, mounted])
+    fetchOpportunities()
+  }, [activeTab, opportunityType, category, location])
 
   const handleSaveOpportunity = async (opportunityId: string) => {
     if (!currentUser) {
@@ -188,13 +210,18 @@ export default function OpportunitiesPage() {
     return savedOpportunities.has(opportunityId)
   }
 
+  // Only render when mounted to prevent hydration mismatch
   if (!mounted) {
     return (
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-12 bg-gray-200 rounded w-3/4 mb-4"></div>
-          <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+        <div className="space-y-4">
+          <h1 className="text-3xl font-bold">Opportunities Board</h1>
+          <p className="text-lg text-muted-foreground">
+            Find drone-related career opportunities across Rwanda
+          </p>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
       </div>
     )
@@ -291,13 +318,20 @@ export default function OpportunitiesPage() {
             if (opportunity.requirements) {
               try {
                 if (typeof opportunity.requirements === 'string') {
-                  requirements = JSON.parse(opportunity.requirements)
+                  // Try to parse as JSON first
+                  const parsed = JSON.parse(opportunity.requirements)
+                  if (Array.isArray(parsed)) {
+                    requirements = parsed
+                  } else {
+                    requirements = []
+                  }
                 } else if (Array.isArray(opportunity.requirements)) {
                   requirements = opportunity.requirements
                 } else {
                   requirements = []
                 }
               } catch (error) {
+                // If JSON parsing fails, try comma-separated string
                 if (typeof opportunity.requirements === 'string') {
                   if (opportunity.requirements.includes(',')) {
                     requirements = opportunity.requirements.split(',').map(req => req.trim()).filter(req => req.length > 0)
@@ -309,6 +343,11 @@ export default function OpportunitiesPage() {
                 }
               }
             }
+            
+            // Ensure requirements is always an array
+            if (!Array.isArray(requirements)) {
+              requirements = []
+            }
 
             const isSaved = isOpportunitySaved(opportunity.id)
 
@@ -319,8 +358,8 @@ export default function OpportunitiesPage() {
                     <div className="space-y-2">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-lg line-clamp-2">{opportunity.title}</h3>
-                          <p className="text-muted-foreground text-sm">{opportunity.company}</p>
+                          <h3 className="font-semibold text-lg line-clamp-2">{opportunity.title || "Untitled Opportunity"}</h3>
+                          <p className="text-muted-foreground text-sm">{opportunity.company || "Company not specified"}</p>
                         </div>
                         <div className="flex flex-col gap-1">
                           {opportunity.isUrgent && (
@@ -328,10 +367,10 @@ export default function OpportunitiesPage() {
                               Urgent
                             </Badge>
                           )}
-                          <Badge className={getOpportunityTypeColor(opportunity.opportunityType)}>{opportunity.opportunityType}</Badge>
+                          <Badge className={getOpportunityTypeColor(opportunity.opportunityType || "Other")}>{opportunity.opportunityType || "Other"}</Badge>
                         </div>
                       </div>
-                      
+
                       <Badge className={getCategoryColor(opportunity.category?.name || "Uncategorized")}>
                         {opportunity.category?.name || "Uncategorized"}
                       </Badge>
@@ -415,13 +454,20 @@ export default function OpportunitiesPage() {
           if (opportunity.requirements) {
             try {
               if (typeof opportunity.requirements === 'string') {
-                requirements = JSON.parse(opportunity.requirements)
+                // Try to parse as JSON first
+                const parsed = JSON.parse(opportunity.requirements)
+                if (Array.isArray(parsed)) {
+                  requirements = parsed
+                } else {
+                  requirements = []
+                }
               } else if (Array.isArray(opportunity.requirements)) {
                 requirements = opportunity.requirements
               } else {
                 requirements = []
               }
             } catch (error) {
+              // If JSON parsing fails, try comma-separated string
               if (typeof opportunity.requirements === 'string') {
                 if (opportunity.requirements.includes(',')) {
                   requirements = opportunity.requirements.split(',').map(req => req.trim()).filter(req => req.length > 0)
@@ -433,6 +479,11 @@ export default function OpportunitiesPage() {
               }
             }
           }
+          
+          // Ensure requirements is always an array
+          if (!Array.isArray(requirements)) {
+            requirements = []
+          }
 
           const isSaved = isOpportunitySaved(opportunity.id)
 
@@ -443,8 +494,8 @@ export default function OpportunitiesPage() {
                   <div className="flex-1 space-y-3">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-semibold text-xl">{opportunity.title}</h3>
-                        <p className="text-muted-foreground">{opportunity.company}</p>
+                        <h3 className="font-semibold text-xl">{opportunity.title || "Untitled Opportunity"}</h3>
+                        <p className="text-muted-foreground">{opportunity.company || "Company not specified"}</p>
                       </div>
                       <div className="flex gap-2">
                         {opportunity.isUrgent && (
@@ -452,7 +503,7 @@ export default function OpportunitiesPage() {
                             Urgent
                           </Badge>
                         )}
-                        <Badge className={getOpportunityTypeColor(opportunity.opportunityType)}>{opportunity.opportunityType}</Badge>
+                        <Badge className={getOpportunityTypeColor(opportunity.opportunityType || "Other")}>{opportunity.opportunityType || "Other"}</Badge>
                         <Badge className={getCategoryColor(opportunity.category?.name || "Uncategorized")}>
                           {opportunity.category?.name || "Uncategorized"}
                         </Badge>
