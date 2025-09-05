@@ -114,8 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           localStorage.setItem('user', JSON.stringify(data.user))
         } catch {}
-        // Then fetch a fresh profile to normalize fields
-        fetchUserProfile()
+        // Don't call fetchUserProfile() here to avoid double API call
+        // The user data from login response is sufficient
         return { 
           success: true, 
           user: data.user

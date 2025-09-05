@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, use } from "react"
+import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,7 +49,8 @@ interface Opportunity {
 
 function OpportunityDetailPage() {
   const router = useRouter()
-  const { id: opportunityId } = use(params)
+  const params = useParams()
+  const opportunityId = params?.id as string
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null)
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
@@ -74,6 +75,24 @@ function OpportunityDetailPage() {
       fetchApplicationForm()
     }
   }, [mounted, opportunityId])
+
+  if (!opportunityId) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <Card>
+          <CardContent className="p-12 text-center">
+            <h3 className="text-lg font-semibold mb-2">Invalid Opportunity ID</h3>
+            <p className="text-muted-foreground mb-4">
+              The opportunity ID is missing or invalid.
+            </p>
+            <Button onClick={() => router.push('/opportunities')}>
+              Back to Opportunities
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   const fetchOpportunity = async () => {
     try {

@@ -415,9 +415,14 @@ export default function OpportunitiesPage() {
                   </div>
 
                   <div className="flex flex-col gap-2 mt-4 pt-4 border-t">
-                    <Link href={`/opportunities/${opportunity.id}`}>
-                      <Button className="w-full">Apply Now</Button>
-                    </Link>
+                    <div className="flex gap-2">
+                      <Link href={`/opportunities/${opportunity.id}/apply`} className="flex-1">
+                        <Button className="w-full">Apply Now</Button>
+                      </Link>
+                      <Link href={`/opportunities/${opportunity.id}`} className="flex-1">
+                        <Button variant="outline" className="w-full">View Details</Button>
+                      </Link>
+                    </div>
                     <Button 
                       variant={isSaved ? "default" : "outline"} 
                       size="sm"
@@ -544,9 +549,14 @@ export default function OpportunitiesPage() {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <Link href={`/opportunities/${opportunity.id}`}>
-                      <Button>Apply Now</Button>
-                    </Link>
+                    <div className="flex gap-2">
+                      <Link href={`/opportunities/${opportunity.id}/apply`} className="flex-1">
+                        <Button className="w-full">Apply Now</Button>
+                      </Link>
+                      <Link href={`/opportunities/${opportunity.id}`} className="flex-1">
+                        <Button variant="outline" className="w-full">View Details</Button>
+                      </Link>
+                    </div>
                     <Button 
                       variant={isSaved ? "default" : "outline"} 
                       size="sm"

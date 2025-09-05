@@ -365,6 +365,7 @@ model ApplicationForm {
   creatorId     String                    // User who created the form
   title         String                    @default("Application Form")
   description   String?
+  stages        Json?                     // Multi-stage form configuration
   isActive      Boolean                   @default(true)
   createdAt     DateTime                  @default(now())
   updatedAt     DateTime                  @updatedAt

@@ -1,13 +1,15 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
-import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -17,19 +19,11 @@ export default function LoginPage() {
     setIsLoading(true)
     
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password })
-      })
+      const result = await login(email, password)
       
-      if (response.ok) {
-        const data = await response.json()
-        
+      if (result.success) {
         // Check user role ONLY after successful login
-        if (data.user && data.user.role === null) {
+        if (result.user && result.user.role === null) {
           // User has no role - redirect to complete profile
           router.push("/complete-profile")
         } else {
@@ -37,8 +31,7 @@ export default function LoginPage() {
           router.push("/")
         }
       } else {
-        const errorData = await response.json()
-        alert(errorData.error || 'Login failed')
+        alert(result.error || 'Login failed')
       }
     } catch (err) {
       console.error("Login error:", err)
