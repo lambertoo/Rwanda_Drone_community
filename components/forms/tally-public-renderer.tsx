@@ -372,15 +372,26 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
               onChange={(e) => {
                 const file = e.target.files?.[0]
                 if (file) {
-                  handleInputChange(field.name, file)
+                  // Store file name and size for display, but keep the file object for submission
+                  handleInputChange(field.name, {
+                    file: file,
+                    name: file.name,
+                    size: file.size,
+                    type: file.type
+                  })
                 }
               }}
             />
             <Label htmlFor={field.name} className="cursor-pointer">
               <Button variant="outline" size="sm" className="mt-2">
-                Choose File
+                {value?.name ? `Selected: ${value.name}` : 'Choose File'}
               </Button>
             </Label>
+            {value?.name && (
+              <p className="text-xs text-gray-500 mt-2">
+                {value.name} ({(value.size / 1024).toFixed(1)} KB)
+              </p>
+            )}
           </div>
         )}
 

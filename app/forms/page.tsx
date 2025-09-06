@@ -13,7 +13,8 @@ import {
   BarChart3,
   Users,
   Calendar,
-  ExternalLink
+  ExternalLink,
+  ClipboardList
 } from "lucide-react"
 import { AuthGuard } from "@/components/auth-guard"
 
@@ -197,10 +198,18 @@ export default function FormsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => window.open(`/forms/${form.slug}`, '_blank')}
+                        onClick={() => window.open(`/forms/public/${form.id}`, '_blank')}
                       >
                         <ExternalLink className="w-4 h-4 mr-1" />
                         Public
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => router.push(`/forms/${form.id}/submissions`)}
+                      >
+                        <ClipboardList className="w-4 h-4 mr-1" />
+                        Submissions
                       </Button>
                       <Button
                         size="sm"

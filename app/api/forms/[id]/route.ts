@@ -55,22 +55,45 @@ export async function PUT(
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const user = await verifyToken(token)
-    if (!user) {
+    const payload = await verifyToken(token)
+    if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
     const formId = params.id
     const body = await request.json()
-    const { title, description, settings, isActive, isPublic } = body
+    const { title, description, settings, allowSubmissions, sections, isActive, isPublic } = body
 
     // Check if form exists and belongs to user
     const existingForm = await prisma.universalForm.findFirst({
-      where: { id: formId, userId: user.id }
+      where: { id: formId, userId: payload.userId }
     })
 
     if (!existingForm) {
       return NextResponse.json({ error: 'Form not found or access denied' }, { status: 404 })
+    }
+
+    // Merge allowSubmissions into settings
+    const currentSettings = existingForm.settings as any || {}
+    const updatedSettings = {
+      ...currentSettings,
+      ...(settings || {}),
+      ...(allowSubmissions !== undefined ? { allowSubmissions } : {})
+    }
+
+    // If sections are provided, delete existing sections and create new ones
+    if (sections) {
+      // Delete existing sections and fields
+      await prisma.formField.deleteMany({
+        where: {
+          section: {
+            formId: formId
+          }
+        }
+      })
+      await prisma.formSection.deleteMany({
+        where: { formId: formId }
+      })
     }
 
     const form = await prisma.universalForm.update({
@@ -78,9 +101,33 @@ export async function PUT(
       data: {
         title: title || existingForm.title,
         description: description !== undefined ? description : existingForm.description,
-        settings: settings || existingForm.settings,
+        settings: updatedSettings,
         isActive: isActive !== undefined ? isActive : existingForm.isActive,
         isPublic: isPublic !== undefined ? isPublic : existingForm.isPublic,
+        ...(sections && {
+          sections: {
+            create: sections.map((section: any, sectionIndex: number) => ({
+              title: section.title,
+              description: section.description || null,
+              order: sectionIndex + 1,
+              fields: {
+                create: (section.fields || []).map((field: any, fieldIndex: number) => ({
+                  label: field.label,
+                  name: field.name || `field_${Date.now()}_${fieldIndex}`,
+                  type: field.type,
+                  placeholder: field.placeholder || null,
+                  options: field.options || null,
+                  validation: {
+                    required: field.required || false,
+                    ...(field.validation || {})
+                  },
+                  conditional: field.conditional || null,
+                  order: fieldIndex + 1,
+                }))
+              }
+            }))
+          }
+        })
       },
       include: {
         sections: {
@@ -112,8 +159,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const user = await verifyToken(token)
-    if (!user) {
+    const payload = await verifyToken(token)
+    if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
@@ -121,7 +168,7 @@ export async function DELETE(
 
     // Check if form exists and belongs to user
     const existingForm = await prisma.universalForm.findFirst({
-      where: { id: formId, userId: user.id }
+      where: { id: formId, userId: payload.userId }
     })
 
     if (!existingForm) {

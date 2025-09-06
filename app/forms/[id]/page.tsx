@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { AuthGuard } from '@/components/auth-guard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -69,7 +70,7 @@ export default function FormPage() {
 
   const fetchForm = async () => {
     try {
-      const response = await fetch(`/api/forms/${formId}?public=true`)
+      const response = await fetch(`/api/forms/${formId}`)
       if (!response.ok) {
         throw new Error('Form not found')
       }
@@ -328,7 +329,8 @@ export default function FormPage() {
   const isLastStep = currentStep === form.sections.length - 1
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <AuthGuard>
+      <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8 text-center">
@@ -412,6 +414,7 @@ export default function FormPage() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </AuthGuard>
   )
 }

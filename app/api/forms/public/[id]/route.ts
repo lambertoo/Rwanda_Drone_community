@@ -3,13 +3,13 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const slug = params.slug
+    const formId = params.id
 
     const form = await prisma.universalForm.findUnique({
-      where: { slug },
+      where: { id: formId },
       include: {
         sections: {
           where: { isActive: true },

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
 import { 
   Plus, 
   Trash2, 
@@ -73,10 +74,33 @@ const FIELD_TYPES = [
 ]
 
 export default function TallyFormBuilder({ onSave, onCancel, initialData }: TallyFormBuilderProps) {
+  // Debug: Log the initial data to see what we're receiving
+  console.log('TallyFormBuilder initialData:', initialData)
+  
   const [formTitle, setFormTitle] = useState(initialData?.title || "Untitled Form")
   const [formDescription, setFormDescription] = useState(initialData?.description || "")
-  const [sections, setSections] = useState<FormSection[]>(
-    initialData?.sections || [
+  const [sections, setSections] = useState<FormSection[]>(() => {
+    if (initialData?.sections && initialData.sections.length > 0) {
+      return initialData.sections.map((section: any) => ({
+        id: section.id,
+        title: section.title,
+        description: section.description || '',
+        order: section.order || 1,
+        fields: section.fields?.map((field: any) => ({
+          id: field.id,
+          type: field.type,
+          label: field.label,
+          name: field.name,
+          placeholder: field.placeholder || '',
+          required: field.validation?.required || false,
+          options: field.options || [],
+          validation: field.validation || {},
+          conditional: field.conditional || {},
+          order: field.order || 1
+        })) || []
+      }))
+    }
+    return [
       {
         id: 'section_1',
         title: 'Section 1',
@@ -85,12 +109,20 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
         order: 1
       }
     ]
-  )
+  })
   const [editingSection, setEditingSection] = useState<string | null>(null)
-  const [activeSection, setActiveSection] = useState('section_1')
+  const [activeSection, setActiveSection] = useState(() => {
+    if (initialData?.sections && initialData.sections.length > 0) {
+      return initialData.sections[0].id
+    }
+    return 'section_1'
+  })
   const [editingField, setEditingField] = useState<string | null>(null)
   const [previewMode, setPreviewMode] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [allowSubmissions, setAllowSubmissions] = useState(
+    initialData?.settings?.allowSubmissions ?? initialData?.allowSubmissions ?? true
+  )
 
   const addSection = () => {
     const newSection: FormSection = {
@@ -205,6 +237,10 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
       const formData = {
         title: formTitle,
         description: formDescription,
+        allowSubmissions: allowSubmissions,
+        settings: {
+          allowSubmissions: allowSubmissions
+        },
         sections: sections.map(section => ({
           title: section.title,
           description: section.description,
@@ -373,37 +409,10 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Form Settings */}
+        {/* Left Sidebar - Sections Only */}
         <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Form Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="form-title">Form Title</Label>
-                <Input
-                  id="form-title"
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  placeholder="Enter form title"
-                />
-              </div>
-              <div>
-                <Label htmlFor="form-description">Description</Label>
-                <Textarea
-                  id="form-description"
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  placeholder="Enter form description"
-                  rows={3}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Sections */}
-          <Card className="mt-4">
+          <Card>
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle className="text-lg">Sections</CardTitle>
@@ -416,14 +425,26 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
               {sections.map((section) => (
                 <div
                   key={section.id}
-                  className={`p-2 rounded border cursor-pointer ${
-                    activeSection === section.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
+                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                    activeSection === section.id 
+                      ? 'bg-blue-50 border-blue-200 shadow-sm' 
+                      : 'hover:bg-gray-50 border-gray-200'
                   }`}
                   onClick={() => setActiveSection(section.id)}
                 >
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">{section.title}</span>
-                    <div className="flex gap-1">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-medium">{section.title}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {section.fields.length} fields
+                        </Badge>
+                      </div>
+                      {section.description && (
+                        <p className="text-xs text-muted-foreground">{section.description}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-1 ml-2">
                       <Button
                         size="sm"
                         variant="ghost"
@@ -477,8 +498,48 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
           </Card>
         </div>
 
-        {/* Form Builder */}
+        {/* Form Builder and Settings */}
         <div className="lg:col-span-3">
+          {/* Form Settings */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Form Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="form-title">Form Title</Label>
+                  <Input
+                    id="form-title"
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    placeholder="Enter form title"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="form-description">Description</Label>
+                  <Input
+                    id="form-description"
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    placeholder="Enter form description"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium">Allow Submissions</Label>
+                  <p className="text-xs text-muted-foreground">
+                    When disabled, no new submissions can be made
+                  </p>
+                </div>
+                <Switch
+                  checked={allowSubmissions}
+                  onCheckedChange={setAllowSubmissions}
+                />
+              </div>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle>

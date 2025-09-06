@@ -10,13 +10,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const user = await verifyToken(token)
-    if (!user) {
+    const payload = await verifyToken(token)
+    if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
     const body = await request.json()
-    const { title, description, settings } = body
+    const { title, description, settings, sections } = body
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 })
@@ -39,11 +39,33 @@ export async function POST(request: NextRequest) {
 
     const form = await prisma.universalForm.create({
       data: {
-        userId: user.id,
+        userId: payload.userId,
         title,
         slug: finalSlug,
         description: description || null,
         settings: settings || null,
+        sections: {
+          create: (sections || []).map((section: any, sectionIndex: number) => ({
+            title: section.title,
+            description: section.description || null,
+            order: sectionIndex + 1,
+            fields: {
+              create: (section.fields || []).map((field: any, fieldIndex: number) => ({
+                label: field.label,
+                name: field.name || `field_${Date.now()}_${fieldIndex}`,
+                type: field.type,
+                placeholder: field.placeholder || null,
+                options: field.options || null,
+                validation: {
+                  required: field.required || false,
+                  ...(field.validation || {})
+                },
+                conditional: field.conditional || null,
+                order: fieldIndex + 1,
+              }))
+            }
+          }))
+        }
       },
       include: {
         sections: {
@@ -72,13 +94,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const user = await verifyToken(token)
-    if (!user) {
+    const payload = await verifyToken(token)
+    if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
     const forms = await prisma.universalForm.findMany({
-      where: { userId: user.id },
+      where: { userId: payload.userId },
       include: {
         sections: {
           include: {
