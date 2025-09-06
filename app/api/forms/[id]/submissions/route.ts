@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     // Verify authentication
-    const token = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('accessToken')?.value
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

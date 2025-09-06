@@ -57,50 +57,21 @@ export default function PublicFormPage() {
 
   const handleSubmit = async (values: any) => {
     try {
-      // Check if there are any file uploads
-      const hasFiles = Object.values(values).some((value: any) => 
-        value && typeof value === 'object' && value.file instanceof File
-      )
-
-      let response: Response
-
-      if (hasFiles) {
-        // Use FormData for file uploads
-        const formData = new FormData()
-        
-        Object.entries(values).forEach(([key, value]) => {
-          if (value && typeof value === 'object' && value.file instanceof File) {
-            // Handle file uploads
-            formData.append(key, value.file)
-          } else if (Array.isArray(value)) {
-            // Handle arrays (like checkboxes)
-            formData.append(key, JSON.stringify(value))
-          } else {
-            // Handle regular values
-            formData.append(key, String(value))
-          }
-        })
-
-        response = await fetch(`/api/forms/public/${formId}/submit`, {
-          method: 'POST',
-          body: formData,
-        })
-      } else {
-        // Use JSON for non-file submissions
-        response = await fetch(`/api/forms/public/${formId}/submit`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(values),
-        })
-      }
+      // Files are already uploaded when selected, so we just submit the form data
+      const response = await fetch(`/api/forms/public/${formId}/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      })
 
       if (response.ok) {
         // Handle successful submission
         console.log('Form submitted successfully')
       } else {
-        console.error('Failed to submit form')
+        const errorData = await response.json()
+        console.error('Failed to submit form:', errorData)
       }
     } catch (error) {
       console.error('Error submitting form:', error)

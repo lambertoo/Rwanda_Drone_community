@@ -63,7 +63,6 @@ export interface FormField {
   label: string
   name: string
   placeholder?: string
-  description?: string
   required: boolean
   options?: string[]
   validation?: {
@@ -339,16 +338,6 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
             />
           </div>
 
-          <div>
-            <Label htmlFor={`description-${field.id}`}>Description</Label>
-            <Textarea
-              id={`description-${field.id}`}
-              value={field.description || ''}
-              onChange={(e) => updateField(sectionIndex, fieldIndex, { description: e.target.value })}
-              placeholder="Help text for users"
-              rows={2}
-            />
-          </div>
 
           {(field.type === 'SELECT' || field.type === 'RADIO' || field.type === 'CHECKBOX') && (
             <div>

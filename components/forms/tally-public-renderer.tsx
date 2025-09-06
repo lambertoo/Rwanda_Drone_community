@@ -101,6 +101,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set())
 
   const { title, description, sections, settings } = formData
   const sortedSections = sections.sort((a, b) => a.order - b.order)
@@ -202,9 +203,6 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
             <FieldIcon className="h-4 w-4 text-gray-500" />
             <h3 className="text-lg font-medium">{field.label}</h3>
           </div>
-          {field.description && (
-            <p className="text-gray-600 text-sm">{field.description}</p>
-          )}
         </div>
       )
     }
@@ -216,9 +214,6 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           {field.required && <span className="text-red-500 ml-1">*</span>}
         </Label>
         
-        {field.description && (
-          <p className="text-xs text-gray-500">{field.description}</p>
-        )}
 
         {field.type === 'TEXT' && (
           <Input
@@ -369,28 +364,124 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
               type="file"
               className="hidden"
               id={field.name}
-              onChange={(e) => {
+              multiple={false}
+              onChange={async (e) => {
                 const file = e.target.files?.[0]
                 if (file) {
-                  // Store file name and size for display, but keep the file object for submission
-                  handleInputChange(field.name, {
-                    file: file,
-                    name: file.name,
-                    size: file.size,
-                    type: file.type
-                  })
+                  // Check if there's already a file uploaded for this field
+                  if (value?.uploaded) {
+                    const replace = confirm(`A file "${value.name}" is already uploaded. Do you want to replace it?`)
+                    if (!replace) {
+                      // Clear the file input and return
+                      e.target.value = ''
+                      return
+                    }
+                  }
+                  
+                  // Check file size (10MB limit)
+                  if (file.size > 10 * 1024 * 1024) {
+                    alert("File size must be less than 10MB")
+                    e.target.value = ''
+                    return
+                  }
+                  
+                  // Set uploading state
+                  setUploadingFiles(prev => new Set(prev).add(field.name))
+                  
+                  try {
+                    // Upload file immediately using the same pattern as projects/resources
+                    const formData = new FormData()
+                    formData.append('file', file)
+                    formData.append('type', 'general')
+                    formData.append('entityId', 'forms')
+                    formData.append('subfolder', 'files')
+                    
+                    const response = await fetch('/api/upload', {
+                      method: 'POST',
+                      body: formData
+                    })
+                    
+                    if (response.ok) {
+                      const result = await response.json()
+                      // Store the uploaded file info (replaces any existing file)
+                      handleInputChange(field.name, {
+                        name: result.originalName,
+                        size: result.size,
+                        type: result.type,
+                        url: result.fileUrl,
+                        uploaded: true
+                      })
+                    } else {
+                      const error = await response.json()
+                      alert(`Upload failed: ${error.error}`)
+                      // Clear the file input
+                      e.target.value = ''
+                    }
+                  } catch (error) {
+                    console.error('Upload error:', error)
+                    alert('Failed to upload file')
+                    // Clear the file input
+                    e.target.value = ''
+                  } finally {
+                    // Remove uploading state
+                    setUploadingFiles(prev => {
+                      const newSet = new Set(prev)
+                      newSet.delete(field.name)
+                      return newSet
+                    })
+                  }
                 }
               }}
             />
             <Label htmlFor={field.name} className="cursor-pointer">
-              <Button variant="outline" size="sm" className="mt-2">
-                {value?.name ? `Selected: ${value.name}` : 'Choose File'}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2"
+                disabled={uploadingFiles.has(field.name)}
+              >
+                {uploadingFiles.has(field.name) ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                    Uploading...
+                  </>
+                ) : value?.name ? (
+                  `Selected: ${value.name}`
+                ) : (
+                  'Choose File'
+                )}
               </Button>
             </Label>
             {value?.name && (
-              <p className="text-xs text-gray-500 mt-2">
-                {value.name} ({(value.size / 1024).toFixed(1)} KB)
-              </p>
+              <div className="mt-2">
+                <p className="text-xs text-gray-500">
+                  {value.name} ({(value.size / 1024).toFixed(1)} KB)
+                  {value.uploaded && (
+                    <span className="text-green-600 ml-2">✓ Uploaded</span>
+                  )}
+                  {value.error && (
+                    <span className="text-red-600 ml-2">✗ {value.error}</span>
+                  )}
+                </p>
+                {value.uploaded && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => {
+                      // Clear the file
+                      handleInputChange(field.name, null)
+                      // Clear the file input
+                      const fileInput = document.getElementById(field.name) as HTMLInputElement
+                      if (fileInput) {
+                        fileInput.value = ''
+                      }
+                    }}
+                  >
+                    Remove File
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         )}

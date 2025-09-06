@@ -53,55 +53,94 @@ export default function FormSubmissionsPage() {
   const [form, setForm] = useState<Form | null>(null)
   const [submissions, setSubmissions] = useState<FormSubmission[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchFormAndSubmissions()
+    if (formId) {
+      fetchFormAndSubmissions()
+    }
   }, [formId])
 
   const fetchFormAndSubmissions = async () => {
     try {
+      setError(null)
+      
       // Fetch form details
       const formResponse = await fetch(`/api/forms/${formId}`, {
         credentials: 'include'
       })
+      
       if (formResponse.ok) {
         const formData = await formResponse.json()
-        setForm(formData)
+        // Map the API response to the expected format
+        const mappedForm = {
+          id: formData.id,
+          title: formData.title,
+          description: formData.description,
+          sections: formData.sections?.map((section: any) => ({
+            id: section.id,
+            title: section.title,
+            fields: section.fields?.map((field: any) => ({
+              id: field.id,
+              name: field.name,
+              label: field.label,
+              type: field.type
+            })) || []
+          })) || []
+        }
+        setForm(mappedForm)
+      } else if (formResponse.status === 401) {
+        setError('Authentication required. Please log in to view submissions.')
+        return
+      } else if (formResponse.status === 404) {
+        setError('Form not found.')
+        return
+      } else {
+        setError('Failed to load form details.')
+        return
       }
 
       // Fetch submissions
       const submissionsResponse = await fetch(`/api/forms/${formId}/submissions`, {
         credentials: 'include'
       })
+      
       if (submissionsResponse.ok) {
         const submissionsData = await submissionsResponse.json()
         setSubmissions(submissionsData)
+      } else if (submissionsResponse.status === 401) {
+        setError('Authentication required. Please log in to view submissions.')
+        return
+      } else {
+        setError('Failed to load submissions.')
+        return
       }
     } catch (error) {
       console.error('Error fetching form and submissions:', error)
+      setError('Network error. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   const exportSubmissions = () => {
-    if (!form || submissions.length === 0) return
+    if (!form || !submissions || submissions.length === 0) return
 
     // Create CSV content
-    const headers = form.sections.flatMap(section => 
-      section.fields.map(field => field.label)
-    )
+    const headers = form.sections?.flatMap(section => 
+      section.fields?.map(field => field.label || 'Untitled Field') || []
+    ) || []
     
     const csvContent = [
       ['Submission ID', 'Submitted At', ...headers].join(','),
       ...submissions.map(submission => {
-        const values = form.sections.flatMap(section => 
-          section.fields.map(field => {
-            const value = submission.values.find(v => v.fieldName === field.name)
+        const values = form.sections?.flatMap(section => 
+          section.fields?.map(field => {
+            const value = submission.values?.find(v => v.fieldName === field.name)
             return `"${(value?.value || '').replace(/"/g, '""')}"`
-          })
-        )
-        return [submission.id, submission.meta.submittedAt, ...values].join(',')
+          }) || []
+        ) || []
+        return [submission.id, submission.meta?.submittedAt || '', ...values].join(',')
       })
     ].join('\n')
 
@@ -124,6 +163,27 @@ export default function FormSubmissionsPage() {
             <p>Loading submissions...</p>
           </div>
         </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto p-6">
+        <Card>
+          <CardContent className="text-center py-12">
+            <h3 className="text-lg font-semibold mb-2 text-red-600">Error</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+              <Button variant="outline" onClick={() => router.push('/login')}>
+                Login
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -188,7 +248,7 @@ export default function FormSubmissionsPage() {
             </div>
 
             <div className="space-y-4">
-              {submissions.map((submission, index) => (
+              {submissions?.map((submission, index) => (
                 <Card key={submission.id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -197,32 +257,32 @@ export default function FormSubmissionsPage() {
                       </CardTitle>
                       <div className="flex items-center gap-2 text-sm text-gray-500">
                         <Calendar className="w-4 h-4" />
-                        {new Date(submission.meta.submittedAt).toLocaleString()}
+                        {submission.meta?.submittedAt ? new Date(submission.meta.submittedAt).toLocaleString() : 'Unknown date'}
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {form.sections.map(section => (
+                      {form.sections?.map(section => (
                         <div key={section.id} className="space-y-3">
                           <h4 className="font-semibold text-sm text-gray-700 border-b pb-1">
-                            {section.title}
+                            {section.title || 'Untitled Section'}
                           </h4>
-                          {section.fields.map(field => {
-                            const value = submission.values.find(v => v.fieldName === field.name)
+                          {section.fields?.map(field => {
+                            const value = submission.values?.find(v => v.fieldName === field.name)
                             return (
                               <div key={field.id} className="space-y-1">
                                 <label className="text-sm font-medium text-gray-600">
-                                  {field.label}
+                                  {field.label || 'Untitled Field'}
                                 </label>
                                 <div className="text-sm text-gray-900 p-2 bg-gray-50 rounded">
                                   {value?.value || 'No response'}
                                 </div>
                               </div>
                             )
-                          })}
+                          }) || []}
                         </div>
-                      ))}
+                      )) || []}
                     </div>
                   </CardContent>
                 </Card>
