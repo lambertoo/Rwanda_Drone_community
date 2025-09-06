@@ -451,37 +451,9 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar - Field Types */}
+          {/* Sidebar - Sections Only */}
           <div className="lg:col-span-1">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Add Fields</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {FIELD_TYPES.map((fieldType) => {
-                  const Icon = fieldType.icon
-                  return (
-                    <Button
-                      key={fieldType.type}
-                      variant="outline"
-                      className={`w-full justify-start h-auto p-3 ${fieldType.color}`}
-                      onClick={() => addField(fieldType.type as FieldType, activeSection)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className="h-4 w-4" />
-                        <div className="text-left">
-                          <div className="font-medium text-sm">{fieldType.label}</div>
-                          <div className="text-xs opacity-75">{fieldType.description}</div>
-                        </div>
-                      </div>
-                    </Button>
-                  )
-                })}
-              </CardContent>
-            </Card>
-
-            {/* Sections */}
-            <Card className="mt-4">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm">Sections</CardTitle>
@@ -499,17 +471,17 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
                 {sections.map((section, index) => (
                   <div
                     key={section.id}
-                    className={`p-2 rounded cursor-pointer border ${
+                    className={`p-3 rounded cursor-pointer border transition-colors ${
                       activeSection === index 
                         ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-200 hover:border-gray-300'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                     onClick={() => setActiveSection(index)}
                   >
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <div className="font-medium text-sm">{section.title}</div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 mt-1">
                           {section.fields.length} field{section.fields.length !== 1 ? 's' : ''}
                         </div>
                       </div>
@@ -521,7 +493,7 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
                             e.stopPropagation()
                             deleteSection(index)
                           }}
-                          className="h-6 w-6 p-0 text-red-500"
+                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -597,12 +569,13 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
-                                  className={`${snapshot.isDragging ? 'opacity-50' : ''}`}
+                                  className={`${snapshot.isDragging ? 'opacity-50 shadow-lg' : ''} transition-all duration-200`}
                                 >
                                   <div className="flex items-start gap-2">
                                     <div
                                       {...provided.dragHandleProps}
-                                      className="mt-6 p-1 cursor-grab hover:bg-gray-100 rounded"
+                                      className="mt-6 p-2 cursor-grab hover:bg-gray-100 rounded-lg border border-transparent hover:border-gray-200 transition-colors"
+                                      title="Drag to reorder"
                                     >
                                       <GripVertical className="h-4 w-4 text-gray-400" />
                                     </div>
@@ -623,15 +596,15 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
                   {section.fields.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       <div className="text-sm">No fields in this section</div>
-                      <div className="text-xs mt-1">Add fields from the sidebar to get started</div>
+                      <div className="text-xs mt-1">Add fields using the buttons below</div>
                     </div>
                   )}
 
-                  {/* Add Field Button for this section */}
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="text-sm font-medium text-gray-700 mb-3">Add Field to This Section</div>
+                  {/* Add Field Buttons for this section */}
+                  <div className="mt-6 pt-4 border-t">
+                    <div className="text-sm font-medium text-gray-700 mb-4">Add Field to This Section</div>
                     <div className="grid grid-cols-2 gap-2">
-                      {FIELD_TYPES.slice(0, 6).map((fieldType) => {
+                      {FIELD_TYPES.map((fieldType) => {
                         const Icon = fieldType.icon
                         return (
                           <Button
