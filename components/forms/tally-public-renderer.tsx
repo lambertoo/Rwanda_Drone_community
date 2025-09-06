@@ -79,20 +79,20 @@ interface TallyPublicRendererProps {
 }
 
 const FIELD_ICONS = {
-  text: Type,
-  textarea: FileText,
-  email: Mail,
-  phone: Phone,
-  number: Hash,
-  select: ChevronRight,
-  radio: ChevronRight,
-  checkbox: ChevronRight,
-  date: Calendar,
-  file: Upload,
-  url: Link,
-  password: Lock,
-  hidden: Lock,
-  paragraph: FileText,
+  TEXT: Type,
+  TEXTAREA: FileText,
+  EMAIL: Mail,
+  PHONE: Phone,
+  NUMBER: Hash,
+  SELECT: ChevronRight,
+  RADIO: ChevronRight,
+  CHECKBOX: ChevronRight,
+  DATE: Calendar,
+  FILE: Upload,
+  URL: Link,
+  PASSWORD: Lock,
+  HIDDEN: Lock,
+  PARAGRAPH: FileText,
 }
 
 export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicRendererProps) {
@@ -195,7 +195,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
     const value = formValues[field.name] || ''
     const error = errors[field.name]
 
-    if (field.type === 'paragraph') {
+    if (field.type === 'PARAGRAPH') {
       return (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -220,7 +220,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           <p className="text-xs text-gray-500">{field.description}</p>
         )}
 
-        {field.type === 'text' && (
+        {field.type === 'TEXT' && (
           <Input
             id={field.name}
             type="text"
@@ -231,7 +231,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           />
         )}
 
-        {field.type === 'textarea' && (
+        {field.type === 'TEXTAREA' && (
           <Textarea
             id={field.name}
             value={value}
@@ -242,7 +242,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           />
         )}
 
-        {field.type === 'email' && (
+        {field.type === 'EMAIL' && (
           <Input
             id={field.name}
             type="email"
@@ -253,7 +253,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           />
         )}
 
-        {field.type === 'phone' && (
+        {field.type === 'PHONE' && (
           <Input
             id={field.name}
             type="tel"
@@ -264,7 +264,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           />
         )}
 
-        {field.type === 'number' && (
+        {field.type === 'NUMBER' && (
           <Input
             id={field.name}
             type="number"
@@ -277,7 +277,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           />
         )}
 
-        {field.type === 'date' && (
+        {field.type === 'DATE' && (
           <Input
             id={field.name}
             type="date"
@@ -287,7 +287,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           />
         )}
 
-        {field.type === 'url' && (
+        {field.type === 'URL' && (
           <Input
             id={field.name}
             type="url"
@@ -298,7 +298,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           />
         )}
 
-        {field.type === 'password' && (
+        {field.type === 'PASSWORD' && (
           <Input
             id={field.name}
             type="password"
@@ -309,7 +309,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           />
         )}
 
-        {field.type === 'select' && (
+        {field.type === 'SELECT' && (
           <Select value={value} onValueChange={(val) => handleInputChange(field.name, val)}>
             <SelectTrigger className={error ? 'border-red-500' : ''}>
               <SelectValue placeholder={field.placeholder || 'Select an option'} />
@@ -324,7 +324,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           </Select>
         )}
 
-        {field.type === 'radio' && (
+        {field.type === 'RADIO' && (
           <RadioGroup value={value} onValueChange={(val) => handleInputChange(field.name, val)}>
             {field.options?.map((option, index) => (
               <div key={index} className="flex items-center space-x-2">
@@ -337,7 +337,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           </RadioGroup>
         )}
 
-        {field.type === 'checkbox' && (
+        {field.type === 'CHECKBOX' && (
           <div className="space-y-2">
             {field.options?.map((option, index) => (
               <div key={index} className="flex items-center space-x-2">
@@ -361,7 +361,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           </div>
         )}
 
-        {field.type === 'file' && (
+        {field.type === 'FILE' && (
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
             <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
             <p className="text-sm text-gray-600">Click to upload or drag and drop</p>

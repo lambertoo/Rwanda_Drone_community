@@ -42,20 +42,20 @@ import {
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
 
 export type FieldType = 
-  | 'text' 
-  | 'textarea' 
-  | 'email' 
-  | 'phone' 
-  | 'number' 
-  | 'select' 
-  | 'radio' 
-  | 'checkbox' 
-  | 'date' 
-  | 'file' 
-  | 'url' 
-  | 'password' 
-  | 'hidden' 
-  | 'paragraph'
+  | 'TEXT' 
+  | 'TEXTAREA' 
+  | 'EMAIL' 
+  | 'PHONE' 
+  | 'NUMBER' 
+  | 'SELECT' 
+  | 'RADIO' 
+  | 'CHECKBOX' 
+  | 'DATE' 
+  | 'FILE' 
+  | 'URL' 
+  | 'PASSWORD' 
+  | 'HIDDEN' 
+  | 'PARAGRAPH'
 
 export interface FormField {
   id: string
@@ -110,19 +110,19 @@ interface TallyCloneBuilderProps {
 }
 
 const FIELD_TYPES = [
-  { type: 'text', label: 'Text Input', icon: Type, description: 'Single line text' },
-  { type: 'textarea', label: 'Long Text', icon: FileText, description: 'Multi-line text' },
-  { type: 'email', label: 'Email', icon: Mail, description: 'Email address' },
-  { type: 'phone', label: 'Phone', icon: Phone, description: 'Phone number' },
-  { type: 'number', label: 'Number', icon: Hash, description: 'Numeric input' },
-  { type: 'select', label: 'Dropdown', icon: ChevronDown, description: 'Select from options' },
-  { type: 'radio', label: 'Multiple Choice', icon: Circle, description: 'Single selection' },
-  { type: 'checkbox', label: 'Checkboxes', icon: Square, description: 'Multiple selections' },
-  { type: 'date', label: 'Date', icon: Calendar, description: 'Date picker' },
-  { type: 'file', label: 'File Upload', icon: Upload, description: 'File attachment' },
-  { type: 'url', label: 'Website', icon: Link, description: 'URL input' },
-  { type: 'password', label: 'Password', icon: Lock, description: 'Password field' },
-  { type: 'paragraph', label: 'Text Block', icon: FileText, description: 'Display text only' },
+  { type: 'TEXT', label: 'Text Input', icon: Type, description: 'Single line text', color: 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100' },
+  { type: 'TEXTAREA', label: 'Long Text', icon: FileText, description: 'Multi-line text', color: 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100' },
+  { type: 'EMAIL', label: 'Email', icon: Mail, description: 'Email address', color: 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100' },
+  { type: 'PHONE', label: 'Phone', icon: Phone, description: 'Phone number', color: 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100' },
+  { type: 'NUMBER', label: 'Number', icon: Hash, description: 'Numeric input', color: 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100' },
+  { type: 'SELECT', label: 'Dropdown', icon: ChevronDown, description: 'Select from options', color: 'bg-pink-50 border-pink-200 text-pink-700 hover:bg-pink-100' },
+  { type: 'RADIO', label: 'Multiple Choice', icon: Circle, description: 'Single selection', color: 'bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100' },
+  { type: 'CHECKBOX', label: 'Checkboxes', icon: Square, description: 'Multiple selections', color: 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100' },
+  { type: 'DATE', label: 'Date', icon: Calendar, description: 'Date picker', color: 'bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100' },
+  { type: 'FILE', label: 'File Upload', icon: Upload, description: 'File attachment', color: 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100' },
+  { type: 'URL', label: 'Website', icon: Link, description: 'URL input', color: 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' },
+  { type: 'PASSWORD', label: 'Password', icon: Lock, description: 'Password field', color: 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100' },
+  { type: 'PARAGRAPH', label: 'Text Block', icon: FileText, description: 'Display text only', color: 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100' },
 ]
 
 export default function TallyCloneBuilder({ onSave, onCancel, initialData }: TallyCloneBuilderProps) {
@@ -161,7 +161,7 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
       name: `field_${Date.now()}`,
       placeholder: '',
       required: false,
-      options: type === 'select' || type === 'radio' || type === 'checkbox' ? ['Option 1', 'Option 2'] : undefined,
+      options: type === 'SELECT' || type === 'RADIO' || type === 'CHECKBOX' ? ['Option 1', 'Option 2'] : undefined,
       order: sections[sectionIndex].fields.length
     }
 
@@ -313,25 +313,20 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor={`label-${field.id}`}>Label</Label>
-              <Input
-                id={`label-${field.id}`}
-                value={field.label}
-                onChange={(e) => updateField(sectionIndex, fieldIndex, { label: e.target.value })}
-                placeholder="Field label"
-              />
-            </div>
-            <div>
-              <Label htmlFor={`name-${field.id}`}>Name</Label>
-              <Input
-                id={`name-${field.id}`}
-                value={field.name}
-                onChange={(e) => updateField(sectionIndex, fieldIndex, { name: e.target.value })}
-                placeholder="field_name"
-              />
-            </div>
+          <div>
+            <Label htmlFor={`label-${field.id}`}>Label</Label>
+            <Input
+              id={`label-${field.id}`}
+              value={field.label}
+              onChange={(e) => {
+                const newLabel = e.target.value
+                updateField(sectionIndex, fieldIndex, { 
+                  label: newLabel,
+                  name: newLabel.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '') || `field_${Date.now()}`
+                })
+              }}
+              placeholder="Field label"
+            />
           </div>
 
           <div>
@@ -355,7 +350,7 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
             />
           </div>
 
-          {(field.type === 'select' || field.type === 'radio' || field.type === 'checkbox') && (
+          {(field.type === 'SELECT' || field.type === 'RADIO' || field.type === 'CHECKBOX') && (
             <div>
               <Label>Options</Label>
               <div className="space-y-2">
@@ -469,14 +464,14 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
                     <Button
                       key={fieldType.type}
                       variant="outline"
-                      className="w-full justify-start h-auto p-3"
+                      className={`w-full justify-start h-auto p-3 ${fieldType.color}`}
                       onClick={() => addField(fieldType.type as FieldType, activeSection)}
                     >
                       <div className="flex items-center gap-3">
-                        <Icon className="h-4 w-4 text-gray-500" />
+                        <Icon className="h-4 w-4" />
                         <div className="text-left">
                           <div className="font-medium text-sm">{fieldType.label}</div>
-                          <div className="text-xs text-gray-500">{fieldType.description}</div>
+                          <div className="text-xs opacity-75">{fieldType.description}</div>
                         </div>
                       </div>
                     </Button>
@@ -631,6 +626,30 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
                       <div className="text-xs mt-1">Add fields from the sidebar to get started</div>
                     </div>
                   )}
+
+                  {/* Add Field Button for this section */}
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="text-sm font-medium text-gray-700 mb-3">Add Field to This Section</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {FIELD_TYPES.slice(0, 6).map((fieldType) => {
+                        const Icon = fieldType.icon
+                        return (
+                          <Button
+                            key={fieldType.type}
+                            variant="outline"
+                            size="sm"
+                            className={`justify-start h-auto p-2 ${fieldType.color}`}
+                            onClick={() => addField(fieldType.type as FieldType, sectionIndex)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Icon className="h-3 w-3" />
+                              <span className="text-xs">{fieldType.label}</span>
+                            </div>
+                          </Button>
+                        )
+                      })}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             ))}
