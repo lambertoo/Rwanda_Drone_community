@@ -18,7 +18,8 @@ import {
   BookOpen,
   Camera,
   Wrench,
-  GraduationCap
+  GraduationCap,
+  ClipboardList
 } from "lucide-react"
 import { AuthUser, UserRole } from "@prisma/client"
 
@@ -71,6 +72,11 @@ export function AppSidebar({ className, onItemClick }: SidebarProps) {
         title: "Resources",
         href: "/resources",
         icon: BookOpen,
+      },
+      {
+        title: "Forms",
+        href: "/forms",
+        icon: ClipboardList,
       },
       {
         title: "Profile",
