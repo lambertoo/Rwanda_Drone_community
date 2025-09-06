@@ -126,21 +126,25 @@ export default function FormSubmissionsPage() {
   const exportSubmissions = () => {
     if (!form || !submissions || submissions.length === 0) return
 
-    // Create CSV content
-    const headers = form.sections?.flatMap(section => 
+    // Create CSV content with table structure
+    const fieldHeaders = form.sections?.flatMap(section => 
       section.fields?.map(field => field.label || 'Untitled Field') || []
     ) || []
     
+    const headers = ['Submission #', 'Submitted At', ...fieldHeaders]
+    
     const csvContent = [
-      ['Submission ID', 'Submitted At', ...headers].join(','),
-      ...submissions.map(submission => {
+      headers.join(','),
+      ...submissions.map((submission, index) => {
         const values = form.sections?.flatMap(section => 
           section.fields?.map(field => {
             const value = submission.values?.find(v => v.fieldName === field.name)
-            return `"${(value?.value || '').replace(/"/g, '""')}"`
+            return `"${(value?.value || 'No response').replace(/"/g, '""')}"`
           }) || []
         ) || []
-        return [submission.id, submission.meta?.submittedAt || '', ...values].join(',')
+        const submissionNumber = index + 1
+        const submittedAt = submission.meta?.submittedAt ? new Date(submission.meta.submittedAt).toLocaleString() : 'Unknown date'
+        return [submissionNumber, `"${submittedAt}"`, ...values].join(',')
       })
     ].join('\n')
 
@@ -247,46 +251,53 @@ export default function FormSubmissionsPage() {
               </div>
             </div>
 
-            <div className="space-y-4">
-              {submissions?.map((submission, index) => (
-                <Card key={submission.id}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">
-                        Submission #{index + 1}
-                      </CardTitle>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <Calendar className="w-4 h-4" />
-                        {submission.meta?.submittedAt ? new Date(submission.meta.submittedAt).toLocaleString() : 'Unknown date'}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {form.sections?.map(section => (
-                        <div key={section.id} className="space-y-3">
-                          <h4 className="font-semibold text-sm text-gray-700 border-b pb-1">
-                            {section.title || 'Untitled Section'}
-                          </h4>
-                          {section.fields?.map(field => {
-                            const value = submission.values?.find(v => v.fieldName === field.name)
-                            return (
-                              <div key={field.id} className="space-y-1">
-                                <label className="text-sm font-medium text-gray-600">
-                                  {field.label || 'Untitled Field'}
-                                </label>
-                                <div className="text-sm text-gray-900 p-2 bg-gray-50 rounded">
-                                  {value?.value || 'No response'}
-                                </div>
-                              </div>
-                            )
-                          }) || []}
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                      Submission #
+                    </th>
+                    <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                      Submitted At
+                    </th>
+                    {form.sections?.map(section => 
+                      section.fields?.map(field => (
+                        <th key={field.id} className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                          {field.label || 'Untitled Field'}
+                        </th>
+                      )) || []
+                    ).flat()}
+                  </tr>
+                </thead>
+                <tbody>
+                  {submissions?.map((submission, index) => (
+                    <tr key={submission.id} className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">
+                        {index + 1}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-gray-500" />
+                          {submission.meta?.submittedAt ? new Date(submission.meta.submittedAt).toLocaleString() : 'Unknown date'}
                         </div>
-                      )) || []}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      </td>
+                      {form.sections?.map(section => 
+                        section.fields?.map(field => {
+                          const value = submission.values?.find(v => v.fieldName === field.name)
+                          return (
+                            <td key={field.id} className="border border-gray-300 px-4 py-3 text-sm text-gray-900">
+                              <div className="max-w-xs truncate" title={value?.value || 'No response'}>
+                                {value?.value || 'No response'}
+                              </div>
+                            </td>
+                          )
+                        }) || []
+                      ).flat()}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
