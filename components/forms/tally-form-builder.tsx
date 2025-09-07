@@ -37,7 +37,13 @@ interface FormField {
   placeholder?: string
   required: boolean
   options?: string[]
-  validation?: any
+  validation?: {
+    required?: boolean
+    // File upload specific validation
+    allowedFileTypes?: string[]
+    maxFileSize?: number
+    maxFiles?: number
+  }
   conditional?: any
   order: number
 }
@@ -57,20 +63,22 @@ interface TallyFormBuilderProps {
 }
 
 const FIELD_TYPES = [
-  { value: 'TEXT', label: 'Text', icon: FileText },
-  { value: 'TEXTAREA', label: 'Textarea', icon: FileText },
-  { value: 'EMAIL', label: 'Email', icon: Mail },
-  { value: 'PHONE', label: 'Phone', icon: Phone },
+  { value: 'SHORT_TEXT', label: 'Short Answer', icon: FileText },
+  { value: 'LONG_TEXT', label: 'Long Answer', icon: FileText },
+  { value: 'MULTIPLE_CHOICE', label: 'Multiple Choice', icon: Circle },
+  { value: 'CHECKBOXES', label: 'Checkboxes', icon: CheckSquare },
+  { value: 'DROPDOWN', label: 'Dropdown', icon: ChevronDown },
+  { value: 'MULTI_SELECT', label: 'Multi-select', icon: ChevronDown },
   { value: 'NUMBER', label: 'Number', icon: Hash },
-  { value: 'SELECT', label: 'Select', icon: ChevronDown },
-  { value: 'RADIO', label: 'Radio', icon: Circle },
-  { value: 'CHECKBOX', label: 'Checkbox', icon: CheckSquare },
+  { value: 'EMAIL', label: 'Email', icon: Mail },
+  { value: 'PHONE', label: 'Phone Number', icon: Phone },
+  { value: 'URL', label: 'Link (URL)', icon: FileText },
+  { value: 'FILE_UPLOAD', label: 'File Upload', icon: Upload },
   { value: 'DATE', label: 'Date', icon: Calendar },
-  { value: 'FILE', label: 'File Upload', icon: Upload },
-  { value: 'URL', label: 'URL', icon: FileText },
-  { value: 'PASSWORD', label: 'Password', icon: FileText },
-  { value: 'HIDDEN', label: 'Hidden', icon: FileText },
-  { value: 'PARAGRAPH', label: 'Paragraph', icon: FileText },
+  { value: 'TIME', label: 'Time', icon: Calendar },
+  { value: 'LINEAR_SCALE', label: 'Linear Scale', icon: Hash },
+  { value: 'MATRIX', label: 'Matrix', icon: CheckSquare },
+  { value: 'RATING', label: 'Rating', icon: Hash },
 ]
 
 export default function TallyFormBuilder({ onSave, onCancel, initialData }: TallyFormBuilderProps) {
@@ -158,17 +166,32 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
     const newField: FormField = {
       id: `field_${Date.now()}`,
       type,
-      label: type.charAt(0) + type.slice(1).toLowerCase(),
+      label: type.charAt(0) + type.slice(1).toLowerCase().replace(/_/g, ' '),
       name: fieldName,
       placeholder: '',
       required: false,
       options: ['Option 1', 'Option 2'],
+      validation: getDefaultValidation(type),
       order: activeSectionData.fields.length + 1
     }
 
     updateSection(activeSection, {
       fields: [...activeSectionData.fields, newField]
     })
+  }
+
+  const getDefaultValidation = (type: string) => {
+    // Only file uploads need additional validation settings
+    if (type === 'FILE_UPLOAD') {
+      return { 
+        required: false, 
+        allowedFileTypes: ['pdf', 'jpg', 'png', 'docx'], 
+        maxFileSize: 10485760, // 10MB
+        maxFiles: 1 
+      }
+    }
+    // All other fields just need required/optional
+    return { required: false }
   }
 
   const updateField = (fieldId: string, updates: Partial<FormField>) => {
@@ -306,36 +329,15 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                         {field.required && <span className="text-red-500 ml-1">*</span>}
                       </Label>
                       
-                      {field.type === 'TEXT' && (
+                      {field.type === 'SHORT_TEXT' && (
                         <Input placeholder={field.placeholder} disabled />
                       )}
                       
-                      {field.type === 'TEXTAREA' && (
+                      {field.type === 'LONG_TEXT' && (
                         <Textarea placeholder={field.placeholder} disabled />
                       )}
                       
-                      {field.type === 'EMAIL' && (
-                        <Input type="email" placeholder={field.placeholder} disabled />
-                      )}
-                      
-                      {field.type === 'PHONE' && (
-                        <Input type="tel" placeholder={field.placeholder} disabled />
-                      )}
-                      
-                      {field.type === 'NUMBER' && (
-                        <Input type="number" placeholder={field.placeholder} disabled />
-                      )}
-                      
-                      {field.type === 'SELECT' && (
-                        <select className="w-full p-2 border rounded-md" disabled>
-                          <option>Select an option</option>
-                          {field.options?.map((option, index) => (
-                            <option key={index} value={option}>{option}</option>
-                          ))}
-                        </select>
-                      )}
-                      
-                      {field.type === 'RADIO' && (
+                      {field.type === 'MULTIPLE_CHOICE' && (
                         <div className="space-y-2">
                           {field.options?.map((option, index) => (
                             <label key={index} className="flex items-center space-x-2">
@@ -346,7 +348,7 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                         </div>
                       )}
                       
-                      {field.type === 'CHECKBOX' && (
+                      {field.type === 'CHECKBOXES' && (
                         <div className="space-y-2">
                           {field.options?.map((option, index) => (
                             <label key={index} className="flex items-center space-x-2">
@@ -357,24 +359,78 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                         </div>
                       )}
                       
-                      {field.type === 'DATE' && (
-                        <Input type="date" disabled />
+                      {field.type === 'DROPDOWN' && (
+                        <select className="w-full p-2 border rounded-md" disabled>
+                          <option>Select an option</option>
+                          {field.options?.map((option, index) => (
+                            <option key={index} value={option}>{option}</option>
+                          ))}
+                        </select>
                       )}
                       
-                      {field.type === 'FILE' && (
-                        <Input type="file" disabled />
+                      {field.type === 'MULTI_SELECT' && (
+                        <select className="w-full p-2 border rounded-md" multiple disabled>
+                          {field.options?.map((option, index) => (
+                            <option key={index} value={option}>{option}</option>
+                          ))}
+                        </select>
+                      )}
+                      
+                      {field.type === 'NUMBER' && (
+                        <Input type="number" placeholder={field.placeholder} disabled />
+                      )}
+                      
+                      {field.type === 'EMAIL' && (
+                        <Input type="email" placeholder={field.placeholder} disabled />
+                      )}
+                      
+                      {field.type === 'PHONE' && (
+                        <Input type="tel" placeholder={field.placeholder} disabled />
                       )}
                       
                       {field.type === 'URL' && (
                         <Input type="url" placeholder={field.placeholder} disabled />
                       )}
                       
-                      {field.type === 'PASSWORD' && (
-                        <Input type="password" placeholder={field.placeholder} disabled />
+                      {field.type === 'FILE_UPLOAD' && (
+                        <Input type="file" disabled />
                       )}
                       
-                      {field.type === 'PARAGRAPH' && (
-                        <p className="text-gray-600 text-sm">{field.label}</p>
+                      {field.type === 'DATE' && (
+                        <Input type="date" disabled />
+                      )}
+                      
+                      {field.type === 'TIME' && (
+                        <Input type="time" disabled />
+                      )}
+                      
+                      {field.type === 'LINEAR_SCALE' && (
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm text-gray-500">
+                            <span>1</span>
+                            <span>5</span>
+                          </div>
+                          <input type="range" min="1" max="5" className="w-full" disabled />
+                        </div>
+                      )}
+                      
+                      {field.type === 'MATRIX' && (
+                        <div className="space-y-2">
+                          <div className="text-sm text-gray-500">Matrix Grid</div>
+                          <div className="border rounded p-2 text-sm text-gray-400">
+                            Rows × Columns grid
+                          </div>
+                        </div>
+                      )}
+                      
+                      {field.type === 'RATING' && (
+                        <div className="space-y-2">
+                          <div className="flex space-x-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <span key={star} className="text-gray-300">★</span>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -609,30 +665,13 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
 
                           {/* Field Preview */}
                           <div className="mt-2">
-                            {field.type === 'TEXT' && (
+                            {field.type === 'SHORT_TEXT' && (
                               <Input placeholder={field.placeholder} disabled />
                             )}
-                            {field.type === 'TEXTAREA' && (
+                            {field.type === 'LONG_TEXT' && (
                               <Textarea placeholder={field.placeholder} disabled />
                             )}
-                            {field.type === 'EMAIL' && (
-                              <Input type="email" placeholder={field.placeholder} disabled />
-                            )}
-                            {field.type === 'PHONE' && (
-                              <Input type="tel" placeholder={field.placeholder} disabled />
-                            )}
-                            {field.type === 'NUMBER' && (
-                              <Input type="number" placeholder={field.placeholder} disabled />
-                            )}
-                            {field.type === 'SELECT' && (
-                              <select className="w-full p-2 border rounded-md" disabled>
-                                <option>Select an option</option>
-                                {field.options?.map((option, index) => (
-                                  <option key={index} value={option}>{option}</option>
-                                ))}
-                              </select>
-                            )}
-                            {field.type === 'RADIO' && (
+                            {field.type === 'MULTIPLE_CHOICE' && (
                               <div className="space-y-2">
                                 {field.options?.map((option, index) => (
                                   <label key={index} className="flex items-center space-x-2">
@@ -642,7 +681,7 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                                 ))}
                               </div>
                             )}
-                            {field.type === 'CHECKBOX' && (
+                            {field.type === 'CHECKBOXES' && (
                               <div className="space-y-2">
                                 {field.options?.map((option, index) => (
                                   <label key={index} className="flex items-center space-x-2">
@@ -652,20 +691,67 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                                 ))}
                               </div>
                             )}
-                            {field.type === 'DATE' && (
-                              <Input type="date" disabled />
+                            {field.type === 'DROPDOWN' && (
+                              <select className="w-full p-2 border rounded-md" disabled>
+                                <option>Select an option</option>
+                                {field.options?.map((option, index) => (
+                                  <option key={index} value={option}>{option}</option>
+                                ))}
+                              </select>
                             )}
-                            {field.type === 'FILE' && (
-                              <Input type="file" disabled />
+                            {field.type === 'MULTI_SELECT' && (
+                              <select className="w-full p-2 border rounded-md" multiple disabled>
+                                {field.options?.map((option, index) => (
+                                  <option key={index} value={option}>{option}</option>
+                                ))}
+                              </select>
+                            )}
+                            {field.type === 'NUMBER' && (
+                              <Input type="number" placeholder={field.placeholder} disabled />
+                            )}
+                            {field.type === 'EMAIL' && (
+                              <Input type="email" placeholder={field.placeholder} disabled />
+                            )}
+                            {field.type === 'PHONE' && (
+                              <Input type="tel" placeholder={field.placeholder} disabled />
                             )}
                             {field.type === 'URL' && (
                               <Input type="url" placeholder={field.placeholder} disabled />
                             )}
-                            {field.type === 'PASSWORD' && (
-                              <Input type="password" placeholder={field.placeholder} disabled />
+                            {field.type === 'FILE_UPLOAD' && (
+                              <Input type="file" disabled />
                             )}
-                            {field.type === 'PARAGRAPH' && (
-                              <p className="text-gray-600 text-sm">{field.label}</p>
+                            {field.type === 'DATE' && (
+                              <Input type="date" disabled />
+                            )}
+                            {field.type === 'TIME' && (
+                              <Input type="time" disabled />
+                            )}
+                            {field.type === 'LINEAR_SCALE' && (
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-sm text-gray-500">
+                                  <span>1</span>
+                                  <span>5</span>
+                                </div>
+                                <input type="range" min="1" max="5" className="w-full" disabled />
+                              </div>
+                            )}
+                            {field.type === 'MATRIX' && (
+                              <div className="space-y-2">
+                                <div className="text-sm text-gray-500">Matrix Grid</div>
+                                <div className="border rounded p-2 text-sm text-gray-400">
+                                  Rows × Columns grid
+                                </div>
+                              </div>
+                            )}
+                            {field.type === 'RATING' && (
+                              <div className="space-y-2">
+                                <div className="flex space-x-1">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <span key={star} className="text-gray-300">★</span>
+                                  ))}
+                                </div>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -753,8 +839,8 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                 <Label htmlFor="required">Required</Label>
               </div>
 
-              {/* Options for select, radio, checkbox */}
-              {['SELECT', 'RADIO', 'CHECKBOX'].includes(sections.find(s => s.fields.some(f => f.id === editingField))?.fields.find(f => f.id === editingField)?.type || '') && (
+              {/* Options for select, radio, checkbox, multiple choice, multi-select */}
+              {['SELECT', 'RADIO', 'CHECKBOX', 'MULTIPLE_CHOICE', 'CHECKBOXES', 'DROPDOWN', 'MULTI_SELECT'].includes(sections.find(s => s.fields.some(f => f.id === editingField))?.fields.find(f => f.id === editingField)?.type || '') && (
                 <div>
                   <Label>Options</Label>
                   <div className="space-y-2">
@@ -781,6 +867,56 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                       <Plus className="w-4 h-4 mr-2" />
                       Add Option
                     </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* File upload validation settings */}
+              {sections.find(s => s.fields.some(f => f.id === editingField))?.fields.find(f => f.id === editingField)?.type === 'FILE_UPLOAD' && (
+                <div className="space-y-4">
+                  <div>
+                    <Label>Allowed File Types</Label>
+                    <Input
+                      placeholder="pdf, jpg, png, docx"
+                      value={sections.find(s => s.fields.some(f => f.id === editingField))?.fields.find(f => f.id === editingField)?.validation?.allowedFileTypes?.join(', ') || ''}
+                      onChange={(e) => {
+                        const fileTypes = e.target.value.split(',').map(type => type.trim()).filter(type => type)
+                        updateField(editingField, { 
+                          validation: { 
+                            ...sections.find(s => s.fields.some(f => f.id === editingField))?.fields.find(f => f.id === editingField)?.validation,
+                            allowedFileTypes: fileTypes
+                          }
+                        })
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label>Max File Size (bytes)</Label>
+                    <Input
+                      type="number"
+                      placeholder="10485760"
+                      value={sections.find(s => s.fields.some(f => f.id === editingField))?.fields.find(f => f.id === editingField)?.validation?.maxFileSize || ''}
+                      onChange={(e) => updateField(editingField, { 
+                        validation: { 
+                          ...sections.find(s => s.fields.some(f => f.id === editingField))?.fields.find(f => f.id === editingField)?.validation,
+                          maxFileSize: parseInt(e.target.value) || 0
+                        }
+                      })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Max Number of Files</Label>
+                    <Input
+                      type="number"
+                      placeholder="1"
+                      value={sections.find(s => s.fields.some(f => f.id === editingField))?.fields.find(f => f.id === editingField)?.validation?.maxFiles || ''}
+                      onChange={(e) => updateField(editingField, { 
+                        validation: { 
+                          ...sections.find(s => s.fields.some(f => f.id === editingField))?.fields.find(f => f.id === editingField)?.validation,
+                          maxFiles: parseInt(e.target.value) || 1
+                        }
+                      })}
+                    />
                   </div>
                 </div>
               )}

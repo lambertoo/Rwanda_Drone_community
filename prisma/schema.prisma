@@ -632,6 +632,17 @@ model FormField {
   order       Int          // Field order within section
   conditional Json?        // Conditional logic for showing/hiding field
   isActive    Boolean      @default(true)
+  // Matrix field properties
+  matrixRows    Json?      // Array of row labels
+  matrixColumns Json?      // Array of column labels
+  matrixType    String?    // 'single' or 'multiple'
+  // Linear scale properties
+  scaleStart    Int?       // Start value
+  scaleEnd      Int?       // End value
+  scaleStep     Int?       // Step value
+  leftLabel     String?    // Left label
+  centerLabel   String?    // Center label
+  rightLabel    String?    // Right label
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   section     FormSection  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
@@ -669,18 +680,19 @@ model FormValue {
 }
 
 enum FormFieldType {
-  TEXT
-  TEXTAREA
+  SHORT_TEXT
+  LONG_TEXT
+  MULTIPLE_CHOICE
+  CHECKBOXES
+  DROPDOWN
+  NUMBER
   EMAIL
   PHONE
-  NUMBER
-  SELECT
-  RADIO
-  CHECKBOX
-  DATE
-  FILE
   URL
-  PASSWORD
-  HIDDEN
-  PARAGRAPH
+  FILE_UPLOAD
+  DATE
+  TIME
+  LINEAR_SCALE
+  MATRIX
+  RATING
 }

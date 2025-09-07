@@ -42,20 +42,21 @@ import {
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
 
 export type FieldType = 
-  | 'TEXT' 
-  | 'TEXTAREA' 
+  | 'SHORT_TEXT' 
+  | 'LONG_TEXT' 
+  | 'MULTIPLE_CHOICE' 
+  | 'CHECKBOXES' 
+  | 'DROPDOWN' 
+  | 'NUMBER' 
   | 'EMAIL' 
   | 'PHONE' 
-  | 'NUMBER' 
-  | 'SELECT' 
-  | 'RADIO' 
-  | 'CHECKBOX' 
-  | 'DATE' 
-  | 'FILE' 
   | 'URL' 
-  | 'PASSWORD' 
-  | 'HIDDEN' 
-  | 'PARAGRAPH'
+  | 'FILE_UPLOAD' 
+  | 'DATE' 
+  | 'TIME' 
+  | 'LINEAR_SCALE' 
+  | 'MATRIX' 
+  | 'RATING'
 
 export interface FormField {
   id: string
@@ -65,6 +66,15 @@ export interface FormField {
   placeholder?: string
   required: boolean
   options?: string[]
+  matrixRows?: string[]
+  matrixColumns?: string[]
+  matrixType?: 'single' | 'multiple'
+  scaleStart?: number
+  scaleEnd?: number
+  scaleStep?: number
+  leftLabel?: string
+  centerLabel?: string
+  rightLabel?: string
   validation?: {
     min?: number
     max?: number
@@ -109,19 +119,21 @@ interface TallyCloneBuilderProps {
 }
 
 const FIELD_TYPES = [
-  { type: 'TEXT', label: 'Text Input', icon: Type, description: 'Single line text', color: 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100' },
-  { type: 'TEXTAREA', label: 'Long Text', icon: FileText, description: 'Multi-line text', color: 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100' },
-  { type: 'EMAIL', label: 'Email', icon: Mail, description: 'Email address', color: 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100' },
-  { type: 'PHONE', label: 'Phone', icon: Phone, description: 'Phone number', color: 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100' },
+  { type: 'SHORT_TEXT', label: 'Short Answer', icon: Type, description: 'Single line text (255 chars)', color: 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100' },
+  { type: 'LONG_TEXT', label: 'Long Answer', icon: FileText, description: 'Multi-line text (40,000 chars)', color: 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100' },
+  { type: 'MULTIPLE_CHOICE', label: 'Multiple Choice', icon: Circle, description: 'Single selection', color: 'bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100' },
+  { type: 'CHECKBOXES', label: 'Checkboxes', icon: Square, description: 'Multiple selections', color: 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100' },
+  { type: 'DROPDOWN', label: 'Dropdown', icon: ChevronDown, description: 'Select from options', color: 'bg-pink-50 border-pink-200 text-pink-700 hover:bg-pink-100' },
   { type: 'NUMBER', label: 'Number', icon: Hash, description: 'Numeric input', color: 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100' },
-  { type: 'SELECT', label: 'Dropdown', icon: ChevronDown, description: 'Select from options', color: 'bg-pink-50 border-pink-200 text-pink-700 hover:bg-pink-100' },
-  { type: 'RADIO', label: 'Multiple Choice', icon: Circle, description: 'Single selection', color: 'bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100' },
-  { type: 'CHECKBOX', label: 'Checkboxes', icon: Square, description: 'Multiple selections', color: 'bg-cyan-50 border-cyan-200 text-cyan-700 hover:bg-cyan-100' },
+  { type: 'EMAIL', label: 'Email', icon: Mail, description: 'Email address', color: 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100' },
+  { type: 'PHONE', label: 'Phone Number', icon: Phone, description: 'Phone number', color: 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100' },
+  { type: 'URL', label: 'Link (URL)', icon: Link, description: 'URL input', color: 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' },
+  { type: 'FILE_UPLOAD', label: 'File Upload', icon: Upload, description: 'File attachment', color: 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100' },
   { type: 'DATE', label: 'Date', icon: Calendar, description: 'Date picker', color: 'bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100' },
-  { type: 'FILE', label: 'File Upload', icon: Upload, description: 'File attachment', color: 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100' },
-  { type: 'URL', label: 'Website', icon: Link, description: 'URL input', color: 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' },
-  { type: 'PASSWORD', label: 'Password', icon: Lock, description: 'Password field', color: 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100' },
-  { type: 'PARAGRAPH', label: 'Text Block', icon: FileText, description: 'Display text only', color: 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100' },
+  { type: 'TIME', label: 'Time', icon: Calendar, description: 'Time picker', color: 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100' },
+  { type: 'LINEAR_SCALE', label: 'Linear Scale', icon: Hash, description: 'Rating scale (1-5)', color: 'bg-violet-50 border-violet-200 text-violet-700 hover:bg-violet-100' },
+  { type: 'MATRIX', label: 'Matrix', icon: Square, description: 'Grid of choices', color: 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100' },
+  { type: 'RATING', label: 'Rating', icon: Hash, description: 'Star rating', color: 'bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100' },
 ]
 
 export default function TallyCloneBuilder({ onSave, onCancel, initialData }: TallyCloneBuilderProps) {
@@ -151,6 +163,13 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
   const [activeSection, setActiveSection] = useState(0)
   const [showSettings, setShowSettings] = useState(false)
   const [draggedField, setDraggedField] = useState<string | null>(null)
+  const [fieldSettingsModal, setFieldSettingsModal] = useState<{isOpen: boolean, field: FormField | null, sectionIndex: number, fieldIndex: number}>({
+    isOpen: false,
+    field: null,
+    sectionIndex: -1,
+    fieldIndex: -1
+  })
+  const [dragStartTime, setDragStartTime] = useState<number | null>(null)
 
   const addField = useCallback((type: FieldType, sectionIndex: number) => {
     const newField: FormField = {
@@ -160,7 +179,13 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
       name: `field_${Date.now()}`,
       placeholder: '',
       required: false,
-      options: type === 'SELECT' || type === 'RADIO' || type === 'CHECKBOX' ? ['Option 1', 'Option 2'] : undefined,
+      options: type === 'DROPDOWN' || type === 'MULTIPLE_CHOICE' || type === 'CHECKBOXES' ? ['Option 1', 'Option 2'] : undefined,
+      matrixRows: type === 'MATRIX' ? ['Row 1', 'Row 2', 'Row 3'] : undefined,
+      matrixColumns: type === 'MATRIX' ? ['Column 1', 'Column 2', 'Column 3'] : undefined,
+      matrixType: type === 'MATRIX' ? 'multiple' : undefined,
+      scaleStart: type === 'LINEAR_SCALE' ? 0 : undefined,
+      scaleEnd: type === 'LINEAR_SCALE' ? 10 : undefined,
+      scaleStep: type === 'LINEAR_SCALE' ? 1 : undefined,
       order: sections[sectionIndex].fields.length
     }
 
@@ -285,6 +310,36 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
     onSave(formData)
   }
 
+  const handleDragHandleClick = (e: React.MouseEvent, field: FormField, sectionIndex: number, fieldIndex: number) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    // If it's a quick click (less than 200ms), open settings
+    if (dragStartTime && Date.now() - dragStartTime < 200) {
+      setFieldSettingsModal({
+        isOpen: true,
+        field,
+        sectionIndex,
+        fieldIndex
+      })
+    }
+    
+    setDragStartTime(null)
+  }
+
+  const handleDragHandleMouseDown = () => {
+    setDragStartTime(Date.now())
+  }
+
+  const closeFieldSettingsModal = () => {
+    setFieldSettingsModal({
+      isOpen: false,
+      field: null,
+      sectionIndex: -1,
+      fieldIndex: -1
+    })
+  }
+
   const renderFieldEditor = (field: FormField, sectionIndex: number, fieldIndex: number) => {
     const FieldIcon = FIELD_TYPES.find(f => f.type === field.type)?.icon || Type
 
@@ -339,7 +394,7 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
           </div>
 
 
-          {(field.type === 'SELECT' || field.type === 'RADIO' || field.type === 'CHECKBOX') && (
+          {(field.type === 'DROPDOWN' || field.type === 'MULTIPLE_CHOICE' || field.type === 'CHECKBOXES') && (
             <div>
               <Label>Options</Label>
               <div className="space-y-2">
@@ -379,6 +434,171 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
                   <Plus className="h-4 w-4 mr-2" />
                   Add Option
                 </Button>
+              </div>
+            </div>
+          )}
+
+          {field.type === 'MATRIX' && (
+            <div className="space-y-4">
+              <div>
+                <Label>Matrix Rows (Questions)</Label>
+                <div className="space-y-2">
+                  {field.matrixRows?.map((row, rowIndex) => (
+                    <div key={rowIndex} className="flex items-center gap-2">
+                      <Input
+                        value={row}
+                        onChange={(e) => {
+                          const newRows = [...(field.matrixRows || [])]
+                          newRows[rowIndex] = e.target.value
+                          updateField(sectionIndex, fieldIndex, { matrixRows: newRows })
+                        }}
+                        placeholder={`Row ${rowIndex + 1}`}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const newRows = field.matrixRows?.filter((_, idx) => idx !== rowIndex) || []
+                          updateField(sectionIndex, fieldIndex, { matrixRows: newRows })
+                        }}
+                        className="h-8 w-8 p-0 text-red-500"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newRows = [...(field.matrixRows || []), `Row ${(field.matrixRows?.length || 0) + 1}`]
+                      updateField(sectionIndex, fieldIndex, { matrixRows: newRows })
+                    }}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Row
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <Label>Matrix Columns (Answer Options)</Label>
+                <div className="space-y-2">
+                  {field.matrixColumns?.map((column, columnIndex) => (
+                    <div key={columnIndex} className="flex items-center gap-2">
+                      <Input
+                        value={column}
+                        onChange={(e) => {
+                          const newColumns = [...(field.matrixColumns || [])]
+                          newColumns[columnIndex] = e.target.value
+                          updateField(sectionIndex, fieldIndex, { matrixColumns: newColumns })
+                        }}
+                        placeholder={`Column ${columnIndex + 1}`}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const newColumns = field.matrixColumns?.filter((_, idx) => idx !== columnIndex) || []
+                          updateField(sectionIndex, fieldIndex, { matrixColumns: newColumns })
+                        }}
+                        className="h-8 w-8 p-0 text-red-500"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newColumns = [...(field.matrixColumns || []), `Column ${(field.matrixColumns?.length || 0) + 1}`]
+                      updateField(sectionIndex, fieldIndex, { matrixColumns: newColumns })
+                    }}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Column
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <Label>Selection Type</Label>
+                <Select 
+                  value={field.matrixType || 'multiple'} 
+                  onValueChange={(value: 'single' | 'multiple') => updateField(sectionIndex, fieldIndex, { matrixType: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="single">Single selection per row</SelectItem>
+                    <SelectItem value="multiple">Multiple selections per row</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {field.type === 'LINEAR_SCALE' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label>Scale Start</Label>
+                  <Input
+                    type="number"
+                    value={field.scaleStart || 0}
+                    onChange={(e) => updateField(sectionIndex, fieldIndex, { scaleStart: parseInt(e.target.value) || 0 })}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <Label>Scale End</Label>
+                  <Input
+                    type="number"
+                    value={field.scaleEnd || 10}
+                    onChange={(e) => updateField(sectionIndex, fieldIndex, { scaleEnd: parseInt(e.target.value) || 10 })}
+                    placeholder="10"
+                  />
+                </div>
+                <div>
+                  <Label>Scale Step</Label>
+                  <Input
+                    type="number"
+                    value={field.scaleStep || 1}
+                    onChange={(e) => updateField(sectionIndex, fieldIndex, { scaleStep: parseInt(e.target.value) || 1 })}
+                    placeholder="1"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <Label>Left Label (Optional)</Label>
+                  <Input
+                    value={field.leftLabel || ''}
+                    onChange={(e) => updateField(sectionIndex, fieldIndex, { leftLabel: e.target.value })}
+                    placeholder="e.g., Strongly Disagree"
+                  />
+                </div>
+                <div>
+                  <Label>Center Label (Optional)</Label>
+                  <Input
+                    value={field.centerLabel || ''}
+                    onChange={(e) => updateField(sectionIndex, fieldIndex, { centerLabel: e.target.value })}
+                    placeholder="e.g., Neutral"
+                  />
+                </div>
+                <div>
+                  <Label>Right Label (Optional)</Label>
+                  <Input
+                    value={field.rightLabel || ''}
+                    onChange={(e) => updateField(sectionIndex, fieldIndex, { rightLabel: e.target.value })}
+                    placeholder="e.g., Strongly Agree"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -564,7 +784,9 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
                                     <div
                                       {...provided.dragHandleProps}
                                       className="mt-6 p-2 cursor-grab hover:bg-gray-100 rounded-lg border border-transparent hover:border-gray-200 transition-colors"
-                                      title="Drag to reorder"
+                                      title="Click for settings, drag to reorder"
+                                      onMouseDown={handleDragHandleMouseDown}
+                                      onClick={(e) => handleDragHandleClick(e, field, sectionIndex, fieldIndex)}
                                     >
                                       <GripVertical className="h-4 w-4 text-gray-400" />
                                     </div>
@@ -701,6 +923,40 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
           </div>
         </div>
       </div>
+
+      {/* Field Settings Modal */}
+      {fieldSettingsModal.isOpen && fieldSettingsModal.field && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-semibold">Field Settings</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={closeFieldSettingsModal}
+                className="h-8 w-8 p-0"
+              >
+                ×
+              </Button>
+            </div>
+            <div className="p-6">
+              {fieldSettingsModal.field && renderFieldEditor(
+                fieldSettingsModal.field, 
+                fieldSettingsModal.sectionIndex, 
+                fieldSettingsModal.fieldIndex
+              )}
+            </div>
+            <div className="flex items-center justify-end gap-2 p-6 border-t">
+              <Button
+                variant="outline"
+                onClick={closeFieldSettingsModal}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

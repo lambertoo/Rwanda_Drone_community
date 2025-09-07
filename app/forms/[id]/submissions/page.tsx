@@ -24,8 +24,15 @@ interface FormSubmission {
     referrer?: string
   }
   values: {
-    fieldName: string
+    id: string
+    fieldId: string
     value: string
+    field: {
+      id: string
+      label: string
+      name: string
+      type: string
+    }
   }[]
 }
 
@@ -100,8 +107,8 @@ export default function FormSubmissionsPage() {
         return
       }
 
-      // Fetch submissions
-      const submissionsResponse = await fetch(`/api/forms/${formId}/submissions`, {
+      // Fetch submissions with values
+      const submissionsResponse = await fetch(`/api/forms/${formId}/submissions?includeValues=true`, {
         credentials: 'include'
       })
       
@@ -138,7 +145,7 @@ export default function FormSubmissionsPage() {
       ...submissions.map((submission, index) => {
         const values = form.sections?.flatMap(section => 
           section.fields?.map(field => {
-            const value = submission.values?.find(v => v.fieldName === field.name)
+            const value = submission.values?.find(v => v.field.name === field.name)
             return `"${(value?.value || 'No response').replace(/"/g, '""')}"`
           }) || []
         ) || []
@@ -284,7 +291,7 @@ export default function FormSubmissionsPage() {
                       </td>
                       {form.sections?.map(section => 
                         section.fields?.map(field => {
-                          const value = submission.values?.find(v => v.fieldName === field.name)
+                          const value = submission.values?.find(v => v.field.name === field.name)
                           return (
                             <td key={field.id} className="border border-gray-300 px-4 py-3 text-sm text-gray-900">
                               <div className="max-w-xs truncate" title={value?.value || 'No response'}>

@@ -57,6 +57,8 @@ export default function PublicFormPage() {
 
   const handleSubmit = async (values: any) => {
     try {
+      console.log('Submitting form values:', values)
+      
       // Files are already uploaded when selected, so we just submit the form data
       const response = await fetch(`/api/forms/public/${formId}/submit`, {
         method: 'POST',

@@ -62,6 +62,17 @@ export async function POST(request: NextRequest) {
                 },
                 conditional: field.conditional || null,
                 order: fieldIndex + 1,
+                // Matrix field properties
+                matrixRows: field.matrixRows || null,
+                matrixColumns: field.matrixColumns || null,
+                matrixType: field.matrixType || null,
+                // Linear scale properties
+                scaleStart: field.scaleStart || null,
+                scaleEnd: field.scaleEnd || null,
+                scaleStep: field.scaleStep || null,
+                leftLabel: field.leftLabel || null,
+                centerLabel: field.centerLabel || null,
+                rightLabel: field.rightLabel || null,
               }))
             }
           }))

@@ -36,6 +36,9 @@ export interface FormField {
   description?: string
   required: boolean
   options?: string[]
+  matrixRows?: string[]
+  matrixColumns?: string[]
+  matrixType?: 'single' | 'multiple'
   validation?: {
     min?: number
     max?: number
@@ -79,20 +82,21 @@ interface TallyPublicRendererProps {
 }
 
 const FIELD_ICONS = {
-  TEXT: Type,
-  TEXTAREA: FileText,
+  SHORT_TEXT: Type,
+  LONG_TEXT: FileText,
+  MULTIPLE_CHOICE: ChevronRight,
+  CHECKBOXES: ChevronRight,
+  DROPDOWN: ChevronRight,
+  NUMBER: Hash,
   EMAIL: Mail,
   PHONE: Phone,
-  NUMBER: Hash,
-  SELECT: ChevronRight,
-  RADIO: ChevronRight,
-  CHECKBOX: ChevronRight,
-  DATE: Calendar,
-  FILE: Upload,
   URL: Link,
-  PASSWORD: Lock,
-  HIDDEN: Lock,
-  PARAGRAPH: FileText,
+  FILE_UPLOAD: Upload,
+  DATE: Calendar,
+  TIME: Calendar,
+  LINEAR_SCALE: Hash,
+  MATRIX: ChevronRight,
+  RATING: Hash,
 }
 
 export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicRendererProps) {
@@ -116,11 +120,17 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
       [fieldName]: value
     }))
     
-    // Clear error when user starts typing
-    if (errors[fieldName]) {
+    // Real-time validation
+    const field = currentSection.fields.find(f => f.name === fieldName)
+    if (field) {
+      const error = validateField(field)
       setErrors(prev => {
         const newErrors = { ...prev }
+        if (error) {
+          newErrors[fieldName] = error
+        } else {
         delete newErrors[fieldName]
+        }
         return newErrors
       })
     }
@@ -129,11 +139,58 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
   const validateField = (field: FormField): string | null => {
     const value = formValues[field.name]
     
-    if (field.required && (!value || (typeof value === 'string' && value.trim() === ''))) {
+    // Check required field validation
+    if (field.required) {
+      if (!value || 
+          (typeof value === 'string' && value.trim() === '') ||
+          (Array.isArray(value) && value.length === 0) ||
+          (typeof value === 'object' && value !== null && Object.keys(value).length === 0)) {
       return `${field.label} is required`
+      }
     }
 
-    if (value && field.validation) {
+    // Only validate non-empty values
+    if (value && value !== '') {
+      // Email validation
+      if (field.type === 'EMAIL' && typeof value === 'string') {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          return 'Please enter a valid email address'
+        }
+      }
+
+      // URL validation
+      if (field.type === 'URL' && typeof value === 'string') {
+        // More flexible URL validation that accepts:
+        // - http:// and https:// protocols
+        // - localhost and IP addresses (with or without ports)
+        // - subdomains (www.example.com, api.example.com, etc.)
+        // - paths, query parameters, and fragments
+        try {
+          const url = new URL(value)
+          if (!['http:', 'https:'].includes(url.protocol)) {
+            return 'Please enter a valid URL (must start with http:// or https://)'
+          }
+        } catch {
+          return 'Please enter a valid URL (e.g., https://www.example.com, http://localhost:3000)'
+        }
+      }
+
+      // Number validation
+      if (field.type === 'NUMBER' && typeof value === 'string') {
+        if (isNaN(Number(value)) || value.trim() === '') {
+          return 'Please enter a valid number'
+        }
+      }
+
+      // Phone validation
+      if (field.type === 'PHONE' && typeof value === 'string') {
+        if (!/^\+[1-9]\d{1,14}$/.test(value.replace(/[\s-]/g, ''))) {
+          return 'Please enter a valid phone number with country code (e.g., +250788123456)'
+        }
+      }
+
+      // Custom validation rules
+      if (field.validation) {
       if (field.validation.min && typeof value === 'number' && value < field.validation.min) {
         return field.validation.message || `${field.label} must be at least ${field.validation.min}`
       }
@@ -144,6 +201,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
         const regex = new RegExp(field.validation.pattern)
         if (!regex.test(value)) {
           return field.validation.message || `${field.label} format is invalid`
+          }
         }
       }
     }
@@ -213,9 +271,12 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           {field.label}
           {field.required && <span className="text-red-500 ml-1">*</span>}
         </Label>
-        
+        {field.description && (
+          <p className="text-xs text-gray-500 mb-2">{field.description}</p>
+        )}
 
-        {field.type === 'TEXT' && (
+
+        {field.type === 'SHORT_TEXT' && (
           <Input
             id={field.name}
             type="text"
@@ -226,7 +287,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           />
         )}
 
-        {field.type === 'TEXTAREA' && (
+        {field.type === 'LONG_TEXT' && (
           <Textarea
             id={field.name}
             value={value}
@@ -245,6 +306,19 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
             onChange={(e) => handleInputChange(field.name, e.target.value)}
             placeholder={field.placeholder || 'Enter your email'}
             className={error ? 'border-red-500' : ''}
+            onBlur={(e) => {
+              // Validate email format on blur
+              const email = e.target.value
+              if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                const field = currentSection.fields.find(f => f.name === field.name)
+                if (field) {
+                  setErrors(prev => ({
+                    ...prev,
+                    [field.name]: 'Please enter a valid email address'
+                  }))
+                }
+              }
+            }}
           />
         )}
 
@@ -253,9 +327,26 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
             id={field.name}
             type="tel"
             value={value}
-            onChange={(e) => handleInputChange(field.name, e.target.value)}
-            placeholder={field.placeholder || 'Enter your phone number'}
+            onChange={(e) => {
+              // Only allow +, numbers, spaces, and hyphens
+              const phoneValue = e.target.value.replace(/[^+\d\s-]/g, '')
+              handleInputChange(field.name, phoneValue)
+            }}
+            placeholder={field.placeholder || '+250 788 123 456'}
             className={error ? 'border-red-500' : ''}
+            onBlur={(e) => {
+              // Validate phone format on blur
+              const phone = e.target.value
+              if (phone && !/^\+[1-9]\d{1,14}$/.test(phone.replace(/[\s-]/g, ''))) {
+                const field = currentSection.fields.find(f => f.name === field.name)
+                if (field) {
+                  setErrors(prev => ({
+                    ...prev,
+                    [field.name]: 'Please enter a valid phone number with country code (e.g., +250788123456)'
+                  }))
+                }
+              }
+            }}
           />
         )}
 
@@ -264,7 +355,20 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
             id={field.name}
             type="number"
             value={value}
-            onChange={(e) => handleInputChange(field.name, e.target.value)}
+            onChange={(e) => {
+              // Only allow numbers and decimal point
+              const numericValue = e.target.value.replace(/[^0-9.-]/g, '')
+              // Prevent multiple decimal points
+              const parts = numericValue.split('.')
+              const cleanValue = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : numericValue
+              handleInputChange(field.name, cleanValue)
+            }}
+            onKeyDown={(e) => {
+              // Prevent non-numeric characters except backspace, delete, arrow keys, etc.
+              if (!/[0-9.-]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key)) {
+                e.preventDefault()
+              }
+            }}
             placeholder={field.placeholder}
             min={field.validation?.min}
             max={field.validation?.max}
@@ -290,6 +394,19 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
             onChange={(e) => handleInputChange(field.name, e.target.value)}
             placeholder={field.placeholder || 'https://example.com'}
             className={error ? 'border-red-500' : ''}
+            onBlur={(e) => {
+              // Validate URL format on blur
+              const url = e.target.value
+              if (url && !/^https?:\/\/.+/.test(url)) {
+                const field = currentSection.fields.find(f => f.name === field.name)
+                if (field) {
+                  setErrors(prev => ({
+                    ...prev,
+                    [field.name]: 'Please enter a valid URL (must start with http:// or https://)'
+                  }))
+                }
+              }
+            }}
           />
         )}
 
@@ -304,22 +421,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           />
         )}
 
-        {field.type === 'SELECT' && (
-          <Select value={value} onValueChange={(val) => handleInputChange(field.name, val)}>
-            <SelectTrigger className={error ? 'border-red-500' : ''}>
-              <SelectValue placeholder={field.placeholder || 'Select an option'} />
-            </SelectTrigger>
-            <SelectContent>
-              {field.options?.map((option, index) => (
-                <SelectItem key={index} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-
-        {field.type === 'RADIO' && (
+        {field.type === 'MULTIPLE_CHOICE' && (
           <RadioGroup value={value} onValueChange={(val) => handleInputChange(field.name, val)}>
             {field.options?.map((option, index) => (
               <div key={index} className="flex items-center space-x-2">
@@ -332,7 +434,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           </RadioGroup>
         )}
 
-        {field.type === 'CHECKBOX' && (
+        {field.type === 'CHECKBOXES' && (
           <div className="space-y-2">
             {field.options?.map((option, index) => (
               <div key={index} className="flex items-center space-x-2">
@@ -356,7 +458,157 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           </div>
         )}
 
-        {field.type === 'FILE' && (
+        {field.type === 'DROPDOWN' && (
+          <Select value={value} onValueChange={(val) => handleInputChange(field.name, val)}>
+            <SelectTrigger className={error ? 'border-red-500' : ''}>
+              <SelectValue placeholder={field.placeholder || 'Select an option'} />
+            </SelectTrigger>
+            <SelectContent>
+              {field.options?.map((option, index) => (
+                <SelectItem key={index} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+
+        {field.type === 'TIME' && (
+          <Input
+            id={field.name}
+            type="time"
+            value={value}
+            onChange={(e) => handleInputChange(field.name, e.target.value)}
+            className={error ? 'border-red-500' : ''}
+          />
+        )}
+
+        {field.type === 'LINEAR_SCALE' && (
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm text-gray-500">
+              <span>{field.leftLabel || field.scaleStart || 0}</span>
+              <span>{field.rightLabel || field.scaleEnd || 10}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              {Array.from({ length: ((field.scaleEnd || 10) - (field.scaleStart || 0)) / (field.scaleStep || 1) + 1 }, (_, i) => {
+                const scaleValue = (field.scaleStart || 0) + (i * (field.scaleStep || 1))
+                return (
+                  <button
+                    key={scaleValue}
+                    type="button"
+                    onClick={() => handleInputChange(field.name, scaleValue)}
+                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors ${
+                      value === scaleValue
+                        ? 'border-blue-500 bg-blue-500 text-white'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    {scaleValue}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="text-center text-sm text-gray-600">
+              Selected: {value !== undefined ? value : 'None'}
+            </div>
+          </div>
+        )}
+
+        {field.type === 'MATRIX' && (
+          <div className="space-y-2">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300 rounded-lg">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="border border-gray-300 p-2 text-left font-medium text-gray-700"></th>
+                    {field.matrixColumns?.map((column, index) => (
+                      <th key={index} className="border border-gray-300 p-2 text-center font-medium text-gray-700">
+                        {column}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {field.matrixRows?.map((row, rowIndex) => (
+                    <tr key={rowIndex} className="hover:bg-gray-50">
+                      <td className="border border-gray-300 p-2 font-medium text-gray-700">
+                        {row}
+                      </td>
+                      {field.matrixColumns?.map((column, colIndex) => {
+                        const currentValues = formValues[field.name] || {}
+                        const rowValues = currentValues[rowIndex] || []
+                        const isChecked = field.matrixType === 'single' 
+                          ? currentValues[rowIndex] === column
+                          : rowValues.includes(column)
+                        
+                        return (
+                          <td key={colIndex} className="border border-gray-300 p-2 text-center">
+                            {field.matrixType === 'single' ? (
+                              <input
+                                type="radio"
+                                name={`${field.name}_${rowIndex}`}
+                                value={column}
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  const newValues = { ...currentValues, [rowIndex]: e.target.checked ? column : null }
+                                  handleInputChange(field.name, newValues)
+                                }}
+                                className="w-4 h-4"
+                              />
+                            ) : (
+                              <input
+                                type="checkbox"
+                                name={`${field.name}_${rowIndex}_${colIndex}`}
+                                value={column}
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  let newRowValues
+                                  if (e.target.checked) {
+                                    newRowValues = [...rowValues, column]
+                                  } else {
+                                    newRowValues = rowValues.filter((val: string) => val !== column)
+                                  }
+                                  const newValues = { ...currentValues, [rowIndex]: newRowValues }
+                                  handleInputChange(field.name, newValues)
+                                }}
+                                className="w-4 h-4"
+                              />
+                            )}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {field.type === 'RATING' && (
+          <div className="space-y-2">
+            <div className="flex space-x-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => handleInputChange(field.name, star)}
+                  className={`text-2xl ${
+                    star <= (value || 0) ? 'text-yellow-400' : 'text-gray-300'
+                  } hover:text-yellow-400 transition-colors`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            <div className="text-center text-sm text-gray-600">
+              Rating: {value || 0}/5
+            </div>
+          </div>
+        )}
+
+        {field.type === 'FILE_UPLOAD' && (
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
             <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
             <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
@@ -559,6 +811,18 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           </CardContent>
         </Card>
 
+        {/* Validation Errors Summary */}
+        {Object.keys(errors).length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-4">
+            <h4 className="text-sm font-medium text-red-800 mb-2">Please fix the following errors:</h4>
+            <ul className="text-sm text-red-700 space-y-1">
+              {Object.entries(errors).map(([fieldName, error]) => (
+                <li key={fieldName}>• {error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Navigation */}
         <div className="flex items-center justify-between mt-8">
           <Button
@@ -574,8 +838,8 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           {currentStep === totalSteps - 1 ? (
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+              disabled={isSubmitting || Object.keys(errors).length > 0}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
@@ -592,7 +856,8 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           ) : (
             <Button
               onClick={handleNext}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+              disabled={Object.keys(errors).length > 0}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
             >
               Next
               <ChevronRight className="h-4 w-4" />

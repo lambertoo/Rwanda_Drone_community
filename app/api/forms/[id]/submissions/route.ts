@@ -34,10 +34,38 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
+    // Check if includeValues query parameter is present
+    const url = new URL(request.url)
+    const includeValues = url.searchParams.get('includeValues') === 'true'
+
     // Fetch form submissions
     const submissions = await prisma.formEntry.findMany({
       where: { formId: formId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: includeValues ? {
+        values: {
+          include: {
+            field: {
+              select: {
+                id: true,
+                label: true,
+                type: true,
+                name: true,
+                options: true,
+                matrixRows: true,
+                matrixColumns: true,
+                matrixType: true,
+                scaleStart: true,
+                scaleEnd: true,
+                scaleStep: true,
+                leftLabel: true,
+                centerLabel: true,
+                rightLabel: true
+              }
+            }
+          }
+        }
+      } : undefined
     })
 
     return NextResponse.json(submissions)

@@ -80,7 +80,29 @@ export async function POST(
       })
     })
 
-    // Create form submission
+    // Debug logging
+    console.log('Form submission body:', JSON.stringify(body, null, 2))
+    console.log('Form fields:', formWithFields.sections.map(s => s.fields.map(f => ({ name: f.name, id: f.id }))))
+
+    // Create form submission - save ALL fields, even empty ones
+    const allFieldValues = []
+    
+    // Get all fields from the form
+    formWithFields.sections.forEach(section => {
+      section.fields.forEach(field => {
+        const submittedValue = body[field.name]
+        console.log(`Field ${field.name} (${field.id}):`, submittedValue)
+        allFieldValues.push({
+          fieldId: field.id,
+          value: submittedValue !== undefined && submittedValue !== null && submittedValue !== '' 
+            ? (typeof submittedValue === 'string' ? submittedValue : JSON.stringify(submittedValue))
+            : 'No response'
+        })
+      })
+    })
+
+    console.log('All field values to save:', allFieldValues)
+
     const submission = await prisma.formEntry.create({
       data: {
         formId: formId,
@@ -90,12 +112,7 @@ export async function POST(
           referrer: request.headers.get('referer') || null
         },
         values: {
-          create: Object.entries(body)
-            .filter(([key, value]) => fieldMap.has(key))
-            .map(([key, value]) => ({
-              fieldId: fieldMap.get(key),
-              value: typeof value === 'string' ? value : JSON.stringify(value)
-            }))
+          create: allFieldValues
         }
       }
     })
