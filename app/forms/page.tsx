@@ -114,9 +114,9 @@ export default function FormsPage() {
   return (
     <AuthGuard>
       <div className="max-w-6xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className="text-3xl font-bold">Forms</h1>
+            <h1 className="text-3xl font-bold mb-2">Forms</h1>
             <p className="text-gray-600">Create and manage your forms</p>
           </div>
           <Button onClick={() => router.push('/forms/new')}>
@@ -143,10 +143,10 @@ export default function FormsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {forms.map((form) => (
               <Card key={form.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{form.title}</CardTitle>
-                    <div className="flex gap-1">
+                <CardHeader className="pb-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <CardTitle className="text-lg pr-3">{form.title}</CardTitle>
+                    <div className="flex gap-2 flex-shrink-0">
                       <Badge variant={form.isActive ? "default" : "secondary"}>
                         {form.isActive ? "Active" : "Inactive"}
                       </Badge>
@@ -159,18 +159,16 @@ export default function FormsPage() {
                     <p className="text-sm text-gray-600">{form.description}</p>
                   )}
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between text-sm text-gray-600">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1">
-                          <BarChart3 className="w-4 h-4" />
-                          <span>{form.sections.length} sections</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Users className="w-4 h-4" />
-                          <span>{form._count.entries} responses</span>
-                        </div>
+                    <div className="flex items-center gap-6 text-sm text-gray-600">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4" />
+                        <span>{form.sections.length} sections</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        <span>{form._count.entries} responses</span>
                       </div>
                     </div>
 
@@ -178,54 +176,63 @@ export default function FormsPage() {
                       Created {new Date(form.createdAt).toLocaleDateString()}
                     </div>
 
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => router.push(`/forms/${form.slug}`)}
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        View
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => router.push(`/forms/${form.id}/edit`)}
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => window.open(`/forms/public/${form.id}`, '_blank')}
-                      >
-                        <ExternalLink className="w-4 h-4 mr-1" />
-                        Public
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => router.push(`/forms/${form.id}/submissions`)}
-                      >
-                        <ClipboardList className="w-4 h-4 mr-1" />
-                        Submissions
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => toggleFormStatus(form.id, form.isActive)}
-                      >
-                        {form.isActive ? 'Deactivate' : 'Activate'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => deleteForm(form.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                    <div className="space-y-3">
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => router.push(`/forms/${form.slug}`)}
+                          className="flex-1 min-w-0"
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => router.push(`/forms/${form.id}/edit`)}
+                          className="flex-1 min-w-0"
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(`/forms/public/${form.id}`, '_blank')}
+                          className="flex-1 min-w-0"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          Public
+                        </Button>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => router.push(`/forms/${form.id}/submissions`)}
+                          className="flex-1 min-w-0"
+                        >
+                          <ClipboardList className="w-4 h-4 mr-1" />
+                          Submissions
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toggleFormStatus(form.id, form.isActive)}
+                          className="flex-1 min-w-0"
+                        >
+                          {form.isActive ? 'Deactivate' : 'Activate'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => deleteForm(form.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
