@@ -109,7 +109,9 @@ export async function PUT(
             create: sections.map((section: any, sectionIndex: number) => ({
               title: section.title,
               description: section.description || null,
-              order: sectionIndex + 1,
+              order: section.order || sectionIndex + 1,
+              conditional: section.conditional || null,
+              isActive: section.isActive !== undefined ? section.isActive : true,
               fields: {
                 create: (section.fields || []).map((field: any, fieldIndex: number) => ({
                   label: field.label,
@@ -117,12 +119,19 @@ export async function PUT(
                   type: field.type,
                   placeholder: field.placeholder || null,
                   options: field.options || null,
-                  validation: {
-                    required: field.required || false,
-                    ...(field.validation || {})
-                  },
+                  validation: field.validation || { required: field.required || false },
                   conditional: field.conditional || null,
                   order: fieldIndex + 1,
+                  isActive: field.isActive !== undefined ? field.isActive : true,
+                  matrixRows: field.matrixRows || null,
+                  matrixColumns: field.matrixColumns || null,
+                  matrixType: field.matrixType || null,
+                  scaleStart: field.scaleStart || null,
+                  scaleEnd: field.scaleEnd || null,
+                  scaleStep: field.scaleStep || null,
+                  leftLabel: field.leftLabel || null,
+                  centerLabel: field.centerLabel || null,
+                  rightLabel: field.rightLabel || null,
                 }))
               }
             }))

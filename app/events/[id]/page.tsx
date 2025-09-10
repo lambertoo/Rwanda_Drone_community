@@ -98,10 +98,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   }, [params])
 
   useEffect(() => {
-    if (user && eventId) {
+    if (user && eventId && event) {
       checkRsvpStatus(eventId)
     }
-  }, [user, eventId])
+  }, [user, eventId, event])
 
   const fetchEvent = async (id: string) => {
     try {
@@ -134,7 +134,13 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   const checkRsvpStatus = async (id: string) => {
-    if (!user) return
+    if (!user || !event) return
+    
+    // Only check RSVP status if the event doesn't have a registration form
+    if (event.registrationFormId) {
+      setRsvpStatus('none')
+      return
+    }
     
     try {
       const response = await fetch(`/api/events/${id}/rsvp`, {
