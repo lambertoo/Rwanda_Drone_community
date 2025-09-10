@@ -30,6 +30,7 @@ export default function PublicFormPage() {
           // Map the data to match the expected structure
           const mappedData = {
             ...data,
+            id: data.id, // Ensure form ID is included
             sections: data.sections?.map((section: any) => ({
               ...section,
               fields: section.fields?.map((field: any) => ({

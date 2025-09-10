@@ -15,6 +15,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
+    console.log('JWT Payload:', payload)
+    console.log('User ID from payload:', payload.userId)
+
     const body = await request.json()
     const { title, description, settings, sections } = body
 

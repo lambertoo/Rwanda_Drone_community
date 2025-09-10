@@ -36,6 +36,7 @@ interface Event {
   capacity?: number
   registeredCount: number
   allowRegistration: boolean
+  registrationFormId?: string
   isPublished: boolean
   isFeatured: boolean
   organizerId: string
@@ -203,6 +204,19 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     if (!user) {
       return (<Button asChild className="w-full"><Link href="/login">Log In to Register</Link></Button>)
     }
+    
+    // If event has a registration form, redirect to the form
+    if (event.registrationFormId) {
+      return (
+        <Button asChild className="w-full">
+          <Link href={`/forms/public/${event.registrationFormId}`}>
+            Register
+          </Link>
+        </Button>
+      )
+    }
+    
+    // Fallback to the old RSVP system if no registration form
     if (rsvpStatus === 'registered') {
       return (
         <Button

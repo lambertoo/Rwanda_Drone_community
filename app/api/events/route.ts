@@ -191,14 +191,28 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Validate and parse dates
+    const startDate = new Date(eventData.startDate)
+    if (isNaN(startDate.getTime())) {
+      return NextResponse.json({ error: "Invalid start date format" }, { status: 400 })
+    }
+
+    let endDate = startDate // Default to start date
+    if (eventData.endDate && eventData.endDate !== '') {
+      const parsedEndDate = new Date(eventData.endDate)
+      if (!isNaN(parsedEndDate.getTime())) {
+        endDate = parsedEndDate
+      }
+    }
+
     const event = await prisma.event.create({
       data: {
         title: eventData.title,
         description: eventData.description,
         fullDescription: eventData.fullDescription || eventData.description,
         categoryId: eventData.categoryId || null,
-        startDate: new Date(eventData.startDate),
-        endDate: eventData.endDate ? new Date(eventData.endDate) : new Date(eventData.startDate),
+        startDate: startDate,
+        endDate: endDate,
         location: eventData.location,
         venue: eventData.venue || eventData.location,
         price: parseFloat(eventData.price) || 0,

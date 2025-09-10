@@ -39,11 +39,19 @@ export interface FormField {
   matrixRows?: string[]
   matrixColumns?: string[]
   matrixType?: 'single' | 'multiple'
+  scaleStart?: number
+  scaleEnd?: number
+  scaleStep?: number
+  leftLabel?: string
+  centerLabel?: string
+  rightLabel?: string
   validation?: {
     min?: number
     max?: number
     pattern?: string
     message?: string
+    allowedFileTypes?: string[]
+    maxFileSize?: number
   }
   conditional?: {
     dependsOn: string
@@ -62,17 +70,18 @@ export interface FormSection {
 }
 
 export interface FormSettings {
-  theme: 'default' | 'dark' | 'light'
-  confirmationMessage: string
+  theme?: 'default' | 'dark' | 'light'
+  confirmationMessage?: string
   redirectUrl?: string
-  allowMultipleSubmissions: boolean
-  collectEmail: boolean
-  showProgressBar: boolean
-  submitButtonText: string
+  allowMultipleSubmissions?: boolean
+  collectEmail?: boolean
+  showProgressBar?: boolean
+  submitButtonText?: string
 }
 
 interface TallyPublicRendererProps {
   formData: {
+    id?: string
     title: string
     description: string
     sections: FormSection[]
@@ -107,10 +116,47 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set())
 
-  const { title, description, sections, settings } = formData
-  const sortedSections = sections.sort((a, b) => a.order - b.order)
+  // Add error handling for missing or invalid formData
+  if (!formData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Form Not Found</h2>
+          <p className="text-gray-500">The form data is not available.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const { title, description, sections, settings = {} } = formData
+  
+  // Add null checks for sections
+  if (!sections || !Array.isArray(sections)) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Invalid Form</h2>
+          <p className="text-gray-500">The form structure is invalid.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const sortedSections = sections.sort((a, b) => (a.order || 0) - (b.order || 0))
   const currentSection = sortedSections[currentStep]
   const totalSteps = sortedSections.length
+
+  // Add error handling for currentSection
+  if (!currentSection) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Form Error</h2>
+          <p className="text-gray-500">Unable to load the current form section.</p>
+        </div>
+      </div>
+    )
+  }
 
   const progress = ((currentStep + 1) / totalSteps) * 100
 
@@ -121,7 +167,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
     }))
     
     // Real-time validation
-    const field = currentSection.fields.find(f => f.name === fieldName)
+    const field = currentSection.fields?.find((f: FormField) => f.name === fieldName)
     if (field) {
       const error = validateField(field)
       setErrors(prev => {
@@ -213,13 +259,15 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
     const newErrors: Record<string, string> = {}
     let isValid = true
 
-    currentSection.fields.forEach(field => {
-      const error = validateField(field)
-      if (error) {
-        newErrors[field.name] = error
-        isValid = false
-      }
-    })
+    if (currentSection.fields && Array.isArray(currentSection.fields)) {
+      currentSection.fields.forEach((field: FormField) => {
+        const error = validateField(field)
+        if (error) {
+          newErrors[field.name] = error
+          isValid = false
+        }
+      })
+    }
 
     setErrors(newErrors)
     return isValid
@@ -310,11 +358,11 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
               // Validate email format on blur
               const email = e.target.value
               if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                const field = currentSection.fields.find(f => f.name === field.name)
-                if (field) {
+                const currentField = currentSection.fields.find((f: FormField) => f.name === field.name)
+                if (currentField) {
                   setErrors(prev => ({
                     ...prev,
-                    [field.name]: 'Please enter a valid email address'
+                    [currentField.name]: 'Please enter a valid email address'
                   }))
                 }
               }
@@ -338,11 +386,11 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
               // Validate phone format on blur
               const phone = e.target.value
               if (phone && !/^\+[1-9]\d{1,14}$/.test(phone.replace(/[\s-]/g, ''))) {
-                const field = currentSection.fields.find(f => f.name === field.name)
-                if (field) {
+                const currentField = currentSection.fields.find((f: FormField) => f.name === field.name)
+                if (currentField) {
                   setErrors(prev => ({
                     ...prev,
-                    [field.name]: 'Please enter a valid phone number with country code (e.g., +250788123456)'
+                    [currentField.name]: 'Please enter a valid phone number with country code (e.g., +250788123456)'
                   }))
                 }
               }
@@ -398,11 +446,11 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
               // Validate URL format on blur
               const url = e.target.value
               if (url && !/^https?:\/\/.+/.test(url)) {
-                const field = currentSection.fields.find(f => f.name === field.name)
-                if (field) {
+                const currentField = currentSection.fields.find((f: FormField) => f.name === field.name)
+                if (currentField) {
                   setErrors(prev => ({
                     ...prev,
-                    [field.name]: 'Please enter a valid URL (must start with http:// or https://)'
+                    [currentField.name]: 'Please enter a valid URL (must start with http:// or https://)'
                   }))
                 }
               }
@@ -617,6 +665,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
               className="hidden"
               id={field.name}
               multiple={false}
+              accept={field.validation?.allowedFileTypes ? field.validation.allowedFileTypes.map((type: string) => `.${type}`).join(',') : '*'}
               onChange={async (e) => {
                 const file = e.target.files?.[0]
                 if (file) {
@@ -630,9 +679,20 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
                     }
                   }
                   
-                  // Check file size (10MB limit)
-                  if (file.size > 10 * 1024 * 1024) {
-                    alert("File size must be less than 10MB")
+                  // Check file type if specified
+                  if (field.validation?.allowedFileTypes) {
+                    const fileExtension = file.name.split('.').pop()?.toLowerCase()
+                    if (fileExtension && !field.validation.allowedFileTypes.includes(fileExtension)) {
+                      alert(`Invalid file type. Allowed: ${field.validation.allowedFileTypes.join(', ')}`)
+                      e.target.value = ''
+                      return
+                    }
+                  }
+                  
+                  // Check file size
+                  const maxSize = field.validation?.maxFileSize || 10 * 1024 * 1024
+                  if (file.size > maxSize) {
+                    alert(`File size must be less than ${(maxSize / (1024 * 1024)).toFixed(1)}MB`)
                     e.target.value = ''
                     return
                   }
@@ -641,16 +701,16 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
                   setUploadingFiles(prev => new Set(prev).add(field.name))
                   
                   try {
-                    // Upload file immediately using the same pattern as projects/resources
-                    const formData = new FormData()
-                    formData.append('file', file)
-                    formData.append('type', 'general')
-                    formData.append('entityId', 'forms')
-                    formData.append('subfolder', 'files')
+                    // Upload file with form-specific folder structure
+                    const uploadFormData = new FormData()
+                    uploadFormData.append('file', file)
+                    uploadFormData.append('type', 'general')
+                    uploadFormData.append('entityId', formData.id || 'unknown') // Use form ID for folder structure
+                    uploadFormData.append('subfolder', 'files')
                     
                     const response = await fetch('/api/upload', {
                       method: 'POST',
-                      body: formData
+                      body: uploadFormData
                     })
                     
                     if (response.ok) {
@@ -685,25 +745,27 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
                 }
               }}
             />
-            <Label htmlFor={field.name} className="cursor-pointer">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="mt-2"
-                disabled={uploadingFiles.has(field.name)}
-              >
-                {uploadingFiles.has(field.name) ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
-                    Uploading...
-                  </>
-                ) : value?.name ? (
-                  `Selected: ${value.name}`
-                ) : (
-                  'Choose File'
-                )}
-              </Button>
-            </Label>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              disabled={uploadingFiles.has(field.name)}
+              onClick={() => document.getElementById(field.name)?.click()}
+            >
+              {uploadingFiles.has(field.name) ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                  Uploading...
+                </>
+              ) : value?.name ? (
+                `Selected: ${value.name}`
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Choose File
+                </>
+              )}
+            </Button>
             {value?.name && (
               <div className="mt-2">
                 <p className="text-xs text-gray-500">
@@ -753,8 +815,8 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
             <div className="text-center">
               <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
               <h2 className="text-2xl font-semibold text-gray-900 mb-2">Form Submitted!</h2>
-              <p className="text-gray-600 mb-6">{settings.confirmationMessage}</p>
-              {settings.redirectUrl && (
+              <p className="text-gray-600 mb-6">{settings?.confirmationMessage || 'Thank you for your submission!'}</p>
+              {settings?.redirectUrl && (
                 <Button asChild className="w-full">
                   <a href={settings.redirectUrl}>Continue</a>
                 </Button>
@@ -779,7 +841,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
       </div>
 
       {/* Progress Bar */}
-      {settings.showProgressBar && totalSteps > 1 && (
+      {settings?.showProgressBar && totalSteps > 1 && (
         <div className="bg-white border-b">
           <div className="max-w-2xl mx-auto px-4 py-4">
             <div className="flex items-center justify-between mb-2">
@@ -801,13 +863,16 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
             )}
           </CardHeader>
           <CardContent className="space-y-6">
-            {currentSection.fields
-              .sort((a, b) => a.order - b.order)
-              .map((field) => (
-                <div key={field.id}>
-                  {renderField(field)}
-                </div>
-              ))}
+            {currentSection.fields && Array.isArray(currentSection.fields) 
+              ? currentSection.fields
+                  .sort((a, b) => (a.order || 0) - (b.order || 0))
+                  .map((field) => (
+                    <div key={field.id}>
+                      {renderField(field)}
+                    </div>
+                  ))
+              : <div className="text-center text-gray-500 py-4">No fields in this section</div>
+            }
           </CardContent>
         </Card>
 
@@ -849,7 +914,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
               ) : (
                 <>
                   <CheckCircle className="h-4 w-4" />
-                  {settings.submitButtonText}
+                  {settings?.submitButtonText || 'Submit'}
                 </>
               )}
             </Button>

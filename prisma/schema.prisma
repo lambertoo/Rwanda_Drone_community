@@ -274,6 +274,7 @@ model Event {
   organizerId          String
   isPublic             Boolean        @default(true)
   allowRegistration    Boolean        @default(true)
+  registrationFormId   String?        // Link to Tally form for registration
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
   viewsCount           Int            @default(0)
@@ -289,6 +290,7 @@ model Event {
   rsvps                rsvp[]
   category             EventCategory? @relation(fields: [categoryId], references: [id])
   organizer            User           @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  registrationForm     UniversalForm? @relation(fields: [registrationFormId], references: [id])
 
   @@map("events")
 }
@@ -600,6 +602,7 @@ model UniversalForm {
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   sections    FormSection[]
   entries     FormEntry[]
+  events      Event[]       // Forms used for event registration
 
   @@map("universal_forms")
 }

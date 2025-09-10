@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth-context"
+import TallyCloneBuilder from "@/components/forms/tally-clone-builder"
 
 interface Speaker {
   id: string
@@ -108,78 +109,44 @@ export default function NewEventForm() {
   // Gallery
   const [gallery, setGallery] = useState<string[]>([])
 
-  // Registration Fields
-  const [registrationFields, setRegistrationFields] = useState<Array<{
-    id: string
-    label: string
-    type: 'text' | 'email' | 'phone' | 'select' | 'textarea' | 'checkbox' | 'radio' | 'number' | 'date' | 'file' | 'url'
-    required: boolean
-    options?: string[]
-    placeholder?: string
-    fileTypes?: string
-    conditionalLogic?: {
-      showWhen: string | null
-      operator: string | null
-      value: string | null
-      action: 'show' | 'hide' | 'require' | 'jump_to'
-      target?: string | null
-    }
-  }>>([
-    { id: '1', label: 'Full Name', type: 'text', required: true, placeholder: 'Enter your full name' },
-    { id: '2', label: 'Email', type: 'email', required: true, placeholder: 'Enter your email address' },
-    { id: '3', label: 'Phone Number', type: 'phone', required: false, placeholder: 'Enter your phone number' }
-  ])
-  const [newField, setNewField] = useState({
-    label: '',
-    type: 'text' as const,
-    required: false,
-    options: [] as string[],
-    placeholder: '',
-    fileTypes: '',
-    conditionalLogic: {
-      showWhen: null as string | null,
-      operator: null as string | null,
-      value: null as string | null,
-      action: 'show' as 'show' | 'hide' | 'require' | 'jump_to',
-      target: null as string | null
-    }
-  })
-  const [showAddField, setShowAddField] = useState(false)
-
-  // Form Sections
-  const [formSections, setFormSections] = useState<Array<{
-    id: string
+  // Registration Form
+  const [registrationForm, setRegistrationForm] = useState<{
+    id?: string
     title: string
-    description?: string
-    fields: Array<{
+    description: string
+    sections: Array<{
       id: string
-      label: string
-      type: 'text' | 'email' | 'phone' | 'select' | 'textarea' | 'checkbox' | 'radio' | 'number' | 'date' | 'file' | 'url'
-      required: boolean
-      options?: string[]
-      placeholder?: string
-      fileTypes?: string
-      conditionalLogic?: {
-        showWhen: string | null
-        operator: string | null
-        value: string | null
-        action: 'show' | 'hide' | 'require' | 'jump_to'
-        target?: string | null
-      }
+      title: string
+      description?: string
+      fields: Array<{
+        id: string
+        type: string
+        label: string
+        name: string
+        required: boolean
+        placeholder?: string
+        options?: string[]
+        validation?: any
+      }>
     }>
-  }>>([])
-  const [newSection, setNewSection] = useState({
-    title: '',
-    description: ''
+  }>({
+    title: 'Event Registration Form',
+    description: 'Please fill out the following information to register for this event',
+    sections: [
+      {
+        id: '1',
+        title: 'Personal Information',
+        description: 'Basic contact information',
+        fields: [
+          { id: '1', type: 'SHORT_TEXT', label: 'Full Name', name: 'full_name', required: true, placeholder: 'Enter your full name' },
+          { id: '2', type: 'EMAIL', label: 'Email Address', name: 'email', required: true, placeholder: 'Enter your email address' },
+          { id: '3', type: 'PHONE', label: 'Phone Number', name: 'phone', required: false, placeholder: 'Enter your phone number' }
+        ]
+      }
+    ]
   })
-  const [showAddSection, setShowAddSection] = useState(false)
-  const [activeSection, setActiveSection] = useState(-1)
+  const [showRegistrationFormBuilder, setShowRegistrationFormBuilder] = useState(false)
 
-  // Helper function to get all fields for conditional logic
-  const getAllFields = () => [
-    ...registrationFields,
-    ...formSections.flatMap(section => section.fields)
-  ]
 
   // Fetch event categories
   useEffect(() => {
@@ -346,24 +313,48 @@ export default function NewEventForm() {
       formData.append('speakers', JSON.stringify(speakers.map(s => s.name)))
       formData.append('agenda', JSON.stringify(agenda))
       formData.append('gallery', JSON.stringify([]))
-        
-        // Prepare registration form data with conditional logic
-        const allFields = getAllFields()
-        
-        // Add conditional logic fields to each field
-        const enhancedFields = allFields.map(field => ({
-          ...field,
-          conditionalLogic: {
-            showWhen: null, // Field to watch
-            operator: null, // is, is_not, contains, etc.
-            value: null, // Value to compare against
-            action: 'show' // show, hide, require, jump_to
+      formData.append('isPublished', 'true')
+      formData.append('isFeatured', 'false')
+
+      // Create registration form if allowRegistration is true
+      let registrationFormId = null
+      if (allowRegistration) {
+        try {
+          console.log('Creating registration form with data:', {
+            title: registrationForm.title,
+            description: registrationForm.description,
+            sections: registrationForm.sections
+          })
+          
+          const formResponse = await fetch('/api/forms', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              title: registrationForm.title,
+              description: registrationForm.description,
+              sections: registrationForm.sections
+            })
+          })
+
+          if (formResponse.ok) {
+            const formResult = await formResponse.json()
+            console.log('Registration form created successfully:', formResult)
+            registrationFormId = formResult.id
+          } else {
+            const errorData = await formResponse.json()
+            console.error('Failed to create registration form:', errorData)
           }
-        }))
-        
-        formData.append('requirements', JSON.stringify(enhancedFields))
-        formData.append('isPublished', 'true')
-        formData.append('isFeatured', 'false')
+        } catch (error) {
+          console.error('Error creating registration form:', error)
+        }
+      }
+
+      if (registrationFormId) {
+        formData.append('registrationFormId', registrationFormId)
+      }
 
 
       // Add flyer file if uploaded
@@ -431,7 +422,7 @@ export default function NewEventForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="space-y-6">
       <Tabs value={currentTab} onValueChange={setCurrentTab}>
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="basic">Basic Info</TabsTrigger>
@@ -964,800 +955,75 @@ export default function NewEventForm() {
         <TabsContent value="registration" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Custom Registration Form</CardTitle>
-              <CardDescription>Create a custom form for event participants with sections and fields</CardDescription>
+              <CardTitle>Event Registration Form</CardTitle>
+              <CardDescription>Create a custom registration form for event participants using our form builder</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Section Management */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Form Sections</h3>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setShowAddSection(!showAddSection)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Section
-                  </Button>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">Registration Form</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {registrationForm.sections.length} section{registrationForm.sections.length !== 1 ? 's' : ''}, {' '}
+                    {registrationForm.sections.reduce((total, section) => total + section.fields.length, 0)} field{registrationForm.sections.reduce((total, section) => total + section.fields.length, 0) !== 1 ? 's' : ''}
+                  </p>
                 </div>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setShowRegistrationFormBuilder(!showRegistrationFormBuilder)}
+                >
+                  {showRegistrationFormBuilder ? 'Hide Form Builder' : 'Edit Form Builder'}
+                </Button>
+              </div>
 
-                {showAddSection && (
-                  <Card className="p-4 border-dashed">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="sectionTitle">Section Title</Label>
-                        <Input
-                          id="sectionTitle"
-                          value={newSection.title}
-                          onChange={(e) => setNewSection({ ...newSection, title: e.target.value })}
-                          placeholder="e.g., Personal Information"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="sectionDescription">Section Description</Label>
-                        <Input
-                          id="sectionDescription"
-                          value={newSection.description}
-                          onChange={(e) => setNewSection({ ...newSection, description: e.target.value })}
-                          placeholder="Optional description"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-2 mt-4">
-                      <Button 
-                        type="button" 
-                        onClick={() => {
-                          if (newSection.title) {
-                            setFormSections([...formSections, { ...newSection, id: Date.now().toString(), fields: [] }])
-                            setNewSection({ title: '', description: '' })
-                            setShowAddSection(false)
-                          }
-                        }}
-                      >
-                        Add Section
-                      </Button>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => setShowAddSection(false)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </Card>
-                )}
+              {showRegistrationFormBuilder && (
+                <div className="border rounded-lg p-4">
+                  <TallyCloneBuilder
+                    initialData={registrationForm}
+                    onSave={(formData) => setRegistrationForm(formData)}
+                    onCancel={() => setShowRegistrationFormBuilder(false)}
+                  />
+                </div>
+              )}
 
-                {/* Existing Sections */}
-                {formSections.map((section, sectionIndex) => (
-                  <Card key={section.id} className="border-2">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{section.title}</CardTitle>
-                          {section.description && (
-                            <CardDescription>{section.description}</CardDescription>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setActiveSection(sectionIndex)}
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Field
-                          </Button>
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              const updatedSections = [...formSections]
-                              updatedSections.splice(sectionIndex, 1)
-                              setFormSections(updatedSections)
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {/* Fields in this section */}
-                      <div className="space-y-3">
-                        {section.fields.map((field, fieldIndex) => (
-                          <div key={field.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{field.label}</span>
-                                {field.required && <Badge variant="secondary" className="text-xs">Required</Badge>}
-                                <Badge variant="outline" className="text-xs">{field.type}</Badge>
-                                {field.conditionalLogic && field.conditionalLogic.showWhen && (
-                                  <Badge variant="destructive" className="text-xs">Conditional</Badge>
+              {!showRegistrationFormBuilder && (
+                <div className="space-y-4">
+                  {registrationForm.sections.map((section, sectionIndex) => (
+                    <Card key={section.id} className="border-2">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg">{section.title}</CardTitle>
+                        {section.description && (
+                          <CardDescription>{section.description}</CardDescription>
+                        )}
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {section.fields.map((field, fieldIndex) => (
+                            <div key={field.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{field.label}</span>
+                                  {field.required && <Badge variant="secondary" className="text-xs">Required</Badge>}
+                                  <Badge variant="outline" className="text-xs">{field.type}</Badge>
+                                </div>
+                                {field.placeholder && (
+                                  <p className="text-sm text-muted-foreground">{field.placeholder}</p>
                                 )}
                               </div>
-                              {field.placeholder && (
-                                <p className="text-sm text-muted-foreground">{field.placeholder}</p>
-                              )}
                             </div>
-                            <Button 
-                              type="button" 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                const updatedSections = [...formSections]
-                                updatedSections[sectionIndex].fields.splice(fieldIndex, 1)
-                                setFormSections(updatedSections)
-                              }}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                        
-                        {section.fields.length === 0 && (
-                          <p className="text-center text-muted-foreground py-4">
-                            No fields in this section yet. Click "Add Field" to get started.
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Add Field Form for this section */}
-                      {activeSection === sectionIndex && (
-                        <Card className="mt-4 p-4 border-dashed">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <Label htmlFor="fieldLabel">Field Label</Label>
-                              <Input
-                                id="fieldLabel"
-                                value={newField.label}
-                                onChange={(e) => setNewField({ ...newField, label: e.target.value })}
-                                placeholder="e.g., Company Name"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="fieldType">Field Type</Label>
-                              <Select 
-                                value={newField.type} 
-                                onValueChange={(value: any) => setNewField({ ...newField, type: value })}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="text">Text</SelectItem>
-                                  <SelectItem value="email">Email</SelectItem>
-                                  <SelectItem value="phone">Phone</SelectItem>
-                                  <SelectItem value="number">Number</SelectItem>
-                                  <SelectItem value="date">Date</SelectItem>
-                                  <SelectItem value="select">Dropdown</SelectItem>
-                                  <SelectItem value="textarea">Text Area</SelectItem>
-                                  <SelectItem value="checkbox">Checkbox</SelectItem>
-                                  <SelectItem value="radio">Radio Buttons</SelectItem>
-                                  <SelectItem value="file">File Upload</SelectItem>
-                                  <SelectItem value="url">URL</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label htmlFor="fieldPlaceholder">Placeholder</Label>
-                              <Input
-                                id="fieldPlaceholder"
-                                value={newField.placeholder}
-                                onChange={(e) => setNewField({ ...newField, placeholder: e.target.value })}
-                                placeholder="Optional placeholder text"
-                              />
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Switch
-                                id="fieldRequired"
-                                checked={newField.required}
-                                onCheckedChange={(checked) => setNewField({ ...newField, required: checked })}
-                              />
-                              <Label htmlFor="fieldRequired">Required field</Label>
-                            </div>
-                          </div>
-
-                          {/* Conditional Logic Section */}
-                          <div className="mt-4 p-4 border rounded-lg bg-muted/50">
-                            <h4 className="font-medium mb-3">Conditional Logic</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div>
-                                <Label>Show when field</Label>
-                                <Select 
-                                  value={newField.conditionalLogic?.showWhen || ''} 
-                                  onValueChange={(value) => setNewField({ 
-                                    ...newField, 
-                                    conditionalLogic: { 
-                                      ...newField.conditionalLogic, 
-                                      showWhen: value 
-                                    } 
-                                  })}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select field" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {getAllFields().map(field => (
-                                      <SelectItem key={field.id} value={field.id}>{field.label}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div>
-                                <Label>Operator</Label>
-                                <Select 
-                                  value={newField.conditionalLogic?.operator || ''} 
-                                  onValueChange={(value) => setNewField({ 
-                                    ...newField, 
-                                    conditionalLogic: { 
-                                      ...newField.conditionalLogic, 
-                                      operator: value 
-                                    } 
-                                  })}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select operator" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="is">is</SelectItem>
-                                    <SelectItem value="is_not">is not</SelectItem>
-                                    <SelectItem value="contains">contains</SelectItem>
-                                    <SelectItem value="does_not_contain">does not contain</SelectItem>
-                                    <SelectItem value="is_empty">is empty</SelectItem>
-                                    <SelectItem value="is_not_empty">is not empty</SelectItem>
-                                    <SelectItem value="greater_than">greater than</SelectItem>
-                                    <SelectItem value="less_than">less than</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div>
-                                <Label>Value</Label>
-                                {(() => {
-                                  const targetField = getAllFields().find(f => f.id === newField.conditionalLogic?.showWhen)
-                                  if (targetField?.type === 'select' && targetField.options) {
-                                    return (
-                                      <Select
-                                        value={newField.conditionalLogic?.value || ''}
-                                        onValueChange={(value) => setNewField({ 
-                                          ...newField, 
-                                          conditionalLogic: { 
-                                            ...newField.conditionalLogic, 
-                                            value: value 
-                                          } 
-                                        })}
-                                      >
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select value" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {targetField.options.map(option => (
-                                            <SelectItem key={option} value={option}>{option}</SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    )
-                                  } else if (targetField?.type === 'checkbox' || targetField?.type === 'radio') {
-                                    return (
-                                      <Select
-                                        value={newField.conditionalLogic?.value || ''}
-                                        onValueChange={(value) => setNewField({ 
-                                          ...newField, 
-                                          conditionalLogic: { 
-                                            ...newField.conditionalLogic, 
-                                            value: value 
-                                          } 
-                                        })}
-                                      >
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select value" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {targetField.options?.map(option => (
-                                            <SelectItem key={option} value={option}>{option}</SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    )
-                                  } else {
-                                    return (
-                                      <Input
-                                        value={newField.conditionalLogic?.value || ''}
-                                        onChange={(e) => setNewField({ 
-                                          ...newField, 
-                                          conditionalLogic: { 
-                                            ...newField.conditionalLogic, 
-                                            value: e.target.value 
-                                          } 
-                                        })}
-                                        placeholder="Value to compare"
-                                      />
-                                    )
-                                  }
-                                })()}
-                              </div>
-                            </div>
-                            <div className="mt-3">
-                              <Label>Action</Label>
-                              <Select 
-                                value={newField.conditionalLogic?.action || 'show'} 
-                                onValueChange={(value) => setNewField({ 
-                                  ...newField, 
-                                  conditionalLogic: { 
-                                    ...newField.conditionalLogic, 
-                                    action: value 
-                                  } 
-                                })}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="show">Show field</SelectItem>
-                                  <SelectItem value="hide">Hide field</SelectItem>
-                                  <SelectItem value="require">Make required</SelectItem>
-                                  <SelectItem value="jump_to">Jump to section</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            
-                            {/* Show section selector when action is jump_to */}
-                            {newField.conditionalLogic?.action === 'jump_to' && (
-                              <div className="mt-3">
-                                <Label>Target Section</Label>
-                                <Select 
-                                  value={newField.conditionalLogic?.target || ''} 
-                                  onValueChange={(value) => setNewField({ 
-                                    ...newField, 
-                                    conditionalLogic: { 
-                                      ...newField.conditionalLogic, 
-                                      target: value 
-                                    } 
-                                  })}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select section to jump to" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {formSections.map(section => (
-                                      <SelectItem key={section.id} value={section.id}>{section.title}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Field-specific options */}
-                          {(newField.type === 'select' || newField.type === 'radio' || newField.type === 'checkbox') && (
-                            <div className="mt-4">
-                              <Label>Options (one per line)</Label>
-                              <Textarea
-                                value={newField.options?.join('\n') || ''}
-                                onChange={(e) => setNewField({ 
-                                  ...newField, 
-                                  options: e.target.value.split('\n').filter(opt => opt.trim()) 
-                                })}
-                                placeholder="Option 1&#10;Option 2&#10;Option 3"
-                                rows={3}
-                              />
-                            </div>
-                          )}
-
-                          {newField.type === 'file' && (
-                            <div className="mt-4">
-                              <Label>File Types</Label>
-                              <Input
-                                value={newField.fileTypes || ''}
-                                onChange={(e) => setNewField({ ...newField, fileTypes: e.target.value })}
-                                placeholder="e.g., .pdf, .doc, .jpg (optional)"
-                              />
-                            </div>
-                          )}
-
-                          <div className="flex gap-2 mt-4">
-                            <Button 
-                              type="button" 
-                              onClick={() => {
-                                if (newField.label) {
-                                  const updatedSections = [...formSections]
-                                  updatedSections[sectionIndex].fields.push({ 
-                                    ...newField, 
-                                    id: Date.now().toString(),
-                                    conditionalLogic: newField.conditionalLogic || {
-                                      showWhen: null,
-                                      operator: null,
-                                      value: null,
-                                      action: 'show',
-                                      target: null
-                                    }
-                                  })
-                                  setFormSections(updatedSections)
-                                  setNewField({ 
-                                    label: '', 
-                                    type: 'text', 
-                                    required: false, 
-                                    options: [], 
-                                    placeholder: '', 
-                                    fileTypes: '',
-                                    conditionalLogic: {
-                                      showWhen: null,
-                                      operator: null,
-                                      value: null,
-                                      action: 'show',
-                                      target: null
-                                    }
-                                  })
-                                  setActiveSection(-1)
-                                }
-                              }}
-                            >
-                              Add Field
-                            </Button>
-                            <Button 
-                              type="button" 
-                              variant="outline" 
-                              onClick={() => setActiveSection(-1)}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </Card>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-
-                {/* Default fields if no sections */}
-                {formSections.length === 0 && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Registration Fields</h3>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => setShowAddField(!showAddField)}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Field
-                      </Button>
-                    </div>
-
-                    {showAddField && (
-                      <Card className="p-4 border-dashed">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="fieldLabel">Field Label</Label>
-                            <Input
-                              id="fieldLabel"
-                              value={newField.label}
-                              onChange={(e) => setNewField({ ...newField, label: e.target.value })}
-                              placeholder="e.g., Company Name"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="fieldType">Field Type</Label>
-                            <Select 
-                              value={newField.type} 
-                              onValueChange={(value: any) => setNewField({ ...newField, type: value })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="text">Text</SelectItem>
-                                <SelectItem value="email">Email</SelectItem>
-                                <SelectItem value="phone">Phone</SelectItem>
-                                <SelectItem value="number">Number</SelectItem>
-                                <SelectItem value="date">Date</SelectItem>
-                                <SelectItem value="select">Dropdown</SelectItem>
-                                <SelectItem value="textarea">Text Area</SelectItem>
-                                <SelectItem value="checkbox">Checkbox</SelectItem>
-                                <SelectItem value="radio">Radio Buttons</SelectItem>
-                                <SelectItem value="file">File Upload</SelectItem>
-                                <SelectItem value="url">URL</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label htmlFor="fieldPlaceholder">Placeholder</Label>
-                            <Input
-                              id="fieldPlaceholder"
-                              value={newField.placeholder}
-                              onChange={(e) => setNewField({ ...newField, placeholder: e.target.value })}
-                              placeholder="Optional placeholder text"
-                            />
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="fieldRequired"
-                              checked={newField.required}
-                              onCheckedChange={(checked) => setNewField({ ...newField, required: checked })}
-                            />
-                            <Label htmlFor="fieldRequired">Required field</Label>
-                          </div>
-                        </div>
-
-                        {/* Conditional Logic Section */}
-                        <div className="mt-4 p-4 border rounded-lg bg-muted/50">
-                          <h4 className="font-medium mb-3">Conditional Logic</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                              <Label>Show when field</Label>
-                              <Select 
-                                value={newField.conditionalLogic?.showWhen || ''} 
-                                onValueChange={(value) => setNewField({ 
-                                  ...newField, 
-                                  conditionalLogic: { 
-                                    ...newField.conditionalLogic, 
-                                    showWhen: value 
-                                  } 
-                                })}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select field" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {getAllFields().map(field => (
-                                    <SelectItem key={field.id} value={field.id}>{field.label}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label>Operator</Label>
-                              <Select 
-                                value={newField.conditionalLogic?.operator || ''} 
-                                onValueChange={(value) => setNewField({ 
-                                  ...newField, 
-                                  conditionalLogic: { 
-                                    ...newField.conditionalLogic, 
-                                    operator: value 
-                                  } 
-                                })}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select operator" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="is">is</SelectItem>
-                                  <SelectItem value="is_not">is not</SelectItem>
-                                  <SelectItem value="contains">contains</SelectItem>
-                                  <SelectItem value="does_not_contain">does not contain</SelectItem>
-                                  <SelectItem value="is_empty">is empty</SelectItem>
-                                  <SelectItem value="is_not_empty">is not empty</SelectItem>
-                                  <SelectItem value="greater_than">greater than</SelectItem>
-                                  <SelectItem value="less_than">less than</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label>Value</Label>
-                              {(() => {
-                                const targetField = getAllFields().find(f => f.id === newField.conditionalLogic?.showWhen)
-                                if (targetField?.type === 'select' && targetField.options) {
-                                  return (
-                                    <Select
-                                      value={newField.conditionalLogic?.value || ''}
-                                      onValueChange={(value) => setNewField({ 
-                                        ...newField, 
-                                        conditionalLogic: { 
-                                          ...newField.conditionalLogic, 
-                                          value: value 
-                                        } 
-                                      })}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select value" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {targetField.options.map(option => (
-                                          <SelectItem key={option} value={option}>{option}</SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  )
-                                } else if (targetField?.type === 'checkbox' || targetField?.type === 'radio') {
-                                  return (
-                                    <Select
-                                      value={newField.conditionalLogic?.value || ''}
-                                      onValueChange={(value) => setNewField({ 
-                                        ...newField, 
-                                        conditionalLogic: { 
-                                          ...newField.conditionalLogic, 
-                                          value: value 
-                                        } 
-                                      })}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select value" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {targetField.options?.map(option => (
-                                          <SelectItem key={option} value={option}>{option}</SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  )
-                                } else {
-                                  return (
-                                    <Input
-                                      value={newField.conditionalLogic?.value || ''}
-                                      onChange={(e) => setNewField({ 
-                                        ...newField, 
-                                        conditionalLogic: { 
-                                          ...newField.conditionalLogic, 
-                                          value: e.target.value 
-                                        } 
-                                      })}
-                                      placeholder="Value to compare"
-                                    />
-                                  )
-                                }
-                              })()}
-                            </div>
-                          </div>
-                          <div className="mt-3">
-                            <Label>Action</Label>
-                            <Select 
-                              value={newField.conditionalLogic?.action || 'show'} 
-                              onValueChange={(value) => setNewField({ 
-                                ...newField, 
-                                conditionalLogic: { 
-                                  ...newField.conditionalLogic, 
-                                  action: value 
-                                } 
-                              })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="show">Show field</SelectItem>
-                                <SelectItem value="hide">Hide field</SelectItem>
-                                <SelectItem value="require">Make required</SelectItem>
-                                <SelectItem value="jump_to">Jump to section</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                          ))}
                           
-                          {/* Show section selector when action is jump_to */}
-                          {newField.conditionalLogic?.action === 'jump_to' && (
-                            <div className="mt-3">
-                              <Label>Target Section</Label>
-                              <Select 
-                                value={newField.conditionalLogic?.target || ''} 
-                                onValueChange={(value) => setNewField({ 
-                                  ...newField, 
-                                  conditionalLogic: { 
-                                    ...newField.conditionalLogic, 
-                                    target: value 
-                                  } 
-                                })}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select section to jump to" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {formSections.map(section => (
-                                    <SelectItem key={section.id} value={section.id}>{section.title}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                          {section.fields.length === 0 && (
+                            <p className="text-center text-muted-foreground py-4">
+                              No fields in this section yet. Click "Edit Form Builder" to add fields.
+                            </p>
                           )}
                         </div>
-
-                        {/* Field-specific options */}
-                        {(newField.type === 'select' || newField.type === 'radio' || newField.type === 'checkbox') && (
-                          <div className="mt-4">
-                            <Label>Options (one per line)</Label>
-                            <Textarea
-                              value={newField.options?.join('\n') || ''}
-                              onChange={(e) => setNewField({ 
-                                ...newField, 
-                                options: e.target.value.split('\n').filter(opt => opt.trim()) 
-                              })}
-                              placeholder="Option 1&#10;Option 2&#10;Option 3"
-                              rows={3}
-                            />
-                          </div>
-                        )}
-
-                        {newField.type === 'file' && (
-                          <div className="mt-4">
-                            <Label>File Types</Label>
-                            <Input
-                              value={newField.fileTypes || ''}
-                              onChange={(e) => setNewField({ ...newField, fileTypes: e.target.value })}
-                              placeholder="e.g., .pdf, .doc, .jpg (optional)"
-                            />
-                          </div>
-                        )}
-
-                        <div className="flex gap-2 mt-4">
-                          <Button 
-                            type="button" 
-                            onClick={() => {
-                              if (newField.label) {
-                                setRegistrationFields([...registrationFields, { 
-                                  ...newField, 
-                                  id: Date.now().toString(),
-                                  conditionalLogic: newField.conditionalLogic || {
-                                    showWhen: null,
-                                    operator: null,
-                                    value: null,
-                                    action: 'show',
-                                    target: null
-                                  }
-                                }])
-                                setNewField({ 
-                                  label: '', 
-                                  type: 'text', 
-                                  required: false, 
-                                  options: [], 
-                                  placeholder: '', 
-                                  fileTypes: '',
-                                  conditionalLogic: {
-                                    showWhen: null,
-                                    operator: null,
-                                    value: null,
-                                    action: 'show',
-                                    target: null
-                                  }
-                                })
-                                setShowAddField(false)
-                              }
-                            }}
-                          >
-                            Add Field
-                          </Button>
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            onClick={() => setShowAddField(false)}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </Card>
-                    )}
-
-                    {/* Existing fields */}
-                    {registrationFields.map((field, index) => (
-                      <div key={field.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{field.label}</span>
-                            {field.required && <Badge variant="secondary" className="text-xs">Required</Badge>}
-                            <Badge variant="outline" className="text-xs">{field.type}</Badge>
-                            {field.conditionalLogic && field.conditionalLogic.showWhen && (
-                              <Badge variant="destructive" className="text-xs">Conditional</Badge>
-                            )}
-                          </div>
-                          {field.placeholder && (
-                            <p className="text-sm text-muted-foreground">{field.placeholder}</p>
-                          )}
-                        </div>
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            const updatedFields = [...registrationFields]
-                            updatedFields.splice(index, 1)
-                            setRegistrationFields(updatedFields)
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1777,93 +1043,91 @@ export default function NewEventForm() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <Upload className="h-12 w-12 text-muted-foreground" />
+                  <div className="text-center text-muted-foreground">
+                    <Upload className="h-12 w-12 mx-auto mb-2" />
+                    <p>No flyer uploaded</p>
+                  </div>
                 )}
               </div>
 
-              <div>
-                <h2 className="text-2xl font-bold mb-2">{title || "Event Title"}</h2>
-                <p className="text-muted-foreground mb-4">{description || "Event description"}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">{title || 'Event Title'}</h3>
+                    <p className="text-muted-foreground">{description || 'Event description'}</p>
+                  </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-blue-600" />
-                    <span>{startDate || "Date"}</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">
+                        {startDate ? new Date(startDate).toLocaleDateString() : 'Start date'} at {startTime || 'Start time'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{location || 'Location'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">
+                        {capacity ? `${capacity} attendees` : 'Unlimited capacity'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-green-600" />
-                    <span>{startTime || "Time"}</span>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold">Registration Form</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {registrationForm.sections.length} section{registrationForm.sections.length !== 1 ? 's' : ''}, {' '}
+                      {registrationForm.sections.reduce((total, section) => total + section.fields.length, 0)} field{registrationForm.sections.reduce((total, section) => total + section.fields.length, 0) !== 1 ? 's' : ''}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-red-600" />
-                    <span>{location || "Location"}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-purple-600" />
-                    <span>{capacity ? `${capacity} spots` : "Unlimited"}</span>
-                  </div>
+
+                  {registrationForm.sections.map((section, sectionIndex) => (
+                    <div key={section.id} className="border rounded-lg p-3">
+                      <h5 className="font-medium">{section.title}</h5>
+                      {section.description && (
+                        <p className="text-sm text-muted-foreground">{section.description}</p>
+                      )}
+                      <div className="mt-2 space-y-1">
+                        {section.fields.map((field, fieldIndex) => (
+                          <div key={field.id} className="text-sm">
+                            <span className="font-medium">{field.label}</span>
+                            {field.required && <span className="text-red-500 ml-1">*</span>}
+                            <span className="text-muted-foreground ml-2">({field.type})</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-
-              {fullDescription && (
-                <div>
-                  <h3 className="font-semibold mb-2">Description</h3>
-                  <p className="text-sm text-muted-foreground">{fullDescription}</p>
-                </div>
-              )}
-
-              {speakers.length > 0 && (
-                <div>
-                  <h3 className="font-semibold mb-2">Speakers</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {speakers.map((speaker) => (
-                      <div key={speaker.id} className="flex items-center gap-3">
-                        <img
-                          src={speaker.avatar || "/placeholder.svg?height=40&width=40&text=Speaker"}
-                          alt={speaker.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                        <div>
-                          <p className="font-medium">{speaker.name}</p>
-                          <p className="text-sm text-muted-foreground">{speaker.title}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {agenda.length > 0 && (
-                <div>
-                  <h3 className="font-semibold mb-2">Agenda</h3>
-                  <div className="space-y-2">
-                    {agenda
-                      .sort((a, b) => a.startTime.localeCompare(b.startTime))
-                      .map((item) => (
-                        <div key={item.id} className="flex items-center gap-4 text-sm">
-                          <span className="font-mono">{item.startTime}</span>
-                          <span>{item.title}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {item.type}
-                          </Badge>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      <div className="flex justify-between">
-        <Button type="button" variant="outline" onClick={() => router.back()}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={!isBasicValid || isSubmitting}>
-          {isSubmitting ? "Creating..." : "Create Event"}
+      
+      {/* Submit Button */}
+      <div className="flex justify-end pt-6 border-t">
+        <Button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isSubmitting || !isBasicValid}
+          className="px-8 py-2"
+        >
+          {isSubmitting ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Creating Event...
+            </>
+          ) : (
+            'Create Event'
+          )}
         </Button>
       </div>
-    </form>
+    </div>
   )
 }
