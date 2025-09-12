@@ -21,6 +21,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             email: true
           }
         },
+        category: true,
+        employmentType: true,
         applications: {
           include: {
             applicant: {
@@ -34,6 +36,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             }
           },
           orderBy: { createdAt: 'desc' }
+        },
+        registrationForm: {
+          include: {
+            sections: {
+              include: {
+                fields: true
+              },
+              orderBy: { order: 'asc' }
+            }
+          }
         }
       }
     })
@@ -155,6 +167,111 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             avatar: true,
             isVerified: true,
             organization: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json(opportunity)
+  } catch (error) {
+    console.error('Error updating opportunity:', error)
+    return NextResponse.json(
+      { error: 'Failed to update opportunity' },
+      { status: 500 }
+    )
+  }
+}
+
+// PATCH - Update specific fields of an opportunity
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+    
+    // Extract token from Authorization header or Cookie
+    const token = extractTokenFromRequest(request)
+    let user = null
+    
+    if (token) {
+      const payload = verifyToken(token)
+      if (payload) {
+        user = {
+          id: payload.userId,
+          email: payload.email,
+          role: payload.role,
+          isVerified: false
+        }
+      }
+    }
+    
+    // If no token found, try getCurrentUser as fallback
+    if (!user) {
+      user = await getCurrentUser()
+    }
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    // Check if user owns the opportunity or is admin
+    const existingOpportunity = await prisma.opportunity.findUnique({
+      where: { id },
+      select: { posterId: true }
+    })
+
+    if (!existingOpportunity) {
+      return NextResponse.json(
+        { error: 'Opportunity not found' },
+        { status: 404 }
+      )
+    }
+
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { role: true }
+    })
+
+    if (existingOpportunity.posterId !== user.id && dbUser?.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const updateData: any = {}
+
+    // Only update fields that are provided
+    if (body.applicationFormId !== undefined) {
+      updateData.applicationFormId = body.applicationFormId
+    }
+    if (body.allowApplication !== undefined) {
+      updateData.allowApplication = body.allowApplication
+    }
+
+    const opportunity = await prisma.opportunity.update({
+      where: { id },
+      data: updateData,
+      include: {
+        poster: {
+          select: {
+            id: true,
+            fullName: true,
+            avatar: true,
+            isVerified: true,
+            organization: true
+          }
+        },
+        registrationForm: {
+          include: {
+            sections: {
+              include: {
+                fields: true
+              },
+              orderBy: { order: 'asc' }
+            }
           }
         }
       }

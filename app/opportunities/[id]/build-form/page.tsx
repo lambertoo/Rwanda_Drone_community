@@ -1,88 +1,89 @@
 "use client"
 
-import { useState, useEffect, use } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Settings, FormInput, Users, CheckCircle } from "lucide-react"
-import AdvancedFormBuilder from "@/components/opportunities/advanced-form-builder"
+import { useState, useEffect } from "react"
+import { useParams, useRouter } from "next/navigation"
+import TallyCloneBuilder from "@/components/forms/tally-clone-builder"
+import { AuthGuard } from "@/components/auth-guard"
 
 interface Opportunity {
   id: string
   title: string
   company: string
-  poster: {
-    id: string
-    fullName: string
-  }
+  opportunityType: string
+  applicationFormId?: string
 }
 
-interface ApplicationForm {
-  id: string
-  title: string
-  description?: string
-  fields: any[]
-}
-
-export default function BuildFormPage({ params }: { params: Promise<{ id: string }> }) {
+function BuildOpportunityFormPage() {
   const router = useRouter()
-  const { id: opportunityId } = use(params)
+  const params = useParams()
+  const opportunityId = params?.id as string
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null)
-  const [existingForm, setExistingForm] = useState<ApplicationForm | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    fetchOpportunity()
-    fetchExistingForm()
-  }, [opportunityId])
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (mounted && opportunityId) {
+      fetchOpportunity()
+    }
+  }, [mounted, opportunityId])
 
   const fetchOpportunity = async () => {
     try {
       const response = await fetch(`/api/opportunities/${opportunityId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setOpportunity(data)
+      if (!response.ok) {
+        throw new Error("Failed to fetch opportunity")
       }
+      const data = await response.json()
+      setOpportunity(data)
     } catch (error) {
-      console.error('Error fetching opportunity:', error)
+      console.error("Error fetching opportunity:", error)
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchExistingForm = async () => {
-    try {
-      const response = await fetch(`/api/opportunities/${opportunityId}/application-form`)
-      if (response.ok) {
-        const data = await response.json()
-        setExistingForm(data)
-      }
-    } catch (error) {
-      // Form doesn't exist yet, which is fine
-    }
-  }
-
-  const handleSaveForm = async (formData: { title: string; description: string; sections: any[] }) => {
+  const handleSave = async (formData: any) => {
     setSaving(true)
     try {
-      const response = await fetch(`/api/opportunities/${opportunityId}/application-form`, {
+      // Create the form first
+      const formResponse = await fetch('/api/forms', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        credentials: 'include',
+        body: JSON.stringify(formData)
       })
 
-      if (response.ok) {
-        const result = await response.json()
-        setExistingForm(result)
-        alert('Application form saved successfully!')
-        router.push(`/opportunities/${opportunityId}`)
-      } else {
-        const error = await response.json()
-        alert(`Error saving form: ${error.error}`)
+      if (!formResponse.ok) {
+        throw new Error('Failed to create form')
       }
+
+      const formResult = await formResponse.json()
+      
+      // Update the opportunity with the form ID
+      const updateResponse = await fetch(`/api/opportunities/${opportunityId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          applicationFormId: formResult.id
+        })
+      })
+
+      if (!updateResponse.ok) {
+        throw new Error('Failed to update opportunity')
+      }
+
+      // Redirect back to opportunity detail page
+      router.push(`/opportunities/${opportunityId}`)
     } catch (error) {
       console.error('Error saving form:', error)
       alert('Failed to save form. Please try again.')
@@ -91,9 +92,17 @@ export default function BuildFormPage({ params }: { params: Promise<{ id: string
     }
   }
 
+  const handleCancel = () => {
+    router.push(`/opportunities/${opportunityId}`)
+  }
+
+  if (!mounted) {
+    return null
+  }
+
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto p-6">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
           <div className="h-12 bg-gray-200 rounded w-3/4 mb-4"></div>
@@ -104,7 +113,7 @@ export default function BuildFormPage({ params }: { params: Promise<{ id: string
 
   if (!opportunity) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto p-6">
         <Card>
           <CardContent className="p-12 text-center">
             <h3 className="text-lg font-semibold mb-2">Opportunity not found</h3>
@@ -121,84 +130,60 @@ export default function BuildFormPage({ params }: { params: Promise<{ id: string
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold">Build Application Form</h1>
-        <p className="text-lg text-muted-foreground">
-          Create a custom application form for your opportunity
-        </p>
-      </div>
-
-      {/* Opportunity Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FormInput className="h-5 w-5" />
-            Opportunity Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-semibold">{opportunity.title}</h4>
-              <p className="text-muted-foreground">{opportunity.company}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Posted by</p>
-              <p className="font-medium">{opportunity.poster.fullName}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Form Builder */}
-      <AdvancedFormBuilder
-        opportunityId={opportunityId}
-        onSave={handleSaveForm}
-        initialForm={existingForm}
-      />
-
-      {/* Features Preview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Form Features
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-full w-12 h-12 mx-auto mb-3 flex items-center justify-center">
-                <FormInput className="h-6 w-6 text-blue-600" />
-              </div>
-              <h4 className="font-semibold mb-2">Multiple Field Types</h4>
-              <p className="text-sm text-muted-foreground">
-                Text, email, phone, number, select, radio, checkbox, date, file upload, and more
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="bg-green-100 dark:bg-green-900 p-3 rounded-full w-12 h-12 mx-auto mb-3 flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <h4 className="font-semibold mb-2">Conditional Logic</h4>
-              <p className="text-sm text-muted-foreground">
-                Show/hide fields, make required/optional based on other field values
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="bg-purple-100 dark:bg-purple-900 p-3 rounded-full w-12 h-12 mx-auto mb-3 flex items-center justify-center">
-                <Users className="h-6 w-6 text-purple-600" />
-              </div>
-              <h4 className="font-semibold mb-2">Easy Applications</h4>
-              <p className="text-sm text-muted-foreground">
-                Applicants get a dynamic, user-friendly form that adapts to their responses
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <TallyCloneBuilder
+      onSave={handleSave}
+      onCancel={handleCancel}
+      initialData={{
+        title: `${opportunity.title} - Application Form`,
+        description: `Apply for the ${opportunity.opportunityType} position at ${opportunity.company}`,
+        sections: [
+          {
+            id: 'section_1',
+            title: 'Personal Information',
+            description: 'Tell us about yourself',
+            fields: [
+              {
+                id: 'field_1',
+                type: 'SHORT_TEXT',
+                label: 'Full Name',
+                name: 'full_name',
+                placeholder: 'Enter your full name',
+                required: true,
+                validation: { required: true },
+                order: 1
+              },
+              {
+                id: 'field_2',
+                type: 'EMAIL',
+                label: 'Email Address',
+                name: 'email',
+                placeholder: 'Enter your email address',
+                required: true,
+                validation: { required: true },
+                order: 2
+              },
+              {
+                id: 'field_3',
+                type: 'PHONE',
+                label: 'Phone Number',
+                name: 'phone',
+                placeholder: 'Enter your phone number',
+                required: false,
+                validation: { required: false },
+                order: 3
+              }
+            ]
+          }
+        ]
+      }}
+    />
   )
-} 
+}
+
+export default function BuildOpportunityFormPageWrapper() {
+  return (
+    <AuthGuard>
+      <BuildOpportunityFormPage />
+    </AuthGuard>
+  )
+}

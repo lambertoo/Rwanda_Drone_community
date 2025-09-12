@@ -1336,6 +1336,8 @@ export async function createOpportunityAction(formData: FormData) {
     const isUrgent = formData.get("isUrgent") === "true"
     const isRemote = formData.get("isRemote") === "true"
     const tabCategory = formData.get("tabCategory") as string
+    const allowApplication = formData.get("allowApplication") === "true"
+    const applicationDeadline = formData.get("applicationDeadline") as string
 
     if (!title || !description || !company || !opportunityType || !category || !location) {
       throw new Error("Missing required fields")
@@ -1358,12 +1360,15 @@ export async function createOpportunityAction(formData: FormData) {
         description,
         company,
         opportunityType,
-        category,
+        employmentTypeId: formData.get("employmentTypeId") as string || null,
+        categoryId: formData.get("categoryId") as string || null,
         location,
         salary: salary || null,
         requirements: requirements || null,
         isUrgent,
         isRemote,
+        allowApplication: allowApplication || true,
+        applicationDeadline: applicationDeadline ? new Date(applicationDeadline) : null,
         posterId: user.id,
         tabCategory: tabCategory || "job",
       },

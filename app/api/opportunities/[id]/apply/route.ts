@@ -25,9 +25,13 @@ export async function POST(
     const opportunity = await prisma.opportunity.findUnique({
       where: { id: opportunityId },
       include: {
-        applicationForm: {
+        registrationForm: {
           include: {
-            fields: true
+            sections: {
+              include: {
+                fields: true
+              }
+            }
           }
         }
       }
@@ -40,7 +44,7 @@ export async function POST(
       )
     }
 
-    if (!opportunity.applicationForm) {
+    if (!opportunity.registrationForm) {
       return NextResponse.json(
         { error: 'This opportunity does not have an application form' },
         { status: 400 }
@@ -50,7 +54,7 @@ export async function POST(
     // Check if user has already applied
     const existingApplication = await prisma.applicationSubmission.findFirst({
       where: {
-        formId: opportunity.applicationForm.id,
+        formId: opportunity.registrationForm.id,
         applicantId: session.user.id
       }
     })
@@ -65,7 +69,7 @@ export async function POST(
     // Create the application submission
     const submission = await prisma.applicationSubmission.create({
       data: {
-        formId: opportunity.applicationForm.id,
+        formId: opportunity.registrationForm.id,
         applicantId: session.user.id,
         fieldSubmissions: {
           create: fieldSubmissions.map((fieldSub: any) => ({
@@ -117,15 +121,19 @@ export async function GET(
     const opportunity = await prisma.opportunity.findUnique({
       where: { id: opportunityId },
       include: {
-        applicationForm: {
+        registrationForm: {
           include: {
-            fields: true
+            sections: {
+              include: {
+                fields: true
+              }
+            }
           }
         }
       }
     })
 
-    if (!opportunity || !opportunity.applicationForm) {
+    if (!opportunity || !opportunity.registrationForm) {
       return NextResponse.json(
         { error: 'Application form not found' },
         { status: 404 }
@@ -135,7 +143,7 @@ export async function GET(
     // Get user's application if it exists
     const application = await prisma.applicationSubmission.findFirst({
       where: {
-        formId: opportunity.applicationForm.id,
+        formId: opportunity.registrationForm.id,
         applicantId: session.user.id
       },
       include: {
@@ -150,7 +158,7 @@ export async function GET(
     return NextResponse.json({
       hasApplied: !!application,
       application: application || null,
-      form: opportunity.applicationForm
+      form: opportunity.registrationForm
     })
   } catch (error) {
     console.error('Error fetching application:', error)

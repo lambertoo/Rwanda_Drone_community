@@ -1,0 +1,77 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.simple
+    container_name: rwanda_drone_app_simple
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:drone123456@db:5432/rwanda_drone_community
+      - NEXTAUTH_SECRET=drone_secret_key_2024_production
+      - JWT_SECRET=drone_jwt_secret_2024_production_super_secure_key
+      - NEXTAUTH_URL=http://localhost
+      - PORT=3000
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - app_uploads:/app/public/uploads
+    networks:
+      - drone_network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  db:
+    image: postgres:15-alpine
+    container_name: rwanda_drone_db_simple
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=rwanda_drone_community
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=drone123456
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - drone_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rwanda_drone_community"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:alpine
+    container_name: rwanda_drone_nginx_simple
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - app_uploads:/var/www/uploads:ro
+    depends_on:
+      - app
+    networks:
+      - drone_network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  app_uploads:
+    driver: local
+
+networks:
+  drone_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator"
 import { MapPin, Building2, Clock, DollarSign, Calendar, Users, Briefcase, Edit, Trash2, ArrowLeft, FormInput, Settings, CheckCircle } from "lucide-react"
 import { deleteOpportunityAction } from "@/lib/actions"
 import DynamicApplicationForm from "@/components/opportunities/dynamic-application-form"
+import OpportunityApplicationForm from "@/components/opportunities/opportunity-application-form"
 import { AuthGuard } from "@/components/auth-guard"
 
 interface Opportunity {
@@ -18,12 +19,33 @@ interface Opportunity {
   description: string
   company: string
   opportunityType: string
-  category: string
+  category: {
+    id: string
+    name: string
+    description: string
+    icon: string
+    color: string
+  } | null
+  employmentType: {
+    id: string
+    name: string
+    description: string
+    icon: string
+    color: string
+  } | null
   location: string
   salary: string | null
   requirements: string | null
   isUrgent: boolean
   isRemote: boolean
+  allowApplication: boolean
+  applicationFormId?: string
+  registrationForm?: {
+    id: string
+    title: string
+    description?: string
+    sections: any[]
+  }
   createdAt: string
   poster: {
     id: string
@@ -315,9 +337,11 @@ function OpportunityDetailPage() {
                 <Badge className={getOpportunityTypeColor(opportunity.opportunityType)}>
                   {opportunity.opportunityType}
                 </Badge>
-                <Badge className={getCategoryColor(opportunity.category)}>
-                  {opportunity.category}
-                </Badge>
+                {opportunity.category && (
+                  <Badge className={getCategoryColor(opportunity.category.name)}>
+                    {opportunity.category.name}
+                  </Badge>
+                )}
               </div>
             </div>
 
@@ -429,7 +453,7 @@ function OpportunityDetailPage() {
       {/* Action Buttons */}
       <div className="space-y-4">
         {/* Application Form Section */}
-        {applicationForm ? (
+        {opportunity.registrationForm ? (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -450,8 +474,8 @@ function OpportunityDetailPage() {
                   </Button>
                 </div>
               ) : showApplicationForm ? (
-                <DynamicApplicationForm
-                  form={applicationForm}
+                <OpportunityApplicationForm
+                  form={opportunity.registrationForm}
                   onSubmit={handleApplicationSubmit}
                   isSubmitting={submitting}
                 />
@@ -487,7 +511,7 @@ function OpportunityDetailPage() {
 
         {/* Other Action Buttons */}
         <div className="flex gap-4">
-          {!applicationForm && (
+          {!opportunity.registrationForm && opportunity.allowApplication && (
             <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
               Apply Now
             </Button>

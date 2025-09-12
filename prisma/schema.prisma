@@ -257,6 +257,22 @@ model OpportunityCategory {
   @@map("opportunity_categories")
 }
 
+model EmploymentType {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  description String
+  category    String        // "job", "gig", or "other"
+  icon        String        @default("💼")
+  color       String        @default("#3B82F6")
+  isActive    Boolean       @default(true)
+  order       Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  opportunities Opportunity[]
+
+  @@map("employment_types")
+}
+
 model Event {
   id                   String         @id @default(cuid())
   title                String
@@ -344,6 +360,7 @@ model Opportunity {
   description      String
   company          String
   opportunityType  String
+  employmentTypeId String?
   subType          String?
   categoryId       String?
   location         String
@@ -353,14 +370,19 @@ model Opportunity {
   isRemote         Boolean          @default(false)
   isActive         Boolean          @default(true)
   tabCategory      String           @default("job")
+  allowApplication Boolean          @default(true)
+  applicationFormId String?         // Link to UniversalForm for application
+  applicationDeadline DateTime?     // Application deadline
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   posterId         String
   poster           User             @relation(fields: [posterId], references: [id], onDelete: Cascade)
   category         OpportunityCategory? @relation(fields: [categoryId], references: [id])
+  employmentType   EmploymentType?      @relation(fields: [employmentTypeId], references: [id])
   applications     JobApplication[]
   savedBy          SavedOpportunity[]
-  applicationForm  ApplicationForm? // One-to-one relationship
+  applicationForm  ApplicationForm? // One-to-one relationship (legacy)
+  registrationForm UniversalForm?   @relation(fields: [applicationFormId], references: [id])
 }
 
 model ApplicationForm {
@@ -603,6 +625,7 @@ model UniversalForm {
   sections    FormSection[]
   entries     FormEntry[]
   events      Event[]       // Forms used for event registration
+  opportunities Opportunity[] // Forms used for opportunity applications
 
   @@map("universal_forms")
 }

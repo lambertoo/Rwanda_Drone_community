@@ -278,6 +278,10 @@ function AdminDashboard() {
                     <Briefcase className="mr-2 h-4 w-4" />
                     Manage Opportunity Categories
                   </Button>
+                  <Button variant="outline" className="justify-start" onClick={() => window.location.href = '/admin/settings/employment-types'}>
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Manage Employment Types
+                  </Button>
                   <Button variant="outline" className="justify-start">
                     <Settings className="mr-2 h-4 w-4" />
                     General Settings
