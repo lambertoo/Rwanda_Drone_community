@@ -6,9 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Upload, AlertTriangle, FileText, X } from "lucide-react"
+import { Upload, AlertTriangle, FileText, X, CloudUpload } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { detectFileType, formatFileSize } from "@/lib/file-upload"
+import { useAuth } from "@/lib/auth-context"
 
 interface NewResourceFormProps {
   onSuccess?: () => void
@@ -29,15 +30,8 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
-  const [currentUser, setCurrentUser] = useState<any>(null)
   const { toast } = useToast()
-
-  useEffect(() => {
-    const user = localStorage.getItem("user")
-    if (user) {
-      setCurrentUser(JSON.parse(user))
-    }
-  }, [])
+  const { user: currentUser } = useAuth()
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -155,11 +149,6 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
     setIsSubmitting(true)
 
     try {
-      const token = localStorage.getItem("token")
-      if (!token) {
-        throw new Error("No authentication token")
-      }
-
       // Prepare form data
       const submitData = {
         ...formData,
@@ -169,9 +158,9 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
 
       const response = await fetch("/api/resources", {
         method: "POST",
+        credentials: 'include', // Include cookies for JWT authentication
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify(submitData)
       })

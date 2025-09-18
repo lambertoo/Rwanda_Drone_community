@@ -1,156 +1,165 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useAuth } from "@/lib/auth-context"
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Download, FileText, Video, Shield, AlertTriangle, CheckCircle, Plus, Upload, FileUp } from "lucide-react"
-import { NewResourceForm } from "@/components/resources/new-resource-form"
-import { useToast } from "@/hooks/use-toast"
 
-interface Resource {
+interface NewResourceState {
+  title: string
+  description: string
+  category: string
+  isRegulation: boolean
+  fileUrl: string
+  file?: File | null
+}
+
+interface ResourceItem {
   id: string
   title: string
   description?: string
+  category: string
   fileUrl: string
   fileType: string
   fileSize?: string
-  fileUpload?: string
-  category: string
   isRegulation: boolean
   downloads: number
   views: number
   uploadedAt: string
-  uploadedBy: {
-    id: string
-    username: string
-    fullName: string
-    avatar: string
-    role: string
-  }
+  uploadedBy: { fullName: string }
 }
 
 export default function ResourcesPage() {
-  const [resources, setResources] = useState<Resource[]>([])
   const [loading, setLoading] = useState(true)
-  const [currentUser, setCurrentUser] = useState<any>(null)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const { toast } = useToast()
+  const { user: currentUser, loading: authLoading } = useAuth()
+
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [resources, setResources] = useState<ResourceItem[]>([])
+  const [activeCategory, setActiveCategory] = useState<'all'|'REGULATIONS'|'SAFETY'|'TEMPLATES'|'TUTORIALS'>('all')
+  const [newResource, setNewResource] = useState<NewResourceState>({
+    title: "",
+    description: "",
+    category: "",
+    isRegulation: false,
+    fileUrl: "",
+    file: null,
+  })
 
   useEffect(() => {
-    const user = localStorage.getItem("user")
-    if (user) {
-      setCurrentUser(JSON.parse(user))
+    const init = async () => {
+      await fetchResources()
+      setLoading(false)
     }
-    fetchResources()
+    init()
   }, [])
 
   const fetchResources = async () => {
     try {
-      setLoading(true)
-      const response = await fetch("/api/resources")
-      if (response.ok) {
-        const data = await response.json()
-        setResources(data.resources)
-      } else {
-        console.error("Failed to fetch resources")
+      const res = await fetch('/api/resources')
+      if (res.ok) {
+        const data = await res.json()
+        setResources(data.resources || [])
       }
-    } catch (error) {
-      console.error("Error fetching resources:", error)
-    } finally {
-      setLoading(false)
-    }
+    } catch {}
   }
 
-  const handleDownload = async (resourceId: string, resource: Resource) => {
+  const handleChange = (field: keyof NewResourceState, value: any) => {
+    setNewResource(prev => ({ ...prev, [field]: value }))
+  }
+
+  const onFileChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+    const file = e.target.files && e.target.files[0] ? e.target.files[0] : null
+    if (!file) {
+      setNewResource(prev => ({ ...prev, file: null }))
+      return
+    }
+    // Upload file using the same API as projects
     try {
-      // Track download
-      await fetch(`/api/resources/${resourceId}/download`, {
-        method: "POST"
-      })
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('type', 'resource')
+      fd.append('entityId', 'temp')
+      fd.append('subfolder', 'files')
 
-      // Open file in new tab or download
-      if (resource.fileUrl.startsWith('http')) {
-        window.open(resource.fileUrl, '_blank')
-      } else {
-        // For uploaded files, trigger download
-        const link = document.createElement('a')
-        link.href = resource.fileUrl
-        link.download = resource.fileUpload || resource.title
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || `Upload failed (${res.status})`)
+      }
+      const result = await res.json()
+      // Use uploaded URL so it opens correctly
+      setNewResource(prev => ({ ...prev, file: null, fileUrl: result.fileUrl }))
+    } catch (err: any) {
+      alert(err?.message || 'File upload failed')
+      setNewResource(prev => ({ ...prev, file: null }))
+    }
+  }
+
+  const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
+    e.preventDefault()
+    if (!currentUser) {
+      alert("Please log in to share a resource.")
+      return
+    }
+
+    if (!newResource.title || !newResource.category || (!newResource.file && !newResource.fileUrl)) {
+      alert("Please fill all required fields.")
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const body = {
+        title: newResource.title,
+        description: newResource.description,
+        category: newResource.category,
+        isRegulation: newResource.isRegulation,
+        fileUrl: newResource.file ? newResource.file.name : newResource.fileUrl,
+        fileUpload: newResource.file ? newResource.file.name : undefined,
       }
 
-      // Update local state
-      setResources(prev => prev.map(r => 
-        r.id === resourceId 
-          ? { ...r, downloads: r.downloads + 1 }
-          : r
-      ))
-
-      toast({
-        title: "Download started",
-        description: "Your download should begin shortly",
+      const res = await fetch("/api/resources", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       })
-    } catch (error) {
-      console.error("Error downloading resource:", error)
-      toast({
-        title: "Download failed",
-        description: "Please try again",
-        variant: "destructive"
-      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || `Request failed (${res.status})`)
+      }
+
+      // Reset form and hide
+      setNewResource({ title: "", description: "", category: "", isRegulation: false, fileUrl: "", file: null })
+      setShowAddForm(false)
+      alert("Resource shared successfully.")
+      // Refresh list
+      await fetchResources()
+    } catch (err: any) {
+      alert(err?.message || "Failed to share resource.")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  const handleResourceAdded = () => {
-    setIsAddDialogOpen(false)
-    fetchResources()
-    toast({
-      title: "Resource added successfully!",
-      description: "Your resource is now available to the community",
-    })
-  }
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case "REGULATIONS":
-        return <Shield className="h-4 w-4" />
-      case "SAFETY":
-        return <AlertTriangle className="h-4 w-4" />
-      case "TEMPLATES":
-        return <FileText className="h-4 w-4" />
-      case "TUTORIALS":
-        return <Video className="h-4 w-4" />
-      default:
-        return <FileText className="h-4 w-4" />
+  const handleDownload = (r: ResourceItem) => {
+    const href = r.fileUrl
+    if (href.startsWith('http')) {
+      window.open(href, '_blank')
+      return
     }
+    const a = document.createElement('a')
+    a.href = href
+    a.download = r.title
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
-  const getFileTypeIcon = (fileType: string) => {
-    switch (fileType) {
-      case "Video":
-        return <Video className="h-4 w-4" />
-      case "Audio":
-        return <FileText className="h-4 w-4" />
-      case "Image":
-        return <FileText className="h-4 w-4" />
-      default:
-        return <FileText className="h-4 w-4" />
-    }
-  }
-
-  const getCategoryResources = (category: string) => {
-    if (category === "all") return resources
-    return resources.filter(r => r.category === category.toUpperCase())
-  }
-
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -162,150 +171,139 @@ export default function ResourcesPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Resources & Downloads</h1>
-          <p className="text-muted-foreground">
-            Essential documents, guides, and tutorials for drone operators in Rwanda
-          </p>
+          <h1 className="text-2xl font-semibold">Resources & Downloads</h1>
+          <p className="text-sm text-gray-500">Essential documents, guides, and tutorials for drone operators in Rwanda</p>
         </div>
-        
         {currentUser && (
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Share Resource
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <FileUp className="h-5 w-5" />
-                  Share New Resource
-                </DialogTitle>
-                <p className="text-sm text-muted-foreground">
-                  Share valuable resources with the drone community
-                </p>
-              </DialogHeader>
-              <NewResourceForm 
-                onSuccess={handleResourceAdded}
-                onCancel={() => setIsAddDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
+          <button
+            type="button"
+            onClick={() => setShowAddForm(v => !v)}
+            className="h-9 px-4 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700"
+          >
+            {showAddForm ? "Cancel" : "Share Resource"}
+          </button>
         )}
       </div>
 
-      <Tabs defaultValue="all" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="all" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            All
-          </TabsTrigger>
-          <TabsTrigger value="regulations" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Regulations
-          </TabsTrigger>
-          <TabsTrigger value="safety" className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Safety
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Templates
-          </TabsTrigger>
-          <TabsTrigger value="tutorials" className="flex items-center gap-2">
-            <Video className="h-4 w-4" />
-            Tutorials
-          </TabsTrigger>
-        </TabsList>
+      {showAddForm && currentUser && (
+        <form onSubmit={handleSubmit} className="space-y-4 border rounded p-4">
+          <div>
+            <label htmlFor="title" className="block text-sm font-medium mb-1">Resource Title *</label>
+            <input id="title" className="w-full border rounded px-3 py-2"
+              value={newResource.title} onChange={(e) => handleChange("title", e.target.value)} required />
+          </div>
 
-        {["all", "regulations", "safety", "templates", "tutorials"].map((category) => (
-          <TabsContent key={category} value={category} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {getCategoryResources(category).map((resource) => (
-                <Card key={resource.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg line-clamp-2">{resource.title}</CardTitle>
-                        <CardDescription className="line-clamp-2 mt-2">
-                          {resource.description}
-                        </CardDescription>
-                      </div>
-                      <Badge 
-                        variant={resource.isRegulation ? "destructive" : "secondary"}
-                        className="ml-2 flex-shrink-0"
-                      >
-                        {resource.isRegulation ? "Regulation" : resource.category}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        {getFileTypeIcon(resource.fileType)}
-                        {resource.fileType}
-                      </span>
-                      {resource.fileSize && (
-                        <span>{resource.fileSize}</span>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Download className="h-4 w-4" />
-                        {resource.downloads} downloads
-                      </span>
-                      <span>{resource.views} views</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>By {resource.uploadedBy.fullName}</span>
-                      <span>•</span>
-                      <span>{new Date(resource.uploadedAt).toLocaleDateString()}</span>
-                    </div>
-                    
-                    <Button 
-                      onClick={() => handleDownload(resource.id, resource)}
-                      className="w-full"
-                      variant="outline"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            
-            {getCategoryResources(category).length === 0 && (
-              <div className="text-center py-12">
-                <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No resources found</h3>
-                <p className="text-gray-500">
-                  {category === "all" 
-                    ? "No resources have been shared yet." 
-                    : `No ${category} resources available.`
-                  }
-                </p>
-                {currentUser && (
-                  <Button 
-                    onClick={() => setIsAddDialogOpen(true)}
-                    className="mt-4"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Share First Resource
-                  </Button>
-                )}
-              </div>
-            )}
-          </TabsContent>
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
+            <textarea id="description" rows={3} className="w-full border rounded px-3 py-2"
+              value={newResource.description} onChange={(e) => handleChange("description", e.target.value)} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">File (upload name used) or URL *</label>
+            <input type="file" onChange={onFileChange} className="block mb-2" />
+            <input
+              type="text"
+              placeholder="https://example.com/file.pdf"
+              className="w-full border rounded px-3 py-2"
+              value={newResource.fileUrl}
+              onChange={(e) => handleChange("fileUrl", e.target.value)}
+              disabled={newResource.fileUrl.startsWith('/uploads/')}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Category *</label>
+            <select className="w-full border rounded px-3 py-2" required
+              value={newResource.category} onChange={(e) => handleChange("category", e.target.value)}>
+              <option value="" disabled>Select category</option>
+              <option value="REGULATIONS">Regulations</option>
+              <option value="SAFETY">Safety</option>
+              <option value="TEMPLATES">Templates</option>
+              <option value="TUTORIALS">Tutorials</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input id="isRegulation" type="checkbox"
+              checked={newResource.isRegulation}
+              onChange={(e) => handleChange("isRegulation", e.target.checked)} />
+            <label htmlFor="isRegulation" className="text-sm">This is a regulation resource</label>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button type="button" onClick={() => setShowAddForm(false)} className="px-4 py-2 rounded border">
+              Cancel
+            </button>
+            <button type="submit" disabled={isSubmitting} className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">
+              {isSubmitting ? "Sharing..." : "Share Resource"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {!currentUser && (
+        <p className="text-sm text-gray-600">Log in to share a resource.</p>
+      )}
+
+      {/* Resource list can be added back later */}
+      {/* Category tabs */}
+      <div className="flex flex-wrap gap-1 mt-2 bg-gray-100 rounded-md p-1 w-full max-w-xl">
+        {[
+          {key:'all',label:'All'},
+          {key:'REGULATIONS',label:'Regulations'},
+          {key:'SAFETY',label:'Safety'},
+          {key:'TEMPLATES',label:'Templates'},
+          {key:'TUTORIALS',label:'Tutorials'},
+        ].map((t:any) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setActiveCategory(t.key)}
+            className={`px-3 py-1.5 rounded text-sm transition-colors ${activeCategory===t.key ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            {t.label}
+          </button>
         ))}
-      </Tabs>
+      </div>
+
+      <div className="space-y-3 mt-4">
+        {resources.length === 0 ? (
+          <p className="text-sm text-gray-600">No resources yet.</p>
+        ) : (
+          <ul className="space-y-3">
+            {resources
+              .filter(r => activeCategory==='all' ? true : r.category === activeCategory)
+              .map((r) => (
+              <li key={r.id} className="p-4 border rounded-md bg-white flex items-start justify-between gap-6">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{r.title}</div>
+                  {r.description && (
+                    <div className="text-sm text-gray-600 line-clamp-2 mt-1">{r.description}</div>
+                  )}
+                  <div className="flex flex-wrap gap-3 text-xs text-gray-500 mt-2">
+                    {r.fileType && <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-100">{r.fileType}</span>}
+                    {r.fileSize && <span>{r.fileSize}</span>}
+                    <span>{r.downloads} downloads</span>
+                    <span>Updated {new Date(r.uploadedAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDownload(r)}
+                  className="h-9 px-3 rounded-md border text-sm hover:bg-gray-50 flex items-center gap-1 whitespace-nowrap"
+                >
+                  Download
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   )
 }

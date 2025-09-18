@@ -62,7 +62,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.headers.get("authorization")?.replace("Bearer ", "")
+    // Get JWT token from cookies (accessToken) or Authorization header fallback
+    const token = request.cookies.get("accessToken")?.value || request.headers.get("authorization")?.replace("Bearer ", "") || undefined
     
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -155,6 +156,7 @@ export async function POST(request: NextRequest) {
       data: {
         title,
         description,
+        // fileUrl can be a fully qualified external URL or a local uploaded path like /uploads/resource/.../files/...
         fileUrl,
         fileType: finalFileType || "Other",
         fileSize: finalFileSize || "Unknown",
