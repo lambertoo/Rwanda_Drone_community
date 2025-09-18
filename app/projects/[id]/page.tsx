@@ -670,22 +670,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         </div>
                       )}
 
-                      {project.outcomes && project.outcomes.length > 0 && (
-                        <div>
-                          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                            <Trophy className="h-5 w-5 text-yellow-500" />
-                            Key Outcomes
-                          </h3>
-                          <ul className="space-y-2 ml-6">
-                            {project.outcomes.map((outcome: string, index: number) => (
-                              <li key={index} className="flex items-center gap-2">
-                                <span className="text-yellow-500">•</span>
-                                {outcome}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                      {/* Key Outcomes hidden per client feedback */}
                     </div>
                   </CardContent>
                 </Card>

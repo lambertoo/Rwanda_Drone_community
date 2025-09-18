@@ -67,7 +67,7 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
     technologies: [] as string[],
     objectives: [] as string[],
     challenges: [] as string[],
-    outcomes: [] as string[],
+    // Removed Key Outcomes per client feedback
     thumbnail: "",
   })
 
@@ -77,7 +77,7 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
   const [currentTech, setCurrentTech] = useState("")
   const [currentObjective, setCurrentObjective] = useState("")
   const [currentChallenge, setCurrentChallenge] = useState("")
-  const [currentOutcome, setCurrentOutcome] = useState("")
+  // Removed Key Outcomes input state per client feedback
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("basic")
   const { user, loading: authLoading } = useAuth()
@@ -257,22 +257,9 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
     }))
   }
 
-  const addOutcome = () => {
-    if (currentOutcome.trim() && !formData.outcomes.includes(currentOutcome.trim())) {
-      setFormData((prev) => ({
-        ...prev,
-        outcomes: [...prev.outcomes, currentOutcome.trim()],
-      }))
-      setCurrentOutcome("")
-    }
-  }
+  // Removed Key Outcomes add handler
 
-  const removeOutcome = (outcome: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      outcomes: prev.outcomes.filter((o) => o !== outcome),
-    }))
-  }
+  // Removed Key Outcomes remove handler
 
   const addTeamMember = () => {
     if (newTeamMember.name.trim() && newTeamMember.role.trim()) {
@@ -819,35 +806,9 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
                     id="results"
                     value={formData.results}
                     onChange={(e) => handleInputChange("results", e.target.value)}
-                    placeholder="Describe the outcomes, impact, and results of your project..."
+                    placeholder="Describe the impact and results of your project..."
                     rows={5}
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Key Outcomes</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={currentOutcome}
-                      onChange={(e) => setCurrentOutcome(e.target.value)}
-                      placeholder="Add key outcome"
-                      onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addOutcome())}
-                    />
-                    <Button type="button" onClick={addOutcome} size="sm">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="space-y-2 mt-2">
-                    {formData.outcomes.map((outcome, index) => (
-                      <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
-                        <span className="flex-1">{outcome}</span>
-                        <X
-                          className="h-4 w-4 cursor-pointer text-muted-foreground hover:text-foreground"
-                          onClick={() => removeOutcome(outcome)}
-                        />
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </CardContent>
             </Card>

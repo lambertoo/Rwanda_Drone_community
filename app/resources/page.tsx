@@ -171,7 +171,7 @@ export default function ResourcesPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Resources & Downloads</h1>
@@ -271,7 +271,7 @@ export default function ResourcesPage() {
         ))}
       </div>
 
-      <div className="space-y-3 mt-4">
+      <div className="space-y-3 mt-4 min-w-0">
         {resources.length === 0 ? (
           <p className="text-sm text-gray-600">No resources yet.</p>
         ) : (
