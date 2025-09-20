@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
     const location = searchParams.get('location')
 
     const where: any = {
-      isActive: true
+      isActive: true,
+      isApproved: true // Only show approved opportunities to public
     }
 
     if (tabCategory && tabCategory !== 'all') {

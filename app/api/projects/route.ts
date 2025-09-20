@@ -5,8 +5,11 @@ import { canCreateProjects } from "@/lib/auth"
 
 export async function GET() {
   try {
-    // Fetch projects from database
+    // Fetch projects from database (only approved projects for public access)
     const projects = await prisma.project.findMany({
+      where: {
+        isApproved: true
+      },
       include: {
         author: true,
         category: true,

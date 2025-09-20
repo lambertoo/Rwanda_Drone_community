@@ -54,6 +54,12 @@ model User {
   savedOpportunities SavedOpportunity[]     // Opportunities saved by this user
   universalForms    UniversalForm[]         // Universal forms created by this user
   formEntries       FormEntry[]             // Form entries submitted by this user
+  // Approval relations
+  approvedForumPosts   ForumPost[]    @relation("ForumPostApprover")
+  approvedProjects     Project[]      @relation("ProjectApprover")
+  approvedEvents       Event[]        @relation("EventApprover")
+  approvedResources    Resource[]     @relation("ResourceApprover")
+  approvedOpportunities Opportunity[] @relation("OpportunityApprover")
 
   @@map("users")
 }
@@ -86,6 +92,10 @@ model ForumPost {
   lastReplyAt  DateTime?
   isPinned     Boolean         @default(false)
   isLocked     Boolean         @default(false)
+  isApproved   Boolean         @default(false)
+  approvedAt   DateTime?
+  approvedBy   String?
+  approvedByUser User?         @relation("ForumPostApprover", fields: [approvedBy], references: [id])
   comments     ForumComment[]
   likes        ForumPostLike[]
   author       User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -155,6 +165,10 @@ model Project {
   viewsCount      Int              @default(0)
   likesCount      Int              @default(0)
   isFeatured      Boolean          @default(false)
+  isApproved      Boolean          @default(false)
+  approvedAt      DateTime?
+  approvedBy      String?
+  approvedByUser  User?            @relation("ProjectApprover", fields: [approvedBy], references: [id])
   comments        Comment[]
   likes           ProjectLike[]
   author          User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -297,6 +311,10 @@ model Event {
   registeredCount      Int            @default(0)
   isPublished          Boolean        @default(false)
   isFeatured           Boolean        @default(false)
+  isApproved           Boolean        @default(false)
+  approvedAt           DateTime?
+  approvedBy           String?
+  approvedByUser       User?          @relation("EventApprover", fields: [approvedBy], references: [id])
   requirements         Json?
   tags                 Json?
   speakers             Json?
@@ -348,6 +366,10 @@ model Resource {
   views       Int          @default(0)
   uploadedAt  DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  isApproved  Boolean      @default(false)
+  approvedAt  DateTime?
+  approvedBy  String?
+  approvedByUser User?     @relation("ResourceApprover", fields: [approvedBy], references: [id])
   userId      String
   uploadedBy  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -375,6 +397,10 @@ model Opportunity {
   applicationDeadline DateTime?     // Application deadline
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
+  isApproved       Boolean          @default(false)
+  approvedAt       DateTime?
+  approvedBy       String?
+  approvedByUser   User?            @relation("OpportunityApprover", fields: [approvedBy], references: [id])
   posterId         String
   poster           User             @relation(fields: [posterId], references: [id], onDelete: Cascade)
   category         OpportunityCategory? @relation(fields: [categoryId], references: [id])

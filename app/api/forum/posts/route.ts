@@ -17,8 +17,11 @@ export async function GET(request: Request) {
       ]
     }
 
-    // Fetch posts from database
+    // Fetch posts from database (only approved posts for public access)
     const posts = await prisma.forumPost.findMany({
+      where: {
+        isApproved: true
+      },
       take: limit,
       orderBy: orderBy,
       include: {

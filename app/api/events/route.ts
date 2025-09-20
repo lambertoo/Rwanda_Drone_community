@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
         where: {
           startDate: {
             gte: new Date()
-          }
+          },
+          isApproved: true
         },
         include: {
           organizer: true,
@@ -29,6 +30,9 @@ export async function GET(request: NextRequest) {
       })
     } else {
       events = await prisma.event.findMany({
+        where: {
+          isApproved: true
+        },
         include: {
           organizer: true,
           category: true,
