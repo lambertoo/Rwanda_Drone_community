@@ -43,6 +43,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('AuthContext - Starting profile fetch...')
       
+      // Only run on client side
+      if (typeof window === 'undefined') {
+        console.log('AuthContext - Running on server side, skipping profile fetch')
+        return
+      }
+      
       // Check if we have cookies first
       const cookies = document.cookie
       console.log('AuthContext - Available cookies:', cookies)

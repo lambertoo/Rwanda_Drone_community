@@ -81,10 +81,14 @@ export default function RegisterPage() {
       const data = await response.json()
 
       if (response.ok) {
+        console.log('Registration successful, refreshing user and redirecting...')
+        console.log('Registration response data:', data)
+        // Refresh user context to pick up the new authentication
+        await refreshUser()
         // Redirect to complete profile page
         router.push("/complete-profile")
-        refreshUser() // Refresh user after successful registration
       } else {
+        console.log('Registration failed:', data.error)
         setError(data.error || "Registration failed")
       }
     } catch (err) {

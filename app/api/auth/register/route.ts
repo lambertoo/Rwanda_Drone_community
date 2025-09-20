@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { validatePassword, hashPassword } from "@/lib/auth"
 import { userRegistrationSchema } from "@/lib/validation"
 import { authRateLimit } from "@/lib/rate-limit"
+import { generateTokens } from "@/lib/jwt-utils"
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,17 +69,46 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
+    // Generate JWT tokens for the new user
+    const { accessToken, refreshToken } = generateTokens({
+      userId: newUser.id,
+      email: newUser.email,
+      username: newUser.username,
+      role: newUser.role
+    })
+
+    // Create response with tokens
+    const response = NextResponse.json({
       message: "Registration successful",
       user: {
         id: newUser.id,
         email: newUser.email,
+        username: newUser.username,
         fullName: newUser.fullName,
         isVerified: newUser.isVerified,
         role: newUser.role,
       },
       redirectTo: "/complete-profile"
     })
+
+    // Set HTTP-only cookies for tokens
+    response.cookies.set("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60, // 1 hour
+      path: "/"
+    })
+
+    response.cookies.set("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+      path: "/"
+    })
+
+    return response
   } catch (error) {
     console.error("Registration error:", error)
     return NextResponse.json(

@@ -5,6 +5,7 @@ import { useState, Suspense, useEffect } from "react"
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -44,6 +45,7 @@ const roleInfo = {
 
 function CompleteProfileForm() {
   const router = useRouter()
+  const { user, loading: authLoading, refreshUser } = useAuth()
   
   const [formData, setFormData] = useState({
     username: "",
@@ -60,6 +62,69 @@ function CompleteProfileForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+
+  // Handle authentication state with better error handling
+  useEffect(() => {
+    console.log('CompleteProfile - Auth state:', { user, authLoading })
+    
+    // Only redirect if we're sure about the auth state
+    if (!authLoading && user === null) {
+      console.log('CompleteProfile - No user found, redirecting to login')
+      router.push("/login")
+      return
+    }
+    
+    if (!authLoading && user && user.role !== null) {
+      console.log('CompleteProfile - User already has role, redirecting to dashboard')
+      router.push("/")
+      return
+    }
+    
+    if (!authLoading && user && user.role === null) {
+      console.log('CompleteProfile - User authenticated with no role, showing form')
+    }
+  }, [user, authLoading, router])
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl">
+          <CardContent className="flex items-center justify-center p-8">
+            <Loader className="h-8 w-8 animate-spin" />
+            <p className="mt-4 text-gray-600">Loading...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Show loading if user is not available yet
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl">
+          <CardContent className="flex items-center justify-center p-8">
+            <Loader className="h-8 w-8 animate-spin" />
+            <p className="mt-4 text-gray-600">Checking authentication...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Don't render form if user already has a role
+  if (user.role !== null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl">
+          <CardContent className="flex items-center justify-center p-8">
+            <p className="text-gray-600">Redirecting to dashboard...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -93,6 +158,8 @@ function CompleteProfileForm() {
 
       if (response.ok) {
         setSuccess("Profile updated successfully!")
+        // Refresh user context to get updated user data
+        await refreshUser()
         // Redirect to dashboard after a short delay
         setTimeout(() => {
           router.push("/")

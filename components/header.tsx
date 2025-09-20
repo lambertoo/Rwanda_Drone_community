@@ -113,41 +113,48 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
             </Link>
           </div>
 
-          <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-            {/* Search - Hidden on mobile, shown on larger screens */}
-            <div className="hidden md:flex w-full flex-1 md:w-auto md:flex-none">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  type="search" 
-                  id="search"
-                  name="search"
-                  placeholder="Search..." 
-                  className="pl-8 w-[200px] lg:w-[300px]" 
-                />
-              </div>
+          {/* Search Bar - Right aligned, more compact */}
+          <div className="flex flex-1 items-center justify-end px-4">
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                type="search" 
+                id="search"
+                name="search"
+                placeholder="Search..." 
+                className="pl-10 w-full bg-muted/50 border-muted-foreground/20 focus:bg-background focus:border-primary/50 transition-all duration-200" 
+              />
             </div>
+          </div>
 
-            <nav className="flex items-center space-x-2">
-              {/* Mobile Search Toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                onClick={() => setIsMobileSearchOpen(true)}
-              >
-                <Search className="h-4 w-4" />
-                <span className="sr-only">Open search</span>
-              </Button>
+          {/* Right Corner Actions - Theme, Notifications, Profile */}
+          <nav className="flex items-center space-x-1 ml-2">
+            {/* Mobile Search Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setIsMobileSearchOpen(true)}
+            >
+              <Search className="h-4 w-4" />
+              <span className="sr-only">Open search</span>
+            </Button>
 
-              <ThemeToggle />
+            {/* Theme Toggle - More accessible position */}
+            <ThemeToggle />
 
-              {/* Notifications - Hidden on mobile */}
-              <Button variant="ghost" size="icon" className="hidden sm:flex">
-                <Bell className="h-4 w-4" />
-                <span className="sr-only">Notifications</span>
-              </Button>
+            {/* Notifications */}
+            <Button variant="ghost" size="icon" className="hidden sm:flex relative">
+              <Bell className="h-4 w-4" />
+              {/* Notification badge */}
+              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs text-white flex items-center justify-center text-[10px]">
+                2
+              </span>
+              <span className="sr-only">Notifications</span>
+            </Button>
 
+            {/* Profile Section - Better separated and positioned */}
+            <div className="ml-2 pl-2 border-l border-border">
               {loading ? (
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 animate-pulse bg-gray-200 rounded-full"></div>
@@ -155,10 +162,10 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
               ) : user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                      <Avatar className="h-8 w-8">
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-muted/50 transition-colors">
+                      <Avatar className="h-8 w-8 ring-2 ring-background ring-offset-2 ring-offset-background">
                         <AvatarImage src={user.avatar || "/placeholder-user.jpg"} alt={user.fullName} />
-                        <AvatarFallback>
+                        <AvatarFallback className="bg-primary/10 text-primary font-medium">
                           {user.fullName.split(" ").map(n => n[0]).join("")}
                         </AvatarFallback>
                       </Avatar>
@@ -177,10 +184,17 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                         </div>
                         <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                         <div className="flex items-center gap-2">
-                          {getRoleIcon(user.role)}
-                          <Badge className={`text-xs ${getRoleColor(user.role)}`}>
-                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                          </Badge>
+                          {user.role && getRoleIcon(user.role)}
+                          {user.role && (
+                            <Badge className={`text-xs ${getRoleColor(user.role)}`}>
+                              {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                            </Badge>
+                          )}
+                          {!user.role && (
+                            <Badge className="text-xs bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">
+                              No Role
+                            </Badge>
+                          )}
                         </div>
                         {user.organization && (
                           <p className="text-xs text-muted-foreground">{user.organization}</p>
@@ -231,21 +245,21 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                   </div>
                 </div>
               )}
-            </nav>
-          </div>
+            </div>
+          </nav>
         </div>
       </header>
 
-      {/* Mobile Search Overlay */}
+      {/* Mobile Search Overlay - Enhanced design */}
       {isMobileSearchOpen && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm lg:hidden">
-          <div className="flex items-center justify-between p-4 border-b">
+        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm lg:hidden">
+          <div className="flex items-center justify-between p-4 border-b bg-background">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
                 type="search" 
                 placeholder="Search..." 
-                className="pl-10 pr-4 h-12 text-base"
+                className="pl-10 pr-4 h-12 text-base bg-muted/50 border-muted-foreground/20 focus:bg-background focus:border-primary/50"
                 autoFocus
               />
             </div>
@@ -253,15 +267,23 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
               variant="ghost"
               size="icon"
               onClick={() => setIsMobileSearchOpen(false)}
-              className="ml-2"
+              className="ml-2 hover:bg-muted/50"
             >
               <X className="h-5 w-5" />
             </Button>
           </div>
-          <div className="p-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Search for events, projects, services, and more...
-            </p>
+          <div className="p-4 bg-muted/20">
+            <div className="text-center space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Search for events, projects, services, and more...
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                <Badge variant="outline" className="text-xs">Projects</Badge>
+                <Badge variant="outline" className="text-xs">Events</Badge>
+                <Badge variant="outline" className="text-xs">Forum</Badge>
+                <Badge variant="outline" className="text-xs">Resources</Badge>
+              </div>
+            </div>
           </div>
         </div>
       )}

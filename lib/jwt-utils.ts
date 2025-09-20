@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // JWT Configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production'
-const ACCESS_TOKEN_EXPIRY = '15m' // 15 minutes
+const ACCESS_TOKEN_EXPIRY = '1h' // 1 hour
 const REFRESH_TOKEN_EXPIRY = '7d' // 7 days
 
 // Token Types
@@ -72,7 +72,7 @@ export function setSecureCookies(response: NextResponse, tokens: TokenPair): Nex
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 15 * 60, // 15 minutes
+    maxAge: 60 * 60, // 1 hour
     path: '/'
   })
   
