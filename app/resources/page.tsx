@@ -194,13 +194,13 @@ export default function ResourcesPage() {
             <label htmlFor="title" className="block text-sm font-medium mb-1">Resource Title *</label>
             <input id="title" className="w-full border rounded px-3 py-2"
               value={newResource.title} onChange={(e) => handleChange("title", e.target.value)} required />
-          </div>
+                      </div>
 
           <div>
             <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
             <textarea id="description" rows={3} className="w-full border rounded px-3 py-2"
               value={newResource.description} onChange={(e) => handleChange("description", e.target.value)} />
-          </div>
+                    </div>
 
           <div>
             <label className="block text-sm font-medium mb-1">File (upload name used) or URL *</label>
@@ -213,8 +213,8 @@ export default function ResourcesPage() {
               onChange={(e) => handleChange("fileUrl", e.target.value)}
               disabled={newResource.fileUrl.startsWith('/uploads/')}
             />
-          </div>
-
+                    </div>
+                    
           <div>
             <label className="block text-sm font-medium mb-1">Category *</label>
             <select className="w-full border rounded px-3 py-2" required
@@ -226,15 +226,15 @@ export default function ResourcesPage() {
               <option value="TUTORIALS">Tutorials</option>
               <option value="OTHER">Other</option>
             </select>
-          </div>
-
+                    </div>
+                    
           <div className="flex items-center gap-2">
             <input id="isRegulation" type="checkbox"
               checked={newResource.isRegulation}
               onChange={(e) => handleChange("isRegulation", e.target.checked)} />
             <label htmlFor="isRegulation" className="text-sm">This is a regulation resource</label>
-          </div>
-
+                    </div>
+                    
           <div className="flex justify-end gap-3">
             <button type="button" onClick={() => setShowAddForm(false)} className="px-4 py-2 rounded border">
               Cancel
@@ -268,9 +268,9 @@ export default function ResourcesPage() {
           >
             {t.label}
           </button>
-        ))}
-      </div>
-
+              ))}
+            </div>
+            
       <div className="space-y-3 mt-4 min-w-0">
         {resources.length === 0 ? (
           <p className="text-sm text-gray-600">No resources yet.</p>
@@ -302,8 +302,8 @@ export default function ResourcesPage() {
               </li>
             ))}
           </ul>
-        )}
-      </div>
+                )}
+              </div>
     </div>
   )
 }

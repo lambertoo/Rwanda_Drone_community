@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Bell, Search, LogOut, User, Settings, Shield, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -37,7 +37,33 @@ interface HeaderProps {
 export function Header({ onMobileMenuToggle }: HeaderProps) {
   const router = useRouter()
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
+  const [pendingCount, setPendingCount] = useState(0)
   const { user, logout, loading } = useAuth()
+
+  // Fetch pending count for admin users
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      if (user?.role === 'admin') {
+        try {
+          const response = await fetch('/api/admin/pending', {
+            credentials: 'include'
+          })
+          if (response.ok) {
+            const data = await response.json()
+            const totalPending = Object.values(data.counts).reduce((sum: number, count: number) => sum + count, 0)
+            setPendingCount(totalPending)
+          }
+        } catch (error) {
+          console.error('Error fetching pending count:', error)
+        }
+      }
+    }
+
+    fetchPendingCount()
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchPendingCount, 30000)
+    return () => clearInterval(interval)
+  }, [user?.role])
 
   const handleLogout = async () => {
     await logout()
@@ -143,15 +169,30 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
             {/* Theme Toggle - More accessible position */}
             <ThemeToggle />
 
-            {/* Notifications */}
-            <Button variant="ghost" size="icon" className="hidden sm:flex relative">
-              <Bell className="h-4 w-4" />
-              {/* Notification badge */}
-              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs text-white flex items-center justify-center text-[10px]">
-                2
-              </span>
-              <span className="sr-only">Notifications</span>
-            </Button>
+            {/* Notifications or Pending Contents for Admin */}
+            {user?.role === 'admin' ? (
+              <Link href="/admin/approvals">
+                <Button variant="ghost" size="icon" className="hidden sm:flex relative">
+                  <Bell className="h-4 w-4" />
+                  {/* Pending content badge - dynamic count */}
+                  {pendingCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[12px] h-3 bg-red-500 rounded-full text-xs text-white flex items-center justify-center text-[10px] px-1">
+                      {pendingCount > 99 ? '99+' : pendingCount}
+                    </span>
+                  )}
+                  <span className="sr-only">Pending Contents ({pendingCount})</span>
+                </Button>
+              </Link>
+            ) : (
+              <Button variant="ghost" size="icon" className="hidden sm:flex relative">
+                <Bell className="h-4 w-4" />
+                {/* Notification badge */}
+                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs text-white flex items-center justify-center text-[10px]">
+                  2
+                </span>
+                <span className="sr-only">Notifications</span>
+              </Button>
+            )}
 
             {/* Profile Section - Better separated and positioned */}
             <div className="ml-2 pl-2 border-l border-border">

@@ -74,9 +74,10 @@ function EditProfilePageContent() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch('/api/user')
+        const response = await fetch('/api/auth/profile')
         if (response.ok) {
-          const userData = await response.json()
+          const data = await response.json()
+          const userData = data.user
           setProfile(userData)
           setFormData({
             fullName: userData.fullName || "",

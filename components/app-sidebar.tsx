@@ -14,7 +14,6 @@ import {
   Users, 
   FileText, 
   Shield,
-  BarChart,
   BookOpen,
   Camera,
   Wrench,
@@ -95,16 +94,6 @@ export function AppSidebar({ className, onItemClick }: SidebarProps) {
           title: "Admin Dashboard",
           href: "/admin",
           icon: Shield,
-        },
-        {
-          title: "Analytics",
-          href: "/analytics",
-          icon: BarChart,
-        },
-        {
-          title: "User Management",
-          href: "/admin/users",
-          icon: Users,
         }
       )
     }

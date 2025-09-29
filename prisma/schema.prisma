@@ -271,6 +271,28 @@ model OpportunityCategory {
   @@map("opportunity_categories")
 }
 
+model ResourceCategory {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  resources   Resource[]
+
+  @@map("resource_categories")
+}
+
+model ServiceCategory {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  services    Service[]
+
+  @@map("service_categories")
+}
+
 model EmploymentType {
   id          String        @id @default(cuid())
   name        String        @unique
@@ -333,7 +355,8 @@ model Service {
   id          String   @id @default(cuid())
   title       String
   description String
-  category    String
+  categoryId  String
+  category    ServiceCategory @relation(fields: [categoryId], references: [id])
   region      Region
   contact     String
   phone       String?
@@ -360,7 +383,8 @@ model Resource {
   fileType    String       // PDF, Video, Excel, Word, etc.
   fileSize    String?      // File size in MB, KB, etc. (calculated automatically)
   fileUpload  String?      // Original uploaded file name
-  category    ResourceCategory
+  categoryId  String
+  category    ResourceCategory @relation(fields: [categoryId], references: [id])
   isRegulation Boolean     @default(false) // Special flag for regulation resources
   downloads   Int          @default(0)
   views       Int          @default(0)
@@ -612,13 +636,8 @@ enum ApplicationStatus {
   WITHDRAWN
 }
 
-enum ResourceCategory {
-  REGULATIONS
-  SAFETY
-  TEMPLATES
-  TUTORIALS
-  OTHER
-}
+// Removed conflicting enum ResourceCategory because a model with the same
+// name exists above. Categories are modeled relationally via `ResourceCategory` model.
 
 enum OpportunityMainType {
   JOB

@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/auth"
 import { cookies } from "next/headers"
+import { requireAuth } from "@/lib/auth-middleware"
 
 // READ - Get all services
 export async function GET(request: NextRequest) {
@@ -10,11 +11,12 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category')
     const region = searchParams.get('region')
     const featured = searchParams.get('featured')
+    const adminMode = searchParams.get('admin') === 'true'
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
 
     const where: any = {
-      isApproved: true
+      ...(adminMode ? {} : { isApproved: true })
     }
 
     if (category) {
@@ -70,21 +72,17 @@ export async function GET(request: NextRequest) {
 // CREATE - Create a new service
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
+    console.log('=== SERVICES API POST CALLED ===') // Added debug log
+    const authResult = await requireAuth(request)
+    console.log('Auth result:', authResult) // Added debug log
     
-    let user = null
-    
-    if (sessionId) {
-      user = getSession(sessionId)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
     
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+    const user = authResult.user
+    console.log('User object:', user) // Added debug log
+    console.log('User ID:', user?.id) // Added debug log
 
     const body = await request.json()
     const {
@@ -110,14 +108,14 @@ export async function POST(request: NextRequest) {
       data: {
         title,
         description,
-        category,
+        categoryId: category,
         region,
         contact,
         phone,
         email,
         website,
         services: services ? JSON.stringify(services) : null,
-        providerId: user.id,
+        providerId: user.userId,
       },
       include: {
         provider: {

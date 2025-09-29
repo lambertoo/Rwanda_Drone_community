@@ -30,6 +30,16 @@ export async function GET(
         avatar: true,
         joinedAt: true,
         role: true,
+        organization: true,
+        pilotLicense: true,
+        experience: true,
+        specializations: true,
+        certifications: true,
+        reputation: true,
+        postsCount: true,
+        projectsCount: true,
+        eventsCount: true,
+        servicesCount: true,
         _count: {
           select: {
             posts: true,
@@ -47,82 +57,108 @@ export async function GET(
       )
     }
 
-    // Generate realistic stats based on user activity
-    const postsCount = profile._count.posts || 0
-    const projectsCount = profile._count.projects || 0
-    
-    // Calculate reputation based on activity
-    const baseReputation = 500
-    const postsReputation = postsCount * 25
-    const projectsReputation = projectsCount * 50
-    const reputation = baseReputation + postsReputation + projectsReputation
-    
-    // Generate realistic follower/following counts
-    const followers = Math.max(50, Math.floor(reputation / 10) + Math.floor(Math.random() * 100))
-    const following = Math.max(20, Math.floor(followers * 0.4) + Math.floor(Math.random() * 50))
-
+    // Use real database stats
     const stats = {
-      posts: postsCount,
-      projects: projectsCount,
-      followers,
-      following,
-      reputation
+      posts: profile.postsCount || 0,
+      projects: profile.projectsCount || 0,
+      followers: Math.max(0, Math.floor((profile.reputation || 0) / 10)), // Simple calculation based on reputation
+      following: Math.max(0, Math.floor((profile.reputation || 0) / 20)), // Simple calculation based on reputation
+      reputation: profile.reputation || 0
     }
 
-    // Generate skills based on user role and activity
-    const getSkillsByRole = (role: string) => {
-      const baseSkills = [
-        { name: "Drone Piloting", basePercentage: 75 },
-        { name: "Aerial Photography", basePercentage: 70 },
-        { name: "Mapping & Surveying", basePercentage: 65 },
-        { name: "Software Development", basePercentage: 60 },
-        { name: "Data Analysis", basePercentage: 55 }
+    // Generate skills based on user's actual specializations and experience
+    const getSkillsFromData = (specializations: any, experience: string | null, role: string | null) => {
+      const defaultSkills = [
+        { name: "Drone Piloting", percentage: 50 },
+        { name: "Aerial Photography", percentage: 45 },
+        { name: "Mapping & Surveying", percentage: 40 },
+        { name: "Data Analysis", percentage: 35 }
       ]
 
-      // Adjust skills based on role
-      const roleMultipliers: Record<string, number[]> = {
-        "pilot": [1.3, 1.2, 1.1, 0.8, 0.7],
-        "hobbyist": [1.1, 1.0, 0.9, 0.6, 0.5],
-        "student": [0.9, 0.8, 0.7, 0.9, 0.8],
-        "service_provider": [1.0, 1.1, 1.0, 1.2, 1.1],
-        "admin": [1.0, 1.0, 1.0, 1.0, 1.0],
-        "regulator": [0.8, 0.7, 0.8, 1.0, 1.1]
+      let skills = [...defaultSkills]
+
+      // Add skills based on specializations
+      if (specializations && Array.isArray(specializations)) {
+        specializations.forEach((spec: string) => {
+          const existingSkill = skills.find(s => s.name.toLowerCase().includes(spec.toLowerCase()))
+          if (existingSkill) {
+            existingSkill.percentage = Math.min(95, existingSkill.percentage + 20)
+          } else {
+            skills.push({ name: spec, percentage: 60 })
+          }
+        })
       }
 
-      const multiplier = roleMultipliers[role] || [1.0, 1.0, 1.0, 1.0, 1.0]
-      
-      return baseSkills.map((skill, index) => ({
-        name: skill.name,
-        percentage: Math.min(95, Math.max(50, Math.floor(skill.basePercentage * multiplier[index])))
-      }))
+      // Adjust based on experience
+      if (experience) {
+        const experienceLevel = experience.includes('5+') ? 20 : 
+                               experience.includes('3+') ? 15 : 
+                               experience.includes('1+') ? 10 : 5
+        skills.forEach(skill => {
+          skill.percentage = Math.min(95, skill.percentage + experienceLevel)
+        })
+      }
+
+      // Admin gets higher skills
+      if (role === 'admin') {
+        skills.forEach(skill => {
+          skill.percentage = Math.min(95, skill.percentage + 15)
+        })
+      }
+
+      return skills.slice(0, 5) // Limit to 5 skills
     }
 
-    const skills = getSkillsByRole(profile.role)
+    const skills = getSkillsFromData(profile.specializations, profile.experience, profile.role)
 
     // Generate achievements based on user activity
     const achievements = []
     
-    if (postsCount >= 10) {
+    if (stats.posts >= 10) {
       achievements.push({
         name: "Community Helper",
-        description: "Helped 10+ community members",
+        description: `Helped ${stats.posts} community members`,
         icon: "🤝"
       })
     }
     
-    if (projectsCount >= 3) {
+    if (stats.projects >= 3) {
       achievements.push({
         name: "Project Leader",
-        description: "Led 3+ successful projects",
+        description: `Led ${stats.projects} successful projects`,
         icon: "👑"
       })
     }
     
-    if (reputation >= 1000) {
+    if (stats.reputation >= 1000) {
       achievements.push({
         name: "Expert Pilot",
-        description: "Completed 100+ flight hours",
+        description: `Reputation: ${stats.reputation}`,
         icon: "🚁"
+      })
+    }
+    
+    if (profile.role === 'admin') {
+      achievements.push({
+        name: "Administrator",
+        description: "Platform administrator",
+        icon: "👑"
+      })
+    }
+    
+    if (profile.isVerified) {
+      achievements.push({
+        name: "Verified Member",
+        description: "Identity verified",
+        icon: "✅"
+      })
+    }
+    
+    if (profile.pilotLicense) {
+      achievements.push({
+        name: "Licensed Pilot",
+        description: `License: ${profile.pilotLicense}`,
+        icon: "✈️"
       })
     }
     
@@ -148,16 +184,21 @@ export async function GET(
       fullName: profile.fullName,
       username: profile.username,
       email: profile.email,
-      bio: profile.bio || "Passionate drone pilot and software engineer with 5+ years of experience in aerial photography and mapping. Specializing in agricultural drone applications and precision farming solutions.",
-      location: profile.location || "Kigali, Rwanda",
-                        website: profile.website,
-                  phone: profile.phone,
-                  avatar: profile.avatar,
+      bio: profile.bio || "No bio available",
+      location: profile.location || "Location not specified",
+      website: profile.website,
+      phone: profile.phone,
+      avatar: profile.avatar,
       role: profile.role,
-                        joinedDate: profile.joinedAt.toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long'
-                  }),
+      organization: profile.organization,
+      pilotLicense: profile.pilotLicense,
+      experience: profile.experience,
+      specializations: profile.specializations,
+      certifications: profile.certifications,
+      joinedDate: profile.joinedAt.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long'
+      }),
       stats,
       skills,
       achievements

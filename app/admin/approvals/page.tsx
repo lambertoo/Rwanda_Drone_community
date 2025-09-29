@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { CheckCircle, XCircle, AlertTriangle, Eye, Clock, ExternalLink } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Eye, Clock, ExternalLink, Trash2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
 
@@ -118,6 +118,51 @@ export default function AdminApprovalsPage() {
       toast({
         title: 'Error',
         description: `Failed to ${action} item: ${error}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDelete = async (type: string, id: string) => {
+    try {
+      setActionLoading(`${type}-${id}-delete`);
+      
+      // Map plural types to singular for API
+      const typeMap: { [key: string]: string } = {
+        'forumPosts': 'forum',
+        'projects': 'project',
+        'events': 'event',
+        'resources': 'resource',
+        'opportunities': 'opportunity',
+        'services': 'service'
+      };
+      
+      const apiType = typeMap[type] || type;
+      
+      const response = await fetch(`/api/${apiType}/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to delete ${type} item`);
+      }
+
+      toast({
+        title: 'Success',
+        description: `${type} item deleted successfully`,
+      });
+
+      // Refresh the pending items
+      await fetchPendingItems();
+    } catch (error) {
+      console.error(`Error deleting ${type} item:`, error);
+      toast({
+        title: 'Error',
+        description: `Failed to delete ${type} item: ${error}`,
         variant: 'destructive',
       });
     } finally {
@@ -593,6 +638,16 @@ export default function AdminApprovalsPage() {
                     <CheckCircle className="w-4 h-4 mr-1" />
                     Approve
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDelete(type, item.id)}
+                    disabled={actionLoading === `${type}-${item.id}-delete`}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Delete
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -860,3 +915,9 @@ export default function AdminApprovalsPage() {
     </div>
   );
 }
+
+
+
+
+
+

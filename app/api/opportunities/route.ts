@@ -12,10 +12,11 @@ export async function GET(request: NextRequest) {
     const opportunityType = searchParams.get('opportunityType')
     const category = searchParams.get('category')
     const location = searchParams.get('location')
+    const adminMode = searchParams.get('admin') === 'true'
 
     const where: any = {
       isActive: true,
-      isApproved: true // Only show approved opportunities to public
+      ...(adminMode ? {} : { isApproved: true }) // Only show approved opportunities to public
     }
 
     if (tabCategory && tabCategory !== 'all') {

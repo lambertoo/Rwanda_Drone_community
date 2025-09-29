@@ -35,9 +35,12 @@ async function getHomePageData() {
     }
   }
   try {
-    // Get featured projects (isFeatured = true, limit 3)
+    // Get featured projects (isFeatured = true AND isApproved = true, limit 3)
     const featuredProjects = await prisma.project.findMany({
-      where: { isFeatured: true },
+      where: { 
+        isFeatured: true,
+        isApproved: true
+      },
       take: 3,
       include: {
         author: {
@@ -57,8 +60,9 @@ async function getHomePageData() {
       orderBy: { createdAt: 'desc' }
     })
 
-    // Get recent forum posts (limit 3)
+    // Get recent forum posts (limit 3, only approved posts)
     const recentPosts = await prisma.forumPost.findMany({
+      where: { isApproved: true },
       take: 3,
       include: {
         author: {
@@ -82,13 +86,14 @@ async function getHomePageData() {
       orderBy: { createdAt: 'desc' }
     })
 
-    // Get upcoming events (limit 3, future dates)
+    // Get upcoming events (limit 3, future dates, published AND approved)
     const upcomingEvents = await prisma.event.findMany({
       where: {
         startDate: {
           gte: new Date()
         },
-        isPublished: true
+        isPublished: true,
+        isApproved: true
       },
       take: 3,
       include: {
@@ -101,11 +106,11 @@ async function getHomePageData() {
       orderBy: { startDate: 'asc' }
     })
 
-    // Get statistics
+    // Get statistics (only approved/published content for public visibility)
     const stats = await Promise.all([
-      prisma.project.count(),
+      prisma.project.count({ where: { isApproved: true } }),
       prisma.user.count(),
-      prisma.event.count({ where: { isPublished: true } }),
+      prisma.event.count({ where: { isPublished: true, isApproved: true } }),
       prisma.service.count({ where: { isApproved: true } })
     ])
 

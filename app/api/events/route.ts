@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const upcoming = searchParams.get("upcoming") === "true"
+    const adminMode = searchParams.get("admin") === "true"
     const limit = searchParams.get("limit") ? Number.parseInt(searchParams.get("limit")!) : undefined
     const offset = searchParams.get("offset") ? Number.parseInt(searchParams.get("offset")!) : undefined
 
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
           startDate: {
             gte: new Date()
           },
-          isApproved: true
+          ...(adminMode ? {} : { isApproved: true })
         },
         include: {
           organizer: true,
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
     } else {
       events = await prisma.event.findMany({
         where: {
-          isApproved: true
+          ...(adminMode ? {} : { isApproved: true })
         },
         include: {
           organizer: true,

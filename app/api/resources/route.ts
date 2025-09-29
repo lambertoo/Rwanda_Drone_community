@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!title || !fileUrl || !category) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing required fields: title, fileUrl, and category are required" },
         { status: 400 }
       )
     }
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
         fileType: finalFileType || "Other",
         fileSize: finalFileSize || "Unknown",
         fileUpload,
-        category: category.toUpperCase(),
+        categoryId: category,
         isRegulation: isRegulation || false,
         userId: decoded.userId
       },
