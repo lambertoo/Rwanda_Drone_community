@@ -10,73 +10,71 @@ export async function GET(request: NextRequest) {
       return authResult
     }
 
-    // Fetch counts individually to avoid Promise.all issues
-    const pendingForumPosts = await prisma.forumPost.count({ where: { isApproved: false } })
-    const pendingProjects = await prisma.project.count({ where: { isApproved: false } })
-    const pendingEvents = await prisma.event.count({ where: { isApproved: false } })
-    const pendingResources = await prisma.resource.count({ where: { isApproved: false } })
-    const pendingOpportunities = await prisma.opportunity.count({ where: { isApproved: false } })
-    const pendingServices = await prisma.service.count({ where: { isApproved: false } })
-    
-    const publishedForumPosts = await prisma.forumPost.count({ where: { isApproved: true } })
-    const publishedProjects = await prisma.project.count({ where: { isApproved: true } })
-    const publishedEvents = await prisma.event.count({ where: { isApproved: true } })
-    const publishedResources = await prisma.resource.count({ where: { isApproved: true } })
-    const publishedOpportunities = await prisma.opportunity.count({ where: { isApproved: true } })
-    const publishedServices = await prisma.service.count({ where: { isApproved: true } })
-    
-    const totalUsers = await prisma.user.count()
-    
-    const forumCategories = await prisma.forumCategory.count()
-    const projectCategories = await prisma.projectCategory.count()
-    const eventCategories = await prisma.eventCategory.count()
-    const opportunityCategories = await prisma.opportunityCategory.count()
-    
-    // Get category counts using raw SQL for problematic models
-    const resourceCategoriesResult = await prisma.$queryRaw`
-      SELECT COUNT(*) as count FROM resource_categories
-    ` as [{ count: bigint }]
-    const resourceCategories = Number(resourceCategoriesResult[0].count)
-    
-    const serviceCategoriesResult = await prisma.$queryRaw`
-      SELECT COUNT(*) as count FROM service_categories
-    ` as [{ count: bigint }]
-    const serviceCategories = Number(serviceCategoriesResult[0].count)
+    // Fetch all counts in parallel
+    const [
+      pendingForum,
+      pendingProject,
+      pendingEvent,
+      pendingResource,
+      pendingOpportunity,
+      pendingService,
+      totalUsers,
+      publishedForum,
+      publishedProject,
+      publishedEvent,
+      publishedResource,
+      publishedOpportunity,
+      publishedService,
+      forumCategories,
+      projectCategories,
+      eventCategories,
+      resourceCategories,
+      serviceCategories,
+      opportunityCategories
+    ] = await Promise.all([
+      // Pending counts
+      prisma.forumPost.count({ where: { isApproved: { not: true } } }),
+      prisma.project.count({ where: { isApproved: { not: true } } }),
+      prisma.event.count({ where: { isApproved: { not: true } } }),
+      prisma.resource.count({ where: { isApproved: { not: true } } }),
+      prisma.opportunity.count({ where: { isApproved: { not: true } } }),
+      prisma.service.count({ where: { isApproved: { not: true } } }),
+      
+      // Total users
+      prisma.user.count(),
+      
+      // Published counts
+      prisma.forumPost.count({ where: { isApproved: true } }),
+      prisma.project.count({ where: { isApproved: true } }),
+      prisma.event.count({ where: { isApproved: true } }),
+      prisma.resource.count({ where: { isApproved: true } }),
+      prisma.opportunity.count({ where: { isApproved: true } }),
+      prisma.service.count({ where: { isApproved: true } }),
+      
+      // Category counts
+      prisma.forumCategory.count(),
+      prisma.projectCategory.count(),
+      prisma.eventCategory.count(),
+      prisma.resourceCategory.count(),
+      prisma.serviceCategory.count(),
+      prisma.opportunityCategory.count()
+    ])
 
-    const pendingTotal = pendingForumPosts + pendingProjects + pendingEvents + pendingResources + pendingOpportunities + pendingServices
-    const publishedTotal = publishedForumPosts + publishedProjects + publishedEvents + publishedResources + publishedOpportunities + publishedServices
+    const pendingTotal = pendingForum + pendingProject + pendingEvent + pendingResource + pendingOpportunity + pendingService
+    const publishedTotal = publishedForum + publishedProject + publishedEvent + publishedResource + publishedOpportunity + publishedService
 
     return NextResponse.json({
       success: true,
       counts: {
-        // Pending content
         pendingContent: pendingTotal,
-        pendingForum: pendingForumPosts,
-        pendingProjects: pendingProjects,
-        pendingEvents: pendingEvents,
-        pendingResources: pendingResources,
-        pendingOpportunities: pendingOpportunities,
-        pendingServices: pendingServices,
-        
-        // Published content
+        totalUsers,
         publishedContent: publishedTotal,
-        publishedForum: publishedForumPosts,
-        publishedProjects: publishedProjects,
-        publishedEvents: publishedEvents,
-        publishedResources: publishedResources,
-        publishedOpportunities: publishedOpportunities,
-        publishedServices: publishedServices,
-        
-        // Users
-        totalUsers: totalUsers,
-        
-        // Categories
-        forumCategories: forumCategories,
-        projectCategories: projectCategories,
-        eventCategories: eventCategories,
-        resourceCategories: resourceCategories,
-        serviceCategories: serviceCategories,
-        opportunityCategories: opportunityCategories
+        forumCategories,
+        projectCategories,
+        eventCategories,
+        resourceCategories,
+        serviceCategories,
+        opportunityCategories
       }
     })
 

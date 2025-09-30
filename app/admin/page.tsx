@@ -34,10 +34,10 @@ import {
   Wrench
 } from "lucide-react"
 import { AdminOnly } from "@/components/auth-guard"
-import { AuthUser } from "@prisma/client"
+import { useAuth } from "@/lib/auth-context"
 
 function AdminDashboard() {
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const { user } = useAuth()
   const [counts, setCounts] = useState({
     pendingContent: 0,
     totalUsers: 0,
@@ -52,17 +52,6 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get user from localStorage
-    const storedUser = localStorage.getItem("user")
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser)
-        setUser(parsedUser)
-      } catch (error) {
-        console.error("Error parsing user from localStorage:", error)
-      }
-    }
-
     // Fetch admin counts
     fetchAdminCounts()
   }, [])
@@ -70,70 +59,34 @@ function AdminDashboard() {
   const fetchAdminCounts = async () => {
     try {
       setLoading(true)
-      // 1) pending content
-      const pendingRes = await fetch("/api/admin/pending", { credentials: 'include' })
-      let pendingTotal = 0
-      if (pendingRes.ok) {
-        const data = await pendingRes.json()
-        if (data?.counts?.total != null) pendingTotal = Number(data.counts.total) || 0
-        else if (data?.counts) {
-          const c = data.counts
-          pendingTotal = [c.forum, c.project, c.event, c.resource, c.opportunity, c.service]
-            .filter((n: any) => typeof n === 'number')
-            .reduce((a: number, b: number) => a + b, 0)
-        } else if (data?.data) {
-          const d = data.data
-          pendingTotal = [d.forumPosts, d.projects, d.events, d.resources, d.opportunities, d.services]
-            .map((arr: any) => Array.isArray(arr) ? arr.length : 0)
-            .reduce((a: number, b: number) => a + b, 0)
+      console.log('Fetching admin counts...')
+      
+      const response = await fetch('/api/admin/dashboard-counts', { credentials: 'include' })
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Dashboard counts data:', data)
+        
+        if (data.success && data.counts) {
+          const newCounts = {
+            pendingContent: data.counts.pendingContent || 0,
+            totalUsers: data.counts.totalUsers || 0,
+            publishedContent: data.counts.publishedContent || 0,
+            forumCategories: data.counts.forumCategories || 0,
+            projectCategories: data.counts.projectCategories || 0,
+            eventCategories: data.counts.eventCategories || 0,
+            resourceCategories: data.counts.resourceCategories || 0,
+            serviceCategories: data.counts.serviceCategories || 0,
+            opportunityCategories: data.counts.opportunityCategories || 0,
+          }
+          console.log('Setting counts:', newCounts)
+          setCounts(prev => ({
+            ...prev,
+            ...newCounts,
+          }))
         }
+      } else {
+        console.error('Failed to fetch dashboard counts:', response.status)
       }
-
-      // 2) users
-      const usersRes = await fetch('/api/admin/users', { credentials: 'include' })
-      let totalUsers = 0
-      if (usersRes.ok) {
-        const users = await usersRes.json()
-        totalUsers = Array.isArray(users) ? users.length : (users?.total || 0)
-      }
-
-      // 3) category counts (forum/project/event)
-      const [forumCatRes, projectCatRes, eventCatRes] = await Promise.all([
-        fetch('/api/admin/forum-categories', { credentials: 'include' }),
-        fetch('/api/admin/project-categories', { credentials: 'include' }),
-        fetch('/api/admin/event-categories', { credentials: 'include' })
-      ])
-      const forumCategories = forumCatRes.ok ? ((await forumCatRes.json())?.categories?.length || 0) : 0
-      const projectCategories = projectCatRes.ok ? ((await projectCatRes.json())?.categories?.length || 0) : 0
-      const eventCategories = eventCatRes.ok ? ((await eventCatRes.json())?.length || (await eventCatRes.json())?.categories?.length || 0) : 0
-
-      // 4) published (for Review Contents) – use review-contents API
-      const reviewRes = await fetch('/api/admin/review-contents', { credentials: 'include' })
-      let publishedContent = 0
-      if (reviewRes.ok) {
-        const r = await reviewRes.json()
-        if (r?.counts) {
-          const c = r.counts
-          publishedContent = [c.forum, c.project, c.event, c.resource, c.opportunity, c.service]
-            .filter((n: any) => typeof n === 'number')
-            .reduce((a: number, b: number) => a + b, 0)
-        } else if (r?.data) {
-          const d = r.data
-          publishedContent = [d.forumPosts, d.projects, d.events, d.resources, d.opportunities, d.services]
-            .map((arr: any) => Array.isArray(arr) ? arr.length : 0)
-            .reduce((a: number, b: number) => a + b, 0)
-        }
-      }
-
-      setCounts(prev => ({
-        ...prev,
-        pendingContent: pendingTotal,
-        totalUsers,
-        publishedContent,
-        forumCategories,
-        projectCategories,
-        eventCategories,
-      }))
     } catch (error) {
       console.error("Error fetching admin counts:", error)
     } finally {

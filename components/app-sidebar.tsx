@@ -114,21 +114,21 @@ export function AppSidebar({ className, onItemClick }: SidebarProps) {
       )
     }
 
-    // Pilot items
-    if (user?.role === "pilot") {
-      roleItems.push(
-        {
-          title: "My Certifications",
-          href: "/pilot/certifications",
-          icon: GraduationCap,
-        },
-        {
-          title: "Tutorials",
-          href: "/pilot/tutorials",
-          icon: BookOpen,
-        }
-      )
-    }
+    // Pilot items - Removed as requested
+    // if (user?.role === "pilot") {
+    //   roleItems.push(
+    //     {
+    //       title: "My Certifications",
+    //       href: "/pilot/certifications",
+    //       icon: GraduationCap,
+    //     },
+    //     {
+    //       title: "Tutorials",
+    //       href: "/pilot/tutorials",
+    //       icon: BookOpen,
+    //     }
+    //   )
+    // }
 
     // Service Provider items
     if (user?.role === "service_provider") {

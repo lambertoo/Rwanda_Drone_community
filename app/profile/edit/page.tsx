@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import React from "react"
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -196,7 +197,7 @@ function EditProfilePageContent() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="basic" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Basic Info
@@ -212,6 +213,9 @@ function EditProfilePageContent() {
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
               Notifications
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2">
+              Security
             </TabsTrigger>
           </TabsList>
 
@@ -600,6 +604,18 @@ function EditProfilePageContent() {
               </Card>
             </TabsContent>
 
+            {/* Security Tab */}
+            <TabsContent value="security" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Change Password</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <PasswordChangeForm />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             {/* Action Buttons */}
             <div className="flex justify-end gap-4 pt-6">
               <Link href={`/profile/${profile.username}`}>
@@ -635,3 +651,66 @@ export default function EditProfilePage() {
     </AuthGuard>
   )
 } 
+
+function PasswordChangeForm() {
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmNewPassword, setConfirmNewPassword] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    setMessage(null)
+    setError(null)
+
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword, confirmNewPassword })
+      })
+
+      if (res.ok) {
+        setMessage('Password updated successfully')
+        setCurrentPassword("")
+        setNewPassword("")
+        setConfirmNewPassword("")
+      } else {
+        const data = await res.json().catch(() => ({} as any))
+        setError(data.error || 'Failed to change password')
+      }
+    } catch (err) {
+      setError('Failed to change password')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="currentPassword">Current Password</Label>
+        <Input id="currentPassword" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="newPassword">New Password</Label>
+          <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+          <p className="text-xs text-muted-foreground">At least 8 chars, include upper, lower and a number.</p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="confirmNewPassword">Confirm New Password</Label>
+          <Input id="confirmNewPassword" type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} required />
+        </div>
+      </div>
+      {message && <p className="text-sm text-green-600">{message}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      <div className="flex justify-end">
+        <Button type="submit" disabled={submitting}>{submitting ? 'Updating...' : 'Update Password'}</Button>
+      </div>
+    </form>
+  )
+}
