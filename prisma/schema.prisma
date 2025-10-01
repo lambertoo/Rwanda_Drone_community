@@ -60,6 +60,7 @@ model User {
   approvedEvents       Event[]        @relation("EventApprover")
   approvedResources    Resource[]     @relation("ResourceApprover")
   approvedOpportunities Opportunity[] @relation("OpportunityApprover")
+  approvedServices     Service[]      @relation("ServiceApprover")
 
   @@map("users")
 }
@@ -368,6 +369,9 @@ model Service {
   reviewCount Int      @default(0)
   isApproved  Boolean  @default(false)
   isFeatured  Boolean  @default(false)
+  approvedAt  DateTime?
+  approvedBy  String?
+  approvedByUser User? @relation("ServiceApprover", fields: [approvedBy], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   providerId  String
