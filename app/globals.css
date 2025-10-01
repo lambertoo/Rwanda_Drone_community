@@ -68,6 +68,27 @@
   }
 }
 
+/* Dark theme hardcoded class fallbacks */
+@layer utilities {
+  /* Ensure legacy hardcoded light classes look correct in dark mode */
+  .dark .bg-white {
+    background-color: hsl(var(--card)) !important;
+  }
+  .dark .text-black {
+    color: hsl(var(--foreground)) !important;
+  }
+  .dark .border-gray-200,
+  .dark .border-gray-300 {
+    border-color: hsl(var(--border)) !important;
+  }
+  .dark .text-gray-600 {
+    color: hsl(var(--muted-foreground)) !important;
+  }
+  .dark .hover\:bg-gray-50:hover {
+    background-color: hsl(var(--muted)) !important;
+  }
+}
+
 /* Mobile-specific improvements */
 @layer utilities {
   /* Touch-friendly button sizes on mobile */
