@@ -26,7 +26,7 @@ export async function GET() {
         website: true,
         phone: true,
         avatar: true,
-        createdAt: true,
+        joinedAt: true,
         role: true,
         organization: true,
         pilotLicense: true,
@@ -129,7 +129,7 @@ export async function GET() {
       })
     }
     
-    if (profile.createdAt.getTime() < new Date('2023-02-01').getTime()) {
+    if (profile.joinedAt.getTime() < new Date('2023-02-01').getTime()) {
       achievements.push({
         name: "Early Adopter",
         description: "Joined in the first month",
@@ -156,7 +156,7 @@ export async function GET() {
       website: profile.website,
       phone: profile.phone,
       avatar: profile.avatar,
-      joinedDate: profile.createdAt.toLocaleDateString('en-US', { 
+      joinedDate: profile.joinedAt.toLocaleDateString('en-US', { 
         year: 'numeric', 
         month: 'long' 
       }),
@@ -194,12 +194,30 @@ export async function PUT(request: Request) {
       location, 
       website, 
       phone, 
+      avatar,
       organization, 
       pilotLicense, 
       experience, 
       specializations, 
       certifications 
     } = body
+
+    // Check if username is already taken by another user
+    if (username) {
+      const existingUsername = await prisma.user.findFirst({
+        where: {
+          username,
+          id: { not: user.id }
+        }
+      })
+
+      if (existingUsername) {
+        return NextResponse.json(
+          { error: 'Username already taken' },
+          { status: 409 }
+        )
+      }
+    }
 
     // Update user profile
     const updatedProfile = await prisma.user.update({
@@ -211,6 +229,7 @@ export async function PUT(request: Request) {
         location: location || undefined,
         website: website || undefined,
         phone: phone || undefined,
+        avatar: avatar || undefined,
         organization: organization || undefined,
         pilotLicense: pilotLicense || undefined,
         experience: experience || undefined,
@@ -227,12 +246,13 @@ export async function PUT(request: Request) {
         website: true,
         phone: true,
         avatar: true,
-        createdAt: true,
+        joinedAt: true,
         organization: true,
         pilotLicense: true,
         experience: true,
         specializations: true,
-        certifications: true
+        certifications: true,
+        role: true
       }
     })
 
@@ -240,10 +260,10 @@ export async function PUT(request: Request) {
       message: "Profile updated successfully",
       profile: updatedProfile 
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Profile update error:", error)
     return NextResponse.json(
-      { error: "Failed to update profile" },
+      { error: error.message || "Failed to update profile" },
       { status: 500 }
     )
   }

@@ -43,6 +43,8 @@ function EditProfilePageContent() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState("basic")
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     fullName: "",
     username: "",
@@ -50,6 +52,7 @@ function EditProfilePageContent() {
     location: "",
     website: "",
     phone: "",
+    role: "",
     organization: "",
     pilotLicense: "",
     experience: "",
@@ -80,6 +83,21 @@ function EditProfilePageContent() {
           const data = await response.json()
           const userData = data.user
           setProfile(userData)
+          
+          // Parse JSON strings for specializations and certifications
+          const parseJsonField = (field: any) => {
+            if (!field) return []
+            if (Array.isArray(field)) return field
+            if (typeof field === 'string') {
+              try {
+                return JSON.parse(field)
+              } catch {
+                return []
+              }
+            }
+            return []
+          }
+          
           setFormData({
             fullName: userData.fullName || "",
             username: userData.username || "",
@@ -87,11 +105,12 @@ function EditProfilePageContent() {
             location: userData.location || "",
             website: userData.website || "",
             phone: userData.phone || "",
+            role: userData.role || "",
             organization: userData.organization || "",
             pilotLicense: userData.pilotLicense || "",
             experience: userData.experience || "",
-            specializations: userData.specializations || [],
-            certifications: userData.certifications || []
+            specializations: parseJsonField(userData.specializations),
+            certifications: parseJsonField(userData.certifications)
           })
         } else {
           console.error('Failed to fetch profile')
@@ -123,6 +142,71 @@ function EditProfilePageContent() {
     setNotificationSettings(prev => ({ ...prev, [field]: value }))
   }
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      alert('Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image.')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      alert('File too large. Maximum size is 5MB.')
+      return
+    }
+
+    setUploadingAvatar(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'avatars')
+      formData.append('entityId', profile?.id || 'general')
+      formData.append('subfolder', 'profile')
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setAvatarUrl(data.fileUrl)
+        
+        // Update user avatar in database
+        await fetch('/api/user', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            avatar: data.fileUrl
+          }),
+        })
+
+        // Update local profile state
+        if (profile) {
+          setProfile({ ...profile, avatar: data.fileUrl })
+        }
+
+        alert('Profile picture updated successfully!')
+      } else {
+        const error = await response.json()
+        alert(`Failed to upload: ${error.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Avatar upload error:', error)
+      alert('An error occurred while uploading your profile picture')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -134,25 +218,48 @@ function EditProfilePageContent() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...formData,
+          fullName: formData.fullName,
+          username: formData.username,
+          bio: formData.bio,
+          location: formData.location,
+          website: formData.website,
+          phone: formData.phone,
+          organization: formData.organization,
+          pilotLicense: formData.pilotLicense,
+          experience: formData.experience,
           specializations: formData.specializations,
           certifications: formData.certifications
         }),
       })
 
       if (response.ok) {
-        const updatedUser = await response.json()
-        setProfile(updatedUser)
+        const data = await response.json()
+        // Also update role if changed
+        if (formData.role && formData.role !== profile?.role) {
+          await fetch('/api/profile/update', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              username: formData.username,
+              role: formData.role,
+              phone: formData.phone
+            }),
+          })
+        }
+        
         // Show success message and redirect
-        setTimeout(() => {
-          router.push(`/profile/${updatedUser.username}`)
-        }, 1000)
+        alert('Profile updated successfully!')
+        router.push(`/profile/${formData.username}`)
       } else {
-        console.error('Failed to update profile')
+        const error = await response.json()
+        alert(`Failed to update profile: ${error.error || 'Unknown error'}`)
       }
       
     } catch (error) {
       console.error('Error updating profile:', error)
+      alert('An error occurred while updating your profile')
     } finally {
       setSaving(false)
     }
@@ -230,18 +337,31 @@ function EditProfilePageContent() {
                 <CardContent className="space-y-4">
                   <div className="flex items-center gap-4">
                     <Avatar className="h-24 w-24">
-                      <AvatarImage src={profile.avatar} alt={profile.fullName} />
+                      <AvatarImage src={avatarUrl || profile.avatar} alt={profile.fullName} />
                       <AvatarFallback className="text-2xl font-bold">
                         {profile.fullName.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
                     <div className="space-y-2">
-                      <Button type="button" variant="outline" size="sm">
+                      <input
+                        type="file"
+                        id="avatar-upload"
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                      />
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => document.getElementById('avatar-upload')?.click()}
+                        disabled={uploadingAvatar}
+                      >
                         <Upload className="h-4 w-4 mr-2" />
-                        Change Photo
+                        {uploadingAvatar ? 'Uploading...' : 'Change Photo'}
                       </Button>
                       <p className="text-sm text-muted-foreground">
-                        JPG, PNG or GIF. Max size 2MB.
+                        JPG, PNG, GIF, or WebP. Max size 5MB.
                       </p>
                     </div>
                   </div>
@@ -316,17 +436,67 @@ function EditProfilePageContent() {
                         value={formData.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                         placeholder="Phone number"
+                        required
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="location">Location</Label>
-                      <Input
-                        id="location"
-                        value={formData.location}
-                        onChange={(e) => handleInputChange('location', e.target.value)}
-                        placeholder="City, Country"
-                      />
+                      <Select value={formData.location} onValueChange={(value) => handleInputChange('location', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="KIGALI_NYARUGENGE">Kigali - Nyarugenge</SelectItem>
+                          <SelectItem value="KIGALI_KICUKIRO">Kigali - Kicukiro</SelectItem>
+                          <SelectItem value="KIGALI_GASABO">Kigali - Gasabo</SelectItem>
+                          <SelectItem value="SOUTH_HUYE">South - Huye</SelectItem>
+                          <SelectItem value="SOUTH_NYAMAGABE">South - Nyamagabe</SelectItem>
+                          <SelectItem value="SOUTH_NYARUGURU">South - Nyaruguru</SelectItem>
+                          <SelectItem value="SOUTH_MUHANGA">South - Muhanga</SelectItem>
+                          <SelectItem value="SOUTH_KAMONYI">South - Kamonyi</SelectItem>
+                          <SelectItem value="SOUTH_GISAGARA">South - Gisagara</SelectItem>
+                          <SelectItem value="SOUTH_NYANZA">South - Nyanza</SelectItem>
+                          <SelectItem value="NORTH_GAKENKE">North - Gakenke</SelectItem>
+                          <SelectItem value="NORTH_GICUMBI">North - Gicumbi</SelectItem>
+                          <SelectItem value="NORTH_MUSANZE">North - Musanze</SelectItem>
+                          <SelectItem value="NORTH_BURERA">North - Burera</SelectItem>
+                          <SelectItem value="NORTH_RULINDO">North - Rulindo</SelectItem>
+                          <SelectItem value="EAST_BUGESERA">East - Bugesera</SelectItem>
+                          <SelectItem value="EAST_GATSIBO">East - Gatsibo</SelectItem>
+                          <SelectItem value="EAST_KAYONZA">East - Kayonza</SelectItem>
+                          <SelectItem value="EAST_KIREHE">East - Kirehe</SelectItem>
+                          <SelectItem value="EAST_NGOMA">East - Ngoma</SelectItem>
+                          <SelectItem value="EAST_NYAGATARE">East - Nyagatare</SelectItem>
+                          <SelectItem value="EAST_RWAMAGANA">East - Rwamagana</SelectItem>
+                          <SelectItem value="WEST_KARONGI">West - Karongi</SelectItem>
+                          <SelectItem value="WEST_NGORORERO">West - Ngororero</SelectItem>
+                          <SelectItem value="WEST_NYABIHU">West - Nyabihu</SelectItem>
+                          <SelectItem value="WEST_NYAMASHEKE">West - Nyamasheke</SelectItem>
+                          <SelectItem value="WEST_RUBAVU">West - Rubavu</SelectItem>
+                          <SelectItem value="WEST_RUSIZI">West - Rusizi</SelectItem>
+                          <SelectItem value="WEST_RUTSIRO">West - Rutsiro</SelectItem>
+                          <SelectItem value="UNKNOWN">Unknown</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Role</Label>
+                    <Select value={formData.role} onValueChange={(value) => handleInputChange('role', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hobbyist">Hobbyist</SelectItem>
+                        <SelectItem value="pilot">Pilot</SelectItem>
+                        <SelectItem value="student">Student</SelectItem>
+                        <SelectItem value="service_provider">Service Provider</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm text-muted-foreground">
+                      Choose the role that best describes you. Admin and Regulator roles require special approval.
+                    </p>
                   </div>
                   
                   <div className="space-y-2">

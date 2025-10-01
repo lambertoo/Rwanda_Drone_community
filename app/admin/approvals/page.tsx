@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { CheckCircle, XCircle, AlertTriangle, Eye, Clock, ExternalLink, Trash2 } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Eye, Clock, ExternalLink, Trash2, Star } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
 
@@ -118,6 +118,53 @@ export default function AdminApprovalsPage() {
       toast({
         title: 'Error',
         description: `Failed to ${action} item: ${error}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleFeatureToggle = async (type: string, id: string, currentFeatured: boolean) => {
+    try {
+      setActionLoading(`${type}-${id}-feature`);
+      
+      // Map plural types to singular for API
+      const typeMap: { [key: string]: string } = {
+        'projects': 'project',
+        'events': 'event',
+        'services': 'service',
+        'opportunities': 'opportunity'
+      };
+      
+      const apiType = typeMap[type] || type;
+      
+      const response = await fetch('/api/admin/feature', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ type: apiType, id, featured: !currentFeatured }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to toggle feature');
+      }
+
+      toast({
+        title: 'Success',
+        description: `Item ${!currentFeatured ? 'featured' : 'unfeatured'} successfully`,
+      });
+
+      // Refresh the pending items
+      await fetchPendingItems();
+    } catch (error) {
+      console.error('Error toggling feature:', error);
+      toast({
+        title: 'Error',
+        description: `Failed to toggle feature: ${error}`,
         variant: 'destructive',
       });
     } finally {
@@ -621,6 +668,18 @@ export default function AdminApprovalsPage() {
                     <Eye className="w-4 h-4 mr-1" />
                     Preview
                   </Button>
+                  {['projects', 'events', 'services', 'opportunities'].includes(type) && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleFeatureToggle(type, item.id, item.isFeatured || false)}
+                      disabled={actionLoading === `${type}-${item.id}-feature`}
+                      className={item.isFeatured ? 'text-yellow-600 hover:text-yellow-700' : ''}
+                    >
+                      <Star className={`w-4 h-4 mr-1 ${item.isFeatured ? 'fill-yellow-400' : ''}`} />
+                      {item.isFeatured ? 'Unfeature' : 'Feature'}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="outline"

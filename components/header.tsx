@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Bell, Search, LogOut, User, Settings, Shield, Menu, X } from "lucide-react"
+import { Bell, Search, LogOut, User, Settings, Shield, Menu, X, Rocket } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -170,7 +170,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
             <ThemeToggle />
 
             {/* Notifications or Pending Contents for Admin */}
-            {user?.role === 'admin' ? (
+            {user?.role === 'admin' && (
               <Link href="/admin/approvals">
                 <Button variant="ghost" size="icon" className="hidden sm:flex relative">
                   <Bell className="h-4 w-4" />
@@ -183,15 +183,6 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                   <span className="sr-only">Pending Contents ({pendingCount})</span>
                 </Button>
               </Link>
-            ) : (
-              <Button variant="ghost" size="icon" className="hidden sm:flex relative">
-                <Bell className="h-4 w-4" />
-                {/* Notification badge */}
-                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs text-white flex items-center justify-center text-[10px]">
-                  2
-                </span>
-                <span className="sr-only">Notifications</span>
-              </Button>
             )}
 
             {/* Profile Section - Better separated and positioned */}
@@ -257,6 +248,13 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                         <Link href="/admin">Admin Panel</Link>
                       </DropdownMenuItem>
                     )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/get-started" className="flex items-center">
+                        <Rocket className="mr-2 h-4 w-4" />
+                        Get Started
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />

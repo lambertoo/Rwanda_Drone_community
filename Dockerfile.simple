@@ -35,13 +35,16 @@ RUN mkdir -p public/uploads
 # Generate Prisma client
 RUN npx prisma generate
 
+# Build the application
+RUN npm run build
+
 # Create startup script
 RUN echo '#!/bin/sh' > /app/start.sh && \
     echo 'echo "🚀 Starting Rwanda Drone Community Platform..."' >> /app/start.sh && \
     echo 'echo "🔧 Running database migrations..."' >> /app/start.sh && \
     echo 'npx prisma migrate deploy' >> /app/start.sh && \
     echo 'echo "🌐 Starting application..."' >> /app/start.sh && \
-    echo 'npm run dev' >> /app/start.sh && \
+    echo 'npm start' >> /app/start.sh && \
     chmod +x /app/start.sh
 
 # Expose port
@@ -50,7 +53,7 @@ EXPOSE 3000
 # Set environment variables
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-ENV NODE_ENV=development
+ENV NODE_ENV=production
 
 # Start the application
 CMD ["/app/start.sh"]

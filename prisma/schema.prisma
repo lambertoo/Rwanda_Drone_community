@@ -363,6 +363,7 @@ model Service {
   email       String?
   website     String?
   services    Json?
+  portfolio   Json?    // Array of {url, caption, title} for gallery images
   rating      Float    @default(0)
   reviewCount Int      @default(0)
   isApproved  Boolean  @default(false)
