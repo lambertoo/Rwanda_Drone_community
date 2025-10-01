@@ -7,45 +7,61 @@ async function setupAdminUser() {
   try {
     console.log('🔧 Setting up admin user for production...');
     
-    // Check if admin user already exists
+    // Desired admin credentials
+    const targetEmail = 'admin@uav.rw'
+    const targetPassword = 'PassAdmin@123!'
+
+    // Check if an admin user exists (by role or email)
     const existingAdmin = await prisma.user.findFirst({
       where: {
         OR: [
-          { email: 'admin@rwandadrone.com' },
+          { email: targetEmail },
           { role: 'admin' }
         ]
       }
     });
 
+    const hashedPassword = await bcrypt.hash(targetPassword, 12);
+
+    let adminUser;
     if (existingAdmin) {
-      console.log('✅ Admin user already exists:', existingAdmin.email);
-      return;
+      // Update existing admin to the requested credentials
+      adminUser = await prisma.user.update({
+        where: { id: existingAdmin.id },
+        data: {
+          username: existingAdmin.username || 'admin',
+          email: targetEmail,
+          password: hashedPassword,
+          fullName: existingAdmin.fullName || 'System Administrator',
+          role: 'admin',
+          isVerified: true,
+          isActive: true,
+        }
+      })
+      console.log('✅ Admin user updated successfully!')
+    } else {
+      // Create admin user
+      adminUser = await prisma.user.create({
+        data: {
+          username: 'admin',
+          email: targetEmail,
+          password: hashedPassword,
+          fullName: 'System Administrator',
+          role: 'admin',
+          isVerified: true,
+          isActive: true,
+          reputation: 100,
+          location: 'UNKNOWN',
+          bio: 'System Administrator for Rwanda Drone Community Platform',
+          website: 'https://rwandadrone.com'
+        }
+      });
+      console.log('✅ Admin user created successfully!');
     }
 
-    // Create admin user
-    const hashedPassword = await bcrypt.hash('password', 12);
-    
-    const adminUser = await prisma.user.create({
-      data: {
-        username: 'admin',
-        email: 'admin@rwandadrone.com',
-        password: hashedPassword,
-        fullName: 'System Administrator',
-        role: 'admin',
-        isVerified: true,
-        isActive: true,
-        reputation: 100,
-        location: 'UNKNOWN',
-        bio: 'System Administrator for Rwanda Drone Community Platform',
-        website: 'https://rwandadrone.com'
-      }
-    });
-
-    console.log('✅ Admin user created successfully!');
     console.log('👤 Username:', adminUser.username);
     console.log('📧 Email:', adminUser.email);
-    console.log('🔑 Password: password');
-    console.log('⚠️  Please change this password after first login!');
+    console.log('🔑 Password: PassAdmin@123!');
     
   } catch (error) {
     console.error('❌ Error creating admin user:', error);
