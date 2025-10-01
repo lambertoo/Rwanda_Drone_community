@@ -22,7 +22,7 @@ interface PendingItem {
     name: string;
   };
   createdAt: string;
-  type: 'forum' | 'project' | 'event' | 'resource' | 'opportunity';
+  type: 'forum' | 'project' | 'event' | 'resource' | 'opportunity' | 'service';
 }
 
 interface PendingData {
@@ -33,6 +33,7 @@ interface PendingData {
     events: any[];
     resources: any[];
     opportunities: any[];
+    services: any[];
   };
   counts: {
     forum: number;
@@ -40,6 +41,7 @@ interface PendingData {
     event: number;
     resource: number;
     opportunity: number;
+    service: number;
   };
 }
 
@@ -87,7 +89,8 @@ export default function AdminApprovalsPage() {
         'projects': 'project',
         'events': 'event',
         'resources': 'resource',
-        'opportunities': 'opportunity'
+        'opportunities': 'opportunity',
+        'services': 'service'
       };
       
       const apiType = typeMap[type] || type;
@@ -538,6 +541,55 @@ export default function AdminApprovalsPage() {
           </div>
         );
 
+      case 'services':
+        return (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <h3 className="text-lg font-semibold">Provider:</h3>
+                <p className="text-gray-700">{item.provider?.fullName || item.provider?.username}</p>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Category:</h3>
+                <p className="text-gray-700">{item.category?.name}</p>
+              </div>
+            </div>
+            {item.location && (
+              <div>
+                <h3 className="text-lg font-semibold">Location:</h3>
+                <p className="text-gray-700">{item.location}</p>
+              </div>
+            )}
+            {item.price && (
+              <div>
+                <h3 className="text-lg font-semibold">Price:</h3>
+                <p className="text-gray-700">{item.price}</p>
+              </div>
+            )}
+            {item.rating && (
+              <div>
+                <h3 className="text-lg font-semibold">Rating:</h3>
+                <p className="text-gray-700">{item.rating}/5</p>
+              </div>
+            )}
+            {item.portfolio && item.portfolio.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold">Portfolio Images:</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {item.portfolio.slice(0, 6).map((image: any, index: number) => (
+                    <img 
+                      key={index}
+                      src={image.url} 
+                      alt={image.caption || 'Portfolio image'} 
+                      className="w-full h-24 object-cover rounded-lg" 
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
       default:
         return <p className="text-gray-700">No preview available for this content type.</p>;
     }
@@ -594,6 +646,7 @@ export default function AdminApprovalsPage() {
       case 'event': return '📅';
       case 'resource': return '📄';
       case 'opportunity': return '💼';
+      case 'service': return '🔧';
       default: return '📝';
     }
   };
@@ -605,6 +658,7 @@ export default function AdminApprovalsPage() {
       case 'event': return 'bg-purple-100 text-purple-800';
       case 'resource': return 'bg-orange-100 text-orange-800';
       case 'opportunity': return 'bg-yellow-100 text-yellow-800';
+      case 'service': return 'bg-indigo-100 text-indigo-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -735,7 +789,7 @@ export default function AdminApprovalsPage() {
       </div>
 
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="all">
             All ({totalPending})
           </TabsTrigger>
@@ -753,6 +807,9 @@ export default function AdminApprovalsPage() {
           </TabsTrigger>
           <TabsTrigger value="opportunities">
             Opportunities ({pendingItems?.counts.opportunity || 0})
+          </TabsTrigger>
+          <TabsTrigger value="services">
+            Services ({pendingItems?.counts.service || 0})
           </TabsTrigger>
         </TabsList>
 
@@ -816,6 +873,14 @@ export default function AdminApprovalsPage() {
                         💼 Opportunities ({pendingItems.data.opportunities.length})
                       </h3>
                       {renderPendingItems(pendingItems.data.opportunities, 'opportunities')}
+                    </div>
+                  )}
+                  {pendingItems?.data.services && pendingItems.data.services.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                        🔧 Services ({pendingItems.data.services.length})
+                      </h3>
+                      {renderPendingItems(pendingItems.data.services, 'services')}
                     </div>
                   )}
                 </div>
@@ -900,6 +965,22 @@ export default function AdminApprovalsPage() {
             </CardHeader>
             <CardContent>
               {renderPendingItems(pendingItems?.data.opportunities || [], 'opportunities')}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="services" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                🔧 Services
+              </CardTitle>
+              <CardDescription>
+                Services waiting for approval
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {renderPendingItems(pendingItems?.data.services || [], 'services')}
             </CardContent>
           </Card>
         </TabsContent>
