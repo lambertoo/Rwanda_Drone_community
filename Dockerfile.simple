@@ -11,6 +11,7 @@ RUN apk add --no-cache \
     curl \
     bash \
     wget \
+    postgresql-client \
     && rm -rf /var/cache/apk/*
 
 # Set working directory
@@ -43,6 +44,10 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
     echo 'echo "🚀 Starting Rwanda Drone Community Platform..."' >> /app/start.sh && \
     echo 'echo "🔧 Running database migrations..."' >> /app/start.sh && \
     echo 'npx prisma migrate deploy' >> /app/start.sh && \
+    echo 'echo "🔧 Setting up admin user..."' >> /app/start.sh && \
+    echo 'node setup-admin-user.js' >> /app/start.sh && \
+    echo 'echo "🔧 Setting up superadmin user..."' >> /app/start.sh && \
+    echo 'node setup-superadmin-user.js' >> /app/start.sh && \
     echo 'echo "🌐 Starting application..."' >> /app/start.sh && \
     echo 'npm start' >> /app/start.sh && \
     chmod +x /app/start.sh

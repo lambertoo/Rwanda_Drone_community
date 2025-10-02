@@ -18,7 +18,8 @@ import {
   Camera,
   Wrench,
   GraduationCap,
-  ClipboardList
+  ClipboardList,
+  Settings
 } from "lucide-react"
 import { AuthUser, UserRole } from "@prisma/client"
 
@@ -81,6 +82,11 @@ export function AppSidebar({ className, onItemClick }: SidebarProps) {
         title: "Profile",
         href: "/profile",
         icon: Users,
+      },
+      {
+        title: "Settings",
+        href: "/settings",
+        icon: Settings,
       },
     ]
 

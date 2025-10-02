@@ -125,10 +125,34 @@ export default function NewServiceForm() {
                   <SelectItem value="KIGALI_NYARUGENGE">Kigali - Nyarugenge</SelectItem>
                   <SelectItem value="KIGALI_KICUKIRO">Kigali - Kicukiro</SelectItem>
                   <SelectItem value="KIGALI_GASABO">Kigali - Gasabo</SelectItem>
-                  <SelectItem value="NORTH_MUSANZE">Musanze</SelectItem>
-                  <SelectItem value="SOUTH_HUYE">Huye</SelectItem>
-                  <SelectItem value="EAST_KAYONZA">Kayonza</SelectItem>
-                  <SelectItem value="WEST_RUBAVU">Rubavu</SelectItem>
+                  <SelectItem value="SOUTH_HUYE">South - Huye</SelectItem>
+                  <SelectItem value="SOUTH_NYAMAGABE">South - Nyamagabe</SelectItem>
+                  <SelectItem value="SOUTH_NYARUGURU">South - Nyaruguru</SelectItem>
+                  <SelectItem value="SOUTH_MUHANGA">South - Muhanga</SelectItem>
+                  <SelectItem value="SOUTH_KAMONYI">South - Kamonyi</SelectItem>
+                  <SelectItem value="SOUTH_GISAGARA">South - Gisagara</SelectItem>
+                  <SelectItem value="SOUTH_NYANZA">South - Nyanza</SelectItem>
+                  <SelectItem value="SOUTH_RUHANGO">South - Ruhango</SelectItem>
+                  <SelectItem value="NORTH_MUSANZE">North - Musanze</SelectItem>
+                  <SelectItem value="NORTH_GICUMBI">North - Gicumbi</SelectItem>
+                  <SelectItem value="NORTH_RULINDO">North - Rulindo</SelectItem>
+                  <SelectItem value="NORTH_BURERA">North - Burera</SelectItem>
+                  <SelectItem value="NORTH_GAKENKE">North - Gakenke</SelectItem>
+                  <SelectItem value="EAST_KAYONZA">East - Kayonza</SelectItem>
+                  <SelectItem value="EAST_NGOMA">East - Ngoma</SelectItem>
+                  <SelectItem value="EAST_KIREHE">East - Kirehe</SelectItem>
+                  <SelectItem value="EAST_NYAGATARE">East - Nyagatare</SelectItem>
+                  <SelectItem value="EAST_BUGESERA">East - Bugesera</SelectItem>
+                  <SelectItem value="EAST_RWAMAGANA">East - Rwamagana</SelectItem>
+                  <SelectItem value="EAST_GATSIBO">East - Gatsibo</SelectItem>
+                  <SelectItem value="WEST_RUBAVU">West - Rubavu</SelectItem>
+                  <SelectItem value="WEST_RUSIZI">West - Rusizi</SelectItem>
+                  <SelectItem value="WEST_NYAMASHEKE">West - Nyamasheke</SelectItem>
+                  <SelectItem value="WEST_RUTSIRO">West - Rutsiro</SelectItem>
+                  <SelectItem value="WEST_KARONGI">West - Karongi</SelectItem>
+                  <SelectItem value="WEST_NGORORERO">West - Ngororero</SelectItem>
+                  <SelectItem value="WEST_NYABIHU">West - Nyabihu</SelectItem>
+                  <SelectItem value="UNKNOWN">Unknown</SelectItem>
                 </SelectContent>
               </Select>
             </div>

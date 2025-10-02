@@ -7,6 +7,9 @@ const protectedRoutes = ["/admin", "/complete-profile"]
 // Routes that require admin access
 const adminRoutes = ["/admin"]
 
+// Hidden admin routes (not discoverable, must be typed directly)
+const hiddenAdminRoutes = ["/admin/sys-9x7k2m8n4p"]
+
 // Routes that should redirect users without roles to complete-profile
 const roleRequiredRoutes = ["/", "/forum", "/projects", "/events", "/services", "/opportunities", "/resources", "/profile"]
 
@@ -23,7 +26,8 @@ export function middleware(request: NextRequest) {
   }
 
   // Check authentication for protected routes
-  if (protectedRoutes.some(route => pathname.startsWith(route))) {
+  if (protectedRoutes.some(route => pathname.startsWith(route)) || 
+      hiddenAdminRoutes.some(route => pathname.startsWith(route))) {
     // Check for auth token cookie
     const authToken = request.cookies.get("accessToken")?.value
     

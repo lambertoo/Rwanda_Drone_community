@@ -16,13 +16,19 @@ export async function GET(request: NextRequest) {
     }
     
     if (category && category !== "all") {
-      where.category = category.toUpperCase()
+      where.categoryId = category
     }
 
     const [resources, total] = await Promise.all([
       prisma.resource.findMany({
         where,
         include: {
+          category: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
           uploadedBy: {
             select: {
               id: true,
@@ -77,12 +83,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, description, fileUrl, fileType, fileSize, category, isRegulation, fileUpload } = body
+    const { title, description, fileUrl, fileType, fileSize, categoryId, isRegulation, fileUpload } = body
 
     // Validate required fields
-    if (!title || !fileUrl || !category) {
+    if (!title || !fileUrl || !categoryId) {
       return NextResponse.json(
-        { error: "Missing required fields: title, fileUrl, and category are required" },
+        { error: "Missing required fields: title, fileUrl, and categoryId are required" },
         { status: 400 }
       )
     }
@@ -163,11 +169,17 @@ export async function POST(request: NextRequest) {
         fileType: finalFileType || "Other",
         fileSize: finalFileSize || "Unknown",
         fileUpload,
-        categoryId: category,
+        categoryId: categoryId,
         isRegulation: isRegulation || false,
         userId: decoded.userId
       },
       include: {
+        category: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
         uploadedBy: {
           select: {
             id: true,

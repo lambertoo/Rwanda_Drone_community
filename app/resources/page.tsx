@@ -6,11 +6,16 @@ import { useAuth } from "@/lib/auth-context"
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
+interface ResourceCategory {
+  id: string
+  name: string
+  description?: string
+}
+
 interface NewResourceState {
   title: string
   description: string
-  category: string
-  isRegulation: boolean
+  categoryId: string
   fileUrl: string
   file?: File | null
 }
@@ -19,7 +24,7 @@ interface ResourceItem {
   id: string
   title: string
   description?: string
-  category: string
+  category: { id: string; name: string }
   fileUrl: string
   fileType: string
   fileSize?: string
@@ -37,19 +42,19 @@ export default function ResourcesPage() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [resources, setResources] = useState<ResourceItem[]>([])
-  const [activeCategory, setActiveCategory] = useState<'all'|'REGULATIONS'|'SAFETY'|'TEMPLATES'|'TUTORIALS'>('all')
+  const [categories, setCategories] = useState<ResourceCategory[]>([])
+  const [activeCategory, setActiveCategory] = useState<string>('all')
   const [newResource, setNewResource] = useState<NewResourceState>({
     title: "",
     description: "",
-    category: "",
-    isRegulation: false,
+    categoryId: "",
     fileUrl: "",
     file: null,
   })
 
   useEffect(() => {
     const init = async () => {
-      await fetchResources()
+      await Promise.all([fetchResources(), fetchCategories()])
       setLoading(false)
     }
     init()
@@ -61,6 +66,16 @@ export default function ResourcesPage() {
       if (res.ok) {
         const data = await res.json()
         setResources(data.resources || [])
+      }
+    } catch {}
+  }
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/resource-categories')
+      if (res.ok) {
+        const data = await res.json()
+        setCategories(data.categories || [])
       }
     } catch {}
   }
@@ -104,18 +119,22 @@ export default function ResourcesPage() {
       return
     }
 
-    if (!newResource.title || !newResource.category || (!newResource.file && !newResource.fileUrl)) {
+    if (!newResource.title || !newResource.categoryId || (!newResource.file && !newResource.fileUrl)) {
       alert("Please fill all required fields.")
       return
     }
+
+    // Check if the selected category is "Regulations" to set isRegulation automatically
+    const selectedCategory = categories.find(cat => cat.id === newResource.categoryId)
+    const isRegulation = selectedCategory?.name.toLowerCase() === 'regulations'
 
     setIsSubmitting(true)
     try {
       const body = {
         title: newResource.title,
         description: newResource.description,
-        category: newResource.category,
-        isRegulation: newResource.isRegulation,
+        categoryId: newResource.categoryId,
+        isRegulation: isRegulation,
         fileUrl: newResource.file ? newResource.file.name : newResource.fileUrl,
         fileUpload: newResource.file ? newResource.file.name : undefined,
       }
@@ -133,7 +152,7 @@ export default function ResourcesPage() {
       }
 
       // Reset form and hide
-      setNewResource({ title: "", description: "", category: "", isRegulation: false, fileUrl: "", file: null })
+      setNewResource({ title: "", description: "", categoryId: "", fileUrl: "", file: null })
       setShowAddForm(false)
       alert("Resource shared successfully.")
       // Refresh list
@@ -218,21 +237,17 @@ export default function ResourcesPage() {
           <div>
             <label className="block text-sm font-medium mb-1">Category *</label>
             <select className="w-full border rounded px-3 py-2" required
-              value={newResource.category} onChange={(e) => handleChange("category", e.target.value)}>
+              value={newResource.categoryId} onChange={(e) => handleChange("categoryId", e.target.value)}>
               <option value="" disabled>Select category</option>
-              <option value="REGULATIONS">Regulations</option>
-              <option value="SAFETY">Safety</option>
-              <option value="TEMPLATES">Templates</option>
-              <option value="TUTORIALS">Tutorials</option>
-              <option value="OTHER">Other</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
             </select>
-                    </div>
-                    
-          <div className="flex items-center gap-2">
-            <input id="isRegulation" type="checkbox"
-              checked={newResource.isRegulation}
-              onChange={(e) => handleChange("isRegulation", e.target.checked)} />
-            <label htmlFor="isRegulation" className="text-sm">This is a regulation resource</label>
+            {newResource.categoryId && categories.find(cat => cat.id === newResource.categoryId)?.name.toLowerCase() === 'regulations' && (
+              <p className="text-xs text-blue-600 mt-1">✓ This will be marked as a regulation resource</p>
+            )}
                     </div>
                     
           <div className="flex justify-end gap-3">
@@ -253,22 +268,23 @@ export default function ResourcesPage() {
       {/* Resource list can be added back later */}
       {/* Category tabs */}
       <div className="flex flex-wrap gap-1 mt-2 bg-gray-100 rounded-md p-1 w-full max-w-xl">
-        {[
-          {key:'all',label:'All'},
-          {key:'REGULATIONS',label:'Regulations'},
-          {key:'SAFETY',label:'Safety'},
-          {key:'TEMPLATES',label:'Templates'},
-          {key:'TUTORIALS',label:'Tutorials'},
-        ].map((t:any) => (
+        <button
+          type="button"
+          onClick={() => setActiveCategory('all')}
+          className={`px-3 py-1.5 rounded text-sm transition-colors ${activeCategory==='all' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+        >
+          All
+        </button>
+        {categories.map((category) => (
           <button
-            key={t.key}
+            key={category.id}
             type="button"
-            onClick={() => setActiveCategory(t.key)}
-            className={`px-3 py-1.5 rounded text-sm transition-colors ${activeCategory===t.key ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+            onClick={() => setActiveCategory(category.id)}
+            className={`px-3 py-1.5 rounded text-sm transition-colors ${activeCategory===category.id ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
           >
-            {t.label}
+            {category.name}
           </button>
-              ))}
+        ))}
             </div>
             
       <div className="space-y-3 mt-4 min-w-0">
@@ -277,7 +293,7 @@ export default function ResourcesPage() {
         ) : (
           <ul className="space-y-3">
             {resources
-              .filter(r => activeCategory==='all' ? true : r.category === activeCategory)
+              .filter(r => activeCategory==='all' ? true : r.category.id === activeCategory)
               .map((r) => (
               <li key={r.id} className="p-4 border rounded-md bg-white flex items-start justify-between gap-6">
                 <div className="flex-1 min-w-0">

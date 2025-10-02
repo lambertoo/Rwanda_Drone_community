@@ -83,7 +83,12 @@ export async function requireRole(req: NextRequest, allowedRoles: string[]): Pro
 
 // Admin-only middleware
 export async function requireAdmin(req: NextRequest): Promise<{ user: JWTPayload } | NextResponse> {
-  return requireRole(req, ['admin'])
+  return requireRole(req, ['admin', 'superadmin'])
+}
+
+// Superadmin-only middleware
+export async function requireSuperAdmin(req: NextRequest): Promise<{ user: JWTPayload } | NextResponse> {
+  return requireRole(req, ['superadmin'])
 }
 
 // Pilot-only middleware
@@ -99,6 +104,11 @@ export async function requireServiceProvider(req: NextRequest): Promise<{ user: 
 // Regulator middleware
 export async function requireRegulator(req: NextRequest): Promise<{ user: JWTPayload } | NextResponse> {
   return requireRole(req, ['regulator', 'admin'])
+}
+
+// Admin token verification (alias for requireAdmin)
+export async function verifyAdminToken(req: NextRequest): Promise<{ user: JWTPayload } | NextResponse> {
+  return requireAdmin(req)
 }
 
 // Optional authentication middleware (returns user if authenticated, null if not)

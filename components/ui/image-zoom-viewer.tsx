@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { X, ZoomIn, ZoomOut, RotateCcw, ChevronLeft, ChevronRight, Download, Fullscreen, FullscreenExit } from 'lucide-react'
+import { X, ZoomIn, ZoomOut, RotateCcw, ChevronLeft, ChevronRight, Download, Fullscreen, Minimize2 as FullscreenExit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 

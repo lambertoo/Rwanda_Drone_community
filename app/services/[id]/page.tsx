@@ -18,7 +18,7 @@ import {
   Globe,
   Edit,
   Trash2,
-  Images,
+  Image as Images,
   Info,
   User,
 } from "lucide-react"

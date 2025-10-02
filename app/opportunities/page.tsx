@@ -595,39 +595,6 @@ export default function OpportunitiesPage() {
         </p>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="job">Jobs</TabsTrigger>
-          <TabsTrigger value="gig">Gigs</TabsTrigger>
-          <TabsTrigger value="other">Other Opportunities</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="job" className="space-y-6">
-          <div className="text-center py-4">
-            <h3 className="text-xl font-semibold mb-2">Full-time & Part-time Jobs</h3>
-            <p className="text-muted-foreground">Find permanent drone operator positions and career opportunities</p>
-          </div>
-          {renderOpportunities()}
-        </TabsContent>
-        
-        <TabsContent value="gig" className="space-y-6">
-          <div className="text-center py-4">
-            <h3 className="text-xl font-semibold mb-2">Freelance Gigs</h3>
-            <p className="text-muted-foreground">Short-term projects and freelance drone work opportunities</p>
-          </div>
-          {renderOpportunities()}
-        </TabsContent>
-        
-        <TabsContent value="other" className="space-y-6">
-          <div className="text-center py-4">
-            <h3 className="text-xl font-semibold mb-2">Other Opportunities</h3>
-            <p className="text-muted-foreground">Internships, training programs, and other drone-related opportunities</p>
-          </div>
-          {renderOpportunities()}
-        </TabsContent>
-      </Tabs>
-
       {/* Filters and Actions */}
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">
         <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
@@ -704,6 +671,39 @@ export default function OpportunitiesPage() {
           </Link>
         </div>
       </div>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="job">Jobs</TabsTrigger>
+          <TabsTrigger value="gig">Gigs</TabsTrigger>
+          <TabsTrigger value="other">Other Opportunities</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="job" className="space-y-6">
+          <div className="text-center py-4">
+            <h3 className="text-xl font-semibold mb-2">Full-time & Part-time Jobs</h3>
+            <p className="text-muted-foreground">Find permanent drone operator positions and career opportunities</p>
+          </div>
+          {renderOpportunities()}
+        </TabsContent>
+        
+        <TabsContent value="gig" className="space-y-6">
+          <div className="text-center py-4">
+            <h3 className="text-xl font-semibold mb-2">Freelance Gigs</h3>
+            <p className="text-muted-foreground">Short-term projects and freelance drone work opportunities</p>
+          </div>
+          {renderOpportunities()}
+        </TabsContent>
+        
+        <TabsContent value="other" className="space-y-6">
+          <div className="text-center py-4">
+            <h3 className="text-xl font-semibold mb-2">Other Opportunities</h3>
+            <p className="text-muted-foreground">Internships, training programs, and other drone-related opportunities</p>
+          </div>
+          {renderOpportunities()}
+        </TabsContent>
+      </Tabs>
 
       {/* Call to Action */}
       <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
