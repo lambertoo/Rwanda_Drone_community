@@ -5,6 +5,13 @@ import { verifyPassword } from "@/lib/auth"
 import { userLoginSchema } from "@/lib/validation"
 import { authRateLimit } from "@/lib/rate-limit"
 
+/** Constant delay (ms) on invalid credentials to slow brute force and reduce timing leaks. */
+const INVALID_CREDENTIALS_DELAY_MS = 500
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Apply rate limiting
@@ -39,6 +46,7 @@ export async function POST(request: NextRequest) {
       }
     })
     if (!user) {
+      await sleep(INVALID_CREDENTIALS_DELAY_MS)
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
@@ -46,6 +54,7 @@ export async function POST(request: NextRequest) {
     const isValidPassword = await verifyPassword(password, user.password)
 
     if (!isValidPassword) {
+      await sleep(INVALID_CREDENTIALS_DELAY_MS)
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 

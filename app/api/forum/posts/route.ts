@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth-middleware"
+import { parseLimit } from "@/lib/query-params"
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const limit = parseLimit(searchParams.get('limit'), 10)
     const trending = searchParams.get('trending') === 'true'
     const adminMode = searchParams.get('admin') === 'true'
 

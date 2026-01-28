@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
       where.category = category
     }
 
-    if (location && location !== 'all') {
+    // Sanitize location: alphanumeric, spaces, hyphens, commas only to avoid injection patterns
+    if (location && location !== 'all' && typeof location === 'string' && location.length <= 200 && /^[\p{L}\p{N}\s,_.-]+$/u.test(location)) {
       where.location = {
         contains: location,
         mode: 'insensitive'

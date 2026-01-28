@@ -2,14 +2,16 @@ import { NextRequest, NextResponse } from "next/server"
 import { verifyToken } from "@/lib/jwt-utils"
 import { prisma } from "@/lib/prisma"
 import { processFileUrl } from "@/lib/file-upload"
+import { parseLimit, MAX_OFFSET } from "@/lib/query-params"
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get("category")
-    const page = parseInt(searchParams.get("page") || "1")
-    const limit = parseInt(searchParams.get("limit") || "10")
-    const skip = (page - 1) * limit
+    const limit = parseLimit(searchParams.get("limit"), 10)
+    const pageRaw = parseInt(searchParams.get("page") || "1", 10)
+    const page = Number.isNaN(pageRaw) || pageRaw < 1 ? 1 : Math.min(pageRaw, Math.floor(MAX_OFFSET / limit) || 1)
+    const skip = Math.min((page - 1) * limit, MAX_OFFSET)
 
     const where: any = {
       isApproved: true // Only show approved resources to public

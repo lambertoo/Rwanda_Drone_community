@@ -9,9 +9,26 @@ export interface RateLimitConfig {
   message?: string
 }
 
+/**
+ * Extract client IP for rate limiting. Prefer CF-Connecting-IP (Cloudflare),
+ * then first X-Forwarded-For client, then X-Real-IP, then request.ip.
+ * Trims and takes first segment to avoid spoofing via appended IPs.
+ */
+function getClientIp(request: NextRequest): string {
+  const cf = request.headers.get('cf-connecting-ip')
+  if (cf) return cf.trim().split(',')[0].trim()
+  const xff = request.headers.get('x-forwarded-for')
+  if (xff) return xff.trim().split(',')[0].trim()
+  const xri = request.headers.get('x-real-ip')
+  if (xri) return xri.trim().split(',')[0].trim()
+  const ip = request.ip
+  if (ip) return ip
+  return 'unknown'
+}
+
 export function rateLimit(config: RateLimitConfig) {
   return function (request: NextRequest) {
-    const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown'
+    const ip = getClientIp(request)
     const now = Date.now()
     const windowStart = now - config.windowMs
 
@@ -62,9 +79,9 @@ setInterval(() => {
 
 // Predefined rate limit configurations
 export const authRateLimit = rateLimit({
-  maxRequests: 30, // 30 requests
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  message: "Too many authentication attempts. Please try again in 5 minutes."
+  maxRequests: 10, // 10 attempts per window (brute-force protection)
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  message: "Too many authentication attempts. Please try again in 15 minutes."
 })
 
 export const generalRateLimit = rateLimit({

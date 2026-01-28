@@ -1,8 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getSession } from "@/lib/auth"
-import { cookies } from "next/headers"
 import { requireAuth } from "@/lib/auth-middleware"
+import { parseLimit, parseOffset } from "@/lib/query-params"
 
 // READ - Get all services
 export async function GET(request: NextRequest) {
@@ -12,18 +11,19 @@ export async function GET(request: NextRequest) {
     const region = searchParams.get('region')
     const featured = searchParams.get('featured')
     const adminMode = searchParams.get('admin') === 'true'
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const limit = parseLimit(searchParams.get('limit'), 50)
+    const offset = parseOffset(searchParams.get('offset'))
 
-    const where: any = {
+    const where: Record<string, unknown> = {
       ...(adminMode ? {} : { isApproved: true })
     }
 
-    if (category) {
-      where.category = category
+    // Reject injection-like category (expect cuid-like ids)
+    if (category && typeof category === 'string' && category.length <= 64 && /^[a-z0-9_-]+$/i.test(category)) {
+      where.categoryId = category
     }
 
-    if (region) {
+    if (region && typeof region === 'string' && region.length <= 64 && /^[A-Z0-9_]+$/i.test(region)) {
       where.region = region
     }
 
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     }
 
     const services = await prisma.service.findMany({
-      where,
+      where: where as any,
       include: {
         provider: {
           select: {
@@ -72,17 +72,11 @@ export async function GET(request: NextRequest) {
 // CREATE - Create a new service
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== SERVICES API POST CALLED ===') // Added debug log
     const authResult = await requireAuth(request)
-    console.log('Auth result:', authResult) // Added debug log
-    
     if (authResult instanceof NextResponse) {
       return authResult
     }
-    
     const user = authResult.user
-    console.log('User object:', user) // Added debug log
-    console.log('User ID:', user?.id) // Added debug log
 
     const body = await request.json()
     const {

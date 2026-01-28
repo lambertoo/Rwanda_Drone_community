@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser, canCreateEvents } from "@/lib/auth"
+import { parseLimit, parseOffset } from "@/lib/query-params"
 
 // READ - Get all events
 export async function GET(request: NextRequest) {
@@ -8,8 +9,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const upcoming = searchParams.get("upcoming") === "true"
     const adminMode = searchParams.get("admin") === "true"
-    const limit = searchParams.get("limit") ? Number.parseInt(searchParams.get("limit")!) : undefined
-    const offset = searchParams.get("offset") ? Number.parseInt(searchParams.get("offset")!) : undefined
+    const limit = parseLimit(searchParams.get("limit"), 50)
+    const offset = parseOffset(searchParams.get("offset"))
 
     let events
     if (upcoming) {
