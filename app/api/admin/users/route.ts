@@ -1,27 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getAuthenticatedUser } from "@/lib/auth-middleware"
+import { requireAdmin } from "@/lib/auth-middleware"
 import { hashPassword } from "@/lib/auth"
 import { userRegistrationSchema } from "@/lib/validation"
 
 // GET: Retrieve all users (admin only)
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Check authentication
-    const user = await getAuthenticatedUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      )
-    }
-
-    // Check if user has admin role
-    if (user.role !== 'admin') {
-      return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 }
-      )
+    // Check authentication and admin role
+    const authResult = await requireAdmin(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
 
     const users = await prisma.user.findMany({
@@ -62,21 +51,10 @@ export async function GET() {
 // POST: Create new user (admin only)
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const user = await getAuthenticatedUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      )
-    }
-
-    // Check if user has admin role
-    if (user.role !== 'admin') {
-      return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 }
-      )
+    // Check authentication and admin role
+    const authResult = await requireAdmin(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
 
     const body = await request.json()
@@ -182,22 +160,13 @@ export async function POST(request: NextRequest) {
 // PATCH: Update user role, verification, active status, and other info (admin only)
 export async function PATCH(request: NextRequest) {
   try {
-    // Check authentication
-    const user = await getAuthenticatedUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      )
+    // Check authentication and admin role
+    const authResult = await requireAdmin(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
-
-    // Check if user has admin role
-    if (user.role !== 'admin') {
-      return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 }
-      )
-    }
+    
+    const { user } = authResult
 
     const body = await request.json()
     const { 
@@ -313,22 +282,13 @@ export async function PATCH(request: NextRequest) {
 // PUT: Reset user password (admin only)
 export async function PUT(request: NextRequest) {
   try {
-    // Check authentication
-    const user = await getAuthenticatedUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      )
+    // Check authentication and admin role
+    const authResult = await requireAdmin(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
-
-    // Check if user has admin role
-    if (user.role !== 'admin') {
-      return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 }
-      )
-    }
+    
+    const { user } = authResult
 
     const body = await request.json()
     const { userId, newPassword } = body
