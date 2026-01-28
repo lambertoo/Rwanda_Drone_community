@@ -57,7 +57,7 @@ This codebase does not use the `vm` module, so this vulnerability does not apply
 Malformed HTTP/2 HEADERS frame causes server crashes.
 
 **Assessment:**  
-This application uses Next.js which handles HTTP/2 internally. Next.js 15.2.4 includes security patches. No direct HTTP/2 server code exists in this codebase.
+This application uses Next.js which handles HTTP/2 internally. Next.js is configured to use the latest version (`next@latest`) to ensure all security patches are included. No direct HTTP/2 server code exists in this codebase.
 
 ### ✅ CVE-2025-59466 (Medium) - Uncatchable stack overflow with async_hooks
 
