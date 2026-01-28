@@ -15,13 +15,14 @@ if [ "$NODE_VERSION" -lt 18 ]; then
     exit 1
 fi
 
-# Check if pnpm is installed, if not use npm
-if command -v pnpm &> /dev/null; then
-    PACKAGE_MANAGER="pnpm"
-else
-    PACKAGE_MANAGER="npm"
-    echo "⚠️  pnpm not found, using npm instead"
+# Check if pnpm is installed
+if ! command -v pnpm &> /dev/null; then
+    echo "❌ pnpm is not installed. Please install pnpm first."
+    echo "   Install pnpm: curl -fsSL https://get.pnpm.io/install.sh | sh -"
+    exit 1
 fi
+PACKAGE_MANAGER="pnpm"
+echo "✅ Using pnpm $(pnpm --version)"
 
 # Check if production environment file exists
 if [ ! -f .env.production ]; then
@@ -79,10 +80,10 @@ $PACKAGE_MANAGER run build
 # Run database migrations
 echo "🗄️  Running database migrations..."
 if command -v psql &> /dev/null && psql "$DATABASE_URL" -c "SELECT 1;" > /dev/null 2>&1; then
-    npx prisma migrate deploy
+    pnpm exec prisma migrate deploy
     echo "✅ Database migrations completed"
 else
-    echo "⚠️  Skipping database migrations. Please run manually: npx prisma migrate deploy"
+    echo "⚠️  Skipping database migrations. Please run manually: pnpm exec prisma migrate deploy"
 fi
 
 # Check if build was successful
@@ -99,7 +100,7 @@ if [ -d ".next" ]; then
     echo "   Update: ./scripts/deploy-production-server.sh"
     echo ""
     echo "💡 Recommended: Use PM2 or systemd to manage the application process"
-    echo "   PM2: pm2 start npm --name 'rwanda-drone-platform' -- start"
+    echo "   PM2: pm2 start pnpm --name 'rwanda-drone-platform' -- start"
     echo "   Or use: pm2 start ecosystem.config.js (if configured)"
     echo ""
     echo "🎉 Your Rwanda Drone Community Platform is ready for production!"

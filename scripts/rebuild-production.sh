@@ -46,16 +46,13 @@ check_nodejs() {
 
 # Function to check if package manager is available
 check_package_manager() {
-    if command -v pnpm &> /dev/null; then
-        PACKAGE_MANAGER="pnpm"
-    elif command -v npm &> /dev/null; then
-        PACKAGE_MANAGER="npm"
-        print_warning "pnpm not found, using npm instead"
-    else
-        print_error "Neither pnpm nor npm is installed. Please install one of them."
+    if ! command -v pnpm &> /dev/null; then
+        print_error "pnpm is not installed. Please install pnpm first."
+        print_status "Install pnpm: curl -fsSL https://get.pnpm.io/install.sh | sh -"
         exit 1
     fi
-    print_success "Using $PACKAGE_MANAGER as package manager"
+    PACKAGE_MANAGER="pnpm"
+    print_success "Using pnpm $(pnpm --version) as package manager"
 }
 
 # Function to check if environment file exists
@@ -115,10 +112,10 @@ run_migrations() {
     set +a
     
     if command -v psql &> /dev/null && psql "$DATABASE_URL" -c "SELECT 1;" > /dev/null 2>&1; then
-        npx prisma migrate deploy
+        pnpm exec prisma migrate deploy
         print_success "Database migrations completed"
     else
-        print_warning "Skipping database migrations. Please run manually: npx prisma migrate deploy"
+        print_warning "Skipping database migrations. Please run manually: pnpm exec prisma migrate deploy"
     fi
 }
 
@@ -142,7 +139,7 @@ display_status() {
         echo "   Start: pm2 start npm --name 'rwanda-drone-platform' -- start"
     else
         echo "   Install PM2: npm install -g pm2"
-        echo "   Start with PM2: pm2 start npm --name 'rwanda-drone-platform' -- start"
+        echo "   Start with PM2: pm2 start pnpm --name 'rwanda-drone-platform' -- start"
         echo "   Or use systemd/service manager to manage the process"
     fi
     echo

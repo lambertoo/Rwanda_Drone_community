@@ -76,20 +76,16 @@ build_locally() {
     # Install dependencies if needed
     if [ ! -d "node_modules" ]; then
         print_status "Installing dependencies..."
-        if command -v pnpm &> /dev/null; then
-            pnpm install
-        else
-            npm install
-        fi
+        pnpm install
     fi
     
     # Generate Prisma client
     print_status "Generating Prisma client..."
-    npm run db:generate || print_warning "Prisma client generation failed (will run on server)"
+    pnpm run db:generate || print_warning "Prisma client generation failed (will run on server)"
     
     # Build application
     print_status "Building Next.js application..."
-    npm run build || print_warning "Build failed locally (will build on server)"
+    pnpm run build || print_warning "Build failed locally (will build on server)"
     
     print_success "Local build completed"
 }
@@ -158,25 +154,21 @@ setup_server() {
         
         # Install dependencies
         echo "Installing dependencies..."
-        if command -v pnpm &> /dev/null; then
-            pnpm install --production
-        else
-            npm install --production
-        fi
+        pnpm install
         
         # Generate Prisma client
         echo "Generating Prisma client..."
-        npm run db:generate
+        pnpm run db:generate
         
         # Build application
         echo "Building application..."
-        npm run build
+        pnpm run build
         
         # Run database migrations
         echo "Running database migrations..."
         if [ -f .env.production ]; then
             export $(cat .env.production | grep -v '^#' | xargs)
-            npx prisma migrate deploy || echo "WARNING: Database migrations failed"
+            pnpm exec prisma migrate deploy || echo "WARNING: Database migrations failed"
         else
             echo "WARNING: Skipping migrations (no .env.production)"
         fi
@@ -204,7 +196,7 @@ start_application() {
             pm2 delete ${APP_NAME} 2>/dev/null || true
             
             # Start application
-            pm2 start npm --name "${APP_NAME}" -- start
+            pm2 start pnpm --name "${APP_NAME}" -- start
             pm2 save
             
             echo "Application started with PM2"

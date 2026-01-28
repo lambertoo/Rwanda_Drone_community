@@ -32,25 +32,21 @@ ssh ${SERVER_USER}@${SERVER_HOST} << 'ENDSSH'
     
     # Install dependencies
     echo "Installing dependencies..."
-    if command -v pnpm &> /dev/null; then
-        pnpm install --production
-    else
-        npm install --production
-    fi
+    pnpm install
     
     # Generate Prisma client
     echo "Generating Prisma client..."
-    npm run db:generate
+    pnpm run db:generate
     
     # Build
     echo "Building application..."
-    npm run build
+    pnpm run build
     
     # Migrations (if .env.production exists)
     if [ -f .env.production ]; then
         echo "Running migrations..."
         export $(cat .env.production | grep -v '^#' | xargs)
-        npx prisma migrate deploy || echo "Migration warning (may need manual intervention)"
+        pnpm exec prisma migrate deploy || echo "Migration warning (may need manual intervention)"
     fi
     
     # Restart with PM2
@@ -58,7 +54,7 @@ ssh ${SERVER_USER}@${SERVER_HOST} << 'ENDSSH'
         echo "Restarting with PM2..."
         pm2 stop ${APP_NAME} 2>/dev/null || true
         pm2 delete ${APP_NAME} 2>/dev/null || true
-        pm2 start npm --name "${APP_NAME}" -- start
+        pm2 start pnpm --name "${APP_NAME}" -- start
         pm2 save
         pm2 status
     else
