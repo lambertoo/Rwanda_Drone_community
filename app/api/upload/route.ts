@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
 import { existsSync } from 'fs'
 import { v4 as uuidv4 } from 'uuid'
+import { 
+  buildSecureUploadPath, 
+  sanitizeFilename, 
+  sanitizePathComponent,
+  ALLOWED_UPLOAD_TYPES 
+} from '@/lib/path-security'
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,43 +56,74 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get entity ID and subfolder from form data
-    const entityId = formData.get('entityId') as string || 'general'
-    const subfolder = formData.get('subfolder') as string || type
+    // Get entity ID and subfolder from form data with security validation
+    const rawEntityId = formData.get('entityId') as string || 'general'
+    const rawType = formData.get('type') as string || 'general'
+    const rawSubfolder = formData.get('subfolder') as string || (isImageFile ? 'images' : 'resources')
     
-    // Create upload directory with new structure
-    const uploadDir = join(process.cwd(), 'public', 'uploads', type, entityId, subfolder)
+    // Security: Validate and sanitize all path components to prevent CVE-2025-55130 (symlink attacks)
+    let uploadType: typeof ALLOWED_UPLOAD_TYPES[number]
+    try {
+      // Map 'image'/'resource' to 'general' if needed, or use provided type
+      if (ALLOWED_UPLOAD_TYPES.includes(rawType as typeof ALLOWED_UPLOAD_TYPES[number])) {
+        uploadType = rawType as typeof ALLOWED_UPLOAD_TYPES[number]
+      } else {
+        uploadType = 'general'
+      }
+    } catch {
+      uploadType = 'general'
+    }
+    
+    const entityId = sanitizePathComponent(rawEntityId)
+    const subfolder = isImageFile ? 'images' : 'resources'
+    
+    // Build secure upload path with symlink protection
+    const uploadDir = await buildSecureUploadPath(uploadType, entityId, subfolder)
+    
+    // Create directory if it doesn't exist
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true })
     }
 
-    // Generate unique filename while preserving original name
-    const fileExtension = file.name.split('.').pop()
-    const baseName = file.name.substring(0, file.name.lastIndexOf('.'))
+    // Security: Sanitize filename to prevent path traversal
+    const sanitizedFilename = sanitizeFilename(file.name)
+    const fileExtension = sanitizedFilename.split('.').pop() || 'bin'
+    const baseName = sanitizedFilename.substring(0, sanitizedFilename.lastIndexOf('.')) || 'file'
     
-    // Sanitize filename: replace spaces with underscores and remove special characters
+    // Additional sanitization for base name
     const sanitizedBaseName = baseName
-      .replace(/\s+/g, '_')           // Replace spaces with underscores
-      .replace(/[^a-zA-Z0-9_-]/g, '') // Remove special characters except underscore and dash
-      .replace(/_+/g, '_')            // Replace multiple underscores with single
-      .replace(/^_+|_+$/g, '')        // Remove leading/trailing underscores
+      .replace(/\s+/g, '_')
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'file'
     
     const uniqueId = uuidv4().substring(0, 8)
     const fileName = `${sanitizedBaseName}_${uniqueId}.${fileExtension}`
-    const filePath = join(uploadDir, fileName)
+    
+    // Build final file path and validate it's within the upload directory
+    const filePath = `${uploadDir}/${fileName}`
+    
+    // Final security check: ensure the file path is still within the upload directory
+    const baseUploadDir = `${process.cwd()}/public/uploads`
+    if (!filePath.startsWith(baseUploadDir)) {
+      return NextResponse.json(
+        { error: 'Invalid file path detected' },
+        { status: 400 }
+      )
+    }
 
     // Convert file to buffer and save
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
     await writeFile(filePath, buffer)
 
-    // Return the file URL with new structure
-    const fileUrl = `/uploads/${type}/${entityId}/${subfolder}/${fileName}`
+    // Return the file URL with new structure (using sanitized values)
+    const fileUrl = `/uploads/${uploadType}/${entityId}/${subfolder}/${fileName}`
     
     return NextResponse.json({
       success: true,
       fileUrl,
-      fileName: fileName, // This should be the sanitized filename
+      fileName: fileName,
       originalName: file.name,
       size: file.size,
       type: file.type,
@@ -95,11 +131,19 @@ export async function POST(request: NextRequest) {
       subfolder
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('File upload error:', error)
+    
+    // Don't expose internal error details to clients
+    const errorMessage = error?.message?.includes('traversal') || 
+                        error?.message?.includes('Invalid') ||
+                        error?.message?.includes('symlink')
+      ? error.message
+      : 'Failed to upload file'
+    
     return NextResponse.json(
-      { error: 'Failed to upload file' },
-      { status: 500 }
+      { error: errorMessage },
+      { status: error?.message?.includes('traversal') || error?.message?.includes('Invalid') ? 400 : 500 }
     )
   }
 } 

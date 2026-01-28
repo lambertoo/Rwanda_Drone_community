@@ -9,29 +9,41 @@ import { organizeMultipleFiles, UploadedFile } from "@/lib/file-utils"
 import { rename, mkdir } from "fs/promises"
 import { existsSync } from "fs"
 import path from "path"
+import { sanitizePathComponent, validateAndResolvePath, sanitizeFilename } from "@/lib/path-security"
 
 // File utility functions
 async function moveFilesFromTemp(projectId: string, resources: any[], gallery: any[]) {
   try {
+    // Security: Sanitize projectId to prevent path traversal (CVE-2025-55130)
+    const sanitizedProjectId = sanitizePathComponent(projectId)
     const baseDir = process.cwd()
+    const uploadsBaseDir = path.join(baseDir, 'public', 'uploads')
     
     // Move resources
     for (const resource of resources) {
       if (resource.url && resource.url.includes('/uploads/projects/temp/')) {
+        // Security: Validate old path is within uploads directory
         const oldPath = path.join(baseDir, 'public', resource.url)
-        const newPath = path.join(baseDir, 'public', 'uploads', 'projects', projectId, 'resources', path.basename(resource.url))
+        const validatedOldPath = await validateAndResolvePath(oldPath, uploadsBaseDir)
+        
+        // Security: Build secure new path
+        const filename = sanitizeFilename(path.basename(resource.url))
+        const newPath = path.join(uploadsBaseDir, 'projects', sanitizedProjectId, 'resources', filename)
+        
+        // Security: Validate new path is within allowed directory
+        const validatedNewPath = await validateAndResolvePath(newPath, uploadsBaseDir)
         
         // Create directory if it doesn't exist
-        const newDir = path.dirname(newPath)
+        const newDir = path.dirname(validatedNewPath)
         if (!existsSync(newDir)) {
           await mkdir(newDir, { recursive: true })
         }
         
         // Move file
-        if (existsSync(oldPath)) {
-          await rename(oldPath, newPath)
-          // Update URL in resource object
-          resource.url = `/uploads/projects/${projectId}/resources/${path.basename(resource.url)}`
+        if (existsSync(validatedOldPath)) {
+          await rename(validatedOldPath, validatedNewPath)
+          // Update URL in resource object (using sanitized projectId)
+          resource.url = `/uploads/projects/${sanitizedProjectId}/resources/${filename}`
         }
       }
     }
@@ -39,20 +51,28 @@ async function moveFilesFromTemp(projectId: string, resources: any[], gallery: a
     // Move gallery images
     for (const image of gallery) {
       if (image.url && image.url.includes('/uploads/projects/temp/')) {
+        // Security: Validate old path
         const oldPath = path.join(baseDir, 'public', image.url)
-        const newPath = path.join(baseDir, 'public', 'uploads', 'projects', projectId, 'images', path.basename(image.url))
+        const validatedOldPath = await validateAndResolvePath(oldPath, uploadsBaseDir)
+        
+        // Security: Build secure new path
+        const filename = sanitizeFilename(path.basename(image.url))
+        const newPath = path.join(uploadsBaseDir, 'projects', sanitizedProjectId, 'images', filename)
+        
+        // Security: Validate new path
+        const validatedNewPath = await validateAndResolvePath(newPath, uploadsBaseDir)
         
         // Create directory if it doesn't exist
-        const newDir = path.dirname(newPath)
+        const newDir = path.dirname(validatedNewPath)
         if (!existsSync(newDir)) {
           await mkdir(newDir, { recursive: true })
         }
         
         // Move file
-        if (existsSync(oldPath)) {
-          await rename(oldPath, newPath)
-          // Update URL in image object
-          image.url = `/uploads/projects/${projectId}/images/${path.basename(image.url)}`
+        if (existsSync(validatedOldPath)) {
+          await rename(validatedOldPath, validatedNewPath)
+          // Update URL in image object (using sanitized projectId)
+          image.url = `/uploads/projects/${sanitizedProjectId}/images/${filename}`
         }
       }
     }

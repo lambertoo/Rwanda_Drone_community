@@ -90,90 +90,62 @@ The Rwanda Drone Community Platform is a comprehensive web application designed 
 - **Styling:** Tailwind CSS, shadcn/ui components
 - **Authentication:** Custom role-based system
 - **Database:** Prisma ORM with PostgreSQL
-- **Deployment:** Docker with Docker Compose
+- **Deployment:** Node.js native deployment
 - **Icons:** Lucide React
 - **Forms:** React Hook Form with Zod validation
 
 ## 📋 Requirements
 
 ### System Requirements
-- **Docker Desktop** with at least 4GB RAM allocation
 - **Node.js 18.x** or higher
+- **PostgreSQL 15.x** or higher
 - **pnpm** package manager (npm as fallback)
+- **4GB RAM** minimum
 - **10GB** free disk space
 
 ### Required Files
 - All source code files
-- `package.json` and `pnpm-lock.yaml`
-- `Dockerfile` and `docker-compose.prod.yml`
+- `package.json` and `pnpm-lock.yaml` (or `package-lock.json`)
 - `prisma/schema.prisma`
-- Environment variables configured
+- Environment variables configured (`.env.production` for production)
 
-See [REQUIREMENTS.md](./REQUIREMENTS.md) for a complete checklist.
+See [REQUIREMENTS.md](./docs/REQUIREMENTS.md) for a complete checklist.
 
 ## 🚀 Getting Started
 
-### Option 1: Automated Build Scripts (Recommended) 🚀
+### Prerequisites Setup
 
-We provide comprehensive build scripts to ensure all requirements are met:
-
-#### Full Build & Deploy (Recommended for first-time setup)
+#### 1. Install Node.js
 ```bash
-# Make script executable (first time only)
-chmod +x build-and-deploy.sh
+# Check if Node.js is installed
+node --version  # Should be 18.x or higher
 
-# Run full build with validation
-./build-and-deploy.sh
+# If not installed, install from https://nodejs.org/
+# Or using nvm:
+nvm install 18
+nvm use 18
 ```
 
-#### Quick Build (For development iterations)
+#### 2. Install PostgreSQL
 ```bash
-# Make script executable (first time only)
-chmod +x quick-build.sh
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install postgresql postgresql-contrib
 
-# Run quick build
-./quick-build.sh
+# macOS (using Homebrew)
+brew install postgresql
+brew services start postgresql
+
+# Create database
+createdb rwanda_drone_community
 ```
 
-### Option 2: Manual Docker Build 🐳
-
-The easiest way to run the application is using Docker:
-
+#### 3. Install pnpm (optional, npm works too)
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd rwanda_drone_community_platform
-
-# Run the setup script
-./setup-docker.sh
+npm install -g pnpm
 ```
 
-Or manually:
-```bash
-# Start the containers
-docker-compose up --build -d
-
-# View logs
-docker-compose logs -f
-
-# Stop containers
-docker-compose down
-```
-
-#### Development with Docker Database
-
-For development, you can run just the database in Docker and the app locally:
-
-```bash
-# Start only the database
-docker-compose -f docker-compose.dev.yml up -d
-
-# Run the app locally
-npm install
-npm run dev
-```
-
-### Option 2: Local Development
+### Local Development
 
 ### Prerequisites
 - Node.js 18+ 
@@ -194,17 +166,45 @@ npm run dev
 ### Database Setup
 
 ```bash
+# Create .env file from example
+cp env.example .env
+
+# Update DATABASE_URL in .env with your PostgreSQL connection string
+# Example: DATABASE_URL="postgresql://postgres:password@localhost:5432/rwanda_drone_community"
+
 # Generate Prisma client
 npm run db:generate
 
 # Push schema to database
 npm run db:push
 
-# Seed database with initial data
-npm run db:seed
+# (Optional) Seed database with initial data
+# npm run db:seed
 
-# Open Prisma Studio (optional)
+# (Optional) Open Prisma Studio
 npm run db:studio
+```
+
+### Production Deployment
+
+For production deployment, see [PRODUCTION_DEPLOYMENT.md](./docs/PRODUCTION_DEPLOYMENT.md) for detailed instructions.
+
+Quick production setup:
+```bash
+# 1. Copy production environment template
+cp production.env.template .env.production
+
+# 2. Update .env.production with your values
+nano .env.production
+
+# 3. Run deployment script
+chmod +x scripts/deploy-production-server.sh
+./scripts/deploy-production-server.sh
+
+# 4. Start with PM2 (recommended)
+npm install -g pm2
+pm2 start npm --name "rwanda-drone-platform" -- start
+pm2 save
 ```
 
 ### Demo Credentials

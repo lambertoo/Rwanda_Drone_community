@@ -1,6 +1,11 @@
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
+import { 
+  buildSecureUploadPath, 
+  sanitizeFilename, 
+  sanitizePathComponent 
+} from './path-security'
 
 export interface UploadedFile {
   originalName: string
@@ -26,26 +31,38 @@ export async function organizeFileUpload(
   entityId: string,
   subfolder: 'images' | 'resources' = 'images'
 ): Promise<OrganizedFile> {
-  // Create the directory structure using actual entity ID
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads', type, entityId, subfolder)
+  // Security: Sanitize entityId to prevent path traversal (CVE-2025-55130)
+  const sanitizedEntityId = sanitizePathComponent(entityId)
+  
+  // Security: Build secure upload path with symlink protection
+  const uploadDir = await buildSecureUploadPath(type, sanitizedEntityId, subfolder)
   await mkdir(uploadDir, { recursive: true })
 
-  // Generate unique filename while preserving extension
-  const extension = path.extname(file.originalName)
-  const baseName = path.basename(file.originalName, extension)
+  // Security: Sanitize filename to prevent path traversal
+  const sanitizedOriginalName = sanitizeFilename(file.originalName)
+  const extension = path.extname(sanitizedOriginalName)
+  const baseName = path.basename(sanitizedOriginalName, extension)
+  
+  // Additional sanitization for base name
+  const safeBaseName = baseName
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_-]/g, '')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'file'
+  
   const uniqueId = uuidv4().substring(0, 8)
-  const filename = `${baseName}_${uniqueId}${extension}`
+  const filename = `${safeBaseName}_${uniqueId}${extension}`
 
-  // Full file path
+  // Full file path (already validated by buildSecureUploadPath)
   const filePath = path.join(uploadDir, filename)
 
   // Write file
   await writeFile(filePath, file.buffer)
 
-  // Return file info
+  // Return file info (using sanitized entityId)
   return {
     filename,
-    url: `/uploads/${type}/${entityId}/${subfolder}/${filename}`,
+    url: `/uploads/${type}/${sanitizedEntityId}/${subfolder}/${filename}`,
     originalName: file.originalName,
     fileType: file.mimetype,
     size: file.size
@@ -83,7 +100,9 @@ export function getUploadPath(
   entityId: string,
   subfolder: 'images' | 'resources' = 'images'
 ): string {
-  return path.join(process.cwd(), 'public', 'uploads', type, entityId, subfolder)
+  // Security: Sanitize entityId before building path
+  const sanitizedEntityId = sanitizePathComponent(entityId)
+  return path.join(process.cwd(), 'public', 'uploads', type, sanitizedEntityId, subfolder)
 }
 
 /**
