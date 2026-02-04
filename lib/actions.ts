@@ -10,77 +10,93 @@ import { rename, mkdir } from "fs/promises"
 import { existsSync } from "fs"
 import path from "path"
 import { sanitizePathComponent, validateAndResolvePath, sanitizeFilename } from "@/lib/path-security"
+import { copyInB2, getStorageKeyFromB2Url, isB2Configured } from "@/lib/b2-storage"
 
-// File utility functions
+// File utility functions - handles both local filesystem and Backblaze B2
 async function moveFilesFromTemp(projectId: string, resources: any[], gallery: any[]) {
   try {
-    // Security: Sanitize projectId to prevent path traversal (CVE-2025-55130)
     const sanitizedProjectId = sanitizePathComponent(projectId)
     const baseDir = process.cwd()
     const uploadsBaseDir = path.join(baseDir, 'public', 'uploads')
-    
+    const useB2 = isB2Configured()
+
     // Move resources
     for (const resource of resources) {
-      if (resource.url && resource.url.includes('/uploads/projects/temp/')) {
-        // Security: Validate old path is within uploads directory
-        const oldPath = path.join(baseDir, 'public', resource.url)
-        const validatedOldPath = await validateAndResolvePath(oldPath, uploadsBaseDir)
-        
-        // Security: Build secure new path
-        const filename = sanitizeFilename(path.basename(resource.url))
-        const newPath = path.join(uploadsBaseDir, 'projects', sanitizedProjectId, 'resources', filename)
-        
-        // Security: Validate new path is within allowed directory
-        const validatedNewPath = await validateAndResolvePath(newPath, uploadsBaseDir)
-        
-        // Create directory if it doesn't exist
-        const newDir = path.dirname(validatedNewPath)
-        if (!existsSync(newDir)) {
-          await mkdir(newDir, { recursive: true })
+      if (!resource.url) continue
+      const isTempResource = resource.url.includes('/uploads/projects/temp/') || 
+        (useB2 && resource.url.includes('backblazeb2.com') && resource.url.includes('/projects/temp/'))
+      if (!isTempResource) continue
+
+      if (useB2 && resource.url.includes('backblazeb2.com')) {
+        const sourceKey = getStorageKeyFromB2Url(resource.url)
+        if (sourceKey) {
+          const filename = path.basename(sourceKey)
+          const destKey = `uploads/projects/${sanitizedProjectId}/resources/${filename}`
+          try {
+            resource.url = await copyInB2(sourceKey, destKey)
+          } catch (err) {
+            console.error('B2 copy failed for resource:', err)
+          }
         }
-        
-        // Move file
-        if (existsSync(validatedOldPath)) {
-          await rename(validatedOldPath, validatedNewPath)
-          // Update URL in resource object (using sanitized projectId)
-          resource.url = `/uploads/projects/${sanitizedProjectId}/resources/${filename}`
+      } else {
+        const oldPath = path.join(baseDir, 'public', resource.url)
+        try {
+          const validatedOldPath = await validateAndResolvePath(oldPath, uploadsBaseDir)
+          const filename = sanitizeFilename(path.basename(resource.url))
+          const newPath = path.join(uploadsBaseDir, 'projects', sanitizedProjectId, 'resources', filename)
+          const validatedNewPath = await validateAndResolvePath(newPath, uploadsBaseDir)
+          const newDir = path.dirname(validatedNewPath)
+          if (!existsSync(newDir)) await mkdir(newDir, { recursive: true })
+          if (existsSync(validatedOldPath)) {
+            await rename(validatedOldPath, validatedNewPath)
+            resource.url = `/uploads/projects/${sanitizedProjectId}/resources/${filename}`
+          }
+        } catch (err) {
+          console.error('Local move failed for resource:', err)
         }
       }
     }
-    
+
     // Move gallery images
     for (const image of gallery) {
-      if (image.url && image.url.includes('/uploads/projects/temp/')) {
-        // Security: Validate old path
-        const oldPath = path.join(baseDir, 'public', image.url)
-        const validatedOldPath = await validateAndResolvePath(oldPath, uploadsBaseDir)
-        
-        // Security: Build secure new path
-        const filename = sanitizeFilename(path.basename(image.url))
-        const newPath = path.join(uploadsBaseDir, 'projects', sanitizedProjectId, 'images', filename)
-        
-        // Security: Validate new path
-        const validatedNewPath = await validateAndResolvePath(newPath, uploadsBaseDir)
-        
-        // Create directory if it doesn't exist
-        const newDir = path.dirname(validatedNewPath)
-        if (!existsSync(newDir)) {
-          await mkdir(newDir, { recursive: true })
+      if (!image.url) continue
+      const isTempImage = image.url.includes('/uploads/projects/temp/') ||
+        (useB2 && image.url.includes('backblazeb2.com') && image.url.includes('/projects/temp/'))
+      if (!isTempImage) continue
+
+      if (useB2 && image.url.includes('backblazeb2.com')) {
+        const sourceKey = getStorageKeyFromB2Url(image.url)
+        if (sourceKey) {
+          const filename = path.basename(sourceKey)
+          const destKey = `uploads/projects/${sanitizedProjectId}/images/${filename}`
+          try {
+            image.url = await copyInB2(sourceKey, destKey)
+          } catch (err) {
+            console.error('B2 copy failed for gallery image:', err)
+          }
         }
-        
-        // Move file
-        if (existsSync(validatedOldPath)) {
-          await rename(validatedOldPath, validatedNewPath)
-          // Update URL in image object (using sanitized projectId)
-          image.url = `/uploads/projects/${sanitizedProjectId}/images/${filename}`
+      } else {
+        const oldPath = path.join(baseDir, 'public', image.url)
+        try {
+          const validatedOldPath = await validateAndResolvePath(oldPath, uploadsBaseDir)
+          const filename = sanitizeFilename(path.basename(image.url))
+          const newPath = path.join(uploadsBaseDir, 'projects', sanitizedProjectId, 'images', filename)
+          const validatedNewPath = await validateAndResolvePath(newPath, uploadsBaseDir)
+          const newDir = path.dirname(validatedNewPath)
+          if (!existsSync(newDir)) await mkdir(newDir, { recursive: true })
+          if (existsSync(validatedOldPath)) {
+            await rename(validatedOldPath, validatedNewPath)
+            image.url = `/uploads/projects/${sanitizedProjectId}/images/${filename}`
+          }
+        } catch (err) {
+          console.error('Local move failed for gallery image:', err)
         }
       }
     }
-    
+
     return { resources, gallery }
   } catch (error) {
     console.error('Error moving files:', error)
-    // Return original arrays if moving fails
     return { resources, gallery }
   }
 }

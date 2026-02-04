@@ -8,6 +8,7 @@ import {
   sanitizePathComponent,
   ALLOWED_UPLOAD_TYPES 
 } from '@/lib/path-security'
+import { uploadToB2, isB2Configured } from '@/lib/b2-storage'
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,15 +57,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get entity ID and subfolder from form data with security validation
+    // Get entity ID and type from form data with security validation
     const rawEntityId = formData.get('entityId') as string || 'general'
     const rawType = formData.get('type') as string || 'general'
-    const rawSubfolder = formData.get('subfolder') as string || (isImageFile ? 'images' : 'resources')
     
-    // Security: Validate and sanitize all path components to prevent CVE-2025-55130 (symlink attacks)
+    // Security: Validate upload type
     let uploadType: typeof ALLOWED_UPLOAD_TYPES[number]
     try {
-      // Map 'image'/'resource' to 'general' if needed, or use provided type
       if (ALLOWED_UPLOAD_TYPES.includes(rawType as typeof ALLOWED_UPLOAD_TYPES[number])) {
         uploadType = rawType as typeof ALLOWED_UPLOAD_TYPES[number]
       } else {
@@ -77,20 +76,42 @@ export async function POST(request: NextRequest) {
     const entityId = sanitizePathComponent(rawEntityId)
     const subfolder = isImageFile ? 'images' : 'resources'
     
-    // Build secure upload path with symlink protection
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+
+    // Use Backblaze B2 if configured
+    if (isB2Configured()) {
+      const result = await uploadToB2(buffer, {
+        originalName: file.name,
+        mimeType: file.type || 'application/octet-stream',
+        type: uploadType,
+        entityId,
+        subfolder,
+      })
+
+      return NextResponse.json({
+        success: true,
+        fileUrl: result.fileUrl,
+        fileName: result.fileName,
+        originalName: file.name,
+        size: file.size,
+        type: file.type,
+        entityId: result.entityId,
+        subfolder,
+      })
+    }
+
+    // Fallback: local filesystem (for development / when B2 not configured)
     const uploadDir = await buildSecureUploadPath(uploadType, entityId, subfolder)
     
-    // Create directory if it doesn't exist
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true })
     }
 
-    // Security: Sanitize filename to prevent path traversal
     const sanitizedFilename = sanitizeFilename(file.name)
     const fileExtension = sanitizedFilename.split('.').pop() || 'bin'
     const baseName = sanitizedFilename.substring(0, sanitizedFilename.lastIndexOf('.')) || 'file'
     
-    // Additional sanitization for base name
     const sanitizedBaseName = baseName
       .replace(/\s+/g, '_')
       .replace(/[^a-zA-Z0-9_-]/g, '')
@@ -100,10 +121,8 @@ export async function POST(request: NextRequest) {
     const uniqueId = uuidv4().substring(0, 8)
     const fileName = `${sanitizedBaseName}_${uniqueId}.${fileExtension}`
     
-    // Build final file path and validate it's within the upload directory
     const filePath = `${uploadDir}/${fileName}`
     
-    // Final security check: ensure the file path is still within the upload directory
     const baseUploadDir = `${process.cwd()}/public/uploads`
     if (!filePath.startsWith(baseUploadDir)) {
       return NextResponse.json(
@@ -112,12 +131,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Convert file to buffer and save
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
     await writeFile(filePath, buffer)
 
-    // Return the file URL with new structure (using sanitized values)
     const fileUrl = `/uploads/${uploadType}/${entityId}/${subfolder}/${fileName}`
     
     return NextResponse.json({
@@ -131,19 +146,19 @@ export async function POST(request: NextRequest) {
       subfolder
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('File upload error:', error)
     
-    // Don't expose internal error details to clients
-    const errorMessage = error?.message?.includes('traversal') || 
-                        error?.message?.includes('Invalid') ||
-                        error?.message?.includes('symlink')
-      ? error.message
+    const err = error as Error
+    const errorMessage = err?.message?.includes('traversal') || 
+                        err?.message?.includes('Invalid') ||
+                        err?.message?.includes('symlink')
+      ? err.message
       : 'Failed to upload file'
     
     return NextResponse.json(
       { error: errorMessage },
-      { status: error?.message?.includes('traversal') || error?.message?.includes('Invalid') ? 400 : 500 }
+      { status: err?.message?.includes('traversal') || err?.message?.includes('Invalid') ? 400 : 500 }
     )
   }
-} 
+}

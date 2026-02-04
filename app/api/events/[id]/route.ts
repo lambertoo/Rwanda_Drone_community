@@ -170,26 +170,30 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         const bytes = await flyerFile.arrayBuffer()
         const buffer = Buffer.from(bytes)
 
-        // Generate a unique filename with timestamp and random string
-        const timestamp = Date.now()
-        const randomString = Math.random().toString(36).substring(2, 15)
-        const fileExtension = flyerFile.name.split('.').pop()
-        const safeFilename = `flyer_${timestamp}_${randomString}.${fileExtension}`
+        const { uploadToB2, isB2Configured } = await import('@/lib/b2-storage')
 
-        // Save to public/uploads directory
-        const fs = require('fs')
-        const path = require('path')
-
-        // Ensure uploads directory exists
-        const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true })
+        if (isB2Configured()) {
+          const result = await uploadToB2(buffer, {
+            originalName: flyerFile.name,
+            mimeType: flyerFile.type || 'image/jpeg',
+            type: 'events',
+            entityId: 'flyers',
+            subfolder: 'images',
+          })
+          flyerUrl = result.fileUrl
+        } else {
+          const fs = await import('fs/promises')
+          const path = await import('path')
+          const timestamp = Date.now()
+          const randomString = Math.random().toString(36).substring(2, 15)
+          const fileExtension = flyerFile.name.split('.').pop()
+          const safeFilename = `flyer_${timestamp}_${randomString}.${fileExtension}`
+          const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+          await fs.mkdir(uploadsDir, { recursive: true })
+          const filePath = path.join(uploadsDir, safeFilename)
+          await fs.writeFile(filePath, buffer)
+          flyerUrl = `/uploads/${safeFilename}`
         }
-
-        const filePath = path.join(uploadsDir, safeFilename)
-        fs.writeFileSync(filePath, buffer)
-
-        flyerUrl = `/uploads/${safeFilename}`
       } catch (error) {
         console.error('Error uploading file:', error)
         return NextResponse.json({ error: "Failed to upload flyer" }, { status: 500 })

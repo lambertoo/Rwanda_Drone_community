@@ -6,6 +6,7 @@ import {
   sanitizeFilename, 
   sanitizePathComponent 
 } from './path-security'
+import { uploadToB2, isB2Configured } from './b2-storage'
 
 export interface UploadedFile {
   originalName: string
@@ -23,7 +24,7 @@ export interface OrganizedFile {
 }
 
 /**
- * Organize a single file upload into the proper directory structure
+ * Organize a single file upload - uses B2 if configured, otherwise local filesystem
  */
 export async function organizeFileUpload(
   file: UploadedFile,
@@ -31,19 +32,32 @@ export async function organizeFileUpload(
   entityId: string,
   subfolder: 'images' | 'resources' = 'images'
 ): Promise<OrganizedFile> {
-  // Security: Sanitize entityId to prevent path traversal (CVE-2025-55130)
   const sanitizedEntityId = sanitizePathComponent(entityId)
-  
-  // Security: Build secure upload path with symlink protection
+
+  if (isB2Configured()) {
+    const result = await uploadToB2(file.buffer, {
+      originalName: file.originalName,
+      mimeType: file.mimetype,
+      type,
+      entityId: sanitizedEntityId,
+      subfolder,
+    })
+    return {
+      filename: result.fileName,
+      url: result.fileUrl,
+      originalName: file.originalName,
+      fileType: file.mimetype,
+      size: file.size,
+    }
+  }
+
   const uploadDir = await buildSecureUploadPath(type, sanitizedEntityId, subfolder)
   await mkdir(uploadDir, { recursive: true })
 
-  // Security: Sanitize filename to prevent path traversal
   const sanitizedOriginalName = sanitizeFilename(file.originalName)
   const extension = path.extname(sanitizedOriginalName)
   const baseName = path.basename(sanitizedOriginalName, extension)
   
-  // Additional sanitization for base name
   const safeBaseName = baseName
     .replace(/\s+/g, '_')
     .replace(/[^a-zA-Z0-9_-]/g, '')
@@ -53,13 +67,9 @@ export async function organizeFileUpload(
   const uniqueId = uuidv4().substring(0, 8)
   const filename = `${safeBaseName}_${uniqueId}${extension}`
 
-  // Full file path (already validated by buildSecureUploadPath)
   const filePath = path.join(uploadDir, filename)
-
-  // Write file
   await writeFile(filePath, file.buffer)
 
-  // Return file info (using sanitized entityId)
   return {
     filename,
     url: `/uploads/${type}/${sanitizedEntityId}/${subfolder}/${filename}`,
