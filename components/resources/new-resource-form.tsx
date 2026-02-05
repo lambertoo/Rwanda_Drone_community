@@ -30,6 +30,7 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const { toast } = useToast()
   const { user: currentUser } = useAuth()
 
@@ -45,37 +46,58 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
         toast({
           title: "File too large",
           description: "Maximum file size is 100MB",
-          variant: "destructive"
+          variant: "destructive",
         })
         return
       }
 
+      setIsUploading(true)
+
+      const uploadFormData = new FormData()
+      uploadFormData.append("file", file)
+      uploadFormData.append("type", "general")
+      uploadFormData.append("entityId", currentUser?.id || "resources")
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: uploadFormData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || "Failed to upload file")
+      }
+
+      const data = await response.json()
+
       setUploadedFile(file)
-      
-      // Auto-detect file type and size
+
+      // Auto-detect file type and size for display, but use the URL returned by the API
       const fileType = detectFileType(file.name)
       const fileSize = formatFileSize(file.size)
-      
+
       setFormData(prev => ({
         ...prev,
         fileType,
         fileSize,
-        fileUrl: file.name // Use filename as temporary URL
+        fileUrl: data.fileUrl,
       }))
-      
+
       toast({
         title: "File uploaded successfully",
         description: `${file.name} (${fileSize})`,
       })
     } catch (error) {
-      console.error("Error processing file:", error)
+      console.error("Error uploading file:", error)
       toast({
         title: "Error uploading file",
-        description: "Please try again",
-        variant: "destructive"
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
       })
+    } finally {
+      setIsUploading(false)
     }
-  }, [toast])
+  }, [toast, currentUser])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -264,6 +286,7 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
                   size="sm"
                   onClick={removeFile}
                   className="text-red-600 hover:text-red-700"
+                  disabled={isUploading || isSubmitting}
                 >
                   <X className="h-4 w-4 mr-2" />
                   Remove File
@@ -291,9 +314,19 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
                   type="button"
                   variant="outline"
                   onClick={() => document.getElementById("file-upload")?.click()}
+                  disabled={isUploading || isSubmitting}
                 >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Choose File
+                  {isUploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Choose File
+                    </>
+                  )}
                 </Button>
               </div>
             )}
@@ -314,7 +347,7 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
               value={formData.fileUrl}
               onChange={(e) => handleInputChange("fileUrl", e.target.value)}
               placeholder="https://example.com/file.pdf"
-              disabled={!!uploadedFile}
+              disabled={!!uploadedFile || isUploading}
             />
             <p className="text-xs text-gray-500 mt-1">
               Use this if you have a file hosted elsewhere
@@ -420,7 +453,7 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
         </Button>
         <Button
           type="submit"
-          disabled={isSubmitting || !currentUser}
+          disabled={isSubmitting || isUploading || !currentUser}
         >
           {isSubmitting ? "Sharing..." : "Share Resource"}
         </Button>

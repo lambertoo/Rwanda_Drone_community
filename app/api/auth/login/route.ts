@@ -51,7 +51,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify password against hashed password
-    const isValidPassword = await verifyPassword(password, user.password)
+    let isValidPassword = false
+    try {
+      isValidPassword = await verifyPassword(password, user.password)
+    } catch (verifyErr) {
+      console.error("Password verification error (invalid hash?):", (verifyErr as Error)?.message)
+      await sleep(INVALID_CREDENTIALS_DELAY_MS)
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+    }
 
     if (!isValidPassword) {
       await sleep(INVALID_CREDENTIALS_DELAY_MS)
@@ -63,11 +70,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Account is blocked. Please contact an administrator." }, { status: 403 })
     }
 
-    // Generate JWT tokens
+    // Generate JWT tokens (role must be string for JWT; use empty string if null)
     const tokens = generateTokens({
       userId: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role ?? '',
     })
 
     // Update last active
@@ -100,7 +107,14 @@ export async function POST(request: NextRequest) {
     // Set secure HTTP-only cookies with JWT tokens
     return setSecureCookies(response, tokens)
   } catch (error) {
-    console.error("Login error:", error)
+    const err = error as Error
+    console.error("Login error:", err?.message ?? error)
+    if (process.env.NODE_ENV === 'development') {
+      return NextResponse.json(
+        { error: "Internal server error", detail: err?.message },
+        { status: 500 }
+      )
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

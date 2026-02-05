@@ -29,6 +29,7 @@ export default function ResourceCategoriesPage() {
     name: '',
     description: ''
   })
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const fetchCategories = async () => {
     try {
@@ -50,6 +51,7 @@ export default function ResourceCategoriesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitError(null)
     
     try {
       const url = editingCategory 
@@ -67,13 +69,17 @@ export default function ResourceCategoriesPage() {
         body: JSON.stringify(formData)
       })
 
+      const data = await response.json().catch(() => ({ error: 'Request failed' }))
+
       if (response.ok) {
         await fetchCategories()
         resetForm()
       } else {
-        console.error('Failed to save resource category')
+        const message = data.error || `Failed to save (${response.status})`
+        setSubmitError(data.detail ? `${message}: ${data.detail}` : message)
       }
     } catch (error) {
+      setSubmitError('Network error. Please try again.')
       console.error('Error saving resource category:', error)
     }
   }
@@ -82,7 +88,7 @@ export default function ResourceCategoriesPage() {
     setEditingCategory(category)
     setFormData({
       name: category.name,
-      description: category.description
+      description: category.description ?? ''
     })
     setShowForm(true)
   }
@@ -110,6 +116,7 @@ export default function ResourceCategoriesPage() {
     setFormData({ name: '', description: '' })
     setEditingCategory(null)
     setShowForm(false)
+    setSubmitError(null)
   }
 
   useEffect(() => {
@@ -215,6 +222,11 @@ export default function ResourceCategoriesPage() {
                   </CardHeader>
                   <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
+                      {submitError && (
+                        <div className="rounded-md bg-destructive/10 text-destructive text-sm p-3">
+                          {submitError}
+                        </div>
+                      )}
                       <div>
                         <Label htmlFor="name">Category Name</Label>
                         <Input

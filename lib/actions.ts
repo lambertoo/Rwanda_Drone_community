@@ -6,100 +6,6 @@ import { getAuthenticatedUser } from "@/lib/auth-middleware"
 import { canCreateProjects, canCreateServices, canPostOpportunities, canCreateEvents, canEditOwnContent, canDeleteAnyContent, getSession } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 import { organizeMultipleFiles, UploadedFile } from "@/lib/file-utils"
-import { rename, mkdir } from "fs/promises"
-import { existsSync } from "fs"
-import path from "path"
-import { sanitizePathComponent, validateAndResolvePath, sanitizeFilename } from "@/lib/path-security"
-import { copyInB2, getStorageKeyFromB2Url, isB2Configured } from "@/lib/b2-storage"
-
-// File utility functions - handles both local filesystem and Backblaze B2
-async function moveFilesFromTemp(projectId: string, resources: any[], gallery: any[]) {
-  try {
-    const sanitizedProjectId = sanitizePathComponent(projectId)
-    const baseDir = process.cwd()
-    const uploadsBaseDir = path.join(baseDir, 'public', 'uploads')
-    const useB2 = isB2Configured()
-
-    // Move resources
-    for (const resource of resources) {
-      if (!resource.url) continue
-      const isTempResource = resource.url.includes('/uploads/projects/temp/') || 
-        (useB2 && resource.url.includes('backblazeb2.com') && resource.url.includes('/projects/temp/'))
-      if (!isTempResource) continue
-
-      if (useB2 && resource.url.includes('backblazeb2.com')) {
-        const sourceKey = getStorageKeyFromB2Url(resource.url)
-        if (sourceKey) {
-          const filename = path.basename(sourceKey)
-          const destKey = `uploads/projects/${sanitizedProjectId}/resources/${filename}`
-          try {
-            resource.url = await copyInB2(sourceKey, destKey)
-          } catch (err) {
-            console.error('B2 copy failed for resource:', err)
-          }
-        }
-      } else {
-        const oldPath = path.join(baseDir, 'public', resource.url)
-        try {
-          const validatedOldPath = await validateAndResolvePath(oldPath, uploadsBaseDir)
-          const filename = sanitizeFilename(path.basename(resource.url))
-          const newPath = path.join(uploadsBaseDir, 'projects', sanitizedProjectId, 'resources', filename)
-          const validatedNewPath = await validateAndResolvePath(newPath, uploadsBaseDir)
-          const newDir = path.dirname(validatedNewPath)
-          if (!existsSync(newDir)) await mkdir(newDir, { recursive: true })
-          if (existsSync(validatedOldPath)) {
-            await rename(validatedOldPath, validatedNewPath)
-            resource.url = `/uploads/projects/${sanitizedProjectId}/resources/${filename}`
-          }
-        } catch (err) {
-          console.error('Local move failed for resource:', err)
-        }
-      }
-    }
-
-    // Move gallery images
-    for (const image of gallery) {
-      if (!image.url) continue
-      const isTempImage = image.url.includes('/uploads/projects/temp/') ||
-        (useB2 && image.url.includes('backblazeb2.com') && image.url.includes('/projects/temp/'))
-      if (!isTempImage) continue
-
-      if (useB2 && image.url.includes('backblazeb2.com')) {
-        const sourceKey = getStorageKeyFromB2Url(image.url)
-        if (sourceKey) {
-          const filename = path.basename(sourceKey)
-          const destKey = `uploads/projects/${sanitizedProjectId}/images/${filename}`
-          try {
-            image.url = await copyInB2(sourceKey, destKey)
-          } catch (err) {
-            console.error('B2 copy failed for gallery image:', err)
-          }
-        }
-      } else {
-        const oldPath = path.join(baseDir, 'public', image.url)
-        try {
-          const validatedOldPath = await validateAndResolvePath(oldPath, uploadsBaseDir)
-          const filename = sanitizeFilename(path.basename(image.url))
-          const newPath = path.join(uploadsBaseDir, 'projects', sanitizedProjectId, 'images', filename)
-          const validatedNewPath = await validateAndResolvePath(newPath, uploadsBaseDir)
-          const newDir = path.dirname(validatedNewPath)
-          if (!existsSync(newDir)) await mkdir(newDir, { recursive: true })
-          if (existsSync(validatedOldPath)) {
-            await rename(validatedOldPath, validatedNewPath)
-            image.url = `/uploads/projects/${sanitizedProjectId}/images/${filename}`
-          }
-        } catch (err) {
-          console.error('Local move failed for gallery image:', err)
-        }
-      }
-    }
-
-    return { resources, gallery }
-  } catch (error) {
-    console.error('Error moving files:', error)
-    return { resources, gallery }
-  }
-}
 
 // Forum Post Actions
 export async function createForumPostAction(formData: FormData) {
@@ -406,6 +312,7 @@ export async function createProjectAction(formData: FormData) {
     }
 
     // Step 2: Input Validation
+    const providedId = (formData.get("id") as string) || undefined
     const title = (formData.get("title") as string)?.trim()
     const description = (formData.get("description") as string)?.trim()
     const fullDescription = (formData.get("fullDescription") as string)?.trim()
@@ -587,6 +494,7 @@ export async function createProjectAction(formData: FormData) {
     // Step 5: Create Project
     const project = await prisma.project.create({
       data: {
+        ...(providedId ? { id: providedId } : {}),
         title,
         description,
         fullDescription: fullDescription || null,

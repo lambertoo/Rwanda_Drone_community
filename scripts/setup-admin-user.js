@@ -1,3 +1,26 @@
+const path = require('path');
+const fs = require('fs');
+
+// Load .env and .env.local so DATABASE_URL is set when run with: node scripts/setup-admin-user.js
+function loadEnv(file) {
+  const p = path.join(__dirname, '..', file);
+  if (fs.existsSync(p)) {
+    fs.readFileSync(p, 'utf8').split('\n').forEach((line) => {
+      const match = line.match(/^([^#=]+)=(.*)$/);
+      if (match) {
+        const key = match[1].trim();
+        let val = match[2].trim();
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.slice(1, -1);
+        }
+        process.env[key] = val;
+      }
+    });
+  }
+}
+loadEnv('.env');
+loadEnv('.env.local');
+
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 

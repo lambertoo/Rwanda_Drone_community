@@ -16,15 +16,15 @@ export async function PUT(
     const { id } = params
     const { name, description } = await request.json()
 
-    if (!name || !description) {
-      return NextResponse.json({ error: 'Name and description are required' }, { status: 400 })
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return NextResponse.json({ error: 'Category name is required' }, { status: 400 })
     }
 
     const category = await prisma.serviceCategory.update({
       where: { id },
       data: {
-        name,
-        description
+        name: name.trim(),
+        description: description != null ? String(description).trim() || null : null
       }
     })
 

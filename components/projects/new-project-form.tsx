@@ -51,6 +51,7 @@ interface ProjectResource {
 
 export default function NewProjectForm({ project, isEdit = false }: { project?: any, isEdit?: boolean }) {
   const router = useRouter()
+  const [projectId, setProjectId] = useState<string>(project?.id || crypto.randomUUID())
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -125,6 +126,7 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
   // Load project data if in edit mode
   useEffect(() => {
     if (isEdit && project) {
+      setProjectId(project.id)
       setFormData({
         title: project.title || "",
         description: project.description || "",
@@ -331,7 +333,7 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
         const formData = new FormData()
         formData.append('file', file)
         formData.append('type', 'projects')
-        formData.append('entityId', 'temp')
+        formData.append('entityId', projectId)
         formData.append('subfolder', 'resources')
         
         const response = await fetch('/api/upload', {
@@ -374,7 +376,7 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
         const formData = new FormData()
         formData.append('file', file)
         formData.append('type', 'projects')
-        formData.append('entityId', 'temp')
+        formData.append('entityId', projectId)
         formData.append('subfolder', 'images')
         
         const response = await fetch('/api/upload', {
@@ -443,6 +445,7 @@ export default function NewProjectForm({ project, isEdit = false }: { project?: 
 
       const projectData = {
         ...formData,
+        id: projectId,
         teamMembers,
         gallery,
         resources,
