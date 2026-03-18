@@ -89,7 +89,7 @@ export default function ImageGallery({
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200" />
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <div className="bg-white/90 text-black px-3 py-1 rounded-full text-sm font-medium">
+                <div className="bg-background/90 text-foreground px-3 py-1 rounded-full text-sm font-medium">
                   Click to view
                 </div>
               </div>

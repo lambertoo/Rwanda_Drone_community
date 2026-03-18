@@ -162,7 +162,7 @@ export default function FormEntriesPage({ params }: { params: { id: string } }) 
             </Button>
             <div>
               <h1 className="text-2xl font-bold">{form?.title} - Entries</h1>
-              <p className="text-gray-600">{entries.length} responses</p>
+              <p className="text-muted-foreground">{entries.length} responses</p>
             </div>
           </div>
           <Button onClick={exportToCSV} disabled={entries.length === 0}>
@@ -174,11 +174,11 @@ export default function FormEntriesPage({ params }: { params: { id: string } }) 
         {entries.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
-              <div className="text-gray-400 mb-4">
+              <div className="text-muted-foreground/70 mb-4">
                 <Calendar className="w-16 h-16 mx-auto" />
               </div>
               <h3 className="text-lg font-semibold mb-2">No responses yet</h3>
-              <p className="text-gray-600">Share your form to start collecting responses.</p>
+              <p className="text-muted-foreground">Share your form to start collecting responses.</p>
             </CardContent>
           </Card>
         ) : (
@@ -189,7 +189,7 @@ export default function FormEntriesPage({ params }: { params: { id: string } }) 
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <User className="w-4 h-4 text-gray-500" />
+                        <User className="w-4 h-4 text-muted-foreground" />
                         <span className="font-medium">
                           {entry.user ? entry.user.fullName : 'Anonymous'}
                         </span>
@@ -197,7 +197,7 @@ export default function FormEntriesPage({ params }: { params: { id: string } }) 
                           <Badge variant="outline">{entry.user.username}</Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
                           <span>{new Date(entry.createdAt).toLocaleString()}</span>
@@ -221,7 +221,7 @@ export default function FormEntriesPage({ params }: { params: { id: string } }) 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {entry.values.slice(0, 6).map((value) => (
                       <div key={value.id} className="space-y-1">
-                        <p className="text-sm font-medium text-gray-600">
+                        <p className="text-sm font-medium text-muted-foreground">
                           {value.field.label}
                         </p>
                         <p className="text-sm">
@@ -230,7 +230,7 @@ export default function FormEntriesPage({ params }: { params: { id: string } }) 
                       </div>
                     ))}
                     {entry.values.length > 6 && (
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-muted-foreground">
                         +{entry.values.length - 6} more fields
                       </div>
                     )}
@@ -249,7 +249,7 @@ export default function FormEntriesPage({ params }: { params: { id: string } }) 
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle>Response Details</CardTitle>
-                    <div className="flex items-center gap-4 text-sm text-gray-600 mt-2">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
                       <div className="flex items-center gap-1">
                         <User className="w-4 h-4" />
                         <span>
@@ -277,7 +277,7 @@ export default function FormEntriesPage({ params }: { params: { id: string } }) 
                       <div className="border-b pb-2">
                         <h3 className="text-lg font-semibold">{section.title}</h3>
                         {section.description && (
-                          <p className="text-sm text-gray-600">{section.description}</p>
+                          <p className="text-sm text-muted-foreground">{section.description}</p>
                         )}
                       </div>
                       <div className="space-y-4">
@@ -285,7 +285,7 @@ export default function FormEntriesPage({ params }: { params: { id: string } }) 
                           const value = selectedEntry.values.find(v => v.field.name === field.name)
                           return (
                             <div key={field.id} className="space-y-1">
-                              <p className="text-sm font-medium text-gray-600">
+                              <p className="text-sm font-medium text-muted-foreground">
                                 {field.label}
                               </p>
                               <p className="text-sm">

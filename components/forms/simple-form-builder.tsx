@@ -98,7 +98,7 @@ export default function SimpleFormBuilder({ onSave, onCancel }: SimpleFormBuilde
             </div>
 
             {fields.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 No fields added yet. Click "Add Field" to get started.
               </div>
             ) : (

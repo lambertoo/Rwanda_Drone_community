@@ -234,7 +234,7 @@ export default function AdminApprovalsPage() {
           <div className="space-y-4">
             <div>
               <h3 className="text-lg font-semibold">Content:</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">{item.content}</p>
+              <p className="text-foreground whitespace-pre-wrap">{item.content}</p>
             </div>
             {item.tags && item.tags.length > 0 && (
               <div>
@@ -255,7 +255,7 @@ export default function AdminApprovalsPage() {
             {item.fullDescription && (
               <div>
                 <h3 className="text-lg font-semibold">Full Description:</h3>
-                <p className="text-gray-700">{item.fullDescription}</p>
+                <p className="text-foreground">{item.fullDescription}</p>
               </div>
             )}
 
@@ -263,31 +263,31 @@ export default function AdminApprovalsPage() {
               {item.location && (
                 <div>
                   <h3 className="text-lg font-semibold">Location:</h3>
-                  <p className="text-gray-700">{item.location}</p>
+                  <p className="text-foreground">{item.location}</p>
                 </div>
               )}
               {item.duration && (
                 <div>
                   <h3 className="text-lg font-semibold">Duration:</h3>
-                  <p className="text-gray-700">{item.duration}</p>
+                  <p className="text-foreground">{item.duration}</p>
                 </div>
               )}
               {item.startDate && (
                 <div>
                   <h3 className="text-lg font-semibold">Start Date:</h3>
-                  <p className="text-gray-700">{item.startDate}</p>
+                  <p className="text-foreground">{item.startDate}</p>
                 </div>
               )}
               {item.endDate && (
                 <div>
                   <h3 className="text-lg font-semibold">End Date:</h3>
-                  <p className="text-gray-700">{item.endDate}</p>
+                  <p className="text-foreground">{item.endDate}</p>
                 </div>
               )}
               {item.funding && (
                 <div>
                   <h3 className="text-lg font-semibold">Funding:</h3>
-                  <p className="text-gray-700">{item.funding}</p>
+                  <p className="text-foreground">{item.funding}</p>
                 </div>
               )}
               {item.status && (
@@ -301,7 +301,7 @@ export default function AdminApprovalsPage() {
             {item.objectives && item.objectives.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold">Objectives:</h3>
-                <ul className="list-disc list-inside text-gray-700 space-y-1">
+                <ul className="list-disc list-inside text-foreground space-y-1">
                   {item.objectives.map((obj: string, index: number) => (
                     <li key={index}>{obj}</li>
                   ))}
@@ -312,7 +312,7 @@ export default function AdminApprovalsPage() {
             {item.challenges && item.challenges.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold">Challenges:</h3>
-                <ul className="list-disc list-inside text-gray-700 space-y-1">
+                <ul className="list-disc list-inside text-foreground space-y-1">
                   {item.challenges.map((challenge: string, index: number) => (
                     <li key={index}>{challenge}</li>
                   ))}
@@ -323,7 +323,7 @@ export default function AdminApprovalsPage() {
             {item.outcomes && item.outcomes.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold">Outcomes:</h3>
-                <ul className="list-disc list-inside text-gray-700 space-y-1">
+                <ul className="list-disc list-inside text-foreground space-y-1">
                   {item.outcomes.map((outcome: string, index: number) => (
                     <li key={index}>{outcome}</li>
                   ))}
@@ -334,14 +334,14 @@ export default function AdminApprovalsPage() {
             {item.methodology && (
               <div>
                 <h3 className="text-lg font-semibold">Methodology:</h3>
-                <p className="text-gray-700">{item.methodology}</p>
+                <p className="text-foreground">{item.methodology}</p>
               </div>
             )}
 
             {item.results && (
               <div>
                 <h3 className="text-lg font-semibold">Results:</h3>
-                <p className="text-gray-700">{item.results}</p>
+                <p className="text-foreground">{item.results}</p>
               </div>
             )}
 
@@ -361,14 +361,14 @@ export default function AdminApprovalsPage() {
                 <h3 className="text-lg font-semibold">Team Members:</h3>
                 <div className="space-y-3">
                   {item.teamMembers.map((member: any, index: number) => (
-                    <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                    <div key={index} className="border rounded-lg p-3 bg-muted/50">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-medium">{member.name}</h4>
                         {member.projectLead && (
                           <Badge variant="default" className="text-xs">Project Lead</Badge>
                         )}
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
                         {member.role && (
                           <div><strong>Role:</strong> {member.role}</div>
                         )}
@@ -383,7 +383,7 @@ export default function AdminApprovalsPage() {
                         )}
                       </div>
                       {member.bio && (
-                        <p className="text-sm text-gray-600 mt-2">{member.bio}</p>
+                        <p className="text-sm text-muted-foreground mt-2">{member.bio}</p>
                       )}
                     </div>
                   ))}
@@ -396,7 +396,7 @@ export default function AdminApprovalsPage() {
                 <h3 className="text-lg font-semibold">Resources:</h3>
                 <div className="space-y-2">
                   {item.resources.map((resource: any, index: number) => (
-                    <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                    <div key={index} className="border rounded-lg p-3 bg-muted/50">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-medium">{resource.title}</h4>
                         <a 
@@ -410,9 +410,9 @@ export default function AdminApprovalsPage() {
                         </a>
                       </div>
                       {resource.description && (
-                        <p className="text-sm text-gray-600">{resource.description}</p>
+                        <p className="text-sm text-muted-foreground">{resource.description}</p>
                       )}
-                      <div className="flex gap-4 text-xs text-gray-500 mt-2">
+                      <div className="flex gap-4 text-xs text-muted-foreground mt-2">
                         {resource.type && <span>Type: {resource.type}</span>}
                         {resource.size && <span>Size: {Math.round(resource.size / 1024)} KB</span>}
                       </div>
@@ -434,7 +434,7 @@ export default function AdminApprovalsPage() {
                         className="w-full h-48 object-cover rounded-lg" 
                       />
                       {image.caption && (
-                        <p className="text-sm text-gray-600 mt-2">{image.caption}</p>
+                        <p className="text-sm text-muted-foreground mt-2">{image.caption}</p>
                       )}
                     </div>
                   ))}
@@ -450,29 +450,29 @@ export default function AdminApprovalsPage() {
             {item.fullDescription && (
               <div>
                 <h3 className="text-lg font-semibold">Full Description:</h3>
-                <p className="text-gray-700">{item.fullDescription}</p>
+                <p className="text-foreground">{item.fullDescription}</p>
               </div>
             )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <h3 className="text-lg font-semibold">Start Date:</h3>
-                <p className="text-gray-700">{new Date(item.startDate).toLocaleString()}</p>
+                <p className="text-foreground">{new Date(item.startDate).toLocaleString()}</p>
               </div>
               <div>
                 <h3 className="text-lg font-semibold">End Date:</h3>
-                <p className="text-gray-700">{new Date(item.endDate).toLocaleString()}</p>
+                <p className="text-foreground">{new Date(item.endDate).toLocaleString()}</p>
               </div>
             </div>
             {item.location && (
               <div>
                 <h3 className="text-lg font-semibold">Location:</h3>
-                <p className="text-gray-700">{item.location}</p>
+                <p className="text-foreground">{item.location}</p>
               </div>
             )}
             {item.venue && (
               <div>
                 <h3 className="text-lg font-semibold">Venue:</h3>
-                <p className="text-gray-700">{item.venue}</p>
+                <p className="text-foreground">{item.venue}</p>
               </div>
             )}
           </div>
@@ -490,12 +490,12 @@ export default function AdminApprovalsPage() {
             </div>
             <div>
               <h3 className="text-lg font-semibold">File Type:</h3>
-              <p className="text-gray-700">{item.fileType}</p>
+              <p className="text-foreground">{item.fileType}</p>
             </div>
             {item.fileSize && (
               <div>
                 <h3 className="text-lg font-semibold">File Size:</h3>
-                <p className="text-gray-700">{item.fileSize}</p>
+                <p className="text-foreground">{item.fileSize}</p>
               </div>
             )}
           </div>
@@ -507,35 +507,35 @@ export default function AdminApprovalsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <h3 className="text-lg font-semibold">Company:</h3>
-                <p className="text-gray-700">{item.company}</p>
+                <p className="text-foreground">{item.company}</p>
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Type:</h3>
-                <p className="text-gray-700 capitalize">{item.opportunityType}</p>
+                <p className="text-foreground capitalize">{item.opportunityType}</p>
               </div>
             </div>
             {item.location && (
               <div>
                 <h3 className="text-lg font-semibold">Location:</h3>
-                <p className="text-gray-700">{item.location}</p>
+                <p className="text-foreground">{item.location}</p>
               </div>
             )}
             {item.salary && (
               <div>
                 <h3 className="text-lg font-semibold">Salary:</h3>
-                <p className="text-gray-700">{item.salary}</p>
+                <p className="text-foreground">{item.salary}</p>
               </div>
             )}
             {item.requirements && (
               <div>
                 <h3 className="text-lg font-semibold">Requirements:</h3>
-                <p className="text-gray-700 whitespace-pre-wrap">{item.requirements}</p>
+                <p className="text-foreground whitespace-pre-wrap">{item.requirements}</p>
               </div>
             )}
             {item.applicationDeadline && (
               <div>
                 <h3 className="text-lg font-semibold">Application Deadline:</h3>
-                <p className="text-gray-700">{new Date(item.applicationDeadline).toLocaleDateString()}</p>
+                <p className="text-foreground">{new Date(item.applicationDeadline).toLocaleDateString()}</p>
               </div>
             )}
           </div>
@@ -547,29 +547,29 @@ export default function AdminApprovalsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <h3 className="text-lg font-semibold">Provider:</h3>
-                <p className="text-gray-700">{item.provider?.fullName || item.provider?.username}</p>
+                <p className="text-foreground">{item.provider?.fullName || item.provider?.username}</p>
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Category:</h3>
-                <p className="text-gray-700">{item.category?.name}</p>
+                <p className="text-foreground">{item.category?.name}</p>
               </div>
             </div>
             {item.location && (
               <div>
                 <h3 className="text-lg font-semibold">Location:</h3>
-                <p className="text-gray-700">{item.location}</p>
+                <p className="text-foreground">{item.location}</p>
               </div>
             )}
             {item.price && (
               <div>
                 <h3 className="text-lg font-semibold">Price:</h3>
-                <p className="text-gray-700">{item.price}</p>
+                <p className="text-foreground">{item.price}</p>
               </div>
             )}
             {item.rating && (
               <div>
                 <h3 className="text-lg font-semibold">Rating:</h3>
-                <p className="text-gray-700">{item.rating}/5</p>
+                <p className="text-foreground">{item.rating}/5</p>
               </div>
             )}
             {item.portfolio && item.portfolio.length > 0 && (
@@ -591,7 +591,7 @@ export default function AdminApprovalsPage() {
         );
 
       default:
-        return <p className="text-gray-700">No preview available for this content type.</p>;
+        return <p className="text-foreground">No preview available for this content type.</p>;
     }
   };
 
@@ -659,7 +659,7 @@ export default function AdminApprovalsPage() {
       case 'resource': return 'bg-orange-100 text-orange-800';
       case 'opportunity': return 'bg-yellow-100 text-yellow-800';
       case 'service': return 'bg-indigo-100 text-indigo-800';
-      default: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-muted text-foreground';
     }
   };
 
@@ -999,18 +999,18 @@ export default function AdminApprovalsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <h3 className="font-semibold">Author:</h3>
-                <p className="text-gray-700">{previewItem?.author?.fullName || previewItem?.author?.username}</p>
+                <p className="text-foreground">{previewItem?.author?.fullName || previewItem?.author?.username}</p>
               </div>
               <div>
                 <h3 className="font-semibold">Created:</h3>
-                <p className="text-gray-700">{previewItem && new Date(previewItem.createdAt).toLocaleString()}</p>
+                <p className="text-foreground">{previewItem && new Date(previewItem.createdAt).toLocaleString()}</p>
               </div>
             </div>
             
             {previewItem?.description && (
               <div>
                 <h3 className="font-semibold">Description:</h3>
-                <p className="text-gray-700">{previewItem.description}</p>
+                <p className="text-foreground">{previewItem.description}</p>
               </div>
             )}
 

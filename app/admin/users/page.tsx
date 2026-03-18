@@ -693,7 +693,7 @@ function UserManagementPage() {
                   const count = users.filter(user => user.role === role).length
                   return (
                     <div key={role} className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">{count}</div>
+                      <div className="text-2xl font-bold text-foreground">{count}</div>
                       <div className="text-sm text-muted-foreground">{name}</div>
                       <div className="text-xs text-muted-foreground">
                         {users.length > 0 ? `(${count}) ${((count / users.length) * 100).toFixed(1)}%` : '(0) 0%'}
@@ -776,7 +776,7 @@ function UserManagementPage() {
               </thead>
               <tbody>
                 {filteredUsers.map((user) => (
-                  <tr key={user.id} className={`border-b hover:bg-gray-50 ${!user.isActive ? 'bg-red-50' : ''}`}>
+                  <tr key={user.id} className={`border-b hover:bg-muted/50 ${!user.isActive ? 'bg-red-50' : ''}`}>
                     <td className="p-2">
                       <div>
                         <div className="font-medium">{user.fullName}</div>

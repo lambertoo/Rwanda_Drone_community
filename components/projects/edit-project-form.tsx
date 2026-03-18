@@ -221,7 +221,7 @@ export default function EditProjectForm({ projectId, initialData }: { projectId:
             { value: "planning", label: "Planning", color: "bg-blue-100 text-blue-800" },
             { value: "in_progress", label: "In Progress", color: "bg-yellow-100 text-yellow-800" },
             { value: "completed", label: "Completed", color: "bg-green-100 text-green-800" },
-            { value: "on_hold", label: "On Hold", color: "bg-gray-100 text-gray-800" },
+            { value: "on_hold", label: "On Hold", color: "bg-muted text-foreground" },
             { value: "cancelled", label: "Cancelled", color: "bg-red-100 text-red-800" },
           ])
         }
@@ -232,7 +232,7 @@ export default function EditProjectForm({ projectId, initialData }: { projectId:
           { value: "planning", label: "Planning", color: "bg-blue-100 text-blue-800" },
           { value: "in_progress", label: "In Progress", color: "bg-yellow-100 text-yellow-800" },
           { value: "completed", label: "Completed", color: "bg-green-100 text-green-800" },
-          { value: "on_hold", label: "On Hold", color: "bg-gray-100 text-gray-800" },
+          { value: "on_hold", label: "On Hold", color: "bg-muted text-foreground" },
           { value: "cancelled", label: "Cancelled", color: "bg-red-100 text-red-800" },
         ])
       } finally {
@@ -935,7 +935,7 @@ export default function EditProjectForm({ projectId, initialData }: { projectId:
                         id="projectLead"
                         checked={newTeamMember.projectLead}
                         onChange={(e) => setNewTeamMember((prev) => ({ ...prev, projectLead: e.target.checked }))}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
                       />
                       <Label htmlFor="projectLead" className="text-sm font-medium">
                         This person is the Project Lead
@@ -1073,12 +1073,12 @@ export default function EditProjectForm({ projectId, initialData }: { projectId:
                             <img src={item.url} alt={item.caption} className="w-full h-32 object-cover" />
                           )}
                           {item.type === "video" && item.url && (
-                            <div className="w-full h-32 bg-gray-100 flex items-center justify-center">
+                            <div className="w-full h-32 bg-muted flex items-center justify-center">
                               <div className="text-center">
                                 <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-2">
                                   <span className="text-white text-lg">▶</span>
                                 </div>
-                                <p className="text-xs text-gray-600">Video</p>
+                                <p className="text-xs text-muted-foreground">Video</p>
                               </div>
                             </div>
                           )}

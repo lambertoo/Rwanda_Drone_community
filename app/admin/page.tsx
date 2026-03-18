@@ -95,16 +95,16 @@ function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-muted/50 dark:bg-gray-900">
       <div className="container mx-auto px-4 py-6">
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+              <h1 className="text-4xl font-bold text-foreground dark:text-white mb-2">
                 Admin Dashboard
               </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300">
+              <p className="text-lg text-muted-foreground dark:text-muted-foreground/50">
                 Welcome back, {user?.fullName}. Quick access to admin functions.
               </p>
             </div>

@@ -71,7 +71,7 @@ export default function DebugAuthPage() {
             
             <div>
               <strong>User:</strong>
-              <pre className="mt-2 p-2 bg-gray-100 rounded text-sm overflow-auto">
+              <pre className="mt-2 p-2 bg-muted rounded text-sm overflow-auto">
                 {user ? JSON.stringify(user, null, 2) : 'null'}
               </pre>
             </div>
@@ -83,7 +83,7 @@ export default function DebugAuthPage() {
             <CardTitle>Browser Cookies</CardTitle>
           </CardHeader>
           <CardContent>
-            <pre className="p-2 bg-gray-100 rounded text-sm overflow-auto">
+            <pre className="p-2 bg-muted rounded text-sm overflow-auto">
               {cookies || 'No cookies found'}
             </pre>
           </CardContent>
@@ -96,7 +96,7 @@ export default function DebugAuthPage() {
           <CardContent className="space-y-4">
             <Button onClick={testApi}>Test /api/auth/profile</Button>
             {apiTest && (
-              <pre className="p-2 bg-gray-100 rounded text-sm overflow-auto">
+              <pre className="p-2 bg-muted rounded text-sm overflow-auto">
                 {JSON.stringify(apiTest, null, 2)}
               </pre>
             )}

@@ -218,7 +218,7 @@ export default function ImageZoomViewer({
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-background/20"
           >
             <X className="h-5 w-5" />
           </Button>
@@ -238,7 +238,7 @@ export default function ImageZoomViewer({
               variant="ghost"
               size="sm"
               onClick={downloadImage}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-background/20"
               title="Download image"
             >
               <Download className="h-4 w-4" />
@@ -250,7 +250,7 @@ export default function ImageZoomViewer({
               variant="ghost"
               size="sm"
               onClick={toggleFullscreen}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-background/20"
               title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
             >
               {isFullscreen ? (
@@ -270,7 +270,7 @@ export default function ImageZoomViewer({
             variant="ghost"
             size="sm"
             onClick={zoomIn}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-background/20"
             title="Zoom in (Ctrl/Cmd + +)"
           >
             <ZoomIn className="h-4 w-4" />
@@ -279,7 +279,7 @@ export default function ImageZoomViewer({
             variant="ghost"
             size="sm"
             onClick={zoomOut}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-background/20"
             title="Zoom out (Ctrl/Cmd + -)"
           >
             <ZoomOut className="h-4 w-4" />
@@ -288,7 +288,7 @@ export default function ImageZoomViewer({
             variant="ghost"
             size="sm"
             onClick={resetZoom}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-background/20"
             title="Reset zoom (Ctrl/Cmd + 0)"
           >
             <RotateCcw className="h-4 w-4" />
@@ -303,7 +303,7 @@ export default function ImageZoomViewer({
             variant="ghost"
             size="sm"
             onClick={goToPrevious}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-white hover:bg-white/20"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-white hover:bg-background/20"
             title="Previous image (←)"
           >
             <ChevronLeft className="h-6 w-6" />
@@ -312,7 +312,7 @@ export default function ImageZoomViewer({
             variant="ghost"
             size="sm"
             onClick={goToNext}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-white hover:bg-white/20"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-white hover:bg-background/20"
             title="Next image (→)"
           >
             <ChevronRight className="h-6 w-6" />

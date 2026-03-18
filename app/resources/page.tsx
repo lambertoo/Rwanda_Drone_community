@@ -183,7 +183,7 @@ export default function ResourcesPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading resources...</p>
+          <p className="text-muted-foreground">Loading resources...</p>
         </div>
       </div>
     )
@@ -194,7 +194,7 @@ export default function ResourcesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Resources & Downloads</h1>
-          <p className="text-sm text-gray-500">Essential documents, guides, and tutorials for drone operators in Rwanda</p>
+          <p className="text-sm text-muted-foreground">Essential documents, guides, and tutorials for drone operators in Rwanda</p>
         </div>
         {currentUser && (
           <button
@@ -262,16 +262,16 @@ export default function ResourcesPage() {
       )}
 
       {!currentUser && (
-        <p className="text-sm text-gray-600">Log in to share a resource.</p>
+        <p className="text-sm text-muted-foreground">Log in to share a resource.</p>
       )}
 
       {/* Resource list can be added back later */}
       {/* Category tabs */}
-      <div className="flex flex-wrap gap-1 mt-2 bg-gray-100 rounded-md p-1 w-full max-w-xl">
+      <div className="flex flex-wrap gap-1 mt-2 bg-muted rounded-md p-1 w-full max-w-xl">
         <button
           type="button"
           onClick={() => setActiveCategory('all')}
-          className={`px-3 py-1.5 rounded text-sm transition-colors ${activeCategory==='all' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+          className={`px-3 py-1.5 rounded text-sm transition-colors ${activeCategory==='all' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
         >
           All
         </button>
@@ -280,7 +280,7 @@ export default function ResourcesPage() {
             key={category.id}
             type="button"
             onClick={() => setActiveCategory(category.id)}
-            className={`px-3 py-1.5 rounded text-sm transition-colors ${activeCategory===category.id ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+            className={`px-3 py-1.5 rounded text-sm transition-colors ${activeCategory===category.id ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
           >
             {category.name}
           </button>
@@ -289,20 +289,20 @@ export default function ResourcesPage() {
             
       <div className="space-y-3 mt-4 min-w-0">
         {resources.length === 0 ? (
-          <p className="text-sm text-gray-600">No resources yet.</p>
+          <p className="text-sm text-muted-foreground">No resources yet.</p>
         ) : (
           <ul className="space-y-3">
             {resources
               .filter(r => activeCategory==='all' ? true : r.category.id === activeCategory)
               .map((r) => (
-              <li key={r.id} className="p-4 border rounded-md bg-white flex items-start justify-between gap-6">
+              <li key={r.id} className="p-4 border rounded-md bg-background flex items-start justify-between gap-6">
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{r.title}</div>
                   {r.description && (
-                    <div className="text-sm text-gray-600 line-clamp-2 mt-1">{r.description}</div>
+                    <div className="text-sm text-muted-foreground line-clamp-2 mt-1">{r.description}</div>
                   )}
-                  <div className="flex flex-wrap gap-3 text-xs text-gray-500 mt-2">
-                    {r.fileType && <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-100">{r.fileType}</span>}
+                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mt-2">
+                    {r.fileType && <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted">{r.fileType}</span>}
                     {r.fileSize && <span>{r.fileSize}</span>}
                     <span>{r.downloads} downloads</span>
                     <span>Updated {new Date(r.uploadedAt).toLocaleDateString()}</span>
@@ -311,7 +311,7 @@ export default function ResourcesPage() {
                 <button
                   type="button"
                   onClick={() => handleDownload(r)}
-                  className="h-9 px-3 rounded-md border text-sm hover:bg-gray-50 flex items-center gap-1 whitespace-nowrap"
+                  className="h-9 px-3 rounded-md border text-sm hover:bg-muted/50 flex items-center gap-1 whitespace-nowrap"
                 >
                   Download
                 </button>

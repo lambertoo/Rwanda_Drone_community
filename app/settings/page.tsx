@@ -18,28 +18,12 @@ export default function SettingsPage() {
     }
 
     // Redirect based on user role
-    switch (user.role) {
-      case 'superadmin':
-        router.push('/superadmin/settings')
-        break
-      case 'admin':
-        router.push('/admin/settings')
-        break
-      case 'regulator':
-        router.push('/regulator/settings')
-        break
-      case 'service_provider':
-        router.push('/provider/settings')
-        break
-      case 'pilot':
-        router.push('/pilot/settings')
-        break
-      case 'student':
-        router.push('/student/settings')
-        break
-      default:
-        router.push('/profile/edit')
-        break
+    if (user.role === 'superadmin') {
+      router.push('/superadmin/settings')
+    } else if (user.role === 'admin') {
+      router.push('/admin/settings')
+    } else {
+      router.push('/profile/edit')
     }
   }, [user, loading, router])
 

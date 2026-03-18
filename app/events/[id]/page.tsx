@@ -62,12 +62,19 @@ interface Event {
   }[];
 }
 
+interface RSVPParticipant {
+  id: string
+  createdAt: string
+  user: { fullName: string; email: string; role: string }
+}
+
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const [event, setEvent] = useState<Event | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [eventId, setEventId] = useState<string>("")
   const [rsvpStatus, setRsvpStatus] = useState<'none' | 'registered' | 'loading'>('none')
+  const [participants, setParticipants] = useState<RSVPParticipant[]>([])
   const { user } = useAuth()
 
   useEffect(() => {
@@ -100,6 +107,13 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   useEffect(() => {
     if (user && eventId && event) {
       checkRsvpStatus(eventId)
+      // Fetch participants if organizer or admin
+      if (event.organizerId === user.id || user.role === 'admin') {
+        fetch(`/api/events/${eventId}/rsvp`, { credentials: 'include' })
+          .then(r => r.json())
+          .then(d => setParticipants(d.rsvps || []))
+          .catch(() => {})
+      }
     }
   }, [user, eventId, event])
 
@@ -211,12 +225,12 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       return (<Button asChild className="w-full"><Link href="/login">Log In to Register</Link></Button>)
     }
     
-    // If event has a registration form, redirect to the form
+    // If event has a registration form, redirect to the form with eventId so RSVP is created on submit
     if (event.registrationFormId) {
       return (
         <Button asChild className="w-full">
-          <Link href={`/forms/public/${event.registrationFormId}`}>
-            Register
+          <Link href={`/forms/public/${event.registrationFormId}?eventId=${eventId}`}>
+            Register Now
           </Link>
         </Button>
       )
@@ -325,8 +339,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               />
             </div>
           ) : (
-            <div className="mb-6 w-full max-w-2xl h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-              <div className="text-center text-gray-500">
+            <div className="mb-6 w-full max-w-2xl h-64 bg-muted rounded-lg flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
                 <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
@@ -580,7 +594,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {event.registeredCount > 0 ? (
+              {participants.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -588,19 +602,18 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                         <th className="text-left py-2 font-medium">Name</th>
                         <th className="text-left py-2 font-medium">Email</th>
                         <th className="text-left py-2 font-medium">Role</th>
-                        <th className="text-left py-2 font-medium">Registration Date</th>
+                        <th className="text-left py-2 font-medium">Registered</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {/* This will be populated with actual participant data from RSVPs */}
-                      <tr className="border-b">
-                        <td className="py-2">Sample Participant</td>
-                        <td className="py-2">participant@example.com</td>
-                        <td className="py-2">Student</td>
-                        <td className="py-2 text-muted-foreground">
-                          {new Date().toLocaleDateString()}
-                        </td>
-                      </tr>
+                      {participants.map((p) => (
+                        <tr key={p.id} className="border-b hover:bg-muted/30">
+                          <td className="py-2">{p.user.fullName}</td>
+                          <td className="py-2 text-muted-foreground">{p.user.email}</td>
+                          <td className="py-2 capitalize">{p.user.role}</td>
+                          <td className="py-2 text-muted-foreground">{new Date(p.createdAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -608,7 +621,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 <div className="text-center py-8 text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No participants registered yet</p>
-        </div>
+                </div>
               )}
             </CardContent>
           </Card>

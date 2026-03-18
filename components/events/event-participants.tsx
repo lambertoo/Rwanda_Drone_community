@@ -147,10 +147,10 @@ export default function EventParticipants({
           <div className="animate-pulse space-y-3">
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                <div className="w-10 h-10 bg-muted rounded-full"></div>
                 <div className="space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-32"></div>
-                  <div className="h-3 bg-gray-200 rounded w-24"></div>
+                  <div className="h-4 bg-muted rounded w-32"></div>
+                  <div className="h-3 bg-muted rounded w-24"></div>
                 </div>
               </div>
             ))}
@@ -201,15 +201,15 @@ export default function EventParticipants({
       <CardContent>
         {participants.length === 0 ? (
           <div className="text-center py-8">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No participants registered yet.</p>
+            <Users className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
+            <p className="text-muted-foreground">No participants registered yet.</p>
           </div>
         ) : (
           <div className="space-y-4">
             {participants.map((participant) => (
               <div
                 key={participant.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
@@ -221,7 +221,7 @@ export default function EventParticipants({
                   
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900">
+                      <p className="font-medium text-foreground">
                         {participant.user.fullName || participant.user.username}
                       </p>
                       <Badge variant="secondary" className="text-xs">
@@ -229,7 +229,7 @@ export default function EventParticipants({
                       </Badge>
                     </div>
                     
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Mail className="h-3 w-3" />
                         {participant.user.email}
@@ -243,7 +243,7 @@ export default function EventParticipants({
                 </div>
                 
                 <div className="text-right">
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     RSVP'd on {new Date(participant.createdAt).toLocaleDateString()}
                   </p>
                 </div>
@@ -403,10 +403,10 @@ export default function EventParticipants({
           <div className="animate-pulse space-y-3">
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                <div className="w-10 h-10 bg-muted rounded-full"></div>
                 <div className="space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-32"></div>
-                  <div className="h-3 bg-gray-200 rounded w-24"></div>
+                  <div className="h-4 bg-muted rounded w-32"></div>
+                  <div className="h-3 bg-muted rounded w-24"></div>
                 </div>
               </div>
             ))}
@@ -457,15 +457,15 @@ export default function EventParticipants({
       <CardContent>
         {participants.length === 0 ? (
           <div className="text-center py-8">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No participants registered yet.</p>
+            <Users className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
+            <p className="text-muted-foreground">No participants registered yet.</p>
           </div>
         ) : (
           <div className="space-y-4">
             {participants.map((participant) => (
               <div
                 key={participant.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
@@ -477,7 +477,7 @@ export default function EventParticipants({
                   
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900">
+                      <p className="font-medium text-foreground">
                         {participant.user.fullName || participant.user.username}
                       </p>
                       <Badge variant="secondary" className="text-xs">
@@ -485,7 +485,7 @@ export default function EventParticipants({
                       </Badge>
                     </div>
                     
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Mail className="h-3 w-3" />
                         {participant.user.email}
@@ -499,7 +499,7 @@ export default function EventParticipants({
                 </div>
                 
                 <div className="text-right">
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     RSVP'd on {new Date(participant.createdAt).toLocaleDateString()}
                   </p>
                 </div>
@@ -662,10 +662,10 @@ export default function EventParticipants({
           <div className="animate-pulse space-y-3">
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                <div className="w-10 h-10 bg-muted rounded-full"></div>
                 <div className="space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-32"></div>
-                  <div className="h-3 bg-gray-200 rounded w-24"></div>
+                  <div className="h-4 bg-muted rounded w-32"></div>
+                  <div className="h-3 bg-muted rounded w-24"></div>
                 </div>
               </div>
             ))}
@@ -716,15 +716,15 @@ export default function EventParticipants({
       <CardContent>
         {participants.length === 0 ? (
           <div className="text-center py-8">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No participants registered yet.</p>
+            <Users className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
+            <p className="text-muted-foreground">No participants registered yet.</p>
           </div>
         ) : (
           <div className="space-y-4">
             {participants.map((participant) => (
               <div
                 key={participant.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
@@ -736,7 +736,7 @@ export default function EventParticipants({
                   
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900">
+                      <p className="font-medium text-foreground">
                         {participant.user.fullName || participant.user.username}
                       </p>
                       <Badge variant="secondary" className="text-xs">
@@ -744,7 +744,7 @@ export default function EventParticipants({
                       </Badge>
                     </div>
                     
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Mail className="h-3 w-3" />
                         {participant.user.email}
@@ -758,7 +758,7 @@ export default function EventParticipants({
                 </div>
                 
                 <div className="text-right">
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     RSVP'd on {new Date(participant.createdAt).toLocaleDateString()}
                   </p>
                 </div>
@@ -918,10 +918,10 @@ export default function EventParticipants({
           <div className="animate-pulse space-y-3">
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                <div className="w-10 h-10 bg-muted rounded-full"></div>
                 <div className="space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-32"></div>
-                  <div className="h-3 bg-gray-200 rounded w-24"></div>
+                  <div className="h-4 bg-muted rounded w-32"></div>
+                  <div className="h-3 bg-muted rounded w-24"></div>
                 </div>
               </div>
             ))}
@@ -972,15 +972,15 @@ export default function EventParticipants({
       <CardContent>
         {participants.length === 0 ? (
           <div className="text-center py-8">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No participants registered yet.</p>
+            <Users className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
+            <p className="text-muted-foreground">No participants registered yet.</p>
           </div>
         ) : (
           <div className="space-y-4">
             {participants.map((participant) => (
               <div
                 key={participant.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
@@ -992,7 +992,7 @@ export default function EventParticipants({
                   
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900">
+                      <p className="font-medium text-foreground">
                         {participant.user.fullName || participant.user.username}
                       </p>
                       <Badge variant="secondary" className="text-xs">
@@ -1000,7 +1000,7 @@ export default function EventParticipants({
                       </Badge>
                     </div>
                     
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Mail className="h-3 w-3" />
                         {participant.user.email}
@@ -1014,7 +1014,7 @@ export default function EventParticipants({
                 </div>
                 
                 <div className="text-right">
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     RSVP'd on {new Date(participant.createdAt).toLocaleDateString()}
                   </p>
                 </div>

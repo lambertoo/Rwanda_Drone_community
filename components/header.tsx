@@ -16,8 +16,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LanguageSwitcher } from "@/components/language-switcher"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
+import { NotificationBell } from "@/components/notification-bell"
 
 interface User {
   id: string
@@ -37,6 +39,15 @@ interface HeaderProps {
 export function Header({ onMobileMenuToggle }: HeaderProps) {
   const router = useRouter()
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+      setIsMobileSearchOpen(false)
+    }
+  }
   const [pendingCount, setPendingCount] = useState(0)
   const { user, logout, loading } = useAuth()
 
@@ -85,7 +96,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
       case "service-provider":
         return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400"
       default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
+        return "bg-muted text-foreground dark:text-muted-foreground/70"
     }
   }
 
@@ -141,16 +152,18 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
 
           {/* Search Bar - Right aligned, more compact */}
           <div className="flex flex-1 items-center justify-end px-4">
-            <div className="relative w-full max-w-sm">
+            <form onSubmit={handleSearch} className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                type="search" 
+              <Input
+                type="search"
                 id="search"
                 name="search"
-                placeholder="Search..." 
-                className="pl-10 w-full bg-muted/50 border-muted-foreground/20 focus:bg-background focus:border-primary/50 transition-all duration-200" 
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-full bg-muted/50 border-muted-foreground/20 focus:bg-background focus:border-primary/50 transition-all duration-200"
               />
-            </div>
+            </form>
           </div>
 
           {/* Right Corner Actions - Theme, Notifications, Profile */}
@@ -169,17 +182,22 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
             {/* Theme Toggle - More accessible position */}
             <ThemeToggle />
 
-            {/* Notifications or Pending Contents for Admin */}
-            {user?.role === 'admin' && (
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+
+            {/* Notification Bell for all logged-in users */}
+            <div className="hidden sm:flex">
+              <NotificationBell />
+            </div>
+
+            {/* Admin pending-content badge (additional indicator for admins) */}
+            {user?.role === 'admin' && pendingCount > 0 && (
               <Link href="/admin/approvals">
                 <Button variant="ghost" size="icon" className="hidden sm:flex relative">
-                  <Bell className="h-4 w-4" />
-                  {/* Pending content badge - dynamic count */}
-                  {pendingCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[12px] h-3 bg-red-500 rounded-full text-xs text-white flex items-center justify-center text-[10px] px-1">
-                      {pendingCount > 99 ? '99+' : pendingCount}
-                    </span>
-                  )}
+                  <Bell className="h-4 w-4 text-orange-500" />
+                  <span className="absolute -top-1 -right-1 min-w-[12px] h-3 bg-orange-500 rounded-full text-xs text-white flex items-center justify-center text-[10px] px-1">
+                    {pendingCount > 99 ? '99+' : pendingCount}
+                  </span>
                   <span className="sr-only">Pending Contents ({pendingCount})</span>
                 </Button>
               </Link>
@@ -189,7 +207,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
             <div className="ml-2 pl-2 border-l border-border">
               {loading ? (
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 animate-pulse bg-gray-200 rounded-full"></div>
+                  <div className="h-8 w-8 animate-pulse bg-muted rounded-full"></div>
                 </div>
               ) : user ? (
                 <DropdownMenu>
@@ -223,7 +241,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                             </Badge>
                           )}
                           {!user.role && (
-                            <Badge className="text-xs bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">
+                            <Badge className="text-xs bg-muted text-foreground dark:text-muted-foreground/70">
                               No Role
                             </Badge>
                           )}

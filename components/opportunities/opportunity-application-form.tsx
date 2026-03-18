@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle } from "lucide-react"
-import TallyPublicRenderer from "@/components/forms/tally-public-renderer"
+import FormRenderer from "@/components/forms/form-renderer"
 
 interface OpportunityApplicationFormProps {
   form: {
@@ -57,7 +57,7 @@ export default function OpportunityApplicationForm({ form, onSubmit, isSubmittin
         )}
       </CardHeader>
       <CardContent>
-        <TallyPublicRenderer
+        <FormRenderer
           form={form}
           onSubmit={handleFormSubmit}
           isSubmitting={isSubmitting}

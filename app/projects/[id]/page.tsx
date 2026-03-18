@@ -507,7 +507,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           <div className="relative z-10 p-8 text-white">
             <div className="flex items-center gap-2 mb-4">
               {project.category && (
-                <Badge variant="secondary" className="text-sm bg-white/20 text-white border-white/30 hover:bg-white/30">
+                <Badge variant="secondary" className="text-sm bg-background/20 text-white border-white/30 hover:bg-background/30">
                   {project.category.icon} {project.category.name}
                 </Badge>
               )}
@@ -568,20 +568,20 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             {/* Action Buttons */}
             <div className="flex gap-3 mt-6">
               <Button 
-                className={`${isLiked ? 'bg-red-500 hover:bg-red-600' : 'bg-white/20 hover:bg-white/30'} text-white border-white/30`}
+                className={`${isLiked ? 'bg-red-500 hover:bg-red-600' : 'bg-background/20 hover:bg-background/30'} text-white border-white/30`}
                 onClick={handleProjectLike}
               >
                 <Heart className={`h-4 w-4 mr-2 ${isLiked ? 'fill-current' : ''}`} />
                 {isLiked ? 'Liked' : 'Like'}
               </Button>
-              <Button variant="outline" className="text-white border-white/30 hover:bg-white/20 hover:text-white">
+              <Button variant="outline" className="text-white border-white/30 hover:bg-background/20 hover:text-white">
                 <Share2 className="h-4 w-4 mr-2" />
                 Share
               </Button>
               {/* Edit Button - Only show for admin or project author */}
               {isAuthenticated && (user?.role === 'admin' || user?.id === project.author.id) && (
                 <Link href={`/projects/${project.id}/edit`}>
-                  <Button variant="outline" className="text-white border-white/30 hover:bg-white/20 hover:text-white">
+                  <Button variant="outline" className="text-white border-white/30 hover:bg-background/20 hover:text-white">
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
                   </Button>
@@ -910,7 +910,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
                             {/* Reply Form */}
                             {replyingTo === comment.id && (
-                              <div className="mt-3 p-3 border rounded-lg bg-gray-50">
+                              <div className="mt-3 p-3 border rounded-lg bg-muted/50">
                                 <div className="flex items-start gap-2">
                                   <Avatar className="h-6 w-6">
                                     <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.fullName || "User"} />
@@ -950,7 +950,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                             {comment.replies.length > 0 && (
                               <div className="mt-3 space-y-3">
                                 {comment.replies.map((reply) => (
-                                  <div key={reply.id} className="flex items-start gap-3 p-3 border rounded-lg ml-8 bg-gray-50">
+                                  <div key={reply.id} className="flex items-start gap-3 p-3 border rounded-lg ml-8 bg-muted/50">
                                     <Avatar className="h-6 w-6">
                                       <AvatarImage src={reply.author.avatar || "/placeholder.svg"} alt={reply.author.fullName} />
                                       <AvatarFallback>

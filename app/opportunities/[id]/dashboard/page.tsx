@@ -184,7 +184,7 @@ function OpportunityDashboardPage() {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+        return 'bg-muted text-foreground dark:bg-gray-900 dark:text-gray-200'
     }
   }
 
@@ -192,8 +192,8 @@ function OpportunityDashboardPage() {
     return (
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-12 bg-gray-200 rounded w-3/4 mb-4"></div>
+          <div className="h-8 bg-muted rounded w-1/4 mb-4"></div>
+          <div className="h-12 bg-muted rounded w-3/4 mb-4"></div>
         </div>
       </div>
     )
@@ -381,7 +381,7 @@ function OpportunityDashboardPage() {
                   <div className="flex items-center justify-between">
                     <span>Pending Review</span>
                     <div className="flex items-center gap-2">
-                      <div className="w-32 bg-gray-200 rounded-full h-2">
+                      <div className="w-32 bg-muted rounded-full h-2">
                         <div 
                           className="bg-yellow-600 h-2 rounded-full" 
                           style={{ width: `${(pendingApplications / totalApplications) * 100}%` }}
@@ -393,7 +393,7 @@ function OpportunityDashboardPage() {
                   <div className="flex items-center justify-between">
                     <span>Approved</span>
                     <div className="flex items-center gap-2">
-                      <div className="w-32 bg-gray-200 rounded-full h-2">
+                      <div className="w-32 bg-muted rounded-full h-2">
                         <div 
                           className="bg-green-600 h-2 rounded-full" 
                           style={{ width: `${(approvedApplications / totalApplications) * 100}%` }}
@@ -405,7 +405,7 @@ function OpportunityDashboardPage() {
                   <div className="flex items-center justify-between">
                     <span>Rejected</span>
                     <div className="flex items-center gap-2">
-                      <div className="w-32 bg-gray-200 rounded-full h-2">
+                      <div className="w-32 bg-muted rounded-full h-2">
                         <div 
                           className="bg-red-600 h-2 rounded-full" 
                           style={{ width: `${(rejectedApplications / totalApplications) * 100}%` }}
@@ -489,7 +489,7 @@ function OpportunityDashboardPage() {
                     <div key={app.id} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                          <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
                             <span className="text-sm font-medium">
                               {app.applicant.fullName.split(' ').map(n => n[0]).join('')}
                             </span>

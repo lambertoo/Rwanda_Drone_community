@@ -167,7 +167,7 @@ export function EditPostForm({ post, onCancel, onSuccess }: EditPostFormProps) {
           {/* Category Info (Read-only) */}
           <div className="space-y-2">
             <Label>Category</Label>
-            <div className="p-3 bg-gray-50 rounded-md">
+            <div className="p-3 bg-muted/50 rounded-md">
               <span className="text-sm font-medium">{post.category.name}</span>
             </div>
           </div>

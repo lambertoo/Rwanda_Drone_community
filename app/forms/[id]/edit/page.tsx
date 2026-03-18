@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import TallyFormBuilder from "@/components/forms/tally-form-builder"
+import FormEditor from "@/components/forms/form-editor"
 import { AuthGuard } from "@/components/auth-guard"
 
 interface Form {
@@ -88,7 +88,7 @@ export default function EditFormPage({ params }: { params: { id: string } }) {
       <div className="max-w-6xl mx-auto p-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Form not found</h1>
-          <p className="text-gray-600 mb-4">The form you're looking for doesn't exist or you don't have access to it.</p>
+          <p className="text-muted-foreground mb-4">The form you're looking for doesn't exist or you don't have access to it.</p>
           <button
             onClick={() => router.push('/forms')}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -102,7 +102,7 @@ export default function EditFormPage({ params }: { params: { id: string } }) {
 
   return (
     <AuthGuard>
-      <TallyFormBuilder
+      <FormEditor
         initialData={form}
         onSave={handleSave}
         onCancel={handleCancel}

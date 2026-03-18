@@ -56,7 +56,7 @@ interface FormSection {
   order: number
 }
 
-interface TallyFormBuilderProps {
+interface FormEditorProps {
   onSave?: (form: any) => void
   onCancel?: () => void
   initialData?: any
@@ -81,9 +81,9 @@ const FIELD_TYPES = [
   { value: 'RATING', label: 'Rating', icon: Hash },
 ]
 
-export default function TallyFormBuilder({ onSave, onCancel, initialData }: TallyFormBuilderProps) {
+export default function FormEditor({ onSave, onCancel, initialData }: FormEditorProps) {
   // Debug: Log the initial data to see what we're receiving
-  console.log('TallyFormBuilder initialData:', initialData)
+  console.log('FormEditor initialData:', initialData)
   
   const [formTitle, setFormTitle] = useState(initialData?.title || "Untitled Form")
   const [formDescription, setFormDescription] = useState(initialData?.description || "")
@@ -308,7 +308,7 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
           <CardHeader>
             <CardTitle>{formTitle}</CardTitle>
             {formDescription && (
-              <p className="text-gray-600">{formDescription}</p>
+              <p className="text-muted-foreground">{formDescription}</p>
             )}
           </CardHeader>
           <CardContent className="space-y-6">
@@ -317,7 +317,7 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                 <div className="border-b pb-2">
                   <h3 className="text-lg font-semibold">{section.title}</h3>
                   {section.description && (
-                    <p className="text-sm text-gray-600">{section.description}</p>
+                    <p className="text-sm text-muted-foreground">{section.description}</p>
                   )}
                 </div>
                 
@@ -406,7 +406,7 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                       
                       {field.type === 'LINEAR_SCALE' && (
                         <div className="space-y-2">
-                          <div className="flex justify-between text-sm text-gray-500">
+                          <div className="flex justify-between text-sm text-muted-foreground">
                             <span>1</span>
                             <span>5</span>
                           </div>
@@ -416,8 +416,8 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                       
                       {field.type === 'MATRIX' && (
                         <div className="space-y-2">
-                          <div className="text-sm text-gray-500">Matrix Grid</div>
-                          <div className="border rounded p-2 text-sm text-gray-400">
+                          <div className="text-sm text-muted-foreground">Matrix Grid</div>
+                          <div className="border rounded p-2 text-sm text-muted-foreground/70">
                             Rows × Columns grid
                           </div>
                         </div>
@@ -427,7 +427,7 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                         <div className="space-y-2">
                           <div className="flex space-x-1">
                             {[1, 2, 3, 4, 5].map((star) => (
-                              <span key={star} className="text-gray-300">★</span>
+                              <span key={star} className="text-muted-foreground/50">★</span>
                             ))}
                           </div>
                         </div>
@@ -484,7 +484,7 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                   className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                     activeSection === section.id 
                       ? 'bg-blue-50 border-blue-200 shadow-sm' 
-                      : 'hover:bg-gray-50 border-gray-200'
+                      : 'hover:bg-muted/30 border-border'
                   }`}
                   onClick={() => setActiveSection(section.id)}
                 >
@@ -602,14 +602,14 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                 {activeSectionData?.title || 'Select a section'}
               </CardTitle>
               {activeSectionData?.description && (
-                <p className="text-sm text-gray-600">{activeSectionData.description}</p>
+                <p className="text-sm text-muted-foreground">{activeSectionData.description}</p>
               )}
             </CardHeader>
             <CardContent>
               {activeSectionData && (
                 <div className="space-y-4">
                   {activeSectionData.fields.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>No fields yet. Add a field from the sidebar.</p>
                     </div>
@@ -627,7 +627,7 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                                   <Badge variant="destructive">Required</Badge>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600">Name: {field.name}</p>
+                              <p className="text-sm text-muted-foreground">Name: {field.name}</p>
                             </div>
                             <div className="flex gap-1">
                               <Button
@@ -729,7 +729,7 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                             )}
                             {field.type === 'LINEAR_SCALE' && (
                               <div className="space-y-2">
-                                <div className="flex justify-between text-sm text-gray-500">
+                                <div className="flex justify-between text-sm text-muted-foreground">
                                   <span>1</span>
                                   <span>5</span>
                                 </div>
@@ -738,8 +738,8 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                             )}
                             {field.type === 'MATRIX' && (
                               <div className="space-y-2">
-                                <div className="text-sm text-gray-500">Matrix Grid</div>
-                                <div className="border rounded p-2 text-sm text-gray-400">
+                                <div className="text-sm text-muted-foreground">Matrix Grid</div>
+                                <div className="border rounded p-2 text-sm text-muted-foreground/70">
                                   Rows × Columns grid
                                 </div>
                               </div>
@@ -748,7 +748,7 @@ export default function TallyFormBuilder({ onSave, onCancel, initialData }: Tall
                               <div className="space-y-2">
                                 <div className="flex space-x-1">
                                   {[1, 2, 3, 4, 5].map((star) => (
-                                    <span key={star} className="text-gray-300">★</span>
+                                    <span key={star} className="text-muted-foreground/50">★</span>
                                   ))}
                                 </div>
                               </div>

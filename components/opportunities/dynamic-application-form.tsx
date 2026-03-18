@@ -297,7 +297,7 @@ export default function DynamicApplicationForm({ form, onSubmit, isSubmitting = 
 
       case 'PARAGRAPH':
         return (
-          <div className="text-sm text-muted-foreground p-3 bg-gray-50 rounded-md">
+          <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-md">
             {field.label}
           </div>
         )

@@ -206,16 +206,16 @@ function ServiceApprovalPage() {
       'Training': 'bg-pink-100 text-pink-800',
       'Maintenance': 'bg-red-100 text-red-800',
       'Consulting': 'bg-indigo-100 text-indigo-800',
-      'Other': 'bg-gray-100 text-gray-800'
+      'Other': 'bg-muted text-foreground'
     }
-    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800'
+    return colors[category as keyof typeof colors] || 'bg-muted text-foreground'
   }
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`h-4 w-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+        className={`h-4 w-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/50'}`}
       />
     ))
   }

@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
             title: section.title,
             description: section.description || null,
             order: sectionIndex + 1,
+            conditional: section.conditional || null,
             fields: {
               create: (section.fields || []).map((field: any, fieldIndex: number) => ({
                 label: field.label,

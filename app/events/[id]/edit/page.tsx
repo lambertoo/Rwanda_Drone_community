@@ -29,12 +29,12 @@ export default async function EditEventPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Hero Section */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-background border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center gap-4 mb-6">
             <Link 
               href="/events" 
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
               <span className="font-medium">Back to Events</span>
@@ -51,11 +51,11 @@ export default async function EditEventPage({ params }: PageProps) {
                 )}
               </div>
               
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              <h1 className="text-4xl font-bold text-foreground mb-4">
                 Edit: {event.title}
               </h1>
               
-              <p className="text-lg text-gray-600 max-w-3xl">
+              <p className="text-lg text-muted-foreground max-w-3xl">
                 Update your event details, speakers, agenda, and settings
               </p>
             </div>
@@ -65,7 +65,7 @@ export default async function EditEventPage({ params }: PageProps) {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-background rounded-2xl shadow-sm border border-border overflow-hidden">
           <EventEditForm event={event} />
         </div>
       </div>

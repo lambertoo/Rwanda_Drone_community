@@ -1,0 +1,104 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "notifications": "Notifications",
+    "forum": "Forum",
+    "projects": "Projets",
+    "events": "Événements",
+    "community_directory": "Annuaire",
+    "resources": "Ressources",
+    "my_fleet": "Ma Flotte",
+    "flight_logbook": "Carnet de Vol",
+    "compliance": "Conformité",
+    "airspace_map": "Carte Aérienne",
+    "weather_briefing": "Météo",
+    "safety_center": "Centre de Sécurité",
+    "learn": "Cours",
+    "my_courses": "Mes Cours",
+    "mentorship": "Mentorat",
+    "marketplace": "Marché",
+    "services": "Services",
+    "opportunities": "Opportunités",
+    "my_opportunities": "Mes Opportunités",
+    "search": "Rechercher",
+    "activity_feed": "Fil d'Activité",
+    "gallery": "Galerie",
+    "news": "Actualités",
+    "my_profile": "Mon Profil",
+    "forms": "Formulaires",
+    "settings": "Paramètres",
+    "sections": {
+      "main": "Principal",
+      "community": "Communauté",
+      "drone_tools": "Outils Drone",
+      "learn": "Apprendre",
+      "marketplace_work": "Marché & Travail",
+      "discover": "Découvrir",
+      "account": "Compte",
+      "administration": "Administration",
+      "regulator": "Régulateur",
+      "provider": "Prestataire",
+      "student": "Étudiant"
+    }
+  },
+  "common": {
+    "sign_in": "Connexion",
+    "sign_up": "S'inscrire",
+    "sign_out": "Déconnexion",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "submit": "Soumettre",
+    "loading": "Chargement...",
+    "error": "Une erreur s'est produite",
+    "back": "Retour",
+    "view_all": "Voir tout",
+    "search_placeholder": "Rechercher...",
+    "no_results": "Aucun résultat",
+    "required": "Obligatoire",
+    "optional": "Facultatif",
+    "free": "Gratuit",
+    "new": "Nouveau",
+    "verified": "Vérifié"
+  },
+  "pages": {
+    "home": {
+      "title": "Communauté Drone Rwanda",
+      "subtitle": "La plateforme tout-en-un pour l'écosystème drone du Rwanda"
+    },
+    "forum": {
+      "title": "Forum Communautaire",
+      "subtitle": "Discutez, partagez et apprenez avec la communauté drone du Rwanda"
+    },
+    "events": {
+      "title": "Événements",
+      "subtitle": "Découvrez les événements, ateliers et compétitions de drones au Rwanda"
+    },
+    "logbook": {
+      "title": "Carnet de Vol",
+      "subtitle": "Suivez vos vols, heures et utilisation de drones"
+    },
+    "learn": {
+      "title": "Apprenez & Obtenez une Certification",
+      "subtitle": "Cours, préparation à l'examen CAA, et développement des compétences"
+    },
+    "weather": {
+      "title": "Météo de Vol",
+      "subtitle": "Conditions météorologiques pré-vol à travers le Rwanda"
+    },
+    "airspace": {
+      "title": "Référence Espace Aérien Rwanda",
+      "subtitle": "Sachez avant de voler"
+    }
+  },
+  "roles": {
+    "admin": "Administrateur",
+    "superadmin": "Super Administrateur",
+    "pilot": "Pilote",
+    "hobbyist": "Amateur",
+    "student": "Étudiant",
+    "regulator": "Régulateur",
+    "service_provider": "Prestataire de Services"
+  }
+}

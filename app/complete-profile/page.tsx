@@ -92,7 +92,7 @@ function CompleteProfileForm() {
         <Card className="w-full max-w-2xl">
           <CardContent className="flex items-center justify-center p-8">
             <Loader className="h-8 w-8 animate-spin" />
-            <p className="mt-4 text-gray-600">Loading...</p>
+            <p className="mt-4 text-muted-foreground">Loading...</p>
           </CardContent>
         </Card>
       </div>
@@ -106,7 +106,7 @@ function CompleteProfileForm() {
         <Card className="w-full max-w-2xl">
           <CardContent className="flex items-center justify-center p-8">
             <Loader className="h-8 w-8 animate-spin" />
-            <p className="mt-4 text-gray-600">Checking authentication...</p>
+            <p className="mt-4 text-muted-foreground">Checking authentication...</p>
           </CardContent>
         </Card>
       </div>
@@ -119,7 +119,7 @@ function CompleteProfileForm() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
         <Card className="w-full max-w-2xl">
           <CardContent className="flex items-center justify-center p-8">
-            <p className="text-gray-600">Redirecting to dashboard...</p>
+            <p className="text-muted-foreground">Redirecting to dashboard...</p>
           </CardContent>
         </Card>
       </div>

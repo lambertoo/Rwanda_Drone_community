@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import TallyCloneBuilder from "@/components/forms/tally-clone-builder"
+import FormBuilder from "@/components/forms/form-builder"
 import { AuthGuard } from "@/components/auth-guard"
 
 export default function NewFormPage() {
@@ -41,7 +41,7 @@ export default function NewFormPage() {
 
   return (
     <AuthGuard>
-      <TallyCloneBuilder
+      <FormBuilder
         onSave={handleSave}
         onCancel={handleCancel}
       />

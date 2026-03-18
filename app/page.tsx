@@ -169,7 +169,7 @@ export default async function HomePage() {
       case "planning":
         return "bg-blue-100 text-blue-800"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-muted text-foreground"
     }
   }
 
@@ -297,7 +297,7 @@ export default async function HomePage() {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute top-4 left-4 flex gap-2">
-                      <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm">
+                      <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm">
                         {getCategoryIcon(project.category?.name)} {project.category?.name || 'Uncategorized'}
                       </Badge>
                       <Badge variant="secondary" className={`${getStatusColor(project.status)} backdrop-blur-sm`}>
@@ -508,7 +508,7 @@ export default async function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="text-lg px-8 py-3 border-white text-white hover:bg-white hover:text-blue-600 bg-transparent"
+                className="text-lg px-8 py-3 border-white text-white hover:bg-background hover:text-blue-600 bg-transparent"
               >
                 Join Community
               </Button>

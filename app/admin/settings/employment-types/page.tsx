@@ -137,7 +137,7 @@ function EmploymentTypesContent() {
       case 'job': return 'bg-blue-100 text-blue-800'
       case 'gig': return 'bg-green-100 text-green-800'
       case 'other': return 'bg-purple-100 text-purple-800'
-      default: return 'bg-gray-100 text-gray-800'
+      default: return 'bg-muted text-foreground'
     }
   }
 
@@ -154,7 +154,7 @@ function EmploymentTypesContent() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading employment types...</p>
         </div>
       </div>

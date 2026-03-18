@@ -411,53 +411,53 @@ export default function EventEditForm({ event }: EventEditFormProps) {
   return (
     <form onSubmit={handleSubmit} className="p-8">
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-8">
-        <TabsList className="grid w-full grid-cols-5 bg-gray-100 p-1 rounded-xl">
+        <TabsList className="grid w-full grid-cols-5 bg-muted p-1 rounded-xl">
           <TabsTrigger 
             value="basic" 
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 rounded-lg transition-all"
+            className="data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-blue-600 rounded-lg transition-all"
           >
             Basic Info
           </TabsTrigger>
           <TabsTrigger 
             value="details" 
             disabled={!canProceed("details")}
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 rounded-lg transition-all disabled:opacity-50"
+            className="data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-blue-600 rounded-lg transition-all disabled:opacity-50"
           >
             Details
           </TabsTrigger>
           <TabsTrigger 
             value="speakers" 
             disabled={!canProceed("speakers")}
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 rounded-lg transition-all disabled:opacity-50"
+            className="data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-blue-600 rounded-lg transition-all disabled:opacity-50"
           >
             Speakers
           </TabsTrigger>
           <TabsTrigger 
             value="agenda" 
             disabled={!canProceed("agenda")}
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 rounded-lg transition-all disabled:opacity-50"
+            className="data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-blue-600 rounded-lg transition-all disabled:opacity-50"
           >
             Agenda
           </TabsTrigger>
           <TabsTrigger 
             value="preview" 
             disabled={!canProceed("preview")}
-            className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 rounded-lg transition-all disabled:opacity-50"
+            className="data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-blue-600 rounded-lg transition-all disabled:opacity-50"
           >
             Preview
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="basic" className="space-y-8">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-2xl font-bold text-gray-900">Basic Information</h2>
-              <p className="text-gray-600 mt-1">Essential details about your event</p>
+          <div className="bg-background rounded-xl border border-border overflow-hidden">
+            <div className="px-8 py-6 border-b border-border bg-muted/50">
+              <h2 className="text-2xl font-bold text-foreground">Basic Information</h2>
+              <p className="text-muted-foreground mt-1">Essential details about your event</p>
             </div>
             <div className="p-8 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
-                  <Label htmlFor="title" className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <Label htmlFor="title" className="text-sm font-semibold text-foreground mb-2 block">
                     Event Title *
                   </Label>
                   <Input
@@ -465,13 +465,13 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Enter event title"
-                    className="h-12 text-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-12 text-lg border-border focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <Label htmlFor="description" className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <Label htmlFor="description" className="text-sm font-semibold text-foreground mb-2 block">
                     Short Description *
                   </Label>
                   <Textarea
@@ -480,18 +480,18 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Brief description of your event"
                     rows={3}
-                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
+                    className="border-border focus:border-blue-500 focus:ring-blue-500 resize-none"
                     required
                   />
-                  <p className="text-sm text-gray-500 mt-2">{description.length}/200 characters</p>
+                  <p className="text-sm text-muted-foreground mt-2">{description.length}/200 characters</p>
                 </div>
 
                 <div>
-                  <Label htmlFor="category" className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <Label htmlFor="category" className="text-sm font-semibold text-foreground mb-2 block">
                     Category *
                   </Label>
                   <Select value={categoryId} onValueChange={setCategoryId} required disabled={loadingCategories}>
-                    <SelectTrigger className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectTrigger className="h-12 border-border focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder={loadingCategories ? "Loading categories..." : "Select category"} />
                     </SelectTrigger>
                     <SelectContent>
@@ -518,7 +518,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                 </div>
 
                 <div>
-                  <Label htmlFor="startDate" className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <Label htmlFor="startDate" className="text-sm font-semibold text-foreground mb-2 block">
                     Start Date *
                   </Label>
                   <Input
@@ -526,13 +526,13 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-12 border-border focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="endDate" className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <Label htmlFor="endDate" className="text-sm font-semibold text-foreground mb-2 block">
                     End Date
                   </Label>
                   <Input
@@ -541,12 +541,12 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     min={startDate}
-                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-12 border-border focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="startTime" className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <Label htmlFor="startTime" className="text-sm font-semibold text-foreground mb-2 block">
                     Start Time *
                   </Label>
                   <Input
@@ -554,13 +554,13 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                     type="time"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
-                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-12 border-border focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="endTime" className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <Label htmlFor="endTime" className="text-sm font-semibold text-foreground mb-2 block">
                     End Time
                   </Label>
                   <Input
@@ -569,12 +569,12 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                     value={endTime}
                     onChange={(e) => setEndTime(e.target.value)}
                     min={startTime}
-                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-12 border-border focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="location" className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <Label htmlFor="location" className="text-sm font-semibold text-foreground mb-2 block">
                     Location *
                   </Label>
                   <Input
@@ -582,13 +582,13 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="City or region"
-                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-12 border-border focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="venue" className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <Label htmlFor="venue" className="text-sm font-semibold text-foreground mb-2 block">
                     Venue
                   </Label>
                   <Input
@@ -596,12 +596,12 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                     value={venue}
                     onChange={(e) => setVenue(e.target.value)}
                     placeholder="Specific venue name"
-                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-12 border-border focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="capacity" className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <Label htmlFor="capacity" className="text-sm font-semibold text-foreground mb-2 block">
                     Capacity
                   </Label>
                   <Input
@@ -611,12 +611,12 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                     onChange={(e) => setCapacity(e.target.value)}
                     placeholder="Maximum attendees"
                     min="1"
-                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-12 border-border focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="registrationDeadline" className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <Label htmlFor="registrationDeadline" className="text-sm font-semibold text-foreground mb-2 block">
                     Registration Deadline
                   </Label>
                   <Input
@@ -625,14 +625,14 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                     value={registrationDeadline}
                     onChange={(e) => setRegistrationDeadline(e.target.value)}
                     max={startDate}
-                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-12 border-border focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               {/* Flyer Upload */}
-              <div className="md:col-span-2 pt-6 border-t border-gray-200">
-                <Label htmlFor="flyer" className="text-sm font-semibold text-gray-700 mb-3 block">
+              <div className="md:col-span-2 pt-6 border-t border-border">
+                <Label htmlFor="flyer" className="text-sm font-semibold text-foreground mb-3 block">
                   Event Flyer
                 </Label>
                 <div className="mt-2">
@@ -641,7 +641,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                       <img
                         src={flyerPreview}
                         alt="Flyer preview"
-                        className="w-full max-w-md h-48 object-cover rounded-xl border-2 border-gray-200"
+                        className="w-full max-w-md h-48 object-cover rounded-xl border-2 border-border"
                       />
                       <Button
                         type="button"
@@ -654,13 +654,13 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                       </Button>
                     </div>
                   ) : (
-                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50 hover:bg-gray-100 transition-colors">
-                      <Upload className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                    <div className="border-2 border-dashed border-border rounded-xl p-8 text-center bg-muted/50 hover:bg-muted transition-colors">
+                      <Upload className="mx-auto h-16 w-16 text-muted-foreground/70 mb-4" />
                       <div className="space-y-2">
                         <Label htmlFor="flyer-upload" className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium text-lg">
                           Upload flyer image
                         </Label>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           JPG, PNG, GIF up to 5MB
                         </p>
                       </div>
@@ -678,14 +678,14 @@ export default function EventEditForm({ event }: EventEditFormProps) {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-2xl font-bold text-gray-900">Pricing</h2>
+          <div className="bg-background rounded-xl border border-border overflow-hidden">
+            <div className="px-8 py-6 border-b border-border bg-muted/50">
+              <h2 className="text-2xl font-bold text-foreground">Pricing</h2>
             </div>
             <div className="p-8 space-y-6">
               <div className="flex items-center space-x-3">
                 <Switch id="isFree" checked={isFree} onCheckedChange={setIsFree} />
-                <Label htmlFor="isFree" className="text-base font-medium text-gray-700">
+                <Label htmlFor="isFree" className="text-base font-medium text-foreground">
                   This is a free event
                 </Label>
               </div>
@@ -693,7 +693,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
               {!isFree && (
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="price" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <Label htmlFor="price" className="text-sm font-semibold text-foreground mb-2 block">
                       Price
                     </Label>
                     <Input
@@ -704,15 +704,15 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                       placeholder="0"
                       min="0"
                       step="0.01"
-                      className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="h-12 border-border focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="currency" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <Label htmlFor="currency" className="text-sm font-semibold text-foreground mb-2 block">
                       Currency
                     </Label>
                     <Select value={currency} onValueChange={setCurrency}>
-                      <SelectTrigger className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                      <SelectTrigger className="h-12 border-border focus:border-blue-500 focus:ring-blue-500">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -727,9 +727,9 @@ export default function EventEditForm({ event }: EventEditFormProps) {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-2xl font-bold text-gray-900">Event Settings</h2>
+          <div className="bg-background rounded-xl border border-border overflow-hidden">
+            <div className="px-8 py-6 border-b border-border bg-muted/50">
+              <h2 className="text-2xl font-bold text-foreground">Event Settings</h2>
             </div>
             <div className="p-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -739,7 +739,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                     checked={allowRegistration}
                     onCheckedChange={setAllowRegistration}
                   />
-                  <Label htmlFor="allowRegistration" className="text-base font-medium text-gray-700">
+                  <Label htmlFor="allowRegistration" className="text-base font-medium text-foreground">
                     Allow online registration
                   </Label>
                 </div>
@@ -750,7 +750,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                     checked={isPublished}
                     onCheckedChange={setIsPublished}
                   />
-                  <Label htmlFor="isPublished" className="text-base font-medium text-gray-700">
+                  <Label htmlFor="isPublished" className="text-base font-medium text-foreground">
                     Make this event public
                   </Label>
                 </div>
@@ -761,7 +761,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                     checked={isFeatured}
                     onCheckedChange={setIsFeatured}
                   />
-                  <Label htmlFor="isFeatured" className="text-base font-medium text-gray-700">
+                  <Label htmlFor="isFeatured" className="text-base font-medium text-foreground">
                     Featured event
                   </Label>
                 </div>
@@ -771,14 +771,14 @@ export default function EventEditForm({ event }: EventEditFormProps) {
         </TabsContent>
 
         <TabsContent value="details" className="space-y-8">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-2xl font-bold text-gray-900">Event Details</h2>
-              <p className="text-gray-600 mt-1">Additional information about your event</p>
+          <div className="bg-background rounded-xl border border-border overflow-hidden">
+            <div className="px-8 py-6 border-b border-border bg-muted/50">
+              <h2 className="text-2xl font-bold text-foreground">Event Details</h2>
+              <p className="text-muted-foreground mt-1">Additional information about your event</p>
             </div>
             <div className="p-8 space-y-8">
               <div>
-                <Label htmlFor="fullDescription" className="text-sm font-semibold text-gray-700 mb-3 block">
+                <Label htmlFor="fullDescription" className="text-sm font-semibold text-foreground mb-3 block">
                   Full Description
                 </Label>
                 <Textarea
@@ -787,19 +787,19 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                   onChange={(e) => setFullDescription(e.target.value)}
                   placeholder="Detailed description of your event"
                   rows={6}
-                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
+                  className="border-border focus:border-blue-500 focus:ring-blue-500 resize-none"
                 />
               </div>
 
               <div>
-                <Label className="text-sm font-semibold text-gray-700 mb-3 block">Requirements</Label>
+                <Label className="text-sm font-semibold text-foreground mb-3 block">Requirements</Label>
                 <div className="flex gap-3 mb-4">
                   <Input
                     value={newRequirement}
                     onChange={(e) => setNewRequirement(e.target.value)}
                     placeholder="Add a requirement"
                     onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addRequirement())}
-                    className="flex-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="flex-1 border-border focus:border-blue-500 focus:ring-blue-500"
                   />
                   <Button type="button" onClick={addRequirement} size="sm" className="px-6">
                     <Plus className="h-4 w-4 mr-2" />
@@ -817,14 +817,14 @@ export default function EventEditForm({ event }: EventEditFormProps) {
               </div>
 
               <div>
-                <Label className="text-sm font-semibold text-gray-700 mb-3 block">Tags</Label>
+                <Label className="text-sm font-semibold text-foreground mb-3 block">Tags</Label>
                 <div className="flex gap-3 mb-4">
                   <Input
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     placeholder="Add a tag"
                     onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
-                    className="flex-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="flex-1 border-border focus:border-blue-500 focus:ring-blue-500"
                   />
                   <Button type="button" onClick={addTag} size="sm" className="px-6">
                     <Plus className="h-4 w-4 mr-2" />
@@ -833,9 +833,9 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                 </div>
                 <div className="flex flex-wrap gap-3">
                   {tags.map((tag) => (
-                    <Badge key={tag} variant="outline" className="flex items-center gap-2 px-3 py-2 text-sm border-gray-300 text-gray-700 hover:bg-gray-50">
+                    <Badge key={tag} variant="outline" className="flex items-center gap-2 px-3 py-2 text-sm border-border text-foreground hover:bg-muted/50">
                       #{tag}
-                      <X className="h-4 w-4 cursor-pointer hover:text-gray-600" onClick={() => removeTag(tag)} />
+                      <X className="h-4 w-4 cursor-pointer hover:text-muted-foreground" onClick={() => removeTag(tag)} />
                     </Badge>
                   ))}
                 </div>
@@ -845,17 +845,17 @@ export default function EventEditForm({ event }: EventEditFormProps) {
         </TabsContent>
 
         <TabsContent value="speakers" className="space-y-8">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-2xl font-bold text-gray-900">Speakers</h2>
-              <p className="text-gray-600 mt-1">Add speakers for your event</p>
+          <div className="bg-background rounded-xl border border-border overflow-hidden">
+            <div className="px-8 py-6 border-b border-border bg-muted/50">
+              <h2 className="text-2xl font-bold text-foreground">Speakers</h2>
+              <p className="text-muted-foreground mt-1">Add speakers for your event</p>
             </div>
             <div className="p-8 space-y-8">
-              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Speaker</h3>
+              <div className="bg-muted/50 rounded-xl p-6 border border-border">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Add New Speaker</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="speakerName" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <Label htmlFor="speakerName" className="text-sm font-semibold text-foreground mb-2 block">
                       Name
                     </Label>
                     <Input
@@ -863,11 +863,11 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                       value={newSpeaker.name}
                       onChange={(e) => setNewSpeaker({ ...newSpeaker, name: e.target.value })}
                       placeholder="Speaker name"
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="border-border focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="speakerTitle" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <Label htmlFor="speakerTitle" className="text-sm font-semibold text-foreground mb-2 block">
                       Title
                     </Label>
                     <Input
@@ -875,11 +875,11 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                       value={newSpeaker.title}
                       onChange={(e) => setNewSpeaker({ ...newSpeaker, title: e.target.value })}
                       placeholder="Job title"
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="border-border focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="speakerCompany" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <Label htmlFor="speakerCompany" className="text-sm font-semibold text-foreground mb-2 block">
                       Company
                     </Label>
                     <Input
@@ -887,11 +887,11 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                       value={newSpeaker.company}
                       onChange={(e) => setNewSpeaker({ ...newSpeaker, company: e.target.value })}
                       placeholder="Company name"
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="border-border focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="speakerAvatar" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <Label htmlFor="speakerAvatar" className="text-sm font-semibold text-foreground mb-2 block">
                       Avatar URL
                     </Label>
                     <Input
@@ -899,11 +899,11 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                       value={newSpeaker.avatar}
                       onChange={(e) => setNewSpeaker({ ...newSpeaker, avatar: e.target.value })}
                       placeholder="Profile image URL"
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="border-border focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <Label htmlFor="speakerBio" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <Label htmlFor="speakerBio" className="text-sm font-semibold text-foreground mb-2 block">
                       Bio
                     </Label>
                     <Textarea
@@ -912,7 +912,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                       onChange={(e) => setNewSpeaker({ ...newSpeaker, bio: e.target.value })}
                       placeholder="Speaker biography"
                       rows={3}
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
+                      className="border-border focus:border-blue-500 focus:ring-blue-500 resize-none"
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -925,19 +925,19 @@ export default function EventEditForm({ event }: EventEditFormProps) {
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Speakers</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4">Current Speakers</h3>
                 {speakers.map((speaker) => (
-                  <div key={speaker.id} className="flex items-start gap-4 p-6 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 transition-colors">
+                  <div key={speaker.id} className="flex items-start gap-4 p-6 border border-border rounded-xl bg-background hover:bg-muted/50 transition-colors">
                     <img
                       src={speaker.avatar || "/placeholder.svg?height=60&width=60&text=Speaker"}
                       alt={speaker.name}
-                      className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                      className="w-16 h-16 rounded-full object-cover border-2 border-border"
                     />
                     <div className="flex-1">
-                      <h4 className="font-semibold text-lg text-gray-900">{speaker.name}</h4>
-                      <p className="text-gray-600 font-medium">{speaker.title}</p>
-                      {speaker.company && <p className="text-gray-500">{speaker.company}</p>}
-                      {speaker.bio && <p className="text-gray-600 mt-2">{speaker.bio}</p>}
+                      <h4 className="font-semibold text-lg text-foreground">{speaker.name}</h4>
+                      <p className="text-muted-foreground font-medium">{speaker.title}</p>
+                      {speaker.company && <p className="text-muted-foreground">{speaker.company}</p>}
+                      {speaker.bio && <p className="text-muted-foreground mt-2">{speaker.bio}</p>}
                     </div>
                     <Button type="button" variant="outline" size="sm" onClick={() => removeSpeaker(speaker.id)} className="text-red-600 border-red-300 hover:bg-red-50">
                       <X className="h-4 w-4" />
@@ -950,17 +950,17 @@ export default function EventEditForm({ event }: EventEditFormProps) {
         </TabsContent>
 
         <TabsContent value="agenda" className="space-y-8">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-2xl font-bold text-gray-900">Event Agenda</h2>
-              <p className="text-gray-600 mt-1">Create a schedule for your event</p>
+          <div className="bg-background rounded-xl border border-border overflow-hidden">
+            <div className="px-8 py-6 border-b border-border bg-muted/50">
+              <h2 className="text-2xl font-bold text-foreground">Event Agenda</h2>
+              <p className="text-muted-foreground mt-1">Create a schedule for your event</p>
             </div>
             <div className="p-8 space-y-8">
-              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Agenda Item</h3>
+              <div className="bg-muted/50 rounded-xl p-6 border border-border">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Add New Agenda Item</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <Label htmlFor="agendaTitle" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <Label htmlFor="agendaTitle" className="text-sm font-semibold text-foreground mb-2 block">
                       Session Title
                     </Label>
                     <Input
@@ -968,11 +968,11 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                       value={newAgendaItem.title}
                       onChange={(e) => setNewAgendaItem({ ...newAgendaItem, title: e.target.value })}
                       placeholder="Session title"
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="border-border focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="agendaStartTime" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <Label htmlFor="agendaStartTime" className="text-sm font-semibold text-foreground mb-2 block">
                       Start Time
                     </Label>
                     <Input
@@ -980,11 +980,11 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                       type="time"
                       value={newAgendaItem.startTime}
                       onChange={(e) => setNewAgendaItem({ ...newAgendaItem, startTime: e.target.value })}
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="border-border focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="agendaEndTime" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <Label htmlFor="agendaEndTime" className="text-sm font-semibold text-foreground mb-2 block">
                       End Time
                     </Label>
                     <Input
@@ -992,18 +992,18 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                       type="time"
                       value={newAgendaItem.endTime}
                       onChange={(e) => setNewAgendaItem({ ...newAgendaItem, endTime: e.target.value })}
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="border-border focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="agendaType" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <Label htmlFor="agendaType" className="text-sm font-semibold text-foreground mb-2 block">
                       Type
                     </Label>
                     <Select
                       value={newAgendaItem.type}
                       onValueChange={(value) => setNewAgendaItem({ ...newAgendaItem, type: value as any })}
                     >
-                      <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                      <SelectTrigger className="border-border focus:border-blue-500 focus:ring-blue-500">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1016,14 +1016,14 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="agendaSpeaker" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <Label htmlFor="agendaSpeaker" className="text-sm font-semibold text-foreground mb-2 block">
                       Speaker
                     </Label>
                     <Select
                       value={newAgendaItem.speaker}
                       onValueChange={(value) => setNewAgendaItem({ ...newAgendaItem, speaker: value })}
                     >
-                      <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                      <SelectTrigger className="border-border focus:border-blue-500 focus:ring-blue-500">
                         <SelectValue placeholder="Select speaker" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1036,7 +1036,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                     </Select>
                   </div>
                   <div className="md:col-span-2">
-                    <Label htmlFor="agendaDescription" className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <Label htmlFor="agendaDescription" className="text-sm font-semibold text-foreground mb-2 block">
                       Description
                     </Label>
                     <Textarea
@@ -1045,7 +1045,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                       onChange={(e) => setNewAgendaItem({ ...newAgendaItem, description: e.target.value })}
                       placeholder="Session description"
                       rows={2}
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
+                      className="border-border focus:border-blue-500 focus:ring-blue-500 resize-none"
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -1058,15 +1058,15 @@ export default function EventEditForm({ event }: EventEditFormProps) {
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Event Schedule</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4">Event Schedule</h3>
                 <div className="space-y-3">
                   {agenda
                     .sort((a, b) => a.startTime.localeCompare(b.startTime))
                     .map((item) => (
-                      <div key={item.id} className="flex items-center gap-4 p-3 border border-gray-200 rounded-lg bg-white">
+                      <div key={item.id} className="flex items-center gap-4 p-3 border border-border rounded-lg bg-background">
                         <span className="font-mono text-sm text-blue-600 font-semibold min-w-[80px]">{item.startTime}</span>
-                        <span className="font-medium text-gray-900">{item.title}</span>
-                        <Badge variant="outline" className="ml-auto border-gray-300 text-gray-700">
+                        <span className="font-medium text-foreground">{item.title}</span>
+                        <Badge variant="outline" className="ml-auto border-border text-foreground">
                           {item.type}
                         </Badge>
                       </div>
@@ -1078,13 +1078,13 @@ export default function EventEditForm({ event }: EventEditFormProps) {
         </TabsContent>
 
         <TabsContent value="preview" className="space-y-8">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-2xl font-bold text-gray-900">Event Preview</h2>
-              <p className="text-gray-600 mt-1">Review your event before publishing</p>
+          <div className="bg-background rounded-xl border border-border overflow-hidden">
+            <div className="px-8 py-6 border-b border-border bg-muted/50">
+              <h2 className="text-2xl font-bold text-foreground">Event Preview</h2>
+              <p className="text-muted-foreground mt-1">Review your event before publishing</p>
             </div>
             <div className="p-8 space-y-8">
-              <div className="aspect-video bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300">
+              <div className="aspect-video bg-muted rounded-xl flex items-center justify-center overflow-hidden border-2 border-dashed border-border">
                 {flyerPreview ? (
                   <img
                     src={flyerPreview}
@@ -1093,16 +1093,16 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                   />
                 ) : (
                   <div className="text-center">
-                    <Upload className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No flyer uploaded</p>
+                    <Upload className="h-16 w-16 text-muted-foreground/70 mx-auto mb-4" />
+                    <p className="text-muted-foreground">No flyer uploaded</p>
                   </div>
                 )}
               </div>
 
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-3xl font-bold text-gray-900 mb-3">{title || "Event Title"}</h2>
-                  <p className="text-lg text-gray-600 mb-6">{description || "Event description"}</p>
+                  <h2 className="text-3xl font-bold text-foreground mb-3">{title || "Event Title"}</h2>
+                  <p className="text-lg text-muted-foreground mb-6">{description || "Event description"}</p>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
                     <div className="flex items-center gap-3">
@@ -1110,8 +1110,8 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                         <Calendar className="h-5 w-5 text-blue-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">Date</p>
-                        <p className="text-gray-600">{startDate || "TBD"}</p>
+                        <p className="font-medium text-foreground">Date</p>
+                        <p className="text-muted-foreground">{startDate || "TBD"}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -1119,8 +1119,8 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                         <Clock className="h-5 w-5 text-green-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">Time</p>
-                        <p className="text-gray-600">{startTime || "TBD"}</p>
+                        <p className="font-medium text-foreground">Time</p>
+                        <p className="text-muted-foreground">{startTime || "TBD"}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -1128,8 +1128,8 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                         <MapPin className="h-5 w-5 text-red-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">Location</p>
-                        <p className="text-gray-600">{location || "TBD"}</p>
+                        <p className="font-medium text-foreground">Location</p>
+                        <p className="text-muted-foreground">{location || "TBD"}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -1137,34 +1137,34 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                         <Users className="h-5 w-5 text-purple-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">Capacity</p>
-                        <p className="text-gray-600">{capacity ? `${capacity} spots` : "Unlimited"}</p>
+                        <p className="font-medium text-foreground">Capacity</p>
+                        <p className="text-muted-foreground">{capacity ? `${capacity} spots` : "Unlimited"}</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {fullDescription && (
-                  <div className="pt-6 border-t border-gray-200">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-3">About This Event</h3>
-                    <p className="text-gray-600 leading-relaxed">{fullDescription}</p>
+                  <div className="pt-6 border-t border-border">
+                    <h3 className="text-xl font-semibold text-foreground mb-3">About This Event</h3>
+                    <p className="text-muted-foreground leading-relaxed">{fullDescription}</p>
                   </div>
                 )}
 
                 {speakers.length > 0 && (
-                  <div className="pt-6 border-t border-gray-200">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Speakers</h3>
+                  <div className="pt-6 border-t border-border">
+                    <h3 className="text-xl font-semibold text-foreground mb-4">Speakers</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {speakers.map((speaker) => (
-                        <div key={speaker.id} className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl bg-gray-50">
+                        <div key={speaker.id} className="flex items-center gap-4 p-4 border border-border rounded-xl bg-muted/50">
                           <img
                             src={speaker.avatar || "/placeholder.svg?height=40&width=40&text=Speaker"}
                             alt={speaker.name}
                             className="w-12 h-12 rounded-full object-cover border-2 border-white"
                           />
                           <div>
-                            <p className="font-semibold text-gray-900">{speaker.name}</p>
-                            <p className="text-sm text-gray-600">{speaker.title}</p>
+                            <p className="font-semibold text-foreground">{speaker.name}</p>
+                            <p className="text-sm text-muted-foreground">{speaker.title}</p>
                           </div>
                         </div>
                       ))}
@@ -1173,16 +1173,16 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                 )}
 
                 {agenda.length > 0 && (
-                  <div className="pt-6 border-t border-gray-200">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Agenda</h3>
+                  <div className="pt-6 border-t border-border">
+                    <h3 className="text-xl font-semibold text-foreground mb-4">Agenda</h3>
                     <div className="space-y-3">
                       {agenda
                         .sort((a, b) => a.startTime.localeCompare(b.startTime))
                         .map((item) => (
-                          <div key={item.id} className="flex items-center gap-4 p-3 border border-gray-200 rounded-lg bg-white">
+                          <div key={item.id} className="flex items-center gap-4 p-3 border border-border rounded-lg bg-background">
                             <span className="font-mono text-sm text-blue-600 font-semibold min-w-[80px]">{item.startTime}</span>
-                            <span className="font-medium text-gray-900">{item.title}</span>
-                            <Badge variant="outline" className="ml-auto border-gray-300 text-gray-700">
+                            <span className="font-medium text-foreground">{item.title}</span>
+                            <Badge variant="outline" className="ml-auto border-border text-foreground">
                               {item.type}
                             </Badge>
                           </div>
@@ -1196,7 +1196,7 @@ export default function EventEditForm({ event }: EventEditFormProps) {
         </TabsContent>
       </Tabs>
 
-      <div className="flex justify-between pt-8 border-t border-gray-200">
+      <div className="flex justify-between pt-8 border-t border-border">
         <Button type="button" variant="outline" onClick={() => router.push(`/events/${event.id}`)} className="h-12 px-8">
           Cancel
         </Button>

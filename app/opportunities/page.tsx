@@ -250,7 +250,7 @@ export default function OpportunitiesPage() {
       case 'contract':
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+        return 'bg-muted text-foreground dark:bg-gray-900 dark:text-gray-200'
     }
   }
 
@@ -269,7 +269,7 @@ export default function OpportunitiesPage() {
       case 'education':
         return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200'
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+        return 'bg-muted text-foreground dark:bg-gray-900 dark:text-gray-200'
     }
   }
 
@@ -281,9 +281,9 @@ export default function OpportunitiesPage() {
             <Card key={i} className="animate-pulse">
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                  <div className="h-6 bg-muted rounded w-3/4"></div>
+                  <div className="h-4 bg-muted rounded w-1/2"></div>
+                  <div className="h-4 bg-muted rounded w-2/3"></div>
                 </div>
               </CardContent>
             </Card>

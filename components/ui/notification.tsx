@@ -102,7 +102,7 @@ function NotificationContainer() {
             </div>
             <button
               onClick={() => hideNotification(notification.id)}
-              className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+              className="ml-4 flex-shrink-0 text-muted-foreground/70 hover:text-muted-foreground transition-colors"
             >
               <X className="h-4 w-4" />
             </button>

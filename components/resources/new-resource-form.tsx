@@ -265,7 +265,7 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
               isDragOver 
                 ? "border-blue-500 bg-blue-50" 
-                : "border-gray-300 hover:border-gray-400"
+                : "border-border hover:border-gray-400"
             }`}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
@@ -277,7 +277,7 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
                   <FileText className="h-8 w-8" />
                   <span className="font-medium">{uploadedFile.name}</span>
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   {formatFileSize(uploadedFile.size)} • {detectFileType(uploadedFile.name)}
                 </div>
                 <Button
@@ -294,12 +294,12 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
               </div>
             ) : (
               <div className="space-y-3">
-                <CloudUpload className="h-12 w-12 mx-auto text-gray-400" />
+                <CloudUpload className="h-12 w-12 mx-auto text-muted-foreground/70" />
                 <div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     <span className="font-medium text-blue-600">Click to upload</span> or drag and drop
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     PDF, Word, Excel, Video, Audio, Images (Max 100MB)
                   </p>
                 </div>
@@ -334,7 +334,7 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
 
           {/* Or use URL */}
           <div className="text-center">
-            <span className="text-sm text-gray-500">— or —</span>
+            <span className="text-sm text-muted-foreground">— or —</span>
           </div>
           
           <div>
@@ -349,7 +349,7 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
               placeholder="https://example.com/file.pdf"
               disabled={!!uploadedFile || isUploading}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Use this if you have a file hosted elsewhere
             </p>
           </div>

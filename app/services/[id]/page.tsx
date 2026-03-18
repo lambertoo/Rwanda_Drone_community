@@ -4,11 +4,17 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import ImageGallery from "@/components/ui/image-gallery"
+import { toast } from "sonner"
+import { useAuth } from "@/lib/auth-context"
 import {
   ArrowLeft,
   Star,
@@ -21,6 +27,9 @@ import {
   Image as Images,
   Info,
   User,
+  MessageSquare,
+  ThumbsUp,
+  Send,
 } from "lucide-react"
 import { deleteServiceAction } from "@/lib/actions"
 
@@ -50,6 +59,27 @@ interface Service {
   }
 }
 
+interface Review {
+  id: string
+  rating: number
+  title?: string
+  body: string
+  response?: string
+  responseAt?: string
+  createdAt: string
+  reviewer: {
+    id: string
+    username: string
+    fullName: string
+    avatar?: string
+  }
+}
+
+interface ReviewStats {
+  average: number | null
+  count: number
+}
+
 interface PageProps {
   params: Promise<{
     id: string
@@ -58,9 +88,17 @@ interface PageProps {
 
 export default function ServiceDetailsPage({ params }: PageProps) {
   const router = useRouter()
+  const { user } = useAuth()
   const [service, setService] = useState<Service | null>(null)
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [reviewStats, setReviewStats] = useState<ReviewStats>({ average: null, count: 0 })
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
+  const [newReview, setNewReview] = useState({ rating: 0, title: '', body: '' })
+  const [submittingReview, setSubmittingReview] = useState(false)
+  const [serviceId, setServiceId] = useState<string>('')
 
   useEffect(() => {
     setMounted(true)
@@ -70,6 +108,7 @@ export default function ServiceDetailsPage({ params }: PageProps) {
     const fetchService = async () => {
       try {
         const { id } = await params
+        setServiceId(id)
         const response = await fetch(`/api/services/${id}`)
         if (!response.ok) {
           router.push('/404')
@@ -77,6 +116,8 @@ export default function ServiceDetailsPage({ params }: PageProps) {
         }
         const data = await response.json()
         setService(data.service)
+        // Fetch reviews
+        fetchReviews(id)
       } catch (error) {
         console.error('Error fetching service:', error)
         router.push('/404')
@@ -88,13 +129,62 @@ export default function ServiceDetailsPage({ params }: PageProps) {
     fetchService()
   }, [params, router])
 
+  const fetchReviews = async (id: string) => {
+    try {
+      setReviewsLoading(true)
+      const res = await fetch(`/api/services/${id}/reviews`)
+      if (res.ok) {
+        const data = await res.json()
+        setReviews(data.reviews)
+        setReviewStats(data.stats)
+      }
+    } catch (error) {
+      console.error('Error fetching reviews:', error)
+    } finally {
+      setReviewsLoading(false)
+    }
+  }
+
+  const handleSubmitReview = async () => {
+    if (newReview.rating === 0) {
+      toast.error('Please select a star rating')
+      return
+    }
+    if (!newReview.body.trim()) {
+      toast.error('Please write a review')
+      return
+    }
+    try {
+      setSubmittingReview(true)
+      const res = await fetch(`/api/services/${serviceId}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ rating: newReview.rating, title: newReview.title, body: newReview.body })
+      })
+      if (res.ok) {
+        toast.success('Review submitted successfully')
+        setReviewDialogOpen(false)
+        setNewReview({ rating: 0, title: '', body: '' })
+        fetchReviews(serviceId)
+      } else {
+        const err = await res.json()
+        toast.error(err.error || 'Failed to submit review')
+      }
+    } catch (error) {
+      toast.error('Failed to submit review')
+    } finally {
+      setSubmittingReview(false)
+    }
+  }
+
   if (!mounted || loading) {
     return (
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-12 bg-gray-200 rounded w-3/4 mb-4"></div>
-          <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-8 bg-muted rounded w-1/4 mb-4"></div>
+          <div className="h-12 bg-muted rounded w-3/4 mb-4"></div>
+          <div className="h-6 bg-muted rounded w-1/2"></div>
         </div>
       </div>
     )
@@ -106,22 +196,37 @@ export default function ServiceDetailsPage({ params }: PageProps) {
 
   const serviceList = service.services ? JSON.parse(service.services) : []
 
-  const renderStars = (rating: number) => {
+  const renderStars = (rating: number, size: string = 'h-4 w-4') => {
     return Array.from({ length: 5 }, (_, i) => {
       const starValue = i + 1
-      let className = 'h-4 w-4'
-      
+      let className = size
       if (starValue <= Math.floor(rating)) {
         className += ' fill-yellow-400 text-yellow-400'
       } else {
-        className += ' text-gray-300'
+        className += ' text-muted-foreground/50 dark:text-muted-foreground'
       }
-      
+      return <Star key={i} className={className} />
+    })
+  }
+
+  const renderClickableStars = (selected: number, onSelect: (v: number) => void) => {
+    return Array.from({ length: 5 }, (_, i) => {
+      const starValue = i + 1
       return (
-        <Star
+        <button
           key={i}
-          className={className}
-        />
+          type="button"
+          onClick={() => onSelect(starValue)}
+          className="focus:outline-none"
+        >
+          <Star
+            className={`h-7 w-7 transition-colors ${
+              starValue <= selected
+                ? 'fill-yellow-400 text-yellow-400'
+                : 'text-muted-foreground/50 dark:text-muted-foreground hover:text-yellow-300'
+            }`}
+          />
+        </button>
       )
     })
   }
@@ -331,6 +436,151 @@ export default function ServiceDetailsPage({ params }: PageProps) {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Reviews Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <MessageSquare className="h-5 w-5 text-blue-500" />
+                Reviews & Ratings
+              </CardTitle>
+              <CardDescription className="mt-1">
+                {reviewStats.count > 0
+                  ? `${reviewStats.count} review${reviewStats.count !== 1 ? 's' : ''} · Average: ${(reviewStats.average ?? 0).toFixed(1)} / 5`
+                  : 'No reviews yet. Be the first to review this service.'}
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-3">
+              {reviewStats.count > 0 && (
+                <div className="flex items-center gap-1">
+                  {renderStars(reviewStats.average ?? 0, 'h-5 w-5')}
+                  <span className="font-semibold ml-1 text-lg">
+                    {(reviewStats.average ?? 0).toFixed(1)}
+                  </span>
+                </div>
+              )}
+              {user && service && user.id !== service.provider.id && (
+                <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <Star className="h-4 w-4 mr-2" />
+                      Write a Review
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>Write a Review</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-2">
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block">Your Rating *</Label>
+                        <div className="flex gap-1">
+                          {renderClickableStars(newReview.rating, (v) => setNewReview(p => ({ ...p, rating: v })))}
+                        </div>
+                        {newReview.rating > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][newReview.rating]}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="review-title" className="text-sm font-medium mb-1 block">Title (optional)</Label>
+                        <Input
+                          id="review-title"
+                          placeholder="Summarise your experience"
+                          value={newReview.title}
+                          onChange={(e) => setNewReview(p => ({ ...p, title: e.target.value }))}
+                          className="dark:bg-gray-800"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="review-body" className="text-sm font-medium mb-1 block">Review *</Label>
+                        <Textarea
+                          id="review-body"
+                          placeholder="Share your experience with this service provider..."
+                          rows={4}
+                          value={newReview.body}
+                          onChange={(e) => setNewReview(p => ({ ...p, body: e.target.value }))}
+                          className="dark:bg-gray-800"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="outline" onClick={() => setReviewDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleSubmitReview} disabled={submittingReview}>
+                          <Send className="h-4 w-4 mr-2" />
+                          {submittingReview ? 'Submitting...' : 'Submit Review'}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {reviewsLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : reviews.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground">
+              <ThumbsUp className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p className="font-medium">No reviews yet</p>
+              <p className="text-sm mt-1">Reviews will appear here once customers submit them.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <div
+                  key={review.id}
+                  className="border border-border rounded-lg p-4 dark:border-gray-700 space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={review.reviewer.avatar || '/placeholder-user.jpg'} />
+                        <AvatarFallback className="text-xs">
+                          {review.reviewer.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium text-sm">{review.reviewer.fullName}</p>
+                        <p className="text-xs text-muted-foreground">@{review.reviewer.username}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex items-center gap-0.5">{renderStars(review.rating)}</div>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(review.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
+                  </div>
+                  {review.title && (
+                    <p className="font-semibold text-sm">{review.title}</p>
+                  )}
+                  <p className="text-sm text-foreground leading-relaxed">{review.body}</p>
+                  {review.response && (
+                    <div className="ml-4 pl-4 border-l-2 border-blue-400 dark:border-blue-600 mt-3 bg-blue-50 dark:bg-blue-950/30 rounded-r p-3">
+                      <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1">Provider Response</p>
+                      <p className="text-sm text-foreground">{review.response}</p>
+                      {review.responseAt && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(review.responseAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Admin Actions */}
       <div className="flex justify-end gap-2">

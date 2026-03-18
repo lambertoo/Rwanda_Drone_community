@@ -117,7 +117,7 @@ export default function FormsPage() {
         <div className="flex justify-between items-start mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">Forms</h1>
-            <p className="text-gray-600">Create and manage your forms</p>
+            <p className="text-muted-foreground">Create and manage your forms</p>
           </div>
           <Button onClick={() => router.push('/forms/new')}>
             <Plus className="w-4 h-4 mr-2" />
@@ -128,11 +128,11 @@ export default function FormsPage() {
         {forms.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
-              <div className="text-gray-400 mb-4">
+              <div className="text-muted-foreground/70 mb-4">
                 <Plus className="w-16 h-16 mx-auto" />
               </div>
               <h3 className="text-lg font-semibold mb-2">No forms yet</h3>
-              <p className="text-gray-600 mb-4">Create your first form to get started</p>
+              <p className="text-muted-foreground mb-4">Create your first form to get started</p>
               <Button onClick={() => router.push('/forms/new')}>
                 <Plus className="w-4 h-4 mr-2" />
                 Create Your First Form
@@ -156,12 +156,12 @@ export default function FormsPage() {
                     </div>
                   </div>
                   {form.description && (
-                    <p className="text-sm text-gray-600">{form.description}</p>
+                    <p className="text-sm text-muted-foreground">{form.description}</p>
                   )}
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-4">
-                    <div className="flex items-center gap-6 text-sm text-gray-600">
+                    <div className="flex items-center gap-6 text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
                         <BarChart3 className="w-4 h-4" />
                         <span>{form.sections.length} sections</span>
@@ -172,7 +172,7 @@ export default function FormsPage() {
                       </div>
                     </div>
 
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-muted-foreground">
                       Created {new Date(form.createdAt).toLocaleDateString()}
                     </div>
 

@@ -95,6 +95,11 @@ export interface FormSection {
   description?: string
   order: number
   fields: FormField[]
+  conditional?: {
+    dependsOn: string
+    operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'is_empty' | 'is_not_empty'
+    value: string
+  }
 }
 
 export interface FormSettings {
@@ -107,7 +112,7 @@ export interface FormSettings {
   submitButtonText: string
 }
 
-interface TallyCloneBuilderProps {
+interface FormBuilderProps {
   onSave: (formData: any) => void
   onCancel: () => void
   initialData?: {
@@ -136,7 +141,7 @@ const FIELD_TYPES = [
   { type: 'RATING', label: 'Rating', icon: Hash, description: 'Star rating', color: 'bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100' },
 ]
 
-export default function TallyCloneBuilder({ onSave, onCancel, initialData }: TallyCloneBuilderProps) {
+export default function FormBuilder({ onSave, onCancel, initialData }: FormBuilderProps) {
   const [formTitle, setFormTitle] = useState(initialData?.title || "")
   const [formDescription, setFormDescription] = useState(initialData?.description || "")
   const [sections, setSections] = useState<FormSection[]>(
@@ -349,7 +354,7 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FieldIcon className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-medium text-gray-500">
+              <span className="text-sm font-medium text-muted-foreground">
                 {FIELD_TYPES.find(f => f.type === field.type)?.label}
               </span>
               {field.required && <Badge variant="destructive" className="text-xs">Required</Badge>}
@@ -613,21 +618,81 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
               <Label htmlFor={`required-${field.id}`}>Required field</Label>
             </div>
           </div>
+
+          {/* Conditional Logic */}
+          <div className="border-t pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <Label className="flex items-center gap-1.5 text-sm font-medium">
+                <Zap className="h-3.5 w-3.5 text-yellow-500" />
+                Conditional Logic
+              </Label>
+              <Switch
+                checked={!!field.conditional}
+                onCheckedChange={(checked) => {
+                  updateField(sectionIndex, fieldIndex, {
+                    conditional: checked ? { dependsOn: '', operator: 'equals', value: '' } : undefined
+                  })
+                }}
+              />
+            </div>
+            {field.conditional && (
+              <div className="space-y-2 p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium">Show this field ONLY IF:</p>
+                <Select
+                  value={field.conditional.dependsOn}
+                  onValueChange={(v) => updateField(sectionIndex, fieldIndex, { conditional: { ...field.conditional!, dependsOn: v } })}
+                >
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue placeholder="Select a field..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sections.flatMap(s => s.fields).filter(f => f.id !== field.id).map(f => (
+                      <SelectItem key={f.id} value={f.name}>{f.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={field.conditional.operator}
+                  onValueChange={(v) => updateField(sectionIndex, fieldIndex, { conditional: { ...field.conditional!, operator: v as any } })}
+                >
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="equals">equals</SelectItem>
+                    <SelectItem value="not_equals">does not equal</SelectItem>
+                    <SelectItem value="contains">contains</SelectItem>
+                    <SelectItem value="not_contains">does not contain</SelectItem>
+                    <SelectItem value="is_empty">is empty</SelectItem>
+                    <SelectItem value="is_not_empty">is not empty</SelectItem>
+                  </SelectContent>
+                </Select>
+                {!['is_empty', 'is_not_empty'].includes(field.conditional.operator) && (
+                  <Input
+                    className="h-8 text-sm"
+                    placeholder="Value..."
+                    value={field.conditional.value}
+                    onChange={e => updateField(sectionIndex, fieldIndex, { conditional: { ...field.conditional!, value: e.target.value } })}
+                  />
+                )}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted/50">
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
+      <div className="bg-background border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-semibold text-gray-900">Form Builder</h1>
+              <h1 className="text-xl font-semibold text-foreground">Form Builder</h1>
               <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                Tally.so Clone
+                Form Builder
               </Badge>
             </div>
             <div className="flex items-center gap-2">
@@ -683,14 +748,14 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
                     className={`p-3 rounded cursor-pointer border transition-colors ${
                       activeSection === index 
                         ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        : 'border-border hover:border-border hover:bg-muted/50'
                     }`}
                     onClick={() => setActiveSection(index)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="font-medium text-sm">{section.title}</div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-muted-foreground mt-1">
                           {section.fields.length} field{section.fields.length !== 1 ? 's' : ''}
                         </div>
                       </div>
@@ -764,6 +829,62 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
                         className="mt-2 border-none p-0 h-auto resize-none"
                         rows={1}
                       />
+                      {/* Section Conditional Logic */}
+                      <div className="mt-3 pt-3 border-t border-dashed border-muted">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Zap className="h-3 w-3 text-yellow-500" /> Show section only if condition is met
+                          </span>
+                          <Switch
+                            checked={!!section.conditional}
+                            onCheckedChange={(checked) => {
+                              updateSection(sectionIndex, {
+                                conditional: checked ? { dependsOn: '', operator: 'equals', value: '' } : undefined
+                              })
+                            }}
+                          />
+                        </div>
+                        {section.conditional && (
+                          <div className="space-y-1.5 p-2 bg-yellow-50 dark:bg-yellow-950/20 rounded border border-yellow-200 dark:border-yellow-800">
+                            <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium">Show ONLY IF:</p>
+                            <Select
+                              value={section.conditional.dependsOn}
+                              onValueChange={v => updateSection(sectionIndex, { conditional: { ...section.conditional!, dependsOn: v } })}
+                            >
+                              <SelectTrigger className="h-7 text-xs">
+                                <SelectValue placeholder="Select field..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {sections.flatMap(s => s.fields).map(f => (
+                                  <SelectItem key={f.id} value={f.name}>{f.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Select
+                              value={section.conditional.operator}
+                              onValueChange={v => updateSection(sectionIndex, { conditional: { ...section.conditional!, operator: v as any } })}
+                            >
+                              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="equals">equals</SelectItem>
+                                <SelectItem value="not_equals">does not equal</SelectItem>
+                                <SelectItem value="contains">contains</SelectItem>
+                                <SelectItem value="not_contains">does not contain</SelectItem>
+                                <SelectItem value="is_empty">is empty</SelectItem>
+                                <SelectItem value="is_not_empty">is not empty</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {!['is_empty', 'is_not_empty'].includes(section.conditional.operator) && (
+                              <Input
+                                className="h-7 text-xs"
+                                placeholder="Value..."
+                                value={section.conditional.value}
+                                onChange={e => updateSection(sectionIndex, { conditional: { ...section.conditional!, value: e.target.value } })}
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -783,12 +904,12 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
                                   <div className="flex items-start gap-2">
                                     <div
                                       {...provided.dragHandleProps}
-                                      className="mt-6 p-2 cursor-grab hover:bg-gray-100 rounded-lg border border-transparent hover:border-gray-200 transition-colors"
+                                      className="mt-6 p-2 cursor-grab hover:bg-muted rounded-lg border border-transparent hover:border-border transition-colors"
                                       title="Click for settings, drag to reorder"
                                       onMouseDown={handleDragHandleMouseDown}
                                       onClick={(e) => handleDragHandleClick(e, field, sectionIndex, fieldIndex)}
                                     >
-                                      <GripVertical className="h-4 w-4 text-gray-400" />
+                                      <GripVertical className="h-4 w-4 text-muted-foreground" />
                                     </div>
                                     <div className="flex-1">
                                       {renderFieldEditor(field, sectionIndex, fieldIndex)}
@@ -805,7 +926,7 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
                   </DragDropContext>
 
                   {section.fields.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       <div className="text-sm">No fields in this section</div>
                       <div className="text-xs mt-1">Add fields using the buttons below</div>
                     </div>
@@ -813,7 +934,7 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
 
                   {/* Add Field Buttons for this section */}
                   <div className="mt-6 pt-4 border-t">
-                    <div className="text-sm font-medium text-gray-700 mb-4">Add Field to This Section</div>
+                    <div className="text-sm font-medium text-foreground mb-4">Add Field to This Section</div>
                     <div className="grid grid-cols-2 gap-2">
                       {FIELD_TYPES.map((fieldType) => {
                         const Icon = fieldType.icon
@@ -884,7 +1005,7 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
                     <div className="flex items-center justify-between">
                       <div>
                         <Label htmlFor="allow-multiple">Allow Multiple Submissions</Label>
-                        <div className="text-sm text-gray-500">Let users submit the form multiple times</div>
+                        <div className="text-sm text-muted-foreground">Let users submit the form multiple times</div>
                       </div>
                       <Switch
                         id="allow-multiple"
@@ -896,7 +1017,7 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
                     <div className="flex items-center justify-between">
                       <div>
                         <Label htmlFor="collect-email">Collect Email</Label>
-                        <div className="text-sm text-gray-500">Automatically collect submitter's email</div>
+                        <div className="text-sm text-muted-foreground">Automatically collect submitter's email</div>
                       </div>
                       <Switch
                         id="collect-email"
@@ -908,7 +1029,7 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
                     <div className="flex items-center justify-between">
                       <div>
                         <Label htmlFor="show-progress">Show Progress Bar</Label>
-                        <div className="text-sm text-gray-500">Display progress for multi-step forms</div>
+                        <div className="text-sm text-muted-foreground">Display progress for multi-step forms</div>
                       </div>
                       <Switch
                         id="show-progress"
@@ -927,7 +1048,7 @@ export default function TallyCloneBuilder({ onSave, onCancel, initialData }: Tal
       {/* Field Settings Modal */}
       {fieldSettingsModal.isOpen && fieldSettingsModal.field && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-background rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-xl font-semibold">Field Settings</h2>
               <Button

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import TallyCloneBuilder from "@/components/forms/tally-clone-builder"
+import FormBuilder from "@/components/forms/form-builder"
 import { AuthGuard } from "@/components/auth-guard"
 
 interface Opportunity {
@@ -104,8 +104,8 @@ function BuildOpportunityFormPage() {
     return (
       <div className="max-w-6xl mx-auto p-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-12 bg-gray-200 rounded w-3/4 mb-4"></div>
+          <div className="h-8 bg-muted rounded w-1/4 mb-4"></div>
+          <div className="h-12 bg-muted rounded w-3/4 mb-4"></div>
         </div>
       </div>
     )
@@ -130,7 +130,7 @@ function BuildOpportunityFormPage() {
   }
 
   return (
-    <TallyCloneBuilder
+    <FormBuilder
       onSave={handleSave}
       onCancel={handleCancel}
       initialData={{

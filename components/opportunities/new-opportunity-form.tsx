@@ -13,7 +13,7 @@ import { Plus, X } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createOpportunityAction } from "@/lib/actions"
 import AdvancedFormBuilder from "./advanced-form-builder"
-import TallyCloneBuilder from "@/components/forms/tally-clone-builder"
+import FormBuilder from "@/components/forms/form-builder"
 import { useOpportunityCategories } from "@/hooks/use-opportunity-categories"
 import { useEmploymentTypes } from "@/hooks/use-employment-types"
 
@@ -520,7 +520,7 @@ export default function NewOpportunityForm() {
 
               {showRegistrationFormBuilder && (
                 <div className="border rounded-lg p-4">
-                  <TallyCloneBuilder
+                  <FormBuilder
                     initialData={registrationForm}
                     onSave={(formData) => setRegistrationForm(formData)}
                     onCancel={() => setShowRegistrationFormBuilder(false)}

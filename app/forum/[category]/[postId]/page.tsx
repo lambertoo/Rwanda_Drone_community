@@ -586,7 +586,7 @@ export default function ForumPostPage({ params }: PageProps) {
 
                   {/* Reply Form */}
                   {replyingTo === comment.id && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                       <Textarea
                         placeholder="Write your reply..."
                         value={replyContent}
@@ -625,7 +625,7 @@ export default function ForumPostPage({ params }: PageProps) {
 
                   {/* Nested Replies */}
                   {comment.replies && comment.replies.length > 0 && (
-                    <div className="mt-4 pl-4 border-l-2 border-gray-200 space-y-4">
+                    <div className="mt-4 pl-4 border-l-2 border-border space-y-4">
                       {comment.replies.map((nestedReply) => (
                         <div key={nestedReply.id} className="flex items-start gap-3">
                           <Avatar className="h-8 w-8">

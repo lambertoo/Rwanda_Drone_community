@@ -67,6 +67,11 @@ export interface FormSection {
   description?: string
   order: number
   fields: FormField[]
+  conditional?: {
+    dependsOn: string
+    operator: string
+    value: string
+  }
 }
 
 export interface FormSettings {
@@ -79,7 +84,7 @@ export interface FormSettings {
   submitButtonText?: string
 }
 
-interface TallyPublicRendererProps {
+interface FormRendererProps {
   formData: {
     id?: string
     title: string
@@ -108,7 +113,7 @@ const FIELD_ICONS = {
   RATING: Hash,
 }
 
-export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicRendererProps) {
+export default function FormRenderer({ formData, onSubmit }: FormRendererProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [formValues, setFormValues] = useState<Record<string, any>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -119,10 +124,10 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
   // Add error handling for missing or invalid formData
   if (!formData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">Form Not Found</h2>
-          <p className="text-gray-500">The form data is not available.</p>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Form Not Found</h2>
+          <p className="text-muted-foreground">The form data is not available.</p>
         </div>
       </div>
     )
@@ -133,26 +138,53 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
   // Add null checks for sections
   if (!sections || !Array.isArray(sections)) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">Invalid Form</h2>
-          <p className="text-gray-500">The form structure is invalid.</p>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Invalid Form</h2>
+          <p className="text-muted-foreground">The form structure is invalid.</p>
         </div>
       </div>
     )
   }
 
-  const sortedSections = sections.sort((a, b) => (a.order || 0) - (b.order || 0))
-  const currentSection = sortedSections[currentStep]
-  const totalSteps = sortedSections.length
+  // Conditional logic helpers
+  const evaluateCondition = (fieldValue: any, operator: string, condValue: string): boolean => {
+    const v = Array.isArray(fieldValue) ? fieldValue.join(', ') : String(fieldValue ?? '')
+    switch (operator) {
+      case 'equals': return v === condValue
+      case 'not_equals': return v !== condValue
+      case 'contains': return v.toLowerCase().includes(condValue.toLowerCase())
+      case 'not_contains': return !v.toLowerCase().includes(condValue.toLowerCase())
+      case 'is_empty': return !fieldValue || v === ''
+      case 'is_not_empty': return !!(fieldValue && v !== '')
+      default: return true
+    }
+  }
+
+  const isFieldVisible = (field: FormField): boolean => {
+    if (!field.conditional?.dependsOn) return true
+    const { dependsOn, operator, value } = field.conditional
+    return evaluateCondition(formValues[dependsOn], operator, value)
+  }
+
+  const isSectionVisible = (section: FormSection): boolean => {
+    if (!section.conditional?.dependsOn) return true
+    const { dependsOn, operator, value } = section.conditional
+    return evaluateCondition(formValues[dependsOn], operator, value)
+  }
+
+  const sortedSections = [...sections].sort((a, b) => (a.order || 0) - (b.order || 0))
+  const visibleSections = sortedSections.filter(isSectionVisible)
+  const currentSection = visibleSections[Math.min(currentStep, visibleSections.length - 1)]
+  const totalSteps = visibleSections.length
 
   // Add error handling for currentSection
   if (!currentSection) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">Form Error</h2>
-          <p className="text-gray-500">Unable to load the current form section.</p>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Form Error</h2>
+          <p className="text-muted-foreground">Unable to load the current form section.</p>
         </div>
       </div>
     )
@@ -260,7 +292,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
     let isValid = true
 
     if (currentSection.fields && Array.isArray(currentSection.fields)) {
-      currentSection.fields.forEach((field: FormField) => {
+      currentSection.fields.filter(isFieldVisible).forEach((field: FormField) => {
         const error = validateField(field)
         if (error) {
           newErrors[field.name] = error
@@ -306,7 +338,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
       return (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <FieldIcon className="h-4 w-4 text-gray-500" />
+            <FieldIcon className="h-4 w-4 text-muted-foreground" />
             <h3 className="text-lg font-medium">{field.label}</h3>
           </div>
         </div>
@@ -320,7 +352,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           {field.required && <span className="text-red-500 ml-1">*</span>}
         </Label>
         {field.description && (
-          <p className="text-xs text-gray-500 mb-2">{field.description}</p>
+          <p className="text-xs text-muted-foreground mb-2">{field.description}</p>
         )}
 
 
@@ -534,7 +566,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
 
         {field.type === 'LINEAR_SCALE' && (
           <div className="space-y-2">
-            <div className="flex justify-between text-sm text-gray-500">
+            <div className="flex justify-between text-sm text-muted-foreground">
               <span>{field.leftLabel || field.scaleStart || 0}</span>
               <span>{field.rightLabel || field.scaleEnd || 10}</span>
             </div>
@@ -549,7 +581,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
                     className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors ${
                       value === scaleValue
                         ? 'border-blue-500 bg-blue-500 text-white'
-                        : 'border-gray-300 hover:border-gray-400'
+                        : 'border-border hover:border-ring'
                     }`}
                   >
                     {scaleValue}
@@ -557,7 +589,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
                 )
               })}
             </div>
-            <div className="text-center text-sm text-gray-600">
+            <div className="text-center text-sm text-muted-foreground">
               Selected: {value !== undefined ? value : 'None'}
             </div>
           </div>
@@ -566,12 +598,12 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
         {field.type === 'MATRIX' && (
           <div className="space-y-2">
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300 rounded-lg">
+              <table className="w-full border-collapse border border-border rounded-lg">
                 <thead>
-                  <tr className="bg-gray-50">
-                    <th className="border border-gray-300 p-2 text-left font-medium text-gray-700"></th>
+                  <tr className="bg-muted/50">
+                    <th className="border border-border p-2 text-left font-medium text-foreground"></th>
                     {field.matrixColumns?.map((column, index) => (
-                      <th key={index} className="border border-gray-300 p-2 text-center font-medium text-gray-700">
+                      <th key={index} className="border border-border p-2 text-center font-medium text-foreground">
                         {column}
                       </th>
                     ))}
@@ -579,8 +611,8 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
                 </thead>
                 <tbody>
                   {field.matrixRows?.map((row, rowIndex) => (
-                    <tr key={rowIndex} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 p-2 font-medium text-gray-700">
+                    <tr key={rowIndex} className="hover:bg-muted/30">
+                      <td className="border border-border p-2 font-medium text-foreground">
                         {row}
                       </td>
                       {field.matrixColumns?.map((column, colIndex) => {
@@ -591,7 +623,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
                           : rowValues.includes(column)
                         
                         return (
-                          <td key={colIndex} className="border border-gray-300 p-2 text-center">
+                          <td key={colIndex} className="border border-border p-2 text-center">
                             {field.matrixType === 'single' ? (
                               <input
                                 type="radio"
@@ -643,23 +675,23 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
                   type="button"
                   onClick={() => handleInputChange(field.name, star)}
                   className={`text-2xl ${
-                    star <= (value || 0) ? 'text-yellow-400' : 'text-gray-300'
+                    star <= (value || 0) ? 'text-yellow-400' : 'text-muted-foreground'
                   } hover:text-yellow-400 transition-colors`}
                 >
                   ★
                 </button>
               ))}
             </div>
-            <div className="text-center text-sm text-gray-600">
+            <div className="text-center text-sm text-muted-foreground">
               Rating: {value || 0}/5
             </div>
           </div>
         )}
 
         {field.type === 'FILE_UPLOAD' && (
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-            <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-            <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
+          <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-ring transition-colors">
+            <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
             <input
               type="file"
               className="hidden"
@@ -754,7 +786,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
             >
               {uploadingFiles.has(field.name) ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground mr-2"></div>
                   Uploading...
                 </>
               ) : value?.name ? (
@@ -768,7 +800,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
             </Button>
             {value?.name && (
               <div className="mt-2">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {value.name} ({(value.size / 1024).toFixed(1)} KB)
                   {value.uploaded && (
                     <span className="text-green-600 ml-2">✓ Uploaded</span>
@@ -781,7 +813,7 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
                   <Button
                     variant="outline"
                     size="sm"
-                    className="mt-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="mt-1 text-red-600 hover:text-red-700 hover:bg-red-500/10"
                     onClick={() => {
                       // Clear the file
                       handleInputChange(field.name, null)
@@ -809,13 +841,13 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center">
               <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Form Submitted!</h2>
-              <p className="text-gray-600 mb-6">{settings?.confirmationMessage || 'Thank you for your submission!'}</p>
+              <h2 className="text-2xl font-semibold text-foreground mb-2">Form Submitted!</h2>
+              <p className="text-muted-foreground mb-6">{settings?.confirmationMessage || 'Thank you for your submission!'}</p>
               {settings?.redirectUrl && (
                 <Button asChild className="w-full">
                   <a href={settings.redirectUrl}>Continue</a>
@@ -829,24 +861,24 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white border-b">
+      <div className="bg-background border-b">
         <div className="max-w-2xl mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">{title}</h1>
           {description && (
-            <p className="text-gray-600">{description}</p>
+            <p className="text-muted-foreground">{description}</p>
           )}
         </div>
       </div>
 
       {/* Progress Bar */}
       {settings?.showProgressBar && totalSteps > 1 && (
-        <div className="bg-white border-b">
+        <div className="bg-background border-b">
           <div className="max-w-2xl mx-auto px-4 py-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">Step {currentStep + 1} of {totalSteps}</span>
-              <span className="text-sm text-gray-600">{Math.round(progress)}% complete</span>
+              <span className="text-sm text-muted-foreground">Step {currentStep + 1} of {totalSteps}</span>
+              <span className="text-sm text-muted-foreground">{Math.round(progress)}% complete</span>
             </div>
             <Progress value={progress} className="h-2" />
           </div>
@@ -859,26 +891,27 @@ export default function TallyPublicRenderer({ formData, onSubmit }: TallyPublicR
           <CardHeader>
             <CardTitle className="text-xl">{currentSection.title}</CardTitle>
             {currentSection.description && (
-              <p className="text-gray-600">{currentSection.description}</p>
+              <p className="text-muted-foreground">{currentSection.description}</p>
             )}
           </CardHeader>
           <CardContent className="space-y-6">
-            {currentSection.fields && Array.isArray(currentSection.fields) 
+            {currentSection.fields && Array.isArray(currentSection.fields)
               ? currentSection.fields
                   .sort((a, b) => (a.order || 0) - (b.order || 0))
+                  .filter(isFieldVisible)
                   .map((field) => (
                     <div key={field.id}>
                       {renderField(field)}
                     </div>
                   ))
-              : <div className="text-center text-gray-500 py-4">No fields in this section</div>
+              : <div className="text-center text-muted-foreground py-4">No fields in this section</div>
             }
           </CardContent>
         </Card>
 
         {/* Validation Errors Summary */}
         {Object.keys(errors).length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-4">
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mt-4">
             <h4 className="text-sm font-medium text-red-800 mb-2">Please fix the following errors:</h4>
             <ul className="text-sm text-red-700 space-y-1">
               {Object.entries(errors).map(([fieldName, error]) => (

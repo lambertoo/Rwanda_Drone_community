@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth-context"
-import TallyCloneBuilder from "@/components/forms/tally-clone-builder"
+import FormBuilder from "@/components/forms/form-builder"
 
 interface Speaker {
   id: string
@@ -605,13 +605,13 @@ export default function NewEventForm() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                    <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                      <Upload className="mx-auto h-12 w-12 text-muted-foreground/70" />
                       <div className="mt-2">
                         <Label htmlFor="flyer-upload" className="cursor-pointer text-blue-600 hover:text-blue-500">
                           Upload flyer image
                         </Label>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                           JPG, PNG, GIF up to 5MB
                         </p>
                       </div>
@@ -978,7 +978,7 @@ export default function NewEventForm() {
 
               {showRegistrationFormBuilder && (
                 <div className="border rounded-lg p-4">
-                  <TallyCloneBuilder
+                  <FormBuilder
                     initialData={registrationForm}
                     onSave={(formData) => setRegistrationForm(formData)}
                     onCancel={() => setShowRegistrationFormBuilder(false)}

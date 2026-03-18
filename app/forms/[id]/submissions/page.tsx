@@ -184,7 +184,7 @@ export default function FormSubmissionsPage() {
         <Card>
           <CardContent className="text-center py-12">
             <h3 className="text-lg font-semibold mb-2 text-red-600">Error</h3>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <p className="text-muted-foreground mb-4">{error}</p>
             <div className="flex gap-2 justify-center">
               <Button onClick={() => window.location.reload()}>
                 Try Again
@@ -215,7 +215,7 @@ export default function FormSubmissionsPage() {
             <div>
               <h1 className="text-3xl font-bold">Form Submissions</h1>
               {form && (
-                <p className="text-gray-600">{form.title}</p>
+                <p className="text-muted-foreground">{form.title}</p>
               )}
             </div>
           </div>
@@ -231,17 +231,17 @@ export default function FormSubmissionsPage() {
           <Card>
             <CardContent className="text-center py-12">
               <h3 className="text-lg font-semibold mb-2">Form not found</h3>
-              <p className="text-gray-600">The form you're looking for doesn't exist.</p>
+              <p className="text-muted-foreground">The form you're looking for doesn't exist.</p>
             </CardContent>
           </Card>
         ) : submissions.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
-              <div className="text-gray-400 mb-4">
+              <div className="text-muted-foreground/70 mb-4">
                 <FileText className="w-16 h-16 mx-auto" />
               </div>
               <h3 className="text-lg font-semibold mb-2">No submissions yet</h3>
-              <p className="text-gray-600 mb-4">This form hasn't received any submissions yet.</p>
+              <p className="text-muted-foreground mb-4">This form hasn't received any submissions yet.</p>
               <Button onClick={() => window.open(`/forms/public/${form.id}`, '_blank')}>
                 <Eye className="w-4 h-4 mr-2" />
                 View Public Form
@@ -259,18 +259,18 @@ export default function FormSubmissionsPage() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300">
+              <table className="w-full border-collapse border border-border">
                 <thead>
-                  <tr className="bg-gray-50">
-                    <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                  <tr className="bg-muted/50">
+                    <th className="border border-border px-4 py-3 text-left text-sm font-semibold text-foreground">
                       Submission #
                     </th>
-                    <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                    <th className="border border-border px-4 py-3 text-left text-sm font-semibold text-foreground">
                       Submitted At
                     </th>
                     {form.sections?.map(section => 
                       section.fields?.map(field => (
-                        <th key={field.id} className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                        <th key={field.id} className="border border-border px-4 py-3 text-left text-sm font-semibold text-foreground">
                           {field.label || 'Untitled Field'}
                         </th>
                       )) || []
@@ -279,13 +279,13 @@ export default function FormSubmissionsPage() {
                 </thead>
                 <tbody>
                   {submissions?.map((submission, index) => (
-                    <tr key={submission.id} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">
+                    <tr key={submission.id} className="hover:bg-muted/50">
+                      <td className="border border-border px-4 py-3 text-sm text-foreground">
                         {index + 1}
                       </td>
-                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">
+                      <td className="border border-border px-4 py-3 text-sm text-foreground">
                         <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-500" />
+                          <Calendar className="w-4 h-4 text-muted-foreground" />
                           {submission.meta?.submittedAt ? new Date(submission.meta.submittedAt).toLocaleString() : 'Unknown date'}
                         </div>
                       </td>
@@ -293,7 +293,7 @@ export default function FormSubmissionsPage() {
                         section.fields?.map(field => {
                           const value = submission.values?.find(v => v.field.name === field.name)
                           return (
-                            <td key={field.id} className="border border-gray-300 px-4 py-3 text-sm text-gray-900">
+                            <td key={field.id} className="border border-border px-4 py-3 text-sm text-foreground">
                               <div className="max-w-xs truncate" title={value?.value || 'No response'}>
                                 {value?.value || 'No response'}
                               </div>

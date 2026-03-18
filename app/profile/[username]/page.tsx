@@ -6,27 +6,27 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
-  Edit, 
-  MapPin, 
-  Calendar, 
-  Mail, 
-  Globe, 
-  Trophy, 
-  Star, 
-  Heart, 
-  Users, 
+import {
+  Edit,
+  MapPin,
+  Calendar,
+  Mail,
+  Globe,
+  Trophy,
   Award,
   MessageSquare,
   Briefcase,
   Activity,
   Eye,
   UserPlus,
-  MessageCircle
+  UserCheck,
+  MessageCircle,
+  Loader2,
 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { AuthGuard } from "@/components/auth-guard"
+import { useAuth } from "@/lib/auth-context"
 
 interface UserProfile {
   id: string
@@ -57,34 +57,34 @@ interface UserProfile {
   }[]
 }
 
+interface FollowStats {
+  followerCount: number
+  followingCount: number
+  isFollowing: boolean
+}
+
 function UserProfilePage() {
   const params = useParams()
   const username = params.username as string
+  const { user: currentUser } = useAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("overview")
-  const [currentUser, setCurrentUser] = useState<any>(null)
-  const [isFollowing, setIsFollowing] = useState(false)
+  const [followStats, setFollowStats] = useState<FollowStats | null>(null)
+  const [followLoading, setFollowLoading] = useState(false)
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // Get current user from localStorage
-        const storedUser = localStorage.getItem("user")
-        if (storedUser) {
-          setCurrentUser(JSON.parse(storedUser))
-        }
-
-        // Fetch the profile for the specified username
         const response = await fetch(`/api/profile/${username}`)
         if (response.ok) {
           const data = await response.json()
           setProfile(data.profile)
         } else {
-          console.error('Failed to fetch profile')
+          console.error("Failed to fetch profile")
         }
       } catch (error) {
-        console.error('Error fetching profile:', error)
+        console.error("Error fetching profile:", error)
       } finally {
         setLoading(false)
       }
@@ -95,15 +95,42 @@ function UserProfilePage() {
     }
   }, [username])
 
+  // Fetch follow stats whenever we have the username and current user
+  useEffect(() => {
+    if (!username) return
+    fetch(`/api/users/${username}/follow`, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) setFollowStats(data)
+      })
+      .catch(() => {})
+  }, [username])
+
   const handleFollow = async () => {
-    // TODO: Implement follow functionality
-    setIsFollowing(!isFollowing)
+    if (!currentUser || followLoading) return
+    setFollowLoading(true)
+    try {
+      const res = await fetch(`/api/users/${username}/follow`, {
+        method: "POST",
+        credentials: "include",
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setFollowStats(data)
+      }
+    } catch (error) {
+      console.error("Follow error:", error)
+    } finally {
+      setFollowLoading(false)
+    }
   }
 
   const handleMessage = () => {
     // TODO: Implement messaging functionality
-    console.log('Open message dialog')
+    console.log("Open message dialog")
   }
+
+  const isOwnProfile = currentUser?.username === username
 
   if (loading) {
     return (
@@ -121,13 +148,16 @@ function UserProfilePage() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Profile not found</h1>
-          <p className="text-muted-foreground">The user profile you're looking for doesn't exist.</p>
+          <p className="text-muted-foreground">The user profile you&apos;re looking for doesn&apos;t exist.</p>
         </div>
       </div>
     )
   }
 
-  const isOwnProfile = currentUser?.username === username
+  // Display follower/following counts — prefer live follow stats, fall back to profile.stats
+  const displayFollowers = followStats?.followerCount ?? profile.stats.followers
+  const displayFollowing = followStats?.followingCount ?? profile.stats.following
+  const isFollowing = followStats?.isFollowing ?? false
 
   return (
     <div className="min-h-screen bg-background">
@@ -144,7 +174,7 @@ function UserProfilePage() {
               <div className="relative">
                 <Avatar className="h-32 w-32 border-4 border-white/20 shadow-xl">
                   <AvatarImage src={profile.avatar} alt={profile.fullName} />
-                  <AvatarFallback className="text-4xl font-bold bg-white/20 text-white border-2 border-white/30">
+                  <AvatarFallback className="text-4xl font-bold bg-background/20 text-white border-2 border-white/30">
                     {profile.fullName.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
@@ -156,39 +186,69 @@ function UserProfilePage() {
                   <div>
                     <h1 className="text-4xl font-bold text-white">{profile.fullName}</h1>
                     <p className="text-xl text-white/80">@{profile.username}</p>
-                    <Badge variant="secondary" className="mt-2 bg-white/20 text-white border-white/30">
+                    <Badge variant="secondary" className="mt-2 bg-background/20 text-white border-white/30">
                       {profile.role.charAt(0).toUpperCase() + profile.role.slice(1).replace('_', ' ')}
                     </Badge>
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex items-center gap-3">
                     {isOwnProfile ? (
                       <Link href="/profile/edit">
-                        <Button className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white border-white/30">
+                        <Button className="flex items-center gap-2 bg-background/20 hover:bg-background/30 text-white border-white/30">
                           <Edit className="h-4 w-4" />
                           Edit Profile
                         </Button>
                       </Link>
-                    ) : (
+                    ) : currentUser ? (
                       <>
-                        <Button 
+                        {/* Follow stats pill */}
+                        <div className="hidden sm:flex items-center gap-3 text-sm text-white/80 mr-1">
+                          <span>
+                            <span className="font-semibold text-white">{displayFollowers}</span>{" "}
+                            follower{displayFollowers !== 1 ? "s" : ""}
+                          </span>
+                          <span>
+                            <span className="font-semibold text-white">{displayFollowing}</span>{" "}
+                            following
+                          </span>
+                        </div>
+                        <Button
                           onClick={handleFollow}
+                          disabled={followLoading}
                           className={`flex items-center gap-2 ${
-                            isFollowing 
-                              ? 'bg-white/30 hover:bg-white/40' 
-                              : 'bg-white/20 hover:bg-white/30'
+                            isFollowing
+                              ? "bg-background/30 hover:bg-background/40"
+                              : "bg-background/20 hover:bg-background/30"
                           } text-white border-white/30`}
                         >
-                          <UserPlus className="h-4 w-4" />
-                          {isFollowing ? 'Following' : 'Follow'}
+                          {followLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : isFollowing ? (
+                            <UserCheck className="h-4 w-4" />
+                          ) : (
+                            <UserPlus className="h-4 w-4" />
+                          )}
+                          {isFollowing ? "Following" : "Follow"}
                         </Button>
-                        <Button 
+                        <Button
                           onClick={handleMessage}
-                          className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white border-white/30"
+                          className="flex items-center gap-2 bg-background/20 hover:bg-background/30 text-white border-white/30"
                         >
                           <MessageCircle className="h-4 w-4" />
                           Message
                         </Button>
                       </>
+                    ) : (
+                      // Visitor not logged in — show follow counts only
+                      <div className="flex items-center gap-3 text-sm text-white/80">
+                        <span>
+                          <span className="font-semibold text-white">{displayFollowers}</span>{" "}
+                          follower{displayFollowers !== 1 ? "s" : ""}
+                        </span>
+                        <span>
+                          <span className="font-semibold text-white">{displayFollowing}</span>{" "}
+                          following
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -238,11 +298,11 @@ function UserProfilePage() {
                 <div className="text-sm text-white/80">Projects</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-white">{profile.stats.followers}</div>
+                <div className="text-3xl font-bold text-white">{displayFollowers}</div>
                 <div className="text-sm text-white/80">Followers</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-white">{profile.stats.following}</div>
+                <div className="text-3xl font-bold text-white">{displayFollowing}</div>
                 <div className="text-sm text-white/80">Following</div>
               </div>
               <div className="text-center">

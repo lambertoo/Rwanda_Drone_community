@@ -1,0 +1,104 @@
+{
+  "nav": {
+    "home": "Ahabanza",
+    "notifications": "Imenyesha",
+    "forum": "Ikiganiro",
+    "projects": "Ibikorwa",
+    "events": "Ibiganiro",
+    "community_directory": "Ababyigirwa",
+    "resources": "Ibikoresho",
+    "my_fleet": "Inzira Zanjye",
+    "flight_logbook": "Igitabo cy'Indege",
+    "compliance": "Kubahiriza Amategeko",
+    "airspace_map": "Ikarita y'Ikirere",
+    "weather_briefing": "Amakuru y'Ikirere",
+    "safety_center": "Ikigo cy'Umutekano",
+    "learn": "Amasomo",
+    "my_courses": "Amasomo Yanjye",
+    "mentorship": "Ubuyobozi",
+    "marketplace": "Isoko",
+    "services": "Serivisi",
+    "opportunities": "Amahirwe",
+    "my_opportunities": "Amahirwe Yanjye",
+    "search": "Shakisha",
+    "activity_feed": "Ibikorwa Biheruka",
+    "gallery": "Amafoto",
+    "news": "Amakuru",
+    "my_profile": "Umwirondoro Wanjye",
+    "forms": "Impapuro",
+    "settings": "Igenamiterere",
+    "sections": {
+      "main": "Ibanze",
+      "community": "Umuryango",
+      "drone_tools": "Ibikoresho by'Indege",
+      "learn": "Iga",
+      "marketplace_work": "Isoko n'Akazi",
+      "discover": "Kuvumbura",
+      "account": "Konti",
+      "administration": "Ubutegetsi",
+      "regulator": "Umutegetsi",
+      "provider": "Utanga Serivisi",
+      "student": "Umunyeshuri"
+    }
+  },
+  "common": {
+    "sign_in": "Injira",
+    "sign_up": "Iyandikishe",
+    "sign_out": "Sohoka",
+    "save": "Bika",
+    "cancel": "Reka",
+    "delete": "Siba",
+    "edit": "Hindura",
+    "submit": "Ohereza",
+    "loading": "Gutegereza...",
+    "error": "Hari ikitagenze neza",
+    "back": "Subira Inyuma",
+    "view_all": "Reba Byose",
+    "search_placeholder": "Shakisha...",
+    "no_results": "Nta bisubizo byabonetse",
+    "required": "Ngombwa",
+    "optional": "Si ngombwa",
+    "free": "Ubuntu",
+    "new": "Gishya",
+    "verified": "Byemejwe"
+  },
+  "pages": {
+    "home": {
+      "title": "Umuryango w'Indege za Rwanda",
+      "subtitle": "Urubuga rumwe rwose rw'ubukungu bw'indege za Rwanda"
+    },
+    "forum": {
+      "title": "Ikiganiro cy'Umuryango",
+      "subtitle": "Ganira, sangira, no kwiga n'umuryango w'indege za Rwanda"
+    },
+    "events": {
+      "title": "Ibiganiro",
+      "subtitle": "Shakisha ibiganiro by'indege, amahugurwa, n'ibirebana muri Rwanda"
+    },
+    "logbook": {
+      "title": "Igitabo cy'Indege",
+      "subtitle": "Kurikirana indege zawe, amasaha, no gukoresha indege"
+    },
+    "learn": {
+      "title": "Iga Kandi Ubone Impamyabumenyi",
+      "subtitle": "Amasomo, gutegura ikizami cya CAA, no gutsinda kuri buri rwego"
+    },
+    "weather": {
+      "title": "Amakuru y'Ikirere",
+      "subtitle": "Imiterere y'ikirere mbere yo kuguruka muri Rwanda"
+    },
+    "airspace": {
+      "title": "Ikarita y'Ikirere ya Rwanda",
+      "subtitle": "Menya mbere yo kuguruka"
+    }
+  },
+  "roles": {
+    "admin": "Umutegetsi",
+    "superadmin": "Umuyobozi Mukuru",
+    "pilot": "Umushoferi w'Indege",
+    "hobbyist": "Inzobere",
+    "student": "Umunyeshuri",
+    "regulator": "Umutegetsi w'Amategeko",
+    "service_provider": "Usanga Serivisi"
+  }
+}

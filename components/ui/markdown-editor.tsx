@@ -78,8 +78,8 @@ export default function MarkdownEditor({
     return text
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`(.*?)`/g, '<code class="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm">$1</code>')
-      .replace(/^>\s*(.*$)/gm, '<blockquote class="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic text-gray-600 dark:text-gray-400">$1</blockquote>')
+      .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm">$1</code>')
+      .replace(/^>\s*(.*$)/gm, '<blockquote class="border-l-4 border-border dark:border-gray-600 pl-4 italic text-muted-foreground dark:text-muted-foreground/70">$1</blockquote>')
       .replace(/^-\s*(.*$)/gm, '<li class="list-disc ml-4">$1</li>')
       .replace(/^\d+\.\s*(.*$)/gm, '<li class="list-decimal ml-4">$1</li>')
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>')
@@ -117,7 +117,7 @@ export default function MarkdownEditor({
       {!isPreview ? (
         <div className="space-y-2">
           {/* Markdown Toolbar */}
-          <div className="flex flex-wrap gap-1 p-2 border rounded-t-lg bg-gray-50 dark:bg-gray-800">
+          <div className="flex flex-wrap gap-1 p-2 border rounded-t-lg bg-muted/50">
             <Button
               type="button"
               variant="ghost"
@@ -211,12 +211,12 @@ export default function MarkdownEditor({
           />
 
           {/* Markdown Help */}
-          <div className="text-xs text-gray-500 dark:text-gray-400">
+          <div className="text-xs text-muted-foreground dark:text-muted-foreground/70">
             <strong>Markdown shortcuts:</strong> **bold**, *italic*, `code`, > quote, - list, 1. ordered list, [text](url), ![alt](image)
           </div>
         </div>
       ) : (
-        <div className="border rounded-lg p-4 bg-white dark:bg-gray-900 min-h-[200px]">
+        <div className="border rounded-lg p-4 bg-background min-h-[200px]">
           <div 
             className="prose prose-sm max-w-none dark:prose-invert"
             dangerouslySetInnerHTML={{ __html: renderMarkdown(value) }}

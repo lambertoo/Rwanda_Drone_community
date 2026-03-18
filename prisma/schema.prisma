@@ -54,6 +54,27 @@ model User {
   savedOpportunities SavedOpportunity[]     // Opportunities saved by this user
   universalForms    UniversalForm[]         // Universal forms created by this user
   formEntries       FormEntry[]             // Form entries submitted by this user
+  drones                Drone[]
+  flightLogs            FlightLog[]
+  permits               Permit[]
+  safetyReports         SafetyReport[]
+  marketplaceListings   MarketplaceListing[]
+  listingSaves          ListingSave[]
+  reviewsGiven          Review[]             @relation("ReviewGiver")
+  notifications         Notification[]
+  newsArticles          NewsArticle[]
+  passwordResetToken    PasswordResetToken?
+  mentorProfile         MentorProfile?
+  following             UserFollow[]         @relation("UserFollowers")
+  followers             UserFollow[]         @relation("UserFollowing")
+  taughtCourses         Course[]             @relation("CourseInstructor")
+  enrollments           Enrollment[]         @relation("CourseEnrollment")
+  activityFeed          ActivityFeed[]       @relation("ActivityActor")
+  pilotLicenseExpiry    DateTime?
+  pilotLicenseType      String?
+  caaRegistrationNumber String?
+  insuranceProvider     String?
+  insuranceExpiry       DateTime?
   // Approval relations
   approvedForumPosts   ForumPost[]    @relation("ForumPostApprover")
   approvedProjects     Project[]      @relation("ProjectApprover")
@@ -376,6 +397,7 @@ model Service {
   updatedAt   DateTime @updatedAt
   providerId  String
   provider    User     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  reviews     Review[]
 
   @@map("services")
 }
@@ -533,6 +555,8 @@ model rsvp {
   id        String   @id @default(cuid())
   userId    String
   eventId   String
+  status    String   @default("confirmed")
+  notes     String?
   createdAt DateTime @default(now())
   event     Event    @relation(fields: [eventId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
@@ -771,4 +795,387 @@ enum FormFieldType {
   LINEAR_SCALE
   MATRIX
   RATING
+}
+
+// ===== DRONE EQUIPMENT MANAGEMENT =====
+model Drone {
+  id                    String             @id @default(cuid())
+  userId                String
+  name                  String
+  brand                 String
+  model                 String
+  serialNumber          String?
+  caaRegistrationNumber String?
+  purchaseDate          DateTime?
+  weight                Float?
+  maxFlightTime         Int?
+  maxRange              Float?
+  status                DroneStatus        @default(active)
+  photos                Json?
+  documents             Json?
+  notes                 String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flightLogs            FlightLog[]
+  maintenanceLogs       DroneMaintenance[]
+  batteries             Battery[]
+  @@map("drones")
+}
+
+model DroneMaintenance {
+  id          String   @id @default(cuid())
+  droneId     String
+  type        String
+  description String
+  cost        Float?
+  date        DateTime
+  performedBy String?
+  nextDueDate DateTime?
+  attachments Json?
+  createdAt   DateTime @default(now())
+  drone       Drone    @relation(fields: [droneId], references: [id], onDelete: Cascade)
+  @@map("drone_maintenance")
+}
+
+model Battery {
+  id             String    @id @default(cuid())
+  droneId        String
+  serialNumber   String?
+  capacity       Int?
+  cycleCount     Int       @default(0)
+  purchaseDate   DateTime?
+  lastChargeDate DateTime?
+  health         Int?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  drone          Drone     @relation(fields: [droneId], references: [id], onDelete: Cascade)
+  @@map("batteries")
+}
+
+// ===== FLIGHT LOGBOOK =====
+model FlightLog {
+  id                  String        @id @default(cuid())
+  userId              String
+  droneId             String?
+  date                DateTime
+  startTime           String?
+  endTime             String?
+  duration            Int?
+  location            String
+  latitude            Float?
+  longitude           Float?
+  maxAltitude         Float?
+  maxDistance         Float?
+  distanceTraveled    Float?
+  purpose             FlightPurpose @default(hobby)
+  notes               String?
+  incidentOccurred    Boolean       @default(false)
+  incidentDescription String?
+  weather             Json?
+  isPublic            Boolean       @default(false)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  drone               Drone?        @relation(fields: [droneId], references: [id], onDelete: SetNull)
+  @@map("flight_logs")
+}
+
+// ===== COMPLIANCE & PERMITS =====
+model Permit {
+  id              String       @id @default(cuid())
+  userId          String
+  type            String
+  authority       String       @default("Rwanda CAA")
+  referenceNumber String?
+  issuedDate      DateTime?
+  expiryDate      DateTime?
+  status          PermitStatus @default(active)
+  documentUrl     String?
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("permits")
+}
+
+// ===== SAFETY REPORTS =====
+model SafetyReport {
+  id                 String   @id @default(cuid())
+  reporterId         String?
+  type               String
+  date               DateTime
+  location           String
+  latitude           Float?
+  longitude          Float?
+  description        String
+  injuries           Boolean  @default(false)
+  propertyDamage     Boolean  @default(false)
+  reportedToCAA      Boolean  @default(false)
+  caaReferenceNumber String?
+  status             String   @default("received")
+  isAnonymous        Boolean  @default(false)
+  isPublic           Boolean  @default(true)
+  adminNotes         String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  reporter           User?    @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+  @@map("safety_reports")
+}
+
+// ===== MARKETPLACE =====
+model MarketplaceListing {
+  id          String   @id @default(cuid())
+  sellerId    String
+  title       String
+  description String
+  category    String
+  condition   String
+  price       Float
+  currency    String   @default("RWF")
+  negotiable  Boolean  @default(false)
+  location    Region?
+  images      Json?
+  status      String   @default("active")
+  views       Int      @default(0)
+  saves       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  expiresAt   DateTime?
+  seller      User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  savedBy     ListingSave[]
+  @@map("marketplace_listings")
+}
+
+model ListingSave {
+  id        String             @id @default(cuid())
+  userId    String
+  listingId String
+  savedAt   DateTime           @default(now())
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing   MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  @@unique([userId, listingId])
+  @@map("listing_saves")
+}
+
+// ===== REVIEWS =====
+model Review {
+  id           String    @id @default(cuid())
+  reviewerId   String
+  serviceId    String
+  rating       Int
+  title        String?
+  body         String
+  isVerified   Boolean   @default(false)
+  response     String?
+  responseAt   DateTime?
+  helpfulCount Int       @default(0)
+  isApproved   Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  reviewer     User      @relation("ReviewGiver", fields: [reviewerId], references: [id], onDelete: Cascade)
+  service      Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  @@unique([reviewerId, serviceId])
+  @@map("reviews")
+}
+
+// ===== NOTIFICATIONS =====
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  link      String?
+  isRead    Boolean  @default(false)
+  data      Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("notifications")
+}
+
+// ===== NEWS =====
+model NewsArticle {
+  id          String    @id @default(cuid())
+  authorId    String
+  title       String
+  slug        String    @unique
+  summary     String
+  content     String
+  thumbnail   String?
+  category    String    @default("community")
+  tags        Json?
+  isPublished Boolean   @default(false)
+  isFeatured  Boolean   @default(false)
+  viewsCount  Int       @default(0)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  @@map("news_articles")
+}
+
+// ===== FEATURE FLAGS =====
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String
+  isEnabled   Boolean  @default(false)
+  config      Json?
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+  @@map("feature_flags")
+}
+
+// ===== MENTORSHIP =====
+model MentorProfile {
+  id               String              @id @default(cuid())
+  userId           String              @unique
+  specialties      Json?
+  bio              String?
+  maxMentees       Int                 @default(3)
+  isAccepting      Boolean             @default(true)
+  isFree           Boolean             @default(true)
+  languages        Json?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sentRequests     MentorshipRequest[] @relation("MenteeProfile")
+  receivedRequests MentorshipRequest[] @relation("MentorProfileRequests")
+  @@map("mentor_profiles")
+}
+
+model MentorshipRequest {
+  id              String        @id @default(cuid())
+  menteeProfileId String
+  mentorProfileId String
+  message         String
+  goals           Json?
+  status          String        @default("pending")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  menteeProfile   MentorProfile @relation("MenteeProfile", fields: [menteeProfileId], references: [id], onDelete: Cascade)
+  mentorProfile   MentorProfile @relation("MentorProfileRequests", fields: [mentorProfileId], references: [id], onDelete: Cascade)
+  @@map("mentorship_requests")
+}
+
+// ===== SOCIAL FOLLOWS =====
+model UserFollow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  follower    User     @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+  @@unique([followerId, followingId])
+  @@map("user_follows")
+}
+
+// ===== NEW ENUMS =====
+enum DroneStatus {
+  active
+  maintenance
+  retired
+}
+
+enum FlightPurpose {
+  hobby
+  photography
+  survey
+  delivery
+  racing
+  training
+  commercial
+  inspection
+}
+
+enum PermitStatus {
+  active
+  expired
+  suspended
+  pending
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+// ===== PHASE 4: LMS =====
+
+model Course {
+  id              String       @id @default(cuid())
+  instructorId    String
+  instructor      User         @relation("CourseInstructor", fields: [instructorId], references: [id])
+  title           String
+  slug            String       @unique
+  description     String
+  thumbnail       String?
+  category        String       // regulations | flying | photography | survey | fpv | safety | exam_prep
+  level           String       // beginner | intermediate | advanced
+  price           Float        @default(0)
+  isPublished     Boolean      @default(false)
+  isFeatured      Boolean      @default(false)
+  enrollmentCount Int          @default(0)
+  lessons         Lesson[]
+  enrollments     Enrollment[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("courses")
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  content     String   // Markdown
+  videoUrl    String?
+  duration    Int?     // minutes
+  order       Int
+  type        String   @default("reading") // video | reading | quiz
+  isPublished Boolean  @default(true)
+  quiz        Json?    // [{ question, options, answer }]
+  createdAt   DateTime @default(now())
+
+  @@map("lessons")
+}
+
+model Enrollment {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation("CourseEnrollment", fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress    Json?     // { [lessonId]: completedAt }
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+// ===== PHASE 5: ACTIVITY FEED =====
+
+model ActivityFeed {
+  id         String   @id @default(cuid())
+  actorId    String
+  actor      User     @relation("ActivityActor", fields: [actorId], references: [id], onDelete: Cascade)
+  type       String   // posted_forum | created_project | attended_event | new_service | logged_flight | enrolled_course
+  entityId   String?
+  entityType String?  // forum_post | project | event | service | flight_log | course
+  data       Json?    // title, thumbnail, href etc
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@map("activity_feed")
 }

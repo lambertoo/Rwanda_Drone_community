@@ -95,7 +95,7 @@ export default function MyOpportunitiesPage() {
     switch (tabCategory) {
       case 'job': return 'bg-blue-100 text-blue-800'
       case 'gig': return 'bg-green-100 text-green-800'
-      default: return 'bg-gray-100 text-gray-800'
+      default: return 'bg-muted text-foreground'
     }
   }
 
@@ -203,9 +203,9 @@ export default function MyOpportunitiesPage() {
             <Card key={i}>
               <CardContent className="p-6">
                 <div className="animate-pulse space-y-4">
-                  <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                  <div className="h-6 bg-muted rounded w-3/4"></div>
+                  <div className="h-4 bg-muted rounded w-1/2"></div>
+                  <div className="h-4 bg-muted rounded w-1/4"></div>
                 </div>
               </CardContent>
             </Card>

@@ -200,8 +200,8 @@ function OpportunityDetailPage() {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-12 bg-gray-200 rounded w-3/4 mb-4"></div>
+          <div className="h-8 bg-muted rounded w-1/4 mb-4"></div>
+          <div className="h-12 bg-muted rounded w-3/4 mb-4"></div>
         </div>
       </div>
     )
@@ -248,7 +248,7 @@ function OpportunityDetailPage() {
       case 'contract':
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+        return 'bg-muted text-foreground dark:bg-gray-900 dark:text-gray-200'
     }
   }
 
@@ -267,7 +267,7 @@ function OpportunityDetailPage() {
       case 'education':
         return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200'
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+        return 'bg-muted text-foreground dark:bg-gray-900 dark:text-gray-200'
     }
   }
 

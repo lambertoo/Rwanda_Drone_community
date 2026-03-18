@@ -88,7 +88,7 @@ export default function ProviderPortfolioPage() {
           className={`h-4 w-4 ${
             starValue <= Math.floor(rating)
               ? 'fill-yellow-400 text-yellow-400'
-              : 'text-gray-300'
+              : 'text-muted-foreground/50'
           }`}
         />
       )

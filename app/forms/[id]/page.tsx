@@ -317,7 +317,7 @@ export default function FormPage() {
         <Card className="max-w-md">
           <CardContent className="text-center p-8">
             <h1 className="text-2xl font-bold mb-4">Form not found</h1>
-            <p className="text-gray-600 mb-4">The form you're looking for doesn't exist or is no longer available.</p>
+            <p className="text-muted-foreground mb-4">The form you're looking for doesn't exist or is no longer available.</p>
             <Button onClick={() => router.push('/')}>Go Home</Button>
           </CardContent>
         </Card>
@@ -330,23 +330,23 @@ export default function FormPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-muted/50 py-8">
       <div className="max-w-2xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold mb-2">{form.title}</h1>
           {form.description && (
-            <p className="text-gray-600">{form.description}</p>
+            <p className="text-muted-foreground">{form.description}</p>
           )}
           
           {/* Progress bar */}
           {form.sections.length > 1 && (
             <div className="mt-6">
-              <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+              <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
                 <span>Step {currentStep + 1} of {form.sections.length}</span>
                 <span>{Math.round(((currentStep + 1) / form.sections.length) * 100)}% complete</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-muted rounded-full h-2">
                 <div 
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${((currentStep + 1) / form.sections.length) * 100}%` }}
@@ -361,7 +361,7 @@ export default function FormPage() {
           <CardHeader>
             <CardTitle>{currentSection.title}</CardTitle>
             {currentSection.description && (
-              <p className="text-gray-600">{currentSection.description}</p>
+              <p className="text-muted-foreground">{currentSection.description}</p>
             )}
           </CardHeader>
           

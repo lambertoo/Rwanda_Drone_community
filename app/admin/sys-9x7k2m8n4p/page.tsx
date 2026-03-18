@@ -25,7 +25,7 @@ export default function SystemManagementPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-400 mx-auto mb-4"></div>
           <h1 className="text-2xl font-bold text-white mb-2">Loading...</h1>
-          <p className="text-gray-400">Verifying admin access...</p>
+          <p className="text-muted-foreground/70">Verifying admin access...</p>
         </div>
       </div>
     )
@@ -38,8 +38,8 @@ export default function SystemManagementPage() {
         <div className="text-center">
           <Shield className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
-          <p className="text-gray-400">This area is restricted to authorized administrators only.</p>
-          <p className="text-gray-500 text-sm mt-2">Current role: {user?.role || 'Not logged in'}</p>
+          <p className="text-muted-foreground/70">This area is restricted to authorized administrators only.</p>
+          <p className="text-muted-foreground text-sm mt-2">Current role: {user?.role || 'Not logged in'}</p>
         </div>
       </div>
     )
@@ -122,7 +122,7 @@ export default function SystemManagementPage() {
             <Shield className="h-8 w-8 text-blue-400" />
             <h1 className="text-3xl font-bold text-white">System Management</h1>
           </div>
-          <p className="text-gray-400">
+          <p className="text-muted-foreground/70">
             Secure database backup and restore operations. Admin access only.
           </p>
         </div>
@@ -135,13 +135,13 @@ export default function SystemManagementPage() {
                 <Database className="h-5 w-5 text-green-400" />
                 Complete Application Backup
               </CardTitle>
-              <CardDescription className="text-gray-400">
+              <CardDescription className="text-muted-foreground/70">
                 Create a complete backup including database, uploaded files, and all resources. Downloads as a ZIP file.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="backup-name" className="text-gray-300">Backup Name (Optional)</Label>
+                <Label htmlFor="backup-name" className="text-muted-foreground/50">Backup Name (Optional)</Label>
                 <Input
                   id="backup-name"
                   placeholder="Enter backup name"
@@ -169,13 +169,13 @@ export default function SystemManagementPage() {
                 <Upload className="h-5 w-5 text-orange-400" />
                 Complete Application Restore
               </CardTitle>
-              <CardDescription className="text-gray-400">
+              <CardDescription className="text-muted-foreground/70">
                 Restore your complete application from a previously created ZIP backup file.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="backup-file" className="text-gray-300">Select Backup File</Label>
+                <Label htmlFor="backup-file" className="text-muted-foreground/50">Select Backup File</Label>
                 <Input
                   id="backup-file"
                   type="file"
@@ -183,7 +183,7 @@ export default function SystemManagementPage() {
                   onChange={(e) => setBackupFile(e.target.files?.[0] || null)}
                   className="bg-gray-700 border-gray-600 text-white file:bg-gray-600 file:text-white file:border-gray-500"
                 />
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Only .zip files from complete application backups are supported
                 </p>
               </div>
@@ -220,15 +220,15 @@ export default function SystemManagementPage() {
             <div className="grid gap-4 md:grid-cols-3">
               <div className="text-center p-4 bg-green-900/20 rounded-lg border border-green-800">
                 <div className="text-2xl font-bold text-green-400">Active</div>
-                <div className="text-sm text-gray-400">System Status</div>
+                <div className="text-sm text-muted-foreground/70">System Status</div>
               </div>
               <div className="text-center p-4 bg-blue-900/20 rounded-lg border border-blue-800">
                 <div className="text-2xl font-bold text-blue-400">Admin</div>
-                <div className="text-sm text-gray-400">User Role</div>
+                <div className="text-sm text-muted-foreground/70">User Role</div>
               </div>
               <div className="text-center p-4 bg-purple-900/20 rounded-lg border border-purple-800">
                 <div className="text-2xl font-bold text-purple-400">Secure</div>
-                <div className="text-sm text-gray-400">Access Level</div>
+                <div className="text-sm text-muted-foreground/70">Access Level</div>
               </div>
             </div>
           </CardContent>
@@ -236,7 +236,7 @@ export default function SystemManagementPage() {
 
         {/* Security Notice */}
         <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             This is a secure, hidden administrative interface. Access is logged and monitored.
           </p>
         </div>

@@ -228,7 +228,7 @@ function ProjectCategoriesContent() {
                 
                 {categories.length === 0 && (
                   <div className="text-center py-8">
-                    <Briefcase className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <Briefcase className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
                     <p className="text-muted-foreground">No categories yet. Create your first one!</p>
                   </div>
                 )}

@@ -58,6 +58,25 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function PATCH(request: NextRequest) {
+  try {
+    const authResult = await requireAuth(request)
+    if (authResult instanceof NextResponse) return authResult
+    const { user } = authResult
+    const body = await request.json()
+    const allowed = ["fullName","bio","location","website","phone","organization","pilotLicense","pilotLicenseType","pilotLicenseExpiry","caaRegistrationNumber","insuranceProvider","insuranceExpiry","experience","specializations","certifications"]
+    const data: Record<string, any> = {}
+    for (const key of allowed) {
+      if (key in body) data[key] = body[key] === "" ? null : body[key]
+    }
+    const updatedUser = await prisma.user.update({ where: { id: user.userId }, data })
+    return NextResponse.json({ message: "Profile updated", user: updatedUser })
+  } catch (error) {
+    console.error("Profile patch error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
 export async function PUT(request: NextRequest) {
   try {
     // Authenticate user
@@ -65,10 +84,10 @@ export async function PUT(request: NextRequest) {
     if (authResult instanceof NextResponse) {
       return authResult
     }
-    
+
     const { user } = authResult
     const body = await request.json()
-    
+
     // Update user profile
     const updatedUser = await prisma.user.update({
       where: { id: user.userId },

@@ -124,13 +124,13 @@ export default function ServiceCategoriesPage() {
 
   return (
     <AdminOnly>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-muted/50 dark:bg-gray-900">
         <div className="container mx-auto px-4 py-6">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <h1 className="text-3xl font-bold text-foreground dark:text-white mb-2">
               Service Categories
             </h1>
-            <p className="text-gray-600 dark:text-gray-300">
+            <p className="text-muted-foreground dark:text-muted-foreground/50">
               Manage service categories for organizing platform services
             </p>
           </div>
@@ -158,7 +158,7 @@ export default function ServiceCategoriesPage() {
                   {loading ? (
                     <div className="text-center py-8">Loading...</div>
                   ) : categories.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       No service categories found
                     </div>
                   ) : (
@@ -170,14 +170,14 @@ export default function ServiceCategoriesPage() {
                         >
                           <div className="flex-1">
                             <h3 className="font-semibold">{category.name}</h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                            <p className="text-sm text-muted-foreground dark:text-muted-foreground/50 mt-1">
                               {category.description}
                             </p>
                             <div className="flex items-center gap-2 mt-2">
                               <Badge variant="outline">
                                 {category._count.services} services
                               </Badge>
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-muted-foreground">
                                 Created {new Date(category.createdAt).toLocaleDateString()}
                               </span>
                             </div>
