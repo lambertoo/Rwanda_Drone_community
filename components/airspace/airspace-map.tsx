@@ -62,7 +62,8 @@ export default function AirspaceMap() {
   const mapInstanceRef = useRef<any>(null)
   const [dynamicZones, setDynamicZones] = useState<DynamicZone[]>([])
 
-  // Fetch dynamic zones from DB
+  // Fetch zones from DB. If DB has zones, they replace the static hardcoded ones.
+  // If DB is empty (not yet seeded), fall back to static zones.
   useEffect(() => {
     fetch('/api/airspace/zones')
       .then(r => r.json())
@@ -95,31 +96,33 @@ export default function AirspaceMap() {
         maxZoom: 18,
       }).addTo(map)
 
-      // Draw static zones
-      for (const zone of STATIC_ZONES) {
-        if (!zone.radius) continue
-        const opacity = zone.type === "advisory" ? 0.08 : 0.18
-        const weight = zone.type === "advisory" ? 1 : 2
-        const dashArray = zone.type === "advisory" ? "6 4" : undefined
-        L.circle([zone.lat, zone.lon], {
-          radius: zone.radius * 1000,
-          color: zone.color,
-          fillColor: zone.fillColor,
-          fillOpacity: opacity,
-          weight,
-          dashArray,
-        })
-          .bindPopup(
-            `<div style="min-width:180px">
-              <strong style="font-size:13px">${zone.name}</strong>
-              <span style="margin-left:6px;padding:1px 6px;background:#e5e7eb;border-radius:3px;font-size:10px;vertical-align:middle">Static</span>
-              <p style="margin:4px 0 0;font-size:12px;color:#666">${zone.description}</p>
-            </div>`
-          )
-          .addTo(map)
+      // If DB is empty (not seeded yet), fall back to hardcoded static zones
+      const useStatic = dynamicZones.length === 0
+      if (useStatic) {
+        for (const zone of STATIC_ZONES) {
+          if (!zone.radius) continue
+          const opacity = zone.type === "advisory" ? 0.08 : 0.18
+          const weight = zone.type === "advisory" ? 1 : 2
+          const dashArray = zone.type === "advisory" ? "6 4" : undefined
+          L.circle([zone.lat, zone.lon], {
+            radius: zone.radius * 1000,
+            color: zone.color,
+            fillColor: zone.fillColor,
+            fillOpacity: opacity,
+            weight,
+            dashArray,
+          })
+            .bindPopup(
+              `<div style="min-width:180px">
+                <strong style="font-size:13px">${zone.name}</strong>
+                <p style="margin:4px 0 0;font-size:12px;color:#666">${zone.description}</p>
+              </div>`
+            )
+            .addTo(map)
+        }
       }
 
-      // Draw dynamic zones fetched from DB
+      // Draw DB zones (replaces static when seeded)
       for (const zone of dynamicZones) {
         const color = SEVERITY_COLOR[zone.severity] || "#6b7280"
         const isTemp = !!zone.endDate
@@ -177,9 +180,9 @@ export default function AirspaceMap() {
             <span>{l.label}</span>
           </div>
         ))}
-        {dynamicZones.length > 0 && (
-          <p className="pt-1 text-muted-foreground border-t mt-1">+{dynamicZones.length} authority zone{dynamicZones.length !== 1 ? 's' : ''}</p>
-        )}
+        <p className="pt-1 text-muted-foreground border-t mt-1 text-[10px]">
+          {dynamicZones.length > 0 ? `${dynamicZones.length} zone${dynamicZones.length !== 1 ? 's' : ''} from database` : 'Using built-in zones (not yet seeded)'}
+        </p>
       </div>
     </div>
   )

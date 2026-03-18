@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   AlertTriangle, Info, MapPin, Phone,
   CheckCircle, XCircle, Plane, Plus, Pencil, Trash2,
-  CalendarClock, ShieldAlert,
+  CalendarClock, ShieldAlert, Loader2,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
@@ -192,6 +192,24 @@ export default function AirspacePage() {
       toast.error('Failed to delete zone')
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  const [seeding, setSeeding] = useState(false)
+
+  const seedDefaults = async () => {
+    if (!confirm('This will pre-fill all official Rwanda no-fly zones into the database. Continue?')) return
+    setSeeding(true)
+    try {
+      const res = await fetch('/api/admin/airspace/seed-defaults', { method: 'POST', credentials: 'include' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed')
+      toast.success(data.message)
+      fetchZones()
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setSeeding(false)
     }
   }
 
@@ -476,10 +494,18 @@ export default function AirspacePage() {
 
             {/* Zone list */}
             <div>
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-primary" />
-                Authority-Defined Zones ({zones.length})
-              </h3>
+              <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4 text-primary" />
+                  Authority-Defined Zones ({zones.length})
+                </h3>
+                {user?.role === 'admin' && zones.length === 0 && (
+                  <Button size="sm" variant="outline" onClick={seedDefaults} disabled={seeding}>
+                    {seeding ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Plus className="h-3.5 w-3.5 mr-1.5" />}
+                    Seed Rwanda default zones
+                  </Button>
+                )}
+              </div>
 
               {zonesLoading ? (
                 <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
