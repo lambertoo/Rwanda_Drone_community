@@ -282,246 +282,249 @@ function OpportunityDetailPage() {
   const canEdit = currentUser && (currentUser.id === opportunity.poster.id || currentUser.role === 'admin')
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-background">
+      {/* Top Navigation Bar */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40 h-16 flex items-center px-4 md:px-8">
         <Link href="/opportunities">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Opportunities
+          <Button variant="ghost" size="sm" className="gap-2 rounded-lg">
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Back</span>
           </Button>
         </Link>
-        {canEdit && (
-          <div className="flex gap-2 ml-auto">
-            <Link href={`/opportunities/${opportunityId}/build-form`}>
-              <Button variant="outline" size="sm">
-                <FormInput className="h-4 w-4 mr-2" />
-                Build Form
-              </Button>
-            </Link>
-            <Link href={`/opportunities/${opportunityId}/edit`}>
-              <Button variant="outline" size="sm">
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-            </Link>
-            <Button variant="outline" size="sm" onClick={handleDelete}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Opportunity Header */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <h1 className="text-3xl font-bold">{opportunity.title}</h1>
-                  {opportunity.isUrgent && (
-                    <Badge variant="destructive">Urgent</Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 text-lg text-muted-foreground mb-2">
-                  <Building2 className="h-5 w-5" />
-                  <span>{opportunity.company}</span>
-                  {opportunity.poster.isVerified && (
-                    <Badge variant="secondary">Verified</Badge>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className={getOpportunityTypeColor(opportunity.opportunityType)}>
-                  {opportunity.opportunityType}
-                </Badge>
-                {opportunity.category && (
-                  <Badge className={getCategoryColor(opportunity.category.name)}>
-                    {opportunity.category.name}
-                  </Badge>
-                )}
-              </div>
-            </div>
-
-            {/* Opportunity Details */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span>{opportunity.location}</span>
-                {opportunity.isRemote && (
-                  <Badge variant="outline">Remote</Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span>{opportunity.salary || 'Salary not specified'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>{formatDate(opportunity.createdAt)}</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Opportunity Description */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Opportunity Description</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground whitespace-pre-wrap">{opportunity.description}</p>
-        </CardContent>
-      </Card>
-
-      {/* Requirements */}
-      {requirements.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Requirements</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="list-disc list-inside space-y-2">
-              {requirements.map((requirement: string, index: number) => (
-                <li key={index} className="text-muted-foreground">{requirement}</li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Company Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>About the Company</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{opportunity.company}</span>
-            </div>
-            {opportunity.poster.organization && (
-              <div className="text-sm text-muted-foreground">
-                {opportunity.poster.organization}
-              </div>
-            )}
-            <div className="text-sm text-muted-foreground">
-              Posted by {opportunity.poster.fullName}
-              {opportunity.poster.isVerified && (
-                <Badge variant="secondary" className="ml-2">Verified</Badge>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Applications */}
-      {opportunity.applications.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Applications ({opportunity.applications.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {opportunity.applications.map((application) => (
-                <div key={application.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{application.applicant.fullName}</span>
-                      {application.applicant.isVerified && (
-                        <Badge variant="secondary" className="text-xs">Verified</Badge>
-                      )}
-                    </div>
-                    <span className="text-sm text-muted-foreground">
-                      {formatDate(application.createdAt)}
-                    </span>
-                  </div>
-                  {application.message && (
-                    <p className="text-sm text-muted-foreground">{application.message}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Action Buttons */}
-      <div className="space-y-4">
-        {/* Application Form Section */}
-        {opportunity.registrationForm ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FormInput className="h-5 w-5" />
-                Application Form
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {hasApplied ? (
-                <div className="text-center py-6">
-                  <CheckCircle className="h-12 w-12 mx-auto text-green-600 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Application Submitted!</h3>
-                  <p className="text-muted-foreground mb-4">
-                    You have successfully applied to this opportunity. The employer will review your application.
-                  </p>
-                  <Button variant="outline" onClick={() => setShowApplicationForm(true)}>
-                    View Application
-                  </Button>
-                </div>
-              ) : showApplicationForm ? (
-                <OpportunityApplicationForm
-                  form={opportunity.registrationForm}
-                  onSubmit={handleApplicationSubmit}
-                  isSubmitting={submitting}
-                />
-              ) : (
-                <div className="text-center py-6">
-                  <p className="text-muted-foreground mb-4">
-                    This opportunity has a custom application form. Click below to start your application.
-                  </p>
-                  <Button onClick={() => setShowApplicationForm(true)} className="w-full">
-                    Apply Now
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="text-center py-8">
-            <FormInput className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Application Form</h3>
-            <p className="text-muted-foreground mb-4">
-              This opportunity doesn't have a custom application form yet.
-            </p>
-            {currentUser && currentUser.id === opportunity?.poster.id && (
+        <div className="ml-auto flex gap-2">
+          {canEdit && (
+            <>
               <Link href={`/opportunities/${opportunityId}/build-form`}>
-                <Button>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Build Application Form
+                <Button variant="outline" size="sm" className="hidden sm:inline-flex gap-2 rounded-lg">
+                  <FormInput className="h-4 w-4" />
+                  Build Form
                 </Button>
               </Link>
-            )}
-          </div>
-        )}
-
-        {/* Other Action Buttons */}
-        <div className="flex gap-4">
-          {!opportunity.registrationForm && opportunity.allowApplication && (
-            <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
-              Apply Now
-            </Button>
+              <Link href={`/opportunities/${opportunityId}/edit`}>
+                <Button variant="outline" size="sm" className="hidden sm:inline-flex gap-2 rounded-lg">
+                  <Edit className="h-4 w-4" />
+                  Edit
+                </Button>
+              </Link>
+              <Button variant="outline" size="sm" onClick={handleDelete} className="gap-2 rounded-lg">
+                <Trash2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Delete</span>
+              </Button>
+            </>
           )}
-          <Button variant="outline">
-            Save Opportunity
-          </Button>
-          <Button variant="outline">
-            Share
-          </Button>
+        </div>
+      </div>
+
+      {/* Main Content - Two Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 lg:gap-8 p-4 md:p-8">
+        {/* Left Column - Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+
+          {/* Opportunity Header */}
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <h1 className="text-4xl font-bold">{opportunity.title}</h1>
+                {opportunity.isUrgent && (
+                  <Badge variant="destructive" className="rounded-md">Urgent</Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-lg mb-4">
+                <Building2 className="h-5 w-5 text-muted-foreground" />
+                <span className="font-medium">{opportunity.company}</span>
+                {opportunity.poster.isVerified && (
+                  <Badge variant="secondary" className="ml-2 rounded-md text-xs">Verified</Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Opportunity Description */}
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold">About this Opportunity</h2>
+              <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{opportunity.description}</p>
+            </div>
+          </div>
+
+          <Separator className="my-8" />
+
+          {/* Requirements */}
+          {requirements.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Requirements</h2>
+              <ul className="space-y-3">
+                {requirements.map((requirement: string, index: number) => (
+                  <li key={index} className="flex gap-3">
+                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <div className="w-2 h-2 rounded-full bg-primary"></div>
+                    </div>
+                    <span className="text-muted-foreground">{requirement}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <Separator className="my-8" />
+
+          {/* Company Information */}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold">About the Company</h2>
+            <div className="bg-card border border-border/40 rounded-2xl p-6 space-y-3">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Company Name</p>
+                <p className="font-semibold text-lg">{opportunity.company}</p>
+              </div>
+              {opportunity.poster.organization && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Organization</p>
+                  <p className="font-medium">{opportunity.poster.organization}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Posted By</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium">{opportunity.poster.fullName}</p>
+                  {opportunity.poster.isVerified && (
+                    <Badge variant="secondary" className="text-xs rounded-md">Verified</Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Applications Section */}
+          {opportunity.applications.length > 0 && (
+            <>
+              <Separator className="my-8" />
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold">Applications ({opportunity.applications.length})</h2>
+                <div className="space-y-3">
+                  {opportunity.applications.map((application) => (
+                    <div key={application.id} className="bg-card border border-border/40 rounded-2xl p-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{application.applicant.fullName}</span>
+                          {application.applicant.isVerified && (
+                            <Badge variant="secondary" className="text-xs rounded-md">Verified</Badge>
+                          )}
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {formatDate(application.createdAt)}
+                        </span>
+                      </div>
+                      {application.message && (
+                        <p className="text-sm text-muted-foreground">{application.message}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Right Column - Sidebar with Details & Actions */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-24 space-y-6">
+            {/* Opportunity Details Card */}
+            <div className="bg-card border border-border/40 rounded-2xl p-6 space-y-5">
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Employment Type</p>
+                <Badge className={`${getOpportunityTypeColor(opportunity.opportunityType)} rounded-lg text-xs`}>
+                  {opportunity.opportunityType}
+                </Badge>
+              </div>
+
+              {opportunity.category && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Category</p>
+                  <Badge className={`${getCategoryColor(opportunity.category.name)} rounded-lg text-xs`}>
+                    {opportunity.category.name}
+                  </Badge>
+                </div>
+              )}
+
+              <Separator />
+
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Location</p>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span className="font-medium">{opportunity.location}</span>
+                </div>
+                {opportunity.isRemote && (
+                  <Badge variant="outline" className="mt-2 rounded-lg text-xs">Remote</Badge>
+                )}
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Salary</p>
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span className="font-medium">{opportunity.salary || 'Not specified'}</span>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Posted</p>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span className="font-medium text-sm">{formatDate(opportunity.createdAt)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Application Form Section */}
+            {opportunity.registrationForm ? (
+              <div className="bg-card border border-border/40 rounded-2xl p-6 space-y-4">
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <FormInput className="h-5 w-5" />
+                  Application Form
+                </h3>
+                {hasApplied ? (
+                  <div className="text-center py-6">
+                    <CheckCircle className="h-12 w-12 mx-auto text-green-600 mb-4" />
+                    <h4 className="font-semibold mb-2 text-sm">Application Submitted!</h4>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      The employer will review your application.
+                    </p>
+                    <Button variant="outline" onClick={() => setShowApplicationForm(true)} className="w-full rounded-lg">
+                      View Application
+                    </Button>
+                  </div>
+                ) : showApplicationForm ? (
+                  <OpportunityApplicationForm
+                    form={opportunity.registrationForm}
+                    onSubmit={handleApplicationSubmit}
+                    isSubmitting={submitting}
+                  />
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Custom form required to apply
+                    </p>
+                    <Button onClick={() => setShowApplicationForm(true)} className="w-full rounded-lg">
+                      Start Application
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : opportunity.allowApplication ? (
+              <Button className="w-full py-6 rounded-2xl text-base font-semibold" size="lg">
+                Apply Now
+              </Button>
+            ) : null}
+
+            {/* Share & Save Buttons */}
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1 rounded-lg">
+                Save
+              </Button>
+              <Button variant="outline" className="flex-1 rounded-lg">
+                Share
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
