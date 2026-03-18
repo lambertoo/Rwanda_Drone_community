@@ -1,24 +1,32 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
-  AlertTriangle, Info, MapPin, BookMarked, Phone,
-  CheckCircle, XCircle, AlertCircle, Plane
+  AlertTriangle, Info, MapPin, Phone,
+  CheckCircle, XCircle, Plane, Plus, Pencil, Trash2,
+  CalendarClock, ShieldAlert,
 } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { toast } from "sonner"
 
 const AirspaceMap = dynamic(() => import("@/components/airspace/airspace-map"), {
   ssr: false,
   loading: () => <Skeleton className="h-[480px] w-full rounded-lg" />,
 })
 
+// ── static reference data ──────────────────────────────────────
 const noFlyZones = [
   { name: "Kigali Intl Airport (HRYR)", type: "Airport", restriction: "5km full ban / 10km advisory", province: "Kigali", severity: "red" },
   { name: "Kamembe Airport (HRZA)", type: "Airport", restriction: "3km full ban / 5km advisory", province: "Western (Rusizi)", severity: "red" },
@@ -52,11 +60,156 @@ const rules = [
   { rule: "Do not fly under the influence of alcohol or drugs", ok: false },
 ]
 
+// ── types ──────────────────────────────────────────────────────
+interface AirspaceZone {
+  id: string
+  name: string
+  description: string
+  type: string
+  lat: number
+  lon: number
+  radius: number
+  severity: string
+  province?: string | null
+  startDate?: string | null
+  endDate?: string | null
+  isActive: boolean
+  createdAt: string
+  createdBy: { fullName: string; username: string }
+}
+
+const ZONE_TYPES = ["restricted", "advisory", "protected", "permitted", "temporary", "military"]
+const SEVERITIES = [
+  { value: "red", label: "Red — Full ban" },
+  { value: "orange", label: "Orange — Advisory / Protected" },
+  { value: "yellow", label: "Yellow — Conditional / Permit" },
+  { value: "green", label: "Green — Permitted zone" },
+]
+const PROVINCES = ["Kigali", "Northern", "Southern", "Eastern", "Western", "All Rwanda"]
+
+const SEVERITY_COLORS: Record<string, string> = {
+  red: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  orange: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
+  yellow: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+  green: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+}
+
+const EMPTY_FORM = {
+  name: "", description: "", type: "restricted", lat: "", lon: "",
+  radius: "", severity: "red", province: "", startDate: "", endDate: "",
+}
+
+// ── component ─────────────────────────────────────────────────
 export default function AirspacePage() {
+  const { user } = useAuth()
+  const isAuthority = user?.role === 'admin' || user?.role === 'regulator'
+
   const [selectedProvince, setSelectedProvince] = useState("All")
+  const [zones, setZones] = useState<AirspaceZone[]>([])
+  const [zonesLoading, setZonesLoading] = useState(false)
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const provinces = ["All", "Kigali", "Northern", "Southern", "Eastern", "Western"]
   const filtered = selectedProvince === "All" ? noFlyZones : noFlyZones.filter(z => z.province.includes(selectedProvince))
+
+  // Fetch custom zones (for management tab)
+  const fetchZones = () => {
+    setZonesLoading(true)
+    fetch('/api/airspace/zones')
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setZones(data) })
+      .catch(() => toast.error('Failed to load zones'))
+      .finally(() => setZonesLoading(false))
+  }
+
+  useEffect(() => {
+    if (isAuthority) fetchZones()
+  }, [isAuthority])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const url = editingId ? `/api/airspace/zones/${editingId}` : '/api/airspace/zones'
+      const method = editingId ? 'PATCH' : 'POST'
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...form,
+          lat: parseFloat(form.lat),
+          lon: parseFloat(form.lon),
+          radius: parseFloat(form.radius),
+          startDate: form.startDate || null,
+          endDate: form.endDate || null,
+          province: form.province || null,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Failed')
+      }
+      toast.success(editingId ? 'Zone updated' : 'Zone created and now visible on map')
+      setForm(EMPTY_FORM)
+      setEditingId(null)
+      fetchZones()
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const startEdit = (zone: AirspaceZone) => {
+    setEditingId(zone.id)
+    setForm({
+      name: zone.name,
+      description: zone.description,
+      type: zone.type,
+      lat: String(zone.lat),
+      lon: String(zone.lon),
+      radius: String(zone.radius),
+      severity: zone.severity,
+      province: zone.province || "",
+      startDate: zone.startDate ? zone.startDate.substring(0, 10) : "",
+      endDate: zone.endDate ? zone.endDate.substring(0, 10) : "",
+    })
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this zone? It will be removed from the map immediately.')) return
+    setDeletingId(id)
+    try {
+      const res = await fetch(`/api/airspace/zones/${id}`, { method: 'DELETE', credentials: 'include' })
+      if (!res.ok) throw new Error('Failed to delete')
+      toast.success('Zone deleted')
+      setZones(z => z.filter(z => z.id !== id))
+    } catch {
+      toast.error('Failed to delete zone')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const toggleActive = async (zone: AirspaceZone) => {
+    try {
+      const res = await fetch(`/api/airspace/zones/${zone.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ isActive: !zone.isActive }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      setZones(prev => prev.map(z => z.id === zone.id ? { ...z, isActive: !z.isActive } : z))
+      toast.success(zone.isActive ? 'Zone deactivated' : 'Zone activated')
+    } catch {
+      toast.error('Failed to update zone')
+    }
+  }
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-5xl">
@@ -70,7 +223,7 @@ export default function AirspacePage() {
       <Alert className="mb-6 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
         <AlertTriangle className="h-4 w-4 text-amber-600" />
         <AlertDescription className="text-amber-800 dark:text-amber-300">
-          <strong>Always verify current restrictions with Rwanda CAA before flying.</strong> Airspace designations change. NOTAMs may impose temporary restrictions not shown here. This page is a reference guide only — it does not substitute for official pre-flight checks.
+          <strong>Always verify current restrictions with Rwanda CAA before flying.</strong> Airspace designations change. NOTAMs may impose temporary restrictions not shown here.
         </AlertDescription>
       </Alert>
 
@@ -81,28 +234,34 @@ export default function AirspacePage() {
           <TabsTrigger value="permitted">Permitted Zones</TabsTrigger>
           <TabsTrigger value="rules">Key Rules</TabsTrigger>
           <TabsTrigger value="contacts">CAA Contacts</TabsTrigger>
+          {isAuthority && (
+            <TabsTrigger value="manage" className="flex items-center gap-1.5">
+              <ShieldAlert className="h-3.5 w-3.5" />
+              Manage Zones
+            </TabsTrigger>
+          )}
         </TabsList>
 
+        {/* Map tab */}
         <TabsContent value="map" className="mt-0">
           <AirspaceMap />
           <p className="text-xs text-muted-foreground mt-2 text-center">
-            Click on any zone for details. Zones are approximate — always verify with Rwanda CAA before flying.
+            Click on any zone for details. Blue dashed zones are authority-defined restrictions. Zones are approximate.
           </p>
         </TabsContent>
 
+        {/* No-fly zones */}
         <TabsContent value="zones">
           <div className="flex gap-2 flex-wrap mb-4">
             {provinces.map(p => (
               <Button key={p} size="sm" variant={selectedProvince === p ? "default" : "outline"} onClick={() => setSelectedProvince(p)}>{p}</Button>
             ))}
           </div>
-
           <div className="mb-3 flex gap-4 text-sm">
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-500 inline-block" /> Full restriction</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-orange-500 inline-block" /> Protected area</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-yellow-500 inline-block" /> Advisory / conditional</span>
           </div>
-
           <div className="space-y-3">
             {filtered.map((z, i) => (
               <Card key={i} className={`border-l-4 ${z.severity === "red" ? "border-l-red-500" : z.severity === "orange" ? "border-l-orange-500" : "border-l-yellow-500"}`}>
@@ -124,6 +283,7 @@ export default function AirspacePage() {
           </div>
         </TabsContent>
 
+        {/* Permitted zones */}
         <TabsContent value="permitted">
           <div className="space-y-4">
             <Card className="border-l-4 border-l-green-500">
@@ -134,7 +294,7 @@ export default function AirspacePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">Rwanda's dedicated drone testing corridor in Musanze district. Category B & C operations are permitted with prior CAA notification. Ideal for BVLOS testing, payload delivery trials, and advanced flight testing. Contact Rwanda CAA for corridor access procedures.</p>
+                <p className="text-sm text-muted-foreground">Rwanda's dedicated drone testing corridor in Musanze district. Category B & C operations are permitted with prior CAA notification.</p>
                 <p className="text-xs mt-2 flex items-center gap-1 text-muted-foreground"><MapPin className="h-3 w-3" /> Northern Province (Musanze)</p>
               </CardContent>
             </Card>
@@ -150,12 +310,13 @@ export default function AirspacePage() {
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription className="text-sm">
-                Interactive live airspace map with real-time NOTAMs coming soon. Once enabled by administrator, this page will display a live map layer. For now, always check <strong>Rwanda CAA NOTAM system</strong> before any flight.
+                For now, always check <strong>Rwanda CAA NOTAM system</strong> before any flight.
               </AlertDescription>
             </Alert>
           </div>
         </TabsContent>
 
+        {/* Rules */}
         <TabsContent value="rules">
           <div className="space-y-2">
             {rules.map((r, i) => (
@@ -170,7 +331,7 @@ export default function AirspacePage() {
             <CardContent className="space-y-3 text-sm">
               <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-900">
                 <p className="font-semibold text-green-800 dark:text-green-300">Category A — Open (Low Risk)</p>
-                <p className="text-muted-foreground mt-1">Hobby/recreational, below 400ft AGL, within VLOS, away from restricted areas. Registration required for drones ≥250g. No pilot certificate required for basic operations.</p>
+                <p className="text-muted-foreground mt-1">Hobby/recreational, below 400ft AGL, within VLOS, away from restricted areas. Registration required for drones ≥250g.</p>
               </div>
               <div className="p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-900">
                 <p className="font-semibold text-yellow-800 dark:text-yellow-300">Category B — Specific (Medium Risk)</p>
@@ -178,12 +339,13 @@ export default function AirspacePage() {
               </div>
               <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-900">
                 <p className="font-semibold text-red-800 dark:text-red-300">Category C — Certified (High Risk)</p>
-                <p className="text-muted-foreground mt-1">BVLOS operations, flights over people, critical infrastructure. Full certification, special authorization, and insurance mandatory. Very limited approvals.</p>
+                <p className="text-muted-foreground mt-1">BVLOS operations, flights over people, critical infrastructure. Full certification, special authorization, and insurance mandatory.</p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* Contacts */}
         <TabsContent value="contacts">
           <div className="grid md:grid-cols-2 gap-4">
             <Card>
@@ -216,6 +378,158 @@ export default function AirspacePage() {
             </Card>
           </div>
         </TabsContent>
+
+        {/* ── Manage Zones (admin / regulator only) ── */}
+        {isAuthority && (
+          <TabsContent value="manage" className="space-y-6">
+            {/* Form */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  {editingId ? <><Pencil className="h-4 w-4" /> Edit Zone</> : <><Plus className="h-4 w-4" /> Add Restricted Zone</>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="z-name">Zone Name *</Label>
+                      <Input id="z-name" placeholder="e.g. Kigali Stadium Event TFR" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="z-type">Zone Type *</Label>
+                      <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
+                        <SelectTrigger id="z-type"><SelectValue /></SelectTrigger>
+                        <SelectContent>{ZONE_TYPES.map(t => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="z-desc">Description / Reason *</Label>
+                    <Textarea id="z-desc" placeholder="Describe the restriction, reason, and any conditions for entry" rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} required />
+                  </div>
+
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="z-lat">Latitude *</Label>
+                      <Input id="z-lat" type="number" step="0.0001" placeholder="-1.9441" value={form.lat} onChange={e => setForm(f => ({ ...f, lat: e.target.value }))} required />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="z-lon">Longitude *</Label>
+                      <Input id="z-lon" type="number" step="0.0001" placeholder="30.0619" value={form.lon} onChange={e => setForm(f => ({ ...f, lon: e.target.value }))} required />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="z-radius">Radius (km) *</Label>
+                      <Input id="z-radius" type="number" step="0.1" min="0.1" max="200" placeholder="2" value={form.radius} onChange={e => setForm(f => ({ ...f, radius: e.target.value }))} required />
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="z-severity">Severity / Color *</Label>
+                      <Select value={form.severity} onValueChange={v => setForm(f => ({ ...f, severity: v }))}>
+                        <SelectTrigger id="z-severity"><SelectValue /></SelectTrigger>
+                        <SelectContent>{SEVERITIES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="z-province">Province (optional)</Label>
+                      <Select value={form.province} onValueChange={v => setForm(f => ({ ...f, province: v }))}>
+                        <SelectTrigger id="z-province"><SelectValue placeholder="Select province" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">— Not specified —</SelectItem>
+                          {PROVINCES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="z-start" className="flex items-center gap-1.5"><CalendarClock className="h-3.5 w-3.5" /> Start Date (leave blank = immediate)</Label>
+                      <Input id="z-start" type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="z-end" className="flex items-center gap-1.5"><CalendarClock className="h-3.5 w-3.5" /> End Date (leave blank = permanent)</Label>
+                      <Input id="z-end" type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} />
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    Tip: Use <a href="https://www.latlong.net/" target="_blank" rel="noopener noreferrer" className="underline">latlong.net</a> or Google Maps (right-click a point) to get precise coordinates.
+                  </p>
+
+                  <div className="flex gap-2">
+                    <Button type="submit" disabled={saving}>
+                      {saving ? 'Saving…' : editingId ? 'Update Zone' : 'Add Zone to Map'}
+                    </Button>
+                    {editingId && (
+                      <Button type="button" variant="outline" onClick={() => { setEditingId(null); setForm(EMPTY_FORM) }}>
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Zone list */}
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-primary" />
+                Authority-Defined Zones ({zones.length})
+              </h3>
+
+              {zonesLoading ? (
+                <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+              ) : zones.length === 0 ? (
+                <Card>
+                  <CardContent className="py-10 text-center text-muted-foreground">
+                    No custom zones added yet. Use the form above to add the first restriction.
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {zones.map(zone => (
+                    <Card key={zone.id} className={`border-l-4 ${!zone.isActive ? 'opacity-50 border-l-muted' : zone.severity === 'red' ? 'border-l-red-500' : zone.severity === 'orange' ? 'border-l-orange-500' : zone.severity === 'yellow' ? 'border-l-yellow-500' : 'border-l-green-500'}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <p className="font-semibold truncate">{zone.name}</p>
+                              <Badge variant="outline" className="text-xs capitalize">{zone.type}</Badge>
+                              <Badge className={`text-xs capitalize ${SEVERITY_COLORS[zone.severity] || ''}`}>{zone.severity}</Badge>
+                              {!zone.isActive && <Badge variant="secondary" className="text-xs">Inactive</Badge>}
+                              {zone.endDate && <Badge variant="outline" className="text-xs flex items-center gap-1"><CalendarClock className="h-3 w-3" /> Until {new Date(zone.endDate).toLocaleDateString()}</Badge>}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{zone.description}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {zone.lat.toFixed(4)}, {zone.lon.toFixed(4)} · {zone.radius} km radius
+                              {zone.province && ` · ${zone.province}`}
+                              {' · Added by '}{zone.createdBy?.fullName}
+                            </p>
+                          </div>
+                          <div className="flex gap-1 shrink-0">
+                            <Button size="icon" variant="ghost" className="h-8 w-8" title="Toggle active" onClick={() => toggleActive(zone)}>
+                              {zone.isActive ? <XCircle className="h-4 w-4 text-muted-foreground" /> : <CheckCircle className="h-4 w-4 text-green-500" />}
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" title="Edit zone" onClick={() => startEdit(zone)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" title="Delete zone" disabled={deletingId === zone.id} onClick={() => handleDelete(zone.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

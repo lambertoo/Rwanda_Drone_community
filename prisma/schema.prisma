@@ -70,6 +70,7 @@ model User {
   taughtCourses         Course[]             @relation("CourseInstructor")
   enrollments           Enrollment[]         @relation("CourseEnrollment")
   activityFeed          ActivityFeed[]       @relation("ActivityActor")
+  airspaceZones         AirspaceZone[]       @relation("ZoneCreator")
   pilotLicenseExpiry    DateTime?
   pilotLicenseType      String?
   caaRegistrationNumber String?
@@ -1178,4 +1179,28 @@ model ActivityFeed {
 
   @@index([actorId, createdAt])
   @@map("activity_feed")
+}
+
+// ===== AIRSPACE ZONES =====
+
+model AirspaceZone {
+  id          String    @id @default(cuid())
+  name        String
+  description String
+  type        String    // restricted | advisory | protected | permitted | temporary | military
+  lat         Float
+  lon         Float
+  radius      Float     // km
+  severity    String    // red | orange | yellow | green
+  province    String?
+  startDate   DateTime?
+  endDate     DateTime? // null = permanent
+  isActive    Boolean   @default(true)
+  createdById String
+  createdBy   User      @relation("ZoneCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([isActive])
+  @@map("airspace_zones")
 }
