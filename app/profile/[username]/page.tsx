@@ -25,7 +25,6 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { AuthGuard } from "@/components/auth-guard"
 import { useAuth } from "@/lib/auth-context"
 
 interface UserProfile {
@@ -443,11 +442,4 @@ function UserProfilePage() {
   )
 }
 
-// Wrap the entire page with AuthGuard
-export default function ProtectedUserProfilePage() {
-  return (
-    <AuthGuard>
-      <UserProfilePage />
-    </AuthGuard>
-  )
-} 
+export default UserProfilePage 

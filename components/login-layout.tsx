@@ -23,66 +23,62 @@ export function LoginLayout({ children }: LoginLayoutProps) {
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         {/* Mobile Menu Overlay */}
-        {isMobileMenuOpen && isAuthenticated && (
+        {isMobileMenuOpen && (
           <div
             className="fixed inset-0 bg-black/50 z-40 lg:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
           />
         )}
 
-        {/* Desktop Sidebar — only shown when authenticated */}
-        {isAuthenticated && (
-          <Sidebar className="w-64 border-r hidden lg:block">
-            <SidebarHeader className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">RDC</span>
-                </div>
-                <div>
-                  <h2 className="font-semibold text-sm">Rwanda Drone</h2>
-                  <p className="text-xs text-muted-foreground">Community</p>
-                </div>
+        {/* Desktop Sidebar — visible to all visitors */}
+        <Sidebar className="w-64 border-r hidden lg:block">
+          <SidebarHeader className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">RDC</span>
               </div>
-            </SidebarHeader>
-            <SidebarContent>
-              <AppSidebar />
-            </SidebarContent>
-          </Sidebar>
-        )}
+              <div>
+                <h2 className="font-semibold text-sm">Rwanda Drone</h2>
+                <p className="text-xs text-muted-foreground">Community</p>
+              </div>
+            </div>
+          </SidebarHeader>
+          <SidebarContent>
+            <AppSidebar />
+          </SidebarContent>
+        </Sidebar>
 
-        {/* Mobile Sidebar — only shown when authenticated */}
-        {isAuthenticated && (
-          <div className={`
-            fixed inset-y-0 left-0 z-50 w-64 bg-background border-r transform transition-transform duration-300 ease-in-out lg:hidden
-            ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-          `}>
-            <div className="flex items-center justify-between p-4 border-b">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">RDC</span>
-                </div>
-                <div>
-                  <h2 className="font-semibold text-sm">Rwanda Drone</h2>
-                  <p className="text-xs text-muted-foreground">Community</p>
-                </div>
+        {/* Mobile Sidebar — visible to all visitors */}
+        <div className={`
+          fixed inset-y-0 left-0 z-50 w-64 bg-background border-r transform transition-transform duration-300 ease-in-out lg:hidden
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}>
+          <div className="flex items-center justify-between p-4 border-b">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">RDC</span>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="lg:hidden"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div>
+                <h2 className="font-semibold text-sm">Rwanda Drone</h2>
+                <p className="text-xs text-muted-foreground">Community</p>
+              </div>
             </div>
-            <div className="p-4">
-              <AppSidebar onItemClick={() => setIsMobileMenuOpen(false)} />
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="lg:hidden"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
-        )}
+          <div className="p-4">
+            <AppSidebar onItemClick={() => setIsMobileMenuOpen(false)} />
+          </div>
+        </div>
 
         <div className="flex-1 flex flex-col min-w-0">
-          <Header onMobileMenuToggle={isAuthenticated ? () => setIsMobileMenuOpen(true) : undefined} />
+          <Header onMobileMenuToggle={() => setIsMobileMenuOpen(true)} />
           <main className="flex-1 p-3 sm:p-4 lg:p-6 bg-background">
             <div className="max-w-7xl mx-auto">{children}</div>
           </main>

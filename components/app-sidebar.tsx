@@ -50,21 +50,21 @@ export function AppSidebar({ className, onItemClick }: SidebarProps) {
     const sections: NavSection[] = []
 
     // Main navigation (everyone)
-    sections.push({
-      title: 'Main',
-      items: [
-        { title: 'Home', href: '/', icon: Home },
-        {
-          title: 'Notifications',
-          href: '/notifications',
-          icon: Bell,
-          badge: unreadCount > 0 ? String(unreadCount) : undefined,
-          badgeVariant: 'destructive'
-        },
-      ]
-    })
+    const mainItems: NavItem[] = [
+      { title: 'Home', href: '/', icon: Home },
+    ]
+    if (user) {
+      mainItems.push({
+        title: 'Notifications',
+        href: '/notifications',
+        icon: Bell,
+        badge: unreadCount > 0 ? String(unreadCount) : undefined,
+        badgeVariant: 'destructive',
+      })
+    }
+    sections.push({ title: 'Main', items: mainItems })
 
-    // Community section
+    // Community section — public
     sections.push({
       title: 'Community',
       items: [
@@ -76,62 +76,70 @@ export function AppSidebar({ className, onItemClick }: SidebarProps) {
       ]
     })
 
-    // Drone Tools
-    sections.push({
-      title: 'Drone Tools',
-      items: [
+    // Drone Tools — split public / private
+    const droneItems: NavItem[] = [
+      { title: 'Airspace Map', href: '/airspace', icon: Map },
+      { title: 'Weather Briefing', href: '/weather', icon: CloudSun },
+      { title: 'Safety Center', href: '/safety', icon: AlertTriangle },
+    ]
+    if (user) {
+      droneItems.unshift(
         { title: 'My Fleet', href: '/equipment', icon: Plane },
         { title: 'Flight Logbook', href: '/logbook', icon: BookMarked },
         { title: 'Compliance', href: '/compliance', icon: Award },
-        { title: 'Airspace Map', href: '/airspace', icon: Map },
-        { title: 'Weather Briefing', href: '/weather', icon: CloudSun },
-        { title: 'Safety Center', href: '/safety', icon: AlertTriangle },
-      ]
-    })
+      )
+    }
+    sections.push({ title: 'Drone Tools', items: droneItems })
 
-    // Learn
-    sections.push({
-      title: 'Learn',
-      items: [
-        { title: 'Courses', href: '/learn', icon: LearnIcon },
+    // Learn — Courses public, My Courses + Mentorship auth-only
+    const learnItems: NavItem[] = [
+      { title: 'Courses', href: '/learn', icon: LearnIcon },
+    ]
+    if (user) {
+      learnItems.push(
         { title: 'My Courses', href: '/learn/my-courses', icon: BookOpen },
         { title: 'Mentorship', href: '/mentorship', icon: Users },
-      ]
-    })
+      )
+    }
+    sections.push({ title: 'Learn', items: learnItems })
 
-    // Marketplace & Work
-    sections.push({
-      title: 'Marketplace & Work',
-      items: [
-        { title: 'Marketplace', href: '/marketplace', icon: ShoppingBag },
-        { title: 'Services', href: '/services', icon: Wrench },
-        { title: 'Opportunities', href: '/opportunities', icon: Briefcase },
+    // Marketplace & Work — public listing, personal items auth-only
+    const marketItems: NavItem[] = [
+      { title: 'Marketplace', href: '/marketplace', icon: ShoppingBag },
+      { title: 'Services', href: '/services', icon: Wrench },
+      { title: 'Opportunities', href: '/opportunities', icon: Briefcase },
+    ]
+    if (user) {
+      marketItems.push(
         { title: 'My Opportunities', href: '/opportunities/my-opportunities', icon: Briefcase },
-      ]
-    })
+      )
+    }
+    sections.push({ title: 'Marketplace & Work', items: marketItems })
 
-    // Discover
-    sections.push({
-      title: 'Discover',
-      items: [
-        { title: 'Search', href: '/search', icon: Search },
-        { title: 'Activity Feed', href: '/feed', icon: Rss },
-        { title: 'Gallery', href: '/gallery', icon: Image },
-        { title: 'News', href: '/news', icon: Newspaper },
-        { title: 'Statistics', href: '/stats', icon: BarChart3 },
-        { title: 'Developers', href: '/developers', icon: Code2 },
-      ]
-    })
+    // Discover — public
+    const discoverItems: NavItem[] = [
+      { title: 'Search', href: '/search', icon: Search },
+      { title: 'Gallery', href: '/gallery', icon: Image },
+      { title: 'News', href: '/news', icon: Newspaper },
+      { title: 'Statistics', href: '/stats', icon: BarChart3 },
+      { title: 'Developers', href: '/developers', icon: Code2 },
+    ]
+    if (user) {
+      discoverItems.splice(1, 0, { title: 'Activity Feed', href: '/feed', icon: Rss })
+    }
+    sections.push({ title: 'Discover', items: discoverItems })
 
-    // Account
-    sections.push({
-      title: 'Account',
-      items: [
-        { title: 'My Profile', href: '/profile', icon: Users },
-        { title: 'Forms', href: '/forms', icon: ClipboardList },
-        { title: 'Settings', href: '/settings', icon: Settings },
-      ]
-    })
+    // Account — auth-only
+    if (user) {
+      sections.push({
+        title: 'Account',
+        items: [
+          { title: 'My Profile', href: '/profile', icon: Users },
+          { title: 'Forms', href: '/forms', icon: ClipboardList },
+          { title: 'Settings', href: '/settings', icon: Settings },
+        ]
+      })
+    }
 
     // Role-specific sections
     if (user?.role === 'admin') {
