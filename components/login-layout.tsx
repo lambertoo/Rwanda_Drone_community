@@ -31,15 +31,15 @@ export function LoginLayout({ children }: LoginLayoutProps) {
         )}
 
         {/* Desktop Sidebar — visible to all visitors */}
-        <Sidebar className="w-64 border-r hidden lg:block">
+        <Sidebar className="w-64 border-r border-sidebar-border hidden lg:block bg-sidebar">
           <SidebarHeader className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
+              <div className="w-9 h-9 bg-brand-gradient rounded-xl flex items-center justify-center shadow-md">
                 <span className="text-white font-bold text-sm">RDC</span>
               </div>
               <div>
-                <h2 className="font-semibold text-sm">Rwanda Drone</h2>
-                <p className="text-xs text-muted-foreground">Community</p>
+                <h2 className="font-bold text-sm text-sidebar-foreground">Rwanda Drone</h2>
+                <p className="text-xs text-sidebar-foreground/60">Community Platform</p>
               </div>
             </div>
           </SidebarHeader>
@@ -50,17 +50,17 @@ export function LoginLayout({ children }: LoginLayoutProps) {
 
         {/* Mobile Sidebar — visible to all visitors */}
         <div className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-background border-r transform transition-transform duration-300 ease-in-out lg:hidden
+          fixed inset-y-0 left-0 z-50 w-64 bg-[hsl(var(--sidebar-background))] border-r border-sidebar-border transform transition-transform duration-300 ease-in-out lg:hidden
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
-          <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
+              <div className="w-9 h-9 bg-brand-gradient rounded-xl flex items-center justify-center shadow-md">
                 <span className="text-white font-bold text-sm">RDC</span>
               </div>
               <div>
-                <h2 className="font-semibold text-sm">Rwanda Drone</h2>
-                <p className="text-xs text-muted-foreground">Community</p>
+                <h2 className="font-bold text-sm text-sidebar-foreground">Rwanda Drone</h2>
+                <p className="text-xs text-sidebar-foreground/60">Community Platform</p>
               </div>
             </div>
             <Button

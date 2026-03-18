@@ -200,7 +200,7 @@ export function AppSidebar({ className, onItemClick }: SidebarProps) {
       {sections.map((section) => (
         <div key={section.title || 'main'} className="px-3 py-1">
           {section.title && (
-            <p className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <p className="px-2 py-1 text-xs font-semibold text-sidebar-foreground/40 uppercase tracking-widest">
               {section.title}
             </p>
           )}
@@ -208,13 +208,14 @@ export function AppSidebar({ className, onItemClick }: SidebarProps) {
             {section.items.map((item) => (
               <Link key={item.href} href={item.href} onClick={onItemClick}>
                 <Button
-                  variant={
-                    pathname === item.href ||
-                    (item.href !== '/' && pathname.startsWith(item.href))
-                      ? "secondary"
-                      : "ghost"
-                  }
-                  className="w-full justify-start h-9 text-sm"
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-start h-9 text-sm font-medium rounded-lg",
+                    "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                    (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)))
+                      ? "bg-sidebar-primary/15 text-sidebar-primary hover:bg-sidebar-primary/20 hover:text-sidebar-primary"
+                      : ""
+                  )}
                   size="sm"
                 >
                   <item.icon className="mr-2 h-4 w-4 shrink-0" />

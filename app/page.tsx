@@ -16,7 +16,6 @@ import {
   Eye,
   Heart,
   Clock,
-  Star,
 } from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
@@ -160,19 +159,6 @@ export default async function HomePage() {
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "completed":
-        return "bg-green-100 text-green-800"
-      case "in_progress":
-        return "bg-yellow-100 text-yellow-800"
-      case "planning":
-        return "bg-blue-100 text-blue-800"
-      default:
-        return "bg-muted text-foreground"
-    }
-  }
-
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-US', {
       month: 'short',
@@ -189,167 +175,105 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="space-y-12">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 rounded-2xl">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-        <div className="relative px-8 py-16 md:py-24">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 px-4 py-2 rounded-full text-sm font-medium mb-6">
-              <Zap className="h-4 w-4" />
-              Welcome to Rwanda's Premier Drone Community
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 bg-clip-text text-transparent mb-6">
-              Innovating with Drones in Rwanda
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
-              Join Rwanda's leading drone community. Share projects, learn from experts, participate in events, and help
-              shape the future of drone technology in East Africa.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/projects">
-                <Button size="lg" className="text-lg px-8 py-3">
-                  Explore Projects
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/forum">
-                <Button variant="outline" size="lg" className="text-lg px-8 py-3 bg-transparent">
-                  Join Discussions
-                </Button>
-              </Link>
-            </div>
+    <div className="space-y-16">
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden rounded-2xl bg-brand-gradient min-h-[480px] flex items-center">
+        {/* Decorative circles */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/4" />
+        <div className="relative w-full px-8 py-16 md:py-24 text-center text-white">
+          <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium mb-6 border border-white/20">
+            <Zap className="h-4 w-4" />
+            Rwanda's Premier Drone Community
+          </div>
+          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
+            Innovating with Drones<br className="hidden md:block" /> in Rwanda
+          </h1>
+          <p className="text-lg md:text-xl text-white/80 mb-10 max-w-2xl mx-auto leading-relaxed">
+            The one-stop platform connecting drone pilots, regulators, businesses and innovators
+            shaping the future of drone technology across East Africa.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/projects">
+              <Button size="lg" className="bg-white text-[#002674] hover:bg-white/90 font-bold shadow-xl border-0 rounded-full px-8">
+                Explore Projects <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+            <Link href="/register">
+              <Button size="lg" variant="outline" className="border-2 border-white/60 text-white hover:bg-white/10 bg-transparent rounded-full px-8">
+                Join the Community
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="grid md:grid-cols-4 gap-6">
-        <Card className="text-center hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg mb-4">
-              <Award className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2">{stats.projects}+</h3>
-            <p className="text-muted-foreground">Active Projects</p>
-          </CardContent>
-        </Card>
-        <Card className="text-center hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg mb-4">
-              <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2">{stats.users}+</h3>
-            <p className="text-muted-foreground">Community Members</p>
-          </CardContent>
-        </Card>
-        <Card className="text-center hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg mb-4">
-              <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2">{stats.events}</h3>
-            <p className="text-muted-foreground">Events & Workshops</p>
-          </CardContent>
-        </Card>
-        <Card className="text-center hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg mb-4">
-              <Globe className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2">{stats.services}</h3>
-            <p className="text-muted-foreground">Service Providers</p>
-          </CardContent>
-        </Card>
+      {/* ── Stats ── */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { icon: Award, value: `${stats.projects}+`, label: "Active Projects", color: "text-[#002674]", bg: "bg-[#002674]/8" },
+          { icon: Users, value: `${stats.users}+`, label: "Community Members", color: "text-[#0096FC]", bg: "bg-[#0096FC]/8" },
+          { icon: TrendingUp, value: stats.events, label: "Events & Workshops", color: "text-[#002674]", bg: "bg-[#002674]/8" },
+          { icon: Globe, value: stats.services, label: "Service Providers", color: "text-[#0096FC]", bg: "bg-[#0096FC]/8" },
+        ].map(({ icon: Icon, value, label, color, bg }) => (
+          <Card key={label} className="text-center hover:shadow-lg transition-all duration-300 border-border/60 hover:-translate-y-0.5">
+            <CardContent className="p-6">
+              <div className={`inline-flex items-center justify-center w-12 h-12 ${bg} rounded-xl mb-4`}>
+                <Icon className={`h-6 w-6 ${color}`} />
+              </div>
+              <h3 className="text-3xl font-extrabold mb-1">{value}</h3>
+              <p className="text-muted-foreground text-sm">{label}</p>
+            </CardContent>
+          </Card>
+        ))}
       </section>
 
-      {/* Featured Projects */}
+      {/* ── Featured Projects ── */}
       <section className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-end justify-between">
           <div>
+            <p className="text-xs font-semibold text-[#0096FC] uppercase tracking-widest mb-1">Showcase</p>
             <h2 className="text-3xl font-bold">Featured Projects</h2>
-            <p className="text-muted-foreground mt-2">Discover innovative drone projects making impact across Rwanda</p>
+            <p className="text-muted-foreground mt-1">Discover innovative drone projects making impact across Rwanda</p>
           </div>
           <Link href="/projects">
-            <Button variant="outline" className="flex items-center gap-2 bg-transparent">
-              View All Projects
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            <Button variant="outline" size="sm">View All <ChevronRight className="h-4 w-4" /></Button>
           </Link>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {featuredProjects.map((project) => {
             let technologies: string[] = []
-            try {
-              technologies = project.technologies ? JSON.parse(project.technologies) : []
-            } catch (error) {
-              technologies = []
-            }
-
+            try { technologies = project.technologies ? JSON.parse(project.technologies) : [] } catch {}
             return (
               <Link key={project.id} href={`/projects/${project.id}`} className="block group">
-                <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group-hover:-translate-y-1">
-                  <div className="aspect-video bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-800 dark:to-gray-700 relative overflow-hidden">
-                    <img
-                      src={project.image || "/placeholder.svg"}
-                      alt={project.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-4 left-4 flex gap-2">
-                      <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm">
+                <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 group-hover:-translate-y-1 border-border/60">
+                  <div className="aspect-video bg-gradient-to-br from-[#002674]/10 to-[#0096FC]/10 relative overflow-hidden">
+                    <img src={project.image || "/placeholder.svg"} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <div className="absolute top-3 left-3">
+                      <Badge className="bg-white/90 text-[#002674] text-xs font-semibold backdrop-blur-sm border-0">
                         {getCategoryIcon(project.category?.name)} {project.category?.name || 'Uncategorized'}
-                      </Badge>
-                      <Badge variant="secondary" className={`${getStatusColor(project.status)} backdrop-blur-sm`}>
-                        {project.status.replace('_', ' ')}
                       </Badge>
                     </div>
                   </div>
-                  <CardContent className="p-6">
-                    <h3 className="font-semibold text-lg mb-2 group-hover:text-blue-600 transition-colors line-clamp-1">
-                      {project.title}
-                    </h3>
+                  <CardContent className="p-5">
+                    <h3 className="font-bold text-base mb-1.5 group-hover:text-[#0096FC] transition-colors line-clamp-1">{project.title}</h3>
                     <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{project.description}</p>
-
                     <div className="flex flex-wrap gap-1 mb-4">
-                      {technologies.slice(0, 2).map((tech) => (
-                        <Badge key={tech} variant="outline" className="text-xs">
-                          {tech}
-                        </Badge>
-                      ))}
-                      {technologies.length > 2 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{technologies.length - 2}
-                        </Badge>
-                      )}
+                      {technologies.slice(0, 2).map(t => <Badge key={t} variant="outline" className="text-xs">{t}</Badge>)}
+                      {technologies.length > 2 && <Badge variant="outline" className="text-xs">+{technologies.length - 2}</Badge>}
                     </div>
-
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={project.author.avatar || "/placeholder.svg"} alt={project.author.fullName} />
-                          <AvatarFallback className="text-xs">
-                            {project.author.fullName
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
+                        <Avatar className="h-7 w-7">
+                          <AvatarImage src={project.author.avatar || "/placeholder.svg"} />
+                          <AvatarFallback className="text-xs bg-brand-gradient text-white">{project.author.fullName.split(" ").map(n => n[0]).join("")}</AvatarFallback>
                         </Avatar>
-                        <div>
-                          <p className="font-medium text-sm">{project.author.fullName}</p>
-                          <p className="text-xs text-muted-foreground">{project.author.organization}</p>
-                        </div>
+                        <p className="text-sm font-medium">{project.author.fullName}</p>
                       </div>
-
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
-                          {project.viewsCount}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Heart className="h-3 w-3" />
-                          {project.likesCount}
-                        </div>
+                        <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{project.viewsCount}</span>
+                        <span className="flex items-center gap-1"><Heart className="h-3 w-3" />{project.likesCount}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -357,160 +281,131 @@ export default async function HomePage() {
               </Link>
             )
           })}
+          {featuredProjects.length === 0 && (
+            <div className="col-span-3 text-center py-12 text-muted-foreground">
+              <Award className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p>No featured projects yet. Be the first to share yours!</p>
+              <Link href="/projects/new" className="mt-4 inline-block"><Button size="sm">Share a Project</Button></Link>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* Recent Forum Activity */}
+      {/* ── Recent Forum Discussions ── */}
       <section className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-end justify-between">
           <div>
+            <p className="text-xs font-semibold text-[#0096FC] uppercase tracking-widest mb-1">Community</p>
             <h2 className="text-3xl font-bold">Recent Discussions</h2>
-            <p className="text-muted-foreground mt-2">Join the conversation and share your expertise</p>
+            <p className="text-muted-foreground mt-1">Join the conversation and share your expertise</p>
           </div>
-          <Link href="/forum">
-            <Button variant="outline" className="flex items-center gap-2 bg-transparent">
-              View All Discussions
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </Link>
+          <Link href="/forum"><Button variant="outline" size="sm">View Forum <ChevronRight className="h-4 w-4" /></Button></Link>
         </div>
 
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           {recentPosts.map((post) => (
             <Link key={post.id} href={`/forum/${post.category.name.toLowerCase()}/${post.id}`} className="block group">
-              <Card className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
+              <Card className="hover:shadow-md transition-all border-border/60 hover:border-[#0096FC]/30">
+                <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline" className="text-xs">
-                          {post.category.name}
-                        </Badge>
-                      </div>
-                      <h3 className="font-semibold group-hover:text-blue-600 transition-colors mb-2">{post.title}</h3>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={post.author.avatar || "/placeholder.svg"} alt={post.author.fullName} />
-                            <AvatarFallback className="text-xs">
-                              {post.author.fullName
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span>{post.author.fullName}</span>
-                          <div className="flex items-center gap-1">
-                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                            <span>{post.author.reputation}</span>
-                          </div>
-                        </div>
+                    <div className="flex-1 min-w-0">
+                      <Badge variant="outline" className="text-xs mb-2">{post.category.name}</Badge>
+                      <h3 className="font-semibold group-hover:text-[#0096FC] transition-colors truncate">{post.title}</h3>
+                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                        <Avatar className="h-5 w-5">
+                          <AvatarImage src={post.author.avatar || ""} />
+                          <AvatarFallback className="text-[9px] bg-brand-gradient text-white">{post.author.fullName[0]}</AvatarFallback>
+                        </Avatar>
+                        <span>{post.author.fullName}</span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-                        <div className="flex items-center gap-1">
-                          <MessageSquare className="h-4 w-4" />
-                          {post._count.comments}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Eye className="h-4 w-4" />
-                          {post.viewsCount}
-                        </div>
+                    <div className="text-right shrink-0">
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1"><MessageSquare className="h-4 w-4" />{post._count.comments}</span>
+                        <span className="flex items-center gap-1"><Eye className="h-4 w-4" />{post.viewsCount}</span>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {formatDate(post.createdAt)}
-                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 justify-end"><Clock className="h-3 w-3" />{formatDate(post.createdAt)}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </Link>
           ))}
+          {recentPosts.length === 0 && (
+            <Card className="border-dashed">
+              <CardContent className="py-10 text-center text-muted-foreground">
+                <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                <p>No discussions yet. Start the first one!</p>
+                <Link href="/forum/new" className="mt-3 inline-block"><Button size="sm">Start Discussion</Button></Link>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </section>
 
-      {/* Upcoming Events */}
+      {/* ── Upcoming Events ── */}
       <section className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-end justify-between">
           <div>
+            <p className="text-xs font-semibold text-[#0096FC] uppercase tracking-widest mb-1">Calendar</p>
             <h2 className="text-3xl font-bold">Upcoming Events</h2>
-            <p className="text-muted-foreground mt-2">Don't miss these exciting drone community events</p>
+            <p className="text-muted-foreground mt-1">Don't miss these exciting drone community events</p>
           </div>
-          <Link href="/events">
-            <Button variant="outline" className="flex items-center gap-2 bg-transparent">
-              View All Events
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </Link>
+          <Link href="/events"><Button variant="outline" size="sm">View All <ChevronRight className="h-4 w-4" /></Button></Link>
         </div>
-
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-3 gap-5">
           {upcomingEvents.map((event) => (
             <Link key={event.id} href={`/events/${event.id}`} className="block group">
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
+              <Card className="hover:shadow-lg transition-all duration-300 group-hover:-translate-y-0.5 border-border/60 overflow-hidden">
+                <div className="h-1.5 bg-brand-gradient" />
+                <CardContent className="p-5">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-lg">{getCategoryIcon(event.category)}</span>
-                    <Badge variant="outline">{event.category || 'General'}</Badge>
+                    <Badge variant="outline" className="text-xs">{event.category || 'General'}</Badge>
                   </div>
-                  <h3 className="font-semibold text-lg mb-2 group-hover:text-blue-600 transition-colors">
-                    {event.title}
-                  </h3>
-                  <div className="space-y-2 text-sm text-muted-foreground mb-4">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-blue-600" />
-                      <span>
-                        {formatDate(event.startDate)} at {formatTime(event.startDate)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-red-600" />
-                      <span>{event.location}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-purple-600" />
-                      <span>{event._count.rsvps} registered</span>
-                    </div>
+                  <h3 className="font-bold text-base mb-3 group-hover:text-[#0096FC] transition-colors line-clamp-2">{event.title}</h3>
+                  <div className="space-y-1.5 text-sm text-muted-foreground mb-4">
+                    <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-[#002674]" />{formatDate(event.startDate)} at {formatTime(event.startDate)}</div>
+                    <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-[#0096FC]" />{event.location}</div>
+                    <div className="flex items-center gap-2"><Users className="h-4 w-4 text-[#002674]" />{event._count.rsvps} registered</div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-green-600">
+                    <span className="font-bold text-[#002674] dark:text-[#0096FC]">
                       {event.price === 0 ? "Free" : `${event.price.toLocaleString()} ${event.currency}`}
                     </span>
-                    <Button size="sm" variant="outline">
-                      Register
-                    </Button>
+                    <Button size="sm">Register</Button>
                   </div>
                 </CardContent>
               </Card>
             </Link>
           ))}
+          {upcomingEvents.length === 0 && (
+            <div className="col-span-3 text-center py-12 text-muted-foreground">
+              <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p>No upcoming events. Check back soon!</p>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* Call to Action */}
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl text-white">
-        <div className="px-8 py-12 text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Share Your Innovation?</h2>
-          <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
-            Join thousands of drone enthusiasts, researchers, and professionals building the future of drone technology
-            in Rwanda.
+      {/* ── CTA Banner ── */}
+      <section className="relative overflow-hidden rounded-2xl bg-brand-gradient text-white p-10 md:p-14 text-center">
+        <div className="absolute top-0 right-0 w-72 h-72 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4" />
+        <div className="relative">
+          <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-3">Get Started</p>
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Ready to Share Your Innovation?</h2>
+          <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
+            Join thousands of drone pilots, engineers, and innovators building Rwanda's drone future together.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/projects/new">
-              <Button size="lg" variant="secondary" className="text-lg px-8 py-3">
-                Share Your Project
-                <ArrowRight className="ml-2 h-5 w-5" />
+              <Button size="lg" className="bg-white text-[#002674] hover:bg-white/90 font-bold shadow-xl border-0 rounded-full px-8">
+                Share Your Project <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Link href="/register">
-              <Button
-                size="lg"
-                variant="outline"
-                className="text-lg px-8 py-3 border-white text-white hover:bg-background hover:text-blue-600 bg-transparent"
-              >
-                Join Community
+              <Button size="lg" variant="outline" className="border-2 border-white/60 text-white hover:bg-white/10 bg-transparent rounded-full px-8">
+                Create Free Account
               </Button>
             </Link>
           </div>

@@ -13,6 +13,8 @@ const config: Config = {
   theme: {
   	extend: {
   		colors: {
+  			navy: { DEFAULT: '#002674', 50: '#e6ecf7', 100: '#ccd9ef', 500: '#002674' },
+  			cyan: { DEFAULT: '#0096FC', brand: '#0096FC' },
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
