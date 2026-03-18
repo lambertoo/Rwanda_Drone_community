@@ -68,31 +68,31 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="flex h-14 items-center px-4 gap-3">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="flex h-16 items-center px-4 md:px-6 gap-4">
           {/* Mobile menu button */}
           <Button variant="ghost" size="icon" className="lg:hidden shrink-0" onClick={onMobileMenuToggle}>
             <Menu className="h-5 w-5" />
           </Button>
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <div className="h-8 w-8 rounded-lg bg-brand-gradient flex items-center justify-center shadow-sm">
-              <span className="text-white font-bold text-xs">RDC</span>
+          <Link href="/" className="flex items-center gap-3 shrink-0">
+            <div className="h-9 w-9 rounded-xl bg-brand-gradient flex items-center justify-center shadow-md">
+              <span className="text-white font-bold text-sm">RDC</span>
             </div>
-            <span className="hidden md:block font-bold text-sm text-gradient">Rwanda Drone Community</span>
+            <span className="hidden md:block font-bold text-sm md:text-base text-gradient">Rwanda Drone</span>
           </Link>
 
           {/* Search */}
-          <form onSubmit={handleSearch} className="flex-1 hidden md:flex items-center max-w-sm mx-auto">
+          <form onSubmit={handleSearch} className="flex-1 hidden md:flex items-center max-w-md mx-auto">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search..."
+                placeholder="Search projects, discussions..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 bg-muted/60 border-border/50 rounded-full focus:border-primary/50 transition-all"
+                className="pl-11 h-10 bg-muted/50 border-border/30 rounded-lg focus:border-primary/40 focus:outline-none transition-all text-sm"
               />
             </div>
           </form>
@@ -113,9 +113,9 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
 
             {user?.role === 'admin' && pendingCount > 0 && (
               <Link href="/admin/approvals">
-                <Button variant="ghost" size="icon" className="relative hidden sm:flex">
-                  <Bell className="h-4 w-4 text-orange-500" />
-                  <span className="absolute -top-1 -right-1 min-w-[12px] h-4 bg-orange-500 rounded-full text-[10px] text-white flex items-center justify-center px-1">
+                <Button variant="ghost" size="icon" className="relative hidden sm:flex rounded-lg">
+                  <Bell className="h-5 w-5 text-orange-500" />
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-5 bg-orange-500 rounded-full text-[10px] font-semibold text-white flex items-center justify-center px-1">
                     {pendingCount > 99 ? '99+' : pendingCount}
                   </span>
                 </Button>
@@ -167,13 +167,13 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
               ) : (
                 <div className="flex items-center gap-2">
                   <Link href="/login">
-                    <Button variant="outline" size="sm" className="hidden sm:flex">Sign In</Button>
+                    <Button variant="outline" size="sm" className="hidden sm:flex rounded-lg">Sign In</Button>
                   </Link>
                   <Link href="/register">
-                    <Button size="sm" className="hidden sm:flex">Join Free</Button>
+                    <Button size="sm" className="hidden sm:flex rounded-lg">Join Free</Button>
                   </Link>
                   <Link href="/login" className="sm:hidden">
-                    <Button variant="ghost" size="icon"><User className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="rounded-lg"><User className="h-4 w-4" /></Button>
                   </Link>
                 </div>
               )}

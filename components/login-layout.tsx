@@ -79,7 +79,7 @@ export function LoginLayout({ children }: LoginLayoutProps) {
 
         <div className="flex-1 flex flex-col min-w-0">
           <Header onMobileMenuToggle={() => setIsMobileMenuOpen(true)} />
-          <main className="flex-1 p-3 sm:p-4 lg:p-6 bg-background">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 bg-background">
             <div className="max-w-7xl mx-auto">{children}</div>
           </main>
         </div>

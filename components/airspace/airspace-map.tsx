@@ -77,6 +77,9 @@ export default function AirspaceMap() {
     if (!mapRef.current || mapInstanceRef.current) return
 
     import("leaflet").then(L => {
+      // Prevent double initialization
+      if (mapRef.current?._leaflet_map) return
+
       delete (L.Icon.Default.prototype as any)._getIconUrl
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
@@ -84,12 +87,17 @@ export default function AirspaceMap() {
         shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
       })
 
-      const map = L.map(mapRef.current!, {
-        center: [-1.9403, 29.8739],
-        zoom: 8,
-        zoomControl: true,
-      })
-      mapInstanceRef.current = map
+      try {
+        const map = L.map(mapRef.current, {
+          center: [-1.9403, 29.8739],
+          zoom: 8,
+          zoomControl: true,
+        })
+        mapInstanceRef.current = map
+      } catch (error) {
+        console.warn("Map already initialized, skipping initialization")
+        return
+      }
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
