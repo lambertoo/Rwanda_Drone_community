@@ -71,6 +71,11 @@ model User {
   enrollments           Enrollment[]         @relation("CourseEnrollment")
   activityFeed          ActivityFeed[]       @relation("ActivityActor")
   airspaceZones         AirspaceZone[]       @relation("ZoneCreator")
+  clubsCreated          Club[]                @relation("ClubCreator")
+  approvedClubs         Club[]                @relation("ClubApprover")
+  clubMemberships       ClubMembership[]      @relation("ClubMember")
+  clubTransfersSent     ClubTransferRequest[] @relation("TransferSender")
+  clubTransfersReceived ClubTransferRequest[] @relation("TransferReceiver")
   pilotLicenseExpiry    DateTime?
   pilotLicenseType      String?
   caaRegistrationNumber String?
@@ -1203,4 +1208,73 @@ model AirspaceZone {
 
   @@index([isActive])
   @@map("airspace_zones")
+}
+
+// ===== DRONE CLUBS =====
+
+model Club {
+  id              String          @id @default(cuid())
+  name            String
+  description     String
+  shortDescription String?
+  coverImage      String?
+  logo            String?
+  location        String?         // city/district
+  province        Region?
+  type            String          // racing | aerial_photography | agriculture | education | technology | general
+  website         String?
+  email           String?
+  phone           String?
+  socialLinks     Json?           // { facebook, twitter, instagram, youtube }
+  isApproved      Boolean         @default(false)
+  isFeatured      Boolean         @default(false)
+  isActive        Boolean         @default(true)
+  memberCount     Int             @default(0)
+  registrationFormId String?      // linked UniversalForm id
+  createdById     String
+  createdBy       User            @relation("ClubCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  approvedById    String?
+  approvedBy      User?           @relation("ClubApprover", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  memberships       ClubMembership[]
+  transferRequests  ClubTransferRequest[]
+
+  @@index([isApproved, isActive])
+  @@map("clubs")
+}
+
+model ClubMembership {
+  id        String   @id @default(cuid())
+  clubId    String
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation("ClubMember", fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("member")   // member | moderator | admin
+  status    String   @default("active")   // active | pending | suspended
+  joinedAt  DateTime @default(now())
+  formData  Json?    // Answers to registration form
+
+  @@unique([clubId, userId])
+  @@map("club_memberships")
+}
+
+// Ownership transfer request — current owner → target member must confirm
+model ClubTransferRequest {
+  id          String   @id @default(cuid())
+  clubId      String
+  club        Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  fromUserId  String
+  fromUser    User     @relation("TransferSender", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId    String
+  toUser      User     @relation("TransferReceiver", fields: [toUserId], references: [id], onDelete: Cascade)
+  status      String   @default("pending")   // pending | accepted | rejected | cancelled
+  message     String?
+  createdAt   DateTime @default(now())
+  respondedAt DateTime?
+
+  @@unique([clubId, status], map: "unique_pending_transfer")
+  @@index([toUserId, status])
+  @@map("club_transfer_requests")
 }

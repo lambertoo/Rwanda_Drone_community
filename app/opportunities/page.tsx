@@ -5,12 +5,22 @@ import { useState, useEffect } from "react"
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MapPin, Building2, Clock, DollarSign, Calendar, Users, Briefcase, Bookmark, BookmarkCheck } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  MapPin,
+  Clock,
+  DollarSign,
+  Briefcase,
+  Bookmark,
+  BookmarkCheck,
+  Search,
+  Plus,
+  Calendar,
+} from "lucide-react"
 
 interface Opportunity {
   id: string
@@ -55,6 +65,7 @@ export default function OpportunitiesPage() {
   const [location, setLocation] = useState("all")
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [searchTerm, setSearchTerm] = useState("")
   const [categories, setCategories] = useState<Array<{
     id: string
     name: string
@@ -184,7 +195,7 @@ export default function OpportunitiesPage() {
       if (response.ok) {
         const data = await response.json()
         console.log("✅ API Response:", data)
-        
+
         // Update local state based on API response
         const newSavedOpportunities = new Set(savedOpportunities)
         if (data.saved) {
@@ -194,7 +205,7 @@ export default function OpportunitiesPage() {
           newSavedOpportunities.delete(opportunityId)
           console.log("🗑️ Removed opportunity from saved:", opportunityId)
         }
-        
+
         setSavedOpportunities(newSavedOpportunities)
       } else {
         const errorData = await response.text()
@@ -232,7 +243,7 @@ export default function OpportunitiesPage() {
     const now = new Date()
     const diffTime = Math.abs(now.getTime() - date.getTime())
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    
+
     if (diffDays === 1) return "Posted today"
     if (diffDays === 2) return "Posted yesterday"
     if (diffDays <= 7) return `Posted ${diffDays - 1} days ago`
@@ -273,452 +284,291 @@ export default function OpportunitiesPage() {
     }
   }
 
-  const renderOpportunities = () => {
-    if (loading) {
-      return (
-        <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="h-6 bg-muted rounded w-3/4"></div>
-                  <div className="h-4 bg-muted rounded w-1/2"></div>
-                  <div className="h-4 bg-muted rounded w-2/3"></div>
-                </div>
-              </CardContent>
-            </Card>
+  const parseRequirements = (requirements: string | null): string[] => {
+    if (!requirements) return []
+    try {
+      if (typeof requirements === 'string') {
+        const parsed = JSON.parse(requirements)
+        if (Array.isArray(parsed)) return parsed
+        return []
+      } else if (Array.isArray(requirements)) {
+        return requirements
+      }
+      return []
+    } catch {
+      if (typeof requirements === 'string') {
+        if (requirements.includes(',')) {
+          return requirements.split(',').map(req => req.trim()).filter(req => req.length > 0)
+        }
+        return [requirements.trim()]
+      }
+      return []
+    }
+  }
+
+  // Filter by search term client-side
+  const visibleOpportunities = searchTerm
+    ? opportunities.filter(o =>
+        o.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.company.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : opportunities
+
+  const TAB_OPTIONS = [
+    { value: "job", label: "Jobs" },
+    { value: "gig", label: "Gigs" },
+    { value: "other", label: "Funding" },
+    { value: "all", label: "All" },
+  ]
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pb-16">
+
+      {/* ── Hero ── */}
+      <div className="relative bg-brand-gradient rounded-2xl overflow-hidden px-8 py-12 md:py-16">
+        {/* Decorative circles */}
+        <div className="pointer-events-none absolute -top-16 -right-16 h-72 w-72 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-12 -left-12 h-56 w-56 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute top-8 right-40 h-20 w-20 rounded-full bg-white/10" />
+
+        <div className="relative z-10 max-w-2xl">
+          <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#0096FC]">
+            Rwanda Drone Ecosystem
+          </span>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-3">
+            Grow with Rwanda's Drone Ecosystem
+          </h1>
+          <p className="text-white/75 text-base md:text-lg mb-6 max-w-xl">
+            Discover jobs, gigs, and funding opportunities tailored for drone pilots,
+            engineers, and operators across Rwanda.
+          </p>
+          {currentUser && (
+            <Link href="/opportunities/new">
+              <Button className="bg-white text-[#002674] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg">
+                <Plus className="h-4 w-4 mr-2" />
+                Post Opportunity
+              </Button>
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {/* ── Filter bar ── */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+        {/* Search */}
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search opportunities..."
+            className="pl-10 rounded-full border-border/60 bg-background"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Type pill tabs */}
+        <div className="flex gap-1.5 flex-wrap">
+          {TAB_OPTIONS.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                activeTab === tab.value
+                  ? "bg-[#002674] text-white border-[#002674] shadow-sm"
+                  : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
           ))}
         </div>
-      )
-    }
 
-    if (opportunities.length === 0) {
-      return (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No opportunities found</h3>
-            <p className="text-muted-foreground mb-4">
-              Try adjusting your filters or check back later for new opportunities.
-            </p>
+        {/* Category select */}
+        <Select value={category} onValueChange={setCategory}>
+          <SelectTrigger className="w-[180px] rounded-full border-border/60">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id}>
+                {cat.icon} {cat.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* ── Results count ── */}
+      {!loading && (
+        <p className="text-sm text-muted-foreground">
+          Showing <span className="font-semibold text-foreground">{visibleOpportunities.length}</span> opportunit{visibleOpportunities.length === 1 ? "y" : "ies"}
+        </p>
+      )}
+
+      {/* ── Card grid ── */}
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-card rounded-2xl border border-border/40 p-5 animate-pulse space-y-4">
+              <div className="h-5 bg-muted rounded w-2/3" />
+              <div className="h-4 bg-muted rounded w-full" />
+              <div className="h-4 bg-muted rounded w-4/5" />
+            </div>
+          ))}
+        </div>
+      ) : visibleOpportunities.length === 0 ? (
+        /* ── Empty state ── */
+        <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+          <div className="p-5 rounded-full bg-[#002674]/10 dark:bg-[#0096FC]/10">
+            <Briefcase className="h-10 w-10 text-[#0096FC]" />
+          </div>
+          <h3 className="text-lg font-semibold">No opportunities found</h3>
+          <p className="text-muted-foreground max-w-sm text-sm">
+            Try adjusting your filters or search term. New opportunities are posted regularly.
+          </p>
+          {currentUser && (
             <Link href="/opportunities/new">
-              <Button>Post an Opportunity</Button>
+              <Button className="btn-gradient rounded-xl mt-2">Post an Opportunity</Button>
             </Link>
-          </CardContent>
-        </Card>
-      )
-    }
-
-    if (viewMode === "grid") {
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {opportunities.map((opportunity) => {
-            let requirements: string[] = []
-            
-            if (opportunity.requirements) {
-              try {
-                if (typeof opportunity.requirements === 'string') {
-                  // Try to parse as JSON first
-                  const parsed = JSON.parse(opportunity.requirements)
-                  if (Array.isArray(parsed)) {
-                    requirements = parsed
-                  } else {
-                    requirements = []
-                  }
-                } else if (Array.isArray(opportunity.requirements)) {
-                  requirements = opportunity.requirements
-                } else {
-                  requirements = []
-                }
-              } catch (error) {
-                // If JSON parsing fails, try comma-separated string
-                if (typeof opportunity.requirements === 'string') {
-                  if (opportunity.requirements.includes(',')) {
-                    requirements = opportunity.requirements.split(',').map(req => req.trim()).filter(req => req.length > 0)
-                  } else {
-                    requirements = [opportunity.requirements.trim()]
-                  }
-                } else {
-                  requirements = []
-                }
-              }
-            }
-            
-            // Ensure requirements is always an array
-            if (!Array.isArray(requirements)) {
-              requirements = []
-            }
-
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {visibleOpportunities.map((opportunity) => {
+            const requirements = parseRequirements(opportunity.requirements)
             const isSaved = isOpportunitySaved(opportunity.id)
 
             return (
-              <Card key={opportunity.id} className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
-                <CardContent className="p-6 flex-1 flex flex-col">
-                  <div className="flex-1 space-y-3">
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg line-clamp-2">{opportunity.title || "Untitled Opportunity"}</h3>
-                          <p className="text-muted-foreground text-sm">{opportunity.company || "Company not specified"}</p>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          {opportunity.isUrgent && (
-                            <Badge variant="destructive" className="text-xs">
-                              Urgent
-                            </Badge>
-                          )}
-                          <Badge className={getOpportunityTypeColor(opportunity.opportunityType || "Other")}>{opportunity.opportunityType || "Other"}</Badge>
-                        </div>
-                      </div>
-
-                      <Badge className={getCategoryColor(opportunity.category?.name || "Uncategorized")}>
-                        {opportunity.category?.name || "Uncategorized"}
-                      </Badge>
-                    </div>
-
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        <span className="truncate">{opportunity.location}</span>
-                      </div>
-                      {opportunity.salary && (
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4" />
-                          <span>{opportunity.salary}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        <span>{formatDate(opportunity.createdAt)}</span>
-                      </div>
-                    </div>
-
-                    <p className="text-sm text-muted-foreground line-clamp-3">{opportunity.description}</p>
-
-                    {requirements.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="font-semibold text-sm">Requirements:</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {requirements.slice(0, 3).map((req, reqIndex) => (
-                            <Badge key={reqIndex} variant="outline" className="text-xs">
-                              {req}
-                            </Badge>
-                          ))}
-                          {requirements.length > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{requirements.length - 3} more
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
+              <div
+                key={opportunity.id}
+                className="group bg-card rounded-2xl border border-border/40 hover:border-[#0096FC]/30 hover:shadow-xl transition-all p-5 flex flex-col"
+              >
+                {/* Top row: type badge + save button */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-[#002674]/10 text-[#002674] dark:bg-[#0096FC]/10 dark:text-[#0096FC]">
+                      {opportunity.opportunityType || "Other"}
+                    </span>
+                    {opportunity.isUrgent && (
+                      <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                        Urgent
+                      </span>
                     )}
                   </div>
+                  <button
+                    onClick={() => handleSaveOpportunity(opportunity.id)}
+                    aria-label={isSaved ? "Unsave opportunity" : "Save opportunity"}
+                    className={`p-1.5 rounded-lg transition-colors ${
+                      isSaved
+                        ? "text-[#0096FC] bg-[#0096FC]/10"
+                        : "text-muted-foreground hover:text-[#0096FC] hover:bg-[#0096FC]/10"
+                    }`}
+                  >
+                    {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+                  </button>
+                </div>
 
-                  <div className="flex flex-col gap-2 mt-4 pt-4 border-t">
-                    <div className="flex gap-2">
-                      <Link href={`/opportunities/${opportunity.id}/apply`} className="flex-1">
-                        <Button className="w-full">Apply Now</Button>
-                      </Link>
-                      <Link href={`/opportunities/${opportunity.id}`} className="flex-1">
-                        <Button variant="outline" className="w-full">View Details</Button>
-                      </Link>
-                    </div>
-                    <Button 
-                      variant={isSaved ? "default" : "outline"} 
-                      size="sm"
-                      onClick={() => handleSaveOpportunity(opportunity.id)}
-                      className={isSaved ? "bg-blue-600 hover:bg-blue-700" : ""}
-                    >
-                      {isSaved ? (
-                        <>
-                          <BookmarkCheck className="h-4 w-4 mr-2" />
-                          Saved
-                        </>
-                      ) : (
-                        <>
-                          <Bookmark className="h-4 w-4 mr-2" />
-                          Save
-                        </>
-                      )}
-                    </Button>
+                {/* Title */}
+                <Link href={`/opportunities/${opportunity.id}`} className="block mb-1">
+                  <h3 className="font-bold text-base line-clamp-2 group-hover:text-[#0096FC] transition-colors">
+                    {opportunity.title || "Untitled Opportunity"}
+                  </h3>
+                </Link>
+
+                {/* Description */}
+                <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                  {opportunity.description}
+                </p>
+
+                {/* Metadata row */}
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground mb-3">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {opportunity.location}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    {formatDate(opportunity.createdAt)}
+                  </span>
+                  {opportunity.salary && (
+                    <span className="flex items-center gap-1">
+                      <DollarSign className="h-3.5 w-3.5" />
+                      {opportunity.salary}
+                    </span>
+                  )}
+                </div>
+
+                {/* Skills/tags row */}
+                {requirements.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {requirements.slice(0, 3).map((req, i) => (
+                      <span
+                        key={i}
+                        className="px-2.5 py-0.5 text-xs rounded-full border border-border/60 text-muted-foreground"
+                      >
+                        {req}
+                      </span>
+                    ))}
+                    {requirements.length > 3 && (
+                      <span className="px-2.5 py-0.5 text-xs rounded-full border border-border/60 text-muted-foreground">
+                        +{requirements.length - 3}
+                      </span>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
+                )}
+
+                {/* Divider + bottom row */}
+                <div className="mt-auto pt-4 border-t border-border/40 flex items-center justify-between gap-2">
+                  {/* Organizer */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Avatar className="h-7 w-7 shrink-0">
+                      <AvatarImage src={opportunity.poster?.avatar || "/placeholder-user.jpg"} alt={opportunity.poster?.fullName} />
+                      <AvatarFallback className="text-xs bg-[#002674]/10 text-[#002674] dark:bg-[#0096FC]/10 dark:text-[#0096FC]">
+                        {opportunity.poster?.fullName?.split(" ").map((n) => n[0]).join("") || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs text-muted-foreground truncate">
+                      {opportunity.poster?.fullName || opportunity.company}
+                    </span>
+                  </div>
+
+                  {/* Apply button */}
+                  <Link href={`/opportunities/${opportunity.id}/apply`} className="shrink-0">
+                    <Button
+                      size="sm"
+                      className="btn-gradient rounded-lg text-xs px-3 h-8"
+                    >
+                      Apply Now
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             )
           })}
         </div>
-      )
-    }
+      )}
 
-    // List view
-    return (
-      <div className="space-y-4">
-        {opportunities.map((opportunity) => {
-          let requirements: string[] = []
-          
-          if (opportunity.requirements) {
-            try {
-              if (typeof opportunity.requirements === 'string') {
-                // Try to parse as JSON first
-                const parsed = JSON.parse(opportunity.requirements)
-                if (Array.isArray(parsed)) {
-                  requirements = parsed
-                } else {
-                  requirements = []
-                }
-              } else if (Array.isArray(opportunity.requirements)) {
-                requirements = opportunity.requirements
-              } else {
-                requirements = []
-              }
-            } catch (error) {
-              // If JSON parsing fails, try comma-separated string
-              if (typeof opportunity.requirements === 'string') {
-                if (opportunity.requirements.includes(',')) {
-                  requirements = opportunity.requirements.split(',').map(req => req.trim()).filter(req => req.length > 0)
-                } else {
-                  requirements = [opportunity.requirements.trim()]
-                }
-              } else {
-                requirements = []
-              }
-            }
-          }
-          
-          // Ensure requirements is always an array
-          if (!Array.isArray(requirements)) {
-            requirements = []
-          }
-
-          const isSaved = isOpportunitySaved(opportunity.id)
-
-          return (
-            <Card key={opportunity.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-xl">{opportunity.title || "Untitled Opportunity"}</h3>
-                        <p className="text-muted-foreground">{opportunity.company || "Company not specified"}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        {opportunity.isUrgent && (
-                          <Badge variant="destructive" className="text-xs">
-                            Urgent
-                          </Badge>
-                        )}
-                        <Badge className={getOpportunityTypeColor(opportunity.opportunityType || "Other")}>{opportunity.opportunityType || "Other"}</Badge>
-                        <Badge className={getCategoryColor(opportunity.category?.name || "Uncategorized")}>
-                          {opportunity.category?.name || "Uncategorized"}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        {opportunity.location}
-                      </div>
-                      {opportunity.salary && (
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4" />
-                          {opportunity.salary}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {formatDate(opportunity.createdAt)}
-                      </div>
-                    </div>
-
-                    <p className="text-sm text-muted-foreground">{opportunity.description}</p>
-
-                    {requirements.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="font-semibold text-sm">Requirements:</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {requirements.map((req, reqIndex) => (
-                            <Badge key={reqIndex} variant="outline" className="text-xs">
-                              {req}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <div className="flex gap-2">
-                      <Link href={`/opportunities/${opportunity.id}/apply`} className="flex-1">
-                        <Button className="w-full">Apply Now</Button>
-                      </Link>
-                      <Link href={`/opportunities/${opportunity.id}`} className="flex-1">
-                        <Button variant="outline" className="w-full">View Details</Button>
-                      </Link>
-                    </div>
-                    <Button 
-                      variant={isSaved ? "default" : "outline"} 
-                      size="sm"
-                      onClick={() => handleSaveOpportunity(opportunity.id)}
-                      className={isSaved ? "bg-blue-600 hover:bg-blue-700" : ""}
-                    >
-                      {isSaved ? (
-                        <>
-                          <BookmarkCheck className="h-4 w-4 mr-2" />
-                          Saved
-                        </>
-                      ) : (
-                        <>
-                          <Bookmark className="h-4 w-4 mr-2" />
-                          Save Opportunity
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-    )
-  }
-
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-      {/* Header */}
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold">Opportunities Board</h1>
-        <p className="text-lg text-muted-foreground">
-          Find drone-related career opportunities across Rwanda
-        </p>
-      </div>
-
-      {/* Filters and Actions */}
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">
-        <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-          <Select value={opportunityType} onValueChange={setOpportunityType}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Opportunity Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="Full-time">Full-time</SelectItem>
-              <SelectItem value="Part-time">Part-time</SelectItem>
-              <SelectItem value="Contract">Contract</SelectItem>
-              <SelectItem value="Urgent">Urgent</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.icon} {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={location} onValueChange={setLocation}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Location" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Locations</SelectItem>
-              <SelectItem value="Kigali">Kigali</SelectItem>
-              <SelectItem value="Musanze">Musanze</SelectItem>
-              <SelectItem value="Huye">Huye</SelectItem>
-              <SelectItem value="Akagera">Akagera National Park</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          {/* View Toggle */}
-          <div className="flex items-center border rounded-md w-full md:w-auto">
-            <Button
-              variant={viewMode === "grid" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("grid")}
-              className="rounded-r-none"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-            </Button>
-            <Button
-              variant={viewMode === "list" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("list")}
-              className="rounded-l-none"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
-            </Button>
-          </div>
-          
-          <Link href="/opportunities/new" className="w-full md:w-auto">
-            <Button className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto">
-              Post Opportunity
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="job">Jobs</TabsTrigger>
-          <TabsTrigger value="gig">Gigs</TabsTrigger>
-          <TabsTrigger value="other">Other Opportunities</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="job" className="space-y-6">
-          <div className="text-center py-4">
-            <h3 className="text-xl font-semibold mb-2">Full-time & Part-time Jobs</h3>
-            <p className="text-muted-foreground">Find permanent drone operator positions and career opportunities</p>
-          </div>
-          {renderOpportunities()}
-        </TabsContent>
-        
-        <TabsContent value="gig" className="space-y-6">
-          <div className="text-center py-4">
-            <h3 className="text-xl font-semibold mb-2">Freelance Gigs</h3>
-            <p className="text-muted-foreground">Short-term projects and freelance drone work opportunities</p>
-          </div>
-          {renderOpportunities()}
-        </TabsContent>
-        
-        <TabsContent value="other" className="space-y-6">
-          <div className="text-center py-4">
-            <h3 className="text-xl font-semibold mb-2">Other Opportunities</h3>
-            <p className="text-muted-foreground">Internships, training programs, and other drone-related opportunities</p>
-          </div>
-          {renderOpportunities()}
-        </TabsContent>
-      </Tabs>
-
-      {/* Call to Action */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
-        <CardContent className="p-8 text-center">
-          <h3 className="text-xl font-semibold mb-2">Looking to hire drone professionals?</h3>
-          <p className="text-muted-foreground mb-4">
-            Post your opportunity and connect with qualified drone operators across Rwanda
+      {/* ── CTA banner ── */}
+      <div className="relative bg-brand-gradient rounded-2xl overflow-hidden p-8 text-center">
+        <div className="pointer-events-none absolute -top-10 -right-10 h-48 w-48 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-white/5" />
+        <div className="relative z-10">
+          <h3 className="text-xl font-bold text-white mb-2">
+            Looking to hire drone professionals?
+          </h3>
+          <p className="text-white/75 text-sm mb-5 max-w-md mx-auto">
+            Post your opportunity and connect with qualified drone operators, pilots, and
+            engineers across Rwanda.
           </p>
           <Link href="/opportunities/new">
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button className="bg-white text-[#002674] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg">
               Post an Opportunity
             </Button>
           </Link>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
-} 
+}

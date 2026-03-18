@@ -12,7 +12,7 @@ import {
   BookOpen, Camera, Wrench, GraduationCap, ClipboardList, Settings,
   Map, Plane, BookMarked, AlertTriangle, ShoppingBag, Newspaper,
   Bell, Star, UserCheck, Radio, Award, CloudSun, Search, Rss, Image, BarChart3, Code2,
-  BookMarked as LearnIcon
+  BookMarked as LearnIcon, Trophy
 } from "lucide-react"
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -71,6 +71,7 @@ export function AppSidebar({ className, onItemClick }: SidebarProps) {
         { title: 'Forum', href: '/forum', icon: MessageSquare },
         { title: 'Projects', href: '/projects', icon: Camera },
         { title: 'Events', href: '/events', icon: Calendar },
+        { title: 'Drone Clubs', href: '/clubs', icon: Trophy },
         { title: 'Community Directory', href: '/pilots', icon: Users },
         { title: 'Resources', href: '/resources', icon: BookOpen },
       ]
