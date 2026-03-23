@@ -84,8 +84,9 @@ export function LoginLayout({ children }: LoginLayoutProps) {
             </div>
 
             {/* Main content */}
-            <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-6 bg-background overflow-auto">
-              <div className="max-w-7xl mx-auto">{children}</div>
+            <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-6 bg-background overflow-auto flex flex-col">
+              <div className="max-w-7xl mx-auto w-full flex-1">{children}</div>
+              <MarketingFooter />
             </main>
           </div>
         </div>
@@ -103,9 +104,12 @@ export function LoginLayout({ children }: LoginLayoutProps) {
           <MarketingFooter />
         </>
       ) : (
-        <main className="flex-1 p-3 sm:p-4 lg:p-6 bg-background">
-          <div className="max-w-7xl mx-auto">{children}</div>
-        </main>
+        <>
+          <main className="flex-1 p-3 sm:p-4 lg:p-6 bg-background">
+            <div className="max-w-7xl mx-auto">{children}</div>
+          </main>
+          <MarketingFooter />
+        </>
       )}
     </div>
   )
