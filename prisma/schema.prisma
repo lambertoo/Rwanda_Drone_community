@@ -1278,3 +1278,27 @@ model ClubTransferRequest {
   @@index([toUserId, status])
   @@map("club_transfer_requests")
 }
+
+// ── System key-value settings (OAuth tokens, feature flags, etc.) ─────────
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+// ===== MAILING LIST / SUBSCRIBERS =====
+model Subscriber {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  name        String?
+  topics      String[]  // e.g. ["events","opportunities","resources","news"]
+  token       String    @unique @default(cuid()) // for one-click unsubscribe links
+  isActive    Boolean   @default(true)
+  confirmedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("subscribers")
+}

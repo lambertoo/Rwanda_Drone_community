@@ -1,4 +1,16 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
+
+const FOOTER_TOPICS = [
+  { id: "events",        label: "Events" },
+  { id: "opportunities", label: "Jobs" },
+  { id: "projects",      label: "Projects" },
+  { id: "resources",     label: "Resources" },
+  { id: "forum",         label: "Forum" },
+  { id: "news",          label: "News" },
+]
 
 const footerLinks = {
   community: [
@@ -30,6 +42,154 @@ const footerLinks = {
   ],
 }
 
+function FooterNewsletter() {
+  const [email, setEmail] = useState("")
+  const [name, setName] = useState("")
+  const [topics, setTopics] = useState<string[]>(["events", "news"])
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
+  const [errMsg, setErrMsg] = useState("")
+
+  function toggleTopic(id: string) {
+    setTopics(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id])
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!email) return
+    setStatus("loading")
+    setErrMsg("")
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name, topics }),
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setStatus("success")
+      } else {
+        setErrMsg(data.error || "Something went wrong.")
+        setStatus("error")
+      }
+    } catch {
+      setErrMsg("Network error. Please try again.")
+      setStatus("error")
+    }
+  }
+
+  if (status === "success") {
+    return (
+      <div className="mk-footer-newsletter" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div style={{
+          background: "rgba(22,163,74,0.12)",
+          border: "1px solid rgba(22,163,74,0.3)",
+          borderRadius: "8px",
+          padding: "14px 16px",
+          color: "#15803d",
+          fontWeight: 600,
+          fontSize: "14px",
+          textAlign: "center",
+        }}>
+          ✓ You're subscribed!
+        </div>
+        <p style={{ fontSize: "12px", textAlign: "center" }}>
+          <Link href="/subscribe" style={{ color: "#0058dd", textDecoration: "underline" }}>
+            Manage preferences
+          </Link>
+          {" · "}
+          <Link href="/unsubscribe" style={{ color: "#888", textDecoration: "underline" }}>
+            Unsubscribe
+          </Link>
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mk-footer-newsletter">
+      <p>Stay connected with Rwanda's drone community — news, events, and opportunities in your inbox.</p>
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        {/* Email + Name row */}
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="Your email address"
+            required
+            style={{ flex: "2 1 160px", minWidth: 0 }}
+          />
+          <input
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Your name (optional)"
+            style={{ flex: "1 1 120px", minWidth: 0 }}
+          />
+        </div>
+
+        {/* Topic checkboxes — 2-column compact grid */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "4px 12px",
+          padding: "4px 0",
+        }}>
+          {FOOTER_TOPICS.map(t => (
+            <label
+              key={t.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "12px",
+                cursor: "pointer",
+                color: "#374151",
+                userSelect: "none",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={topics.includes(t.id)}
+                onChange={() => toggleTopic(t.id)}
+                style={{ accentColor: "#0058dd", width: "13px", height: "13px", flexShrink: 0 }}
+              />
+              {t.label}
+            </label>
+          ))}
+        </div>
+
+        {errMsg && (
+          <p style={{ fontSize: "12px", color: "#dc2626", margin: "0" }}>{errMsg}</p>
+        )}
+
+        <button
+          type="submit"
+          className="mk-footer-newsletter-submit"
+          disabled={status === "loading"}
+          style={{
+            background: "linear-gradient(135deg,#002674,#0058dd)",
+            opacity: status === "loading" ? 0.7 : 1,
+            cursor: status === "loading" ? "not-allowed" : "pointer",
+          }}
+        >
+          {status === "loading" ? "Subscribing…" : "Keep me updated →"}
+        </button>
+      </form>
+
+      <p style={{ fontSize: "11px", marginTop: "6px", opacity: 0.7 }}>
+        <Link href="/subscribe" style={{ color: "inherit", textDecoration: "underline" }}>
+          Manage preferences
+        </Link>
+        {" / "}
+        <Link href="/unsubscribe" style={{ color: "inherit", textDecoration: "underline" }}>
+          Unsubscribe
+        </Link>
+      </p>
+    </div>
+  )
+}
+
 export function MarketingFooter() {
   const year = new Date().getFullYear()
 
@@ -37,13 +197,7 @@ export function MarketingFooter() {
     <footer className="mk-site-footer">
       <div className="mk-footer-inner">
         {/* Newsletter card */}
-        <div className="mk-footer-newsletter">
-          <p>Stay connected with Rwanda's drone community — news, events, and opportunities in your inbox.</p>
-          <div className="mk-footer-newsletter-combo">
-            <input type="email" placeholder="Your email address" />
-            <button className="mk-footer-newsletter-submit">Keep me updated →</button>
-          </div>
-        </div>
+        <FooterNewsletter />
 
         {/* Footer grid */}
         <div className="mk-footer-grid">

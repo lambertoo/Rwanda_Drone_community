@@ -10,7 +10,7 @@ import {
   BookOpen, Camera, Wrench, GraduationCap, ClipboardList, Settings,
   Map, Plane, BookMarked, AlertTriangle, ShoppingBag, Newspaper,
   Bell, Star, UserCheck, Radio, Award, CloudSun, Search, Image, BarChart3, Code2,
-  BookMarked as LearnIcon, Trophy, Rss, type LucideIcon,
+  BookMarked as LearnIcon, Trophy, Rss, Mail, type LucideIcon,
 } from "lucide-react"
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -132,6 +132,7 @@ export function AppSidebar({ className, onItemClick }: SidebarProps) {
           { title: "Admin Dashboard",  href: "/admin",                  icon: Shield },
           { title: "User Management",  href: "/admin/users",            icon: Users },
           { title: "Content Approvals",href: "/admin/approvals",        icon: UserCheck },
+          { title: "Subscribers",      href: "/admin/subscribers",      icon: Mail },
           { title: "News Management",  href: "/admin/news",             icon: Newspaper },
           { title: "Safety Reports",   href: "/admin/safety-reports",   icon: AlertTriangle },
           { title: "Feature Flags",    href: "/admin/feature-flags",    icon: Radio },
