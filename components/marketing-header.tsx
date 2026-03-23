@@ -1,26 +1,35 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { X, ChevronDown,
+import {
+  X, ChevronDown, Menu,
   MessageSquare, Camera, Calendar, Trophy, Users, BookOpen,
   Map, CloudSun, AlertTriangle, GraduationCap,
   Briefcase, Wrench, ShoppingBag,
+  Bell, User, Settings, Shield, LogOut, Search,
 } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { NotificationBell } from "@/components/notification-bell"
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
 
 /* ── Shared nav data (mirrors app-sidebar sections) ─────────────────── */
 const NAV = [
   {
     label: "Community",
     items: [
-      { label: "Forum",               desc: "Discussions & knowledge sharing.",     href: "/forum",    icon: MessageSquare },
-      { label: "Projects",            desc: "Explore drone projects.",               href: "/projects", icon: Camera },
-      { label: "Events",              desc: "Workshops, meetups & conferences.",     href: "/events",   icon: Calendar },
-      { label: "Drone Clubs",         desc: "Find and join clubs near you.",         href: "/clubs",    icon: Trophy },
-      { label: "Community Directory", desc: "Browse pilots & organisations.",        href: "/pilots",   icon: Users },
-      { label: "Resources",           desc: "Guides, reports, and reference docs.",  href: "/resources",icon: BookOpen },
+      { label: "Forum",               desc: "Discussions & knowledge sharing.",    href: "/forum",    icon: MessageSquare },
+      { label: "Projects",            desc: "Explore drone projects.",              href: "/projects", icon: Camera },
+      { label: "Events",              desc: "Workshops, meetups & conferences.",    href: "/events",   icon: Calendar },
+      { label: "Drone Clubs",         desc: "Find and join clubs near you.",        href: "/clubs",    icon: Trophy },
+      { label: "Community Directory", desc: "Browse pilots & organisations.",       href: "/pilots",   icon: Users },
+      { label: "Resources",           desc: "Guides, reports, and reference docs.", href: "/resources",icon: BookOpen },
     ],
   },
   {
@@ -36,33 +45,71 @@ const NAV = [
     label: "Services",
     href: "/services",
     items: [
-      { label: "Service Directory", desc: "Find drone professionals & operators.", href: "/services",      icon: Wrench },
-      { label: "Marketplace",       desc: "Buy, sell and trade drone equipment.",  href: "/marketplace",   icon: ShoppingBag },
+      { label: "Service Directory", desc: "Find drone professionals & operators.", href: "/services",    icon: Wrench },
+      { label: "Marketplace",       desc: "Buy, sell and trade drone equipment.",  href: "/marketplace", icon: ShoppingBag },
     ],
   },
   {
     label: "Opportunities",
     href: "/opportunities",
     items: [
-      { label: "Browse Opportunities", desc: "Jobs, grants & programmes.",        href: "/opportunities",  icon: Briefcase },
-      { label: "Mentorship",           desc: "Connect with industry mentors.",    href: "/mentorship",     icon: Users },
+      { label: "Browse Opportunities", desc: "Jobs, grants & programmes.",      href: "/opportunities", icon: Briefcase },
+      { label: "Mentorship",           desc: "Connect with industry mentors.",   href: "/mentorship",    icon: Users },
     ],
   },
 ]
 
-export function MarketingHeader() {
-  const [mobileOpen, setMobileOpen]     = useState(false)
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
+interface MarketingHeaderProps {
+  onSidebarToggle?: () => void
+}
+
+export function MarketingHeader({ onSidebarToggle }: MarketingHeaderProps) {
+  const [mobileOpen, setMobileOpen]         = useState(false)
+  const [openDropdown, setOpenDropdown]     = useState<string | null>(null)
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null)
-  const { user }   = useAuth()
-  const pathname   = usePathname()
+  const [pendingCount, setPendingCount]     = useState(0)
+
+  const { user, logout } = useAuth()
+  const pathname = usePathname()
+  const router   = useRouter()
 
   const isActive = (href?: string) =>
     !!href && (pathname === href || (href !== "/" && pathname.startsWith(href)))
 
+  // Admin pending count
+  useEffect(() => {
+    if (user?.role !== "admin") return
+    const fetchPending = () =>
+      fetch("/api/admin/pending", { credentials: "include" })
+        .then(r => r.json())
+        .then(d => setPendingCount(Object.values(d.counts as Record<string, number>).reduce((s, c) => s + c, 0)))
+        .catch(() => {})
+    fetchPending()
+    const id = setInterval(fetchPending, 30000)
+    return () => clearInterval(id)
+  }, [user?.role])
+
+  const handleLogout = async () => { await logout(); router.push("/login") }
+
+  const initials = user
+    ? user.fullName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+    : ""
+
   return (
     <header className="mk-site-header">
       <div className="mk-header-inner">
+        {/* Sidebar toggle (authenticated, mobile) */}
+        {onSidebarToggle && (
+          <button
+            className="lg:hidden"
+            onClick={onSidebarToggle}
+            aria-label="Open menu"
+            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: "6px", color: "#002674" }}
+          >
+            <Menu size={20} />
+          </button>
+        )}
+
         {/* Logo */}
         <Link href="/" className="mk-logo">
           <div className="mk-logo__mark">RDC</div>
@@ -84,8 +131,7 @@ export function MarketingHeader() {
                   className={`mk-nav__link${isActive(section.href) ? " is-active" : ""}`}
                   style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
                 >
-                  {section.label}
-                  <ChevronDown size={12} style={{ opacity: 0.6 }} />
+                  {section.label} <ChevronDown size={12} style={{ opacity: 0.6 }} />
                 </Link>
               ) : (
                 <button
@@ -94,16 +140,15 @@ export function MarketingHeader() {
                   aria-haspopup="true"
                   aria-expanded={openDropdown === section.label}
                 >
-                  {section.label}
-                  <ChevronDown size={12} style={{ opacity: 0.6 }} />
+                  {section.label} <ChevronDown size={12} style={{ opacity: 0.6 }} />
                 </button>
               )}
 
               {openDropdown === section.label && (
                 <div style={{
                   position: "absolute", top: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)",
-                  background: "#fff", borderRadius: "16px", padding: "10px",
-                  minWidth: "280px", zIndex: 60,
+                  background: "#fff", borderRadius: 16, padding: 10,
+                  minWidth: 280, zIndex: 60,
                   boxShadow: "0 12px 40px rgba(0,11,79,0.12), 0 2px 8px rgba(0,0,0,0.06)",
                   border: "1px solid rgba(0,38,116,0.08)",
                 }}>
@@ -127,10 +172,62 @@ export function MarketingHeader() {
           ))}
         </nav>
 
-        {/* Auth actions */}
+        {/* Auth / user actions */}
         <div className="mk-header-actions">
           {user ? (
-            <Link href="/profile" className="mk-btn--join">My Dashboard</Link>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              {/* Admin pending */}
+              {user.role === "admin" && pendingCount > 0 && (
+                <Link href="/admin/approvals" style={{ position: "relative", display: "flex" }}>
+                  <button style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#f97316", display: "flex" }}>
+                    <Bell size={18} />
+                    <span style={{ position: "absolute", top: 2, right: 2, minWidth: 14, height: 14, background: "#f97316", borderRadius: 999, fontSize: 9, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>
+                      {pendingCount > 99 ? "99+" : pendingCount}
+                    </span>
+                  </button>
+                </Link>
+              )}
+
+              {/* Notification bell */}
+              <NotificationBell />
+
+              {/* Avatar dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button style={{ background: "none", border: "none", cursor: "pointer", padding: 0, borderRadius: "50%" }}>
+                    <Avatar style={{ width: 32, height: 32, outline: "2px solid rgba(0,88,221,0.2)", outlineOffset: 1 }}>
+                      <AvatarImage src={user.avatar || "/placeholder-user.jpg"} alt={user.fullName} />
+                      <AvatarFallback style={{ background: "#002674", color: "#fff", fontSize: 12, fontWeight: 700 }}>
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <p style={{ fontWeight: 600, fontSize: 13 }}>{user.fullName}</p>
+                      <p style={{ fontSize: 12, color: "#6b7280" }}>{user.email}</p>
+                      {user.role && (
+                        <Badge variant="secondary" style={{ fontSize: 11, width: "fit-content" }}>
+                          {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                        </Badge>
+                      )}
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild><Link href="/profile" style={{ display: "flex", alignItems: "center", gap: 8 }}><User size={14} />Profile</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href="/settings" style={{ display: "flex", alignItems: "center", gap: 8 }}><Settings size={14} />Settings</Link></DropdownMenuItem>
+                  {user.role === "admin" && (
+                    <DropdownMenuItem asChild><Link href="/admin" style={{ display: "flex", alignItems: "center", gap: 8 }}><Shield size={14} />Admin Panel</Link></DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} style={{ color: "#ef4444", cursor: "pointer" }}>
+                    <LogOut size={14} style={{ marginRight: 8 }} />Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           ) : (
             <>
               <Link href="/login"    className="mk-btn--signin">Sign In</Link>
@@ -139,13 +236,19 @@ export function MarketingHeader() {
           )}
         </div>
 
-        {/* Mobile hamburger */}
-        <button className="mk-nav-toggle" onClick={() => setMobileOpen(true)} aria-label="Open menu">
-          <span /><span /><span />
-        </button>
+        {/* Mobile hamburger — only for guest nav drawer (authenticated uses sidebar toggle above) */}
+        {!onSidebarToggle && (
+          <button
+            className="mk-nav-toggle"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open menu"
+          >
+            <span /><span /><span />
+          </button>
+        )}
       </div>
 
-      {/* Mobile drawer */}
+      {/* Guest mobile drawer */}
       {mobileOpen && (
         <>
           <div className="mk-mobile-overlay" onClick={() => setMobileOpen(false)} />
@@ -194,20 +297,12 @@ export function MarketingHeader() {
             ))}
 
             <div className="mk-mobile-drawer__actions">
-              {user ? (
-                <Link href="/profile" className="mk-btn--join" style={{ textAlign: "center" }} onClick={() => setMobileOpen(false)}>
-                  My Dashboard
-                </Link>
-              ) : (
-                <>
-                  <Link href="/login" onClick={() => setMobileOpen(false)} style={{ textAlign: "center", display: "block", padding: "11px", borderRadius: 8, border: "1px solid rgba(0,38,116,0.15)", color: "#002674", fontWeight: 600, fontSize: 14, textDecoration: "none" }}>
-                    Sign In
-                  </Link>
-                  <Link href="/register" className="mk-btn--join" style={{ textAlign: "center" }} onClick={() => setMobileOpen(false)}>
-                    Join Free
-                  </Link>
-                </>
-              )}
+              <Link href="/login" onClick={() => setMobileOpen(false)} style={{ textAlign: "center", display: "block", padding: 11, borderRadius: 8, border: "1px solid rgba(0,38,116,0.15)", color: "#002674", fontWeight: 600, fontSize: 14, textDecoration: "none" }}>
+                Sign In
+              </Link>
+              <Link href="/register" className="mk-btn--join" style={{ textAlign: "center" }} onClick={() => setMobileOpen(false)}>
+                Join Free
+              </Link>
             </div>
           </div>
         </>
