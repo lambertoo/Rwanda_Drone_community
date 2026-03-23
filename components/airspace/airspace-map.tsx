@@ -104,8 +104,9 @@ function formatDate(d?: string | null) {
   return new Date(d).toLocaleDateString()
 }
 
-// Rwanda bounding box with padding
-const RWANDA_BOUNDS: [[number, number], [number, number]] = [[-3.0, 28.6], [-1.0, 31.0]]
+// Rwanda actual extent + ~20 km buffer (≈ 0.18°)
+// Country: S -2.84, N -1.05, W 28.84, E 30.90
+const RWANDA_BOUNDS: [[number, number], [number, number]] = [[-3.02, 28.66], [-0.87, 31.08]]
 const RWANDA_CENTER: [number, number] = [-1.9403, 29.8739]
 
 export default function AirspaceMap() {
@@ -139,13 +140,16 @@ export default function AirspaceMap() {
       const map = L.map(mapRef.current!, {
         center: RWANDA_CENTER,
         zoom: 8,
-        minZoom: 7,
         maxZoom: 17,
         maxBounds: RWANDA_BOUNDS,
         maxBoundsViscosity: 1.0,
         zoomControl: true,
       })
       mapInstanceRef.current = map
+
+      // Fit to Rwanda bounds then lock minZoom so user can never zoom out beyond Rwanda + 20km
+      map.fitBounds(RWANDA_BOUNDS, { padding: [0, 0], animate: false })
+      map.setMinZoom(map.getZoom())
       dynLayerRef.current = L.layerGroup().addTo(map)
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
