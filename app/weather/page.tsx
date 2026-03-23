@@ -145,11 +145,15 @@ function parseVisibilitySM(visib: string | number): number {
 function parseMetarTime(reportTime: string) {
   if (!reportTime) return "—"
   try {
-    return new Date(reportTime + "Z").toLocaleTimeString("en-GB", {
+    // Avoid double-appending Z if already present
+    const iso = reportTime.endsWith("Z") || reportTime.includes("+") ? reportTime : reportTime + "Z"
+    const d = new Date(iso)
+    if (isNaN(d.getTime())) return reportTime.length >= 16 ? reportTime.substring(11, 16) : reportTime
+    return d.toLocaleTimeString("en-GB", {
       hour: "2-digit", minute: "2-digit", timeZone: "Africa/Kigali",
     }) + " CAT"
   } catch {
-    return reportTime.substring(11, 16)
+    return reportTime.length >= 16 ? reportTime.substring(11, 16) : reportTime
   }
 }
 
