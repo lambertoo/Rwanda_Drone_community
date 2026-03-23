@@ -6,6 +6,7 @@ import FormEditor from "@/components/forms/form-editor"
 import { AuthGuard } from "@/components/auth-guard"
 import { Button } from "@/components/ui/button"
 import { FORM_TEMPLATES } from "@/lib/form-templates"
+import { Input } from "@/components/ui/input"
 import {
   Plus,
   FileText,
@@ -17,6 +18,8 @@ import {
   ClipboardCheck,
   Mail,
   ArrowLeft,
+  Sparkles,
+  Loader,
 } from "lucide-react"
 
 const ICON_MAP: Record<string, any> = {
@@ -34,6 +37,8 @@ export default function NewFormPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
   const [showEditor, setShowEditor] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState("")
+  const [aiLoading, setAiLoading] = useState(false)
 
   const handleSave = async (formData: any) => {
     setIsSaving(true)
@@ -105,6 +110,56 @@ export default function NewFormPage() {
             <div>
               <h1 className="text-2xl font-bold">Create a new form</h1>
               <p className="text-sm text-muted-foreground mt-1">Start from scratch or use a template</p>
+            </div>
+          </div>
+
+          {/* AI Generator */}
+          <div className="bg-background rounded-xl border p-6 mb-8">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-5 h-5 text-purple-500" />
+              <h2 className="font-semibold">Generate with AI</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">Describe the form you need and we'll create it for you</p>
+            <div className="flex gap-2">
+              <Input
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder='e.g. "Drone pilot registration form" or "Event feedback survey"'
+                className="flex-1"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && aiPrompt.trim()) {
+                    setAiLoading(true)
+                    fetch("/api/forms/generate", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ prompt: aiPrompt }),
+                    })
+                      .then((r) => r.json())
+                      .then((data) => { startFromTemplate(data); setAiLoading(false) })
+                      .catch(() => setAiLoading(false))
+                  }
+                }}
+                disabled={aiLoading}
+              />
+              <Button
+                onClick={() => {
+                  if (!aiPrompt.trim()) return
+                  setAiLoading(true)
+                  fetch("/api/forms/generate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ prompt: aiPrompt }),
+                  })
+                    .then((r) => r.json())
+                    .then((data) => { startFromTemplate(data); setAiLoading(false) })
+                    .catch(() => setAiLoading(false))
+                }}
+                disabled={aiLoading || !aiPrompt.trim()}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                {aiLoading ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
+                {aiLoading ? "Generating..." : "Generate"}
+              </Button>
             </div>
           </div>
 

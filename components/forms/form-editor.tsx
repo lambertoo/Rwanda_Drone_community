@@ -100,6 +100,8 @@ const FIELD_TYPES = [
   { value: "FILE_UPLOAD", label: "File Upload", icon: Upload, category: "Other" },
   { value: "GPS_COORDINATES", label: "GPS Coordinates", icon: Hash, category: "Other" },
   { value: "NATIONAL_ID", label: "National ID", icon: Hash, category: "Other" },
+  { value: "SCORE", label: "Score (Quiz)", icon: Star, category: "Rating" },
+  { value: "CALCULATED", label: "Calculated Field", icon: Hash, category: "Other" },
 ]
 
 const FIELD_ICON_MAP: Record<string, any> = Object.fromEntries(

@@ -642,6 +642,29 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
           </div>
         )}
 
+        {field.type === 'SCORE' && (
+          <div className="space-y-2">
+            {field.options?.map((option, index) => (
+              <label key={index} className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="radio"
+                  name={field.name}
+                  value={option}
+                  checked={value === option}
+                  onChange={() => handleInputChange(field.name, option)}
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+          </div>
+        )}
+
+        {field.type === 'CALCULATED' && (
+          <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground italic">
+            This field is automatically calculated
+          </div>
+        )}
+
         {field.type === 'TIME' && (
           <Input
             id={field.name}
