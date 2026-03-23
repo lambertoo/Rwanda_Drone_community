@@ -777,7 +777,7 @@ model FormValue {
   id           String     @id @default(cuid())
   entryId      String
   fieldId      String
-  value        String     // For files, store path + original name as JSON
+  value        String?    // null for unanswered fields; for files, store path as JSON
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   entry        FormEntry  @relation(fields: [entryId], references: [id], onDelete: Cascade)
@@ -792,6 +792,7 @@ enum FormFieldType {
   MULTIPLE_CHOICE
   CHECKBOXES
   DROPDOWN
+  MULTI_SELECT
   NUMBER
   EMAIL
   PHONE

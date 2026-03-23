@@ -13,7 +13,7 @@ import { Plus, X } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createOpportunityAction } from "@/lib/actions"
 import AdvancedFormBuilder from "./advanced-form-builder"
-import FormBuilder from "@/components/forms/form-builder"
+import FormBuilder from "@/components/forms/form-editor"
 import { useOpportunityCategories } from "@/hooks/use-opportunity-categories"
 import { useEmploymentTypes } from "@/hooks/use-employment-types"
 

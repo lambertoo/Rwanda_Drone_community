@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import FormBuilder from "@/components/forms/form-builder"
+import FormBuilder from "@/components/forms/form-editor"
 import { AuthGuard } from "@/components/auth-guard"
 
 export default function NewFormPage() {

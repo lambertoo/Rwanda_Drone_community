@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth-context"
-import FormBuilder from "@/components/forms/form-builder"
+import FormBuilder from "@/components/forms/form-editor"
 
 interface Speaker {
   id: string

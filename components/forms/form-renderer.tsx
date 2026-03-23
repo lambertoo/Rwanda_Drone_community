@@ -553,6 +553,30 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
           </Select>
         )}
 
+        {field.type === 'MULTI_SELECT' && (
+          <div className="space-y-2">
+            {field.options?.map((option, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`${field.name}-ms-${index}`}
+                  checked={Array.isArray(value) ? value.includes(option) : false}
+                  onCheckedChange={(checked) => {
+                    const currentValues = Array.isArray(value) ? value : []
+                    if (checked) {
+                      handleInputChange(field.name, [...currentValues, option])
+                    } else {
+                      handleInputChange(field.name, currentValues.filter((v: string) => v !== option))
+                    }
+                  }}
+                />
+                <Label htmlFor={`${field.name}-ms-${index}`} className="text-sm">
+                  {option}
+                </Label>
+              </div>
+            ))}
+          </div>
+        )}
+
 
         {field.type === 'TIME' && (
           <Input
@@ -736,7 +760,7 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
                     // Upload file with form-specific folder structure
                     const uploadFormData = new FormData()
                     uploadFormData.append('file', file)
-                    uploadFormData.append('type', 'general')
+                    uploadFormData.append('type', 'forms')
                     uploadFormData.append('entityId', formData.id || 'unknown') // Use form ID for folder structure
                     uploadFormData.append('subfolder', 'files')
                     

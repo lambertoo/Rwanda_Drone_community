@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import FormBuilder from "@/components/forms/form-builder"
+import FormBuilder from "@/components/forms/form-editor"
 import { AuthGuard } from "@/components/auth-guard"
 
 interface Opportunity {

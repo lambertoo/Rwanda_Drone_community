@@ -803,7 +803,7 @@ export default function FormEditor({ onSave, onCancel, initialData }: FormEditor
       {/* Field Edit Modal */}
       {editingField && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-96 max-h-96 overflow-y-auto">
+          <Card className="w-96 max-h-[80vh] overflow-y-auto">
             <CardHeader>
               <CardTitle>Edit Field</CardTitle>
             </CardHeader>
@@ -920,6 +920,79 @@ export default function FormEditor({ onSave, onCancel, initialData }: FormEditor
                   </div>
                 </div>
               )}
+
+              {/* Conditional Logic */}
+              {(() => {
+                const currentField = sections.flatMap(s => s.fields).find(f => f.id === editingField)
+                const allOtherFields = sections.flatMap(s => s.fields).filter(f => f.id !== editingField)
+                if (!currentField) return null
+                return (
+                  <div className="space-y-2 border-t pt-4">
+                    <Label className="text-sm font-medium">Conditional Logic</Label>
+                    <p className="text-xs text-muted-foreground">Show this field only when a condition is met</p>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="enable-conditional"
+                        checked={!!currentField.conditional?.dependsOn}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            updateField(editingField, { conditional: { dependsOn: '', operator: 'equals', value: '' } })
+                          } else {
+                            updateField(editingField, { conditional: undefined })
+                          }
+                        }}
+                      />
+                      <Label htmlFor="enable-conditional" className="text-sm">Enable conditional logic</Label>
+                    </div>
+                    {currentField.conditional && (
+                      <div className="space-y-2 pl-4 border-l-2 border-blue-200">
+                        <div>
+                          <Label className="text-xs">Show when this field</Label>
+                          <select
+                            className="w-full h-8 mt-1 rounded-md border border-input bg-background px-2 text-sm"
+                            value={currentField.conditional.dependsOn || ''}
+                            onChange={(e) => updateField(editingField, {
+                              conditional: { ...currentField.conditional, dependsOn: e.target.value }
+                            })}
+                          >
+                            <option value="">Select a field...</option>
+                            {allOtherFields.map(f => (
+                              <option key={f.id} value={f.name}>{f.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Condition</Label>
+                          <select
+                            className="w-full h-8 mt-1 rounded-md border border-input bg-background px-2 text-sm"
+                            value={currentField.conditional.operator || 'equals'}
+                            onChange={(e) => updateField(editingField, {
+                              conditional: { ...currentField.conditional, operator: e.target.value }
+                            })}
+                          >
+                            <option value="equals">Equals</option>
+                            <option value="not_equals">Does not equal</option>
+                            <option value="contains">Contains</option>
+                            <option value="not_contains">Does not contain</option>
+                          </select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Value</Label>
+                          <Input
+                            className="h-8 mt-1"
+                            value={currentField.conditional.value || ''}
+                            onChange={(e) => updateField(editingField, {
+                              conditional: { ...currentField.conditional, value: e.target.value }
+                            })}
+                            placeholder="Value to match"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
 
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setEditingField(null)}>

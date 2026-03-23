@@ -7,45 +7,12 @@ export async function POST(
 ) {
   try {
     const formId = params.id
-    
-    // Check content type to determine how to parse the body
-    const contentType = request.headers.get('content-type') || ''
-    let body: any
+    const body = await request.json()
 
-    if (contentType.includes('multipart/form-data')) {
-      // Handle FormData (file uploads)
-      const formData = await request.formData()
-      body = {}
-      
-      for (const [key, value] of formData.entries()) {
-        if (value instanceof File) {
-          // Handle file uploads - store file info
-          body[key] = {
-            name: value.name,
-            size: value.size,
-            type: value.type,
-            uploaded: true
-          }
-        } else {
-          // Handle other form data
-          try {
-            // Try to parse as JSON (for arrays)
-            body[key] = JSON.parse(value as string)
-          } catch {
-            // If not JSON, store as string
-            body[key] = value as string
-          }
-        }
-      }
-    } else {
-      // Handle JSON data
-      body = await request.json()
-    }
-
-    // Check if form exists and is public
+    // Check if form exists and is active
     const form = await prisma.universalForm.findUnique({
       where: { id: formId },
-      select: { id: true, isActive: true, isPublic: true }
+      select: { id: true, isActive: true, isPublic: true, settings: true },
     })
 
     if (!form) {
@@ -56,71 +23,77 @@ export async function POST(
       return NextResponse.json({ error: 'Form is not available for submissions' }, { status: 403 })
     }
 
+    // Enforce allowMultipleSubmissions setting
+    const formSettings = form.settings as any
+    if (formSettings?.allowMultipleSubmissions === false) {
+      const ip =
+        request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+        request.headers.get('x-real-ip') ||
+        'unknown'
+
+      const existingEntry = await prisma.formEntry.findFirst({
+        where: {
+          formId,
+          meta: { path: ['ip'], equals: ip },
+        },
+      })
+
+      if (existingEntry) {
+        return NextResponse.json(
+          { error: 'You have already submitted this form. Multiple submissions are not allowed.' },
+          { status: 409 }
+        )
+      }
+    }
+
     // Get form fields to map field names to field IDs
     const formWithFields = await prisma.universalForm.findUnique({
       where: { id: formId },
-      include: {
-        sections: {
-          include: {
-            fields: true
-          }
-        }
-      }
+      include: { sections: { include: { fields: true } } },
     })
 
     if (!formWithFields) {
       return NextResponse.json({ error: 'Form not found' }, { status: 404 })
     }
 
-    // Create a map of field names to field IDs
-    const fieldMap = new Map()
-    formWithFields.sections.forEach(section => {
-      section.fields.forEach(field => {
-        fieldMap.set(field.name, field.id)
-      })
-    })
+    // Build field values — store null for unanswered fields
+    const allFieldValues: { fieldId: string; value: string | null }[] = []
 
-    // Debug logging
-    console.log('Form submission body:', JSON.stringify(body, null, 2))
-    console.log('Form fields:', formWithFields.sections.map(s => s.fields.map(f => ({ name: f.name, id: f.id }))))
-
-    // Create form submission - save ALL fields, even empty ones
-    const allFieldValues = []
-    
-    // Get all fields from the form
-    formWithFields.sections.forEach(section => {
-      section.fields.forEach(field => {
+    formWithFields.sections.forEach((section) => {
+      section.fields.forEach((field) => {
         const submittedValue = body[field.name]
-        console.log(`Field ${field.name} (${field.id}):`, submittedValue)
-        allFieldValues.push({
-          fieldId: field.id,
-          value: submittedValue !== undefined && submittedValue !== null && submittedValue !== '' 
-            ? (typeof submittedValue === 'string' ? submittedValue : JSON.stringify(submittedValue))
-            : 'No response'
-        })
+        let stored: string | null = null
+
+        if (submittedValue !== undefined && submittedValue !== null && submittedValue !== '') {
+          stored = typeof submittedValue === 'string' ? submittedValue : JSON.stringify(submittedValue)
+        }
+
+        allFieldValues.push({ fieldId: field.id, value: stored })
       })
     })
 
-    console.log('All field values to save:', allFieldValues)
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip') ||
+      'unknown'
 
     const submission = await prisma.formEntry.create({
       data: {
-        formId: formId,
+        formId,
         meta: {
+          ip,
           submittedAt: new Date().toISOString(),
           userAgent: request.headers.get('user-agent') || null,
-          referrer: request.headers.get('referer') || null
+          referrer: request.headers.get('referer') || null,
         },
-        values: {
-          create: allFieldValues
-        }
-      }
+        values: { create: allFieldValues },
+      },
     })
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       submissionId: submission.id,
-      message: 'Form submitted successfully' 
+      message: 'Form submitted successfully',
     })
   } catch (error) {
     console.error('Error submitting form:', error)
