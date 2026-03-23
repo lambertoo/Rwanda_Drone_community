@@ -1,416 +1,392 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  ArrowRight,
-  Calendar,
-  MapPin,
-  Users,
-  MessageSquare,
-  TrendingUp,
-  Award,
-  Zap,
-  Globe,
-  ChevronRight,
-  Eye,
-  Heart,
-  Clock,
-} from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
+import { Calendar, MapPin, Users, MessageSquare, Eye, Heart, Clock, ChevronRight } from "lucide-react"
 
-// Force dynamic rendering
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
 
 async function getHomePageData() {
-  // Skip database queries during build time
-  if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
-    return {
-      featuredProjects: [],
-      recentPosts: [],
-      upcomingEvents: [],
-      stats: { projects: 0, users: 0, events: 0, services: 0 }
-    }
+  if (process.env.NODE_ENV === "production" && !process.env.DATABASE_URL) {
+    return { featuredProjects: [], recentPosts: [], upcomingEvents: [], stats: { projects: 0, users: 0, events: 0, services: 0 } }
   }
   try {
-    // Get featured projects (isFeatured = true AND isApproved = true, limit 3)
-    const featuredProjects = await prisma.project.findMany({
-      where: { 
-        isFeatured: true,
-        isApproved: true
-      },
-      take: 3,
-      include: {
-        author: {
-          select: {
-            fullName: true,
-            organization: true,
-            avatar: true,
-          }
+    const [featuredProjects, recentPosts, upcomingEvents, ...counts] = await Promise.all([
+      prisma.project.findMany({
+        where: { isFeatured: true, isApproved: true },
+        take: 3,
+        include: {
+          author: { select: { fullName: true, avatar: true } },
+          category: { select: { name: true } },
         },
-        category: {
-          select: {
-            name: true,
-            icon: true
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    })
-
-    // Get recent forum posts (limit 3, only approved posts)
-    const recentPosts = await prisma.forumPost.findMany({
-      where: { isApproved: true },
-      take: 3,
-      include: {
-        author: {
-          select: {
-            fullName: true,
-            avatar: true,
-            reputation: true,
-          }
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.forumPost.findMany({
+        where: { isApproved: true },
+        take: 4,
+        include: {
+          author: { select: { fullName: true, avatar: true } },
+          category: { select: { name: true } },
+          _count: { select: { comments: true } },
         },
-        category: {
-          select: {
-            name: true
-          }
-        },
-        _count: {
-          select: {
-            comments: true
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    })
-
-    // Get upcoming events (limit 3, future dates, published AND approved)
-    const upcomingEvents = await prisma.event.findMany({
-      where: {
-        startDate: {
-          gte: new Date()
-        },
-        isPublished: true,
-        isApproved: true
-      },
-      take: 3,
-      include: {
-        _count: {
-          select: {
-            rsvps: true
-          }
-        }
-      },
-      orderBy: { startDate: 'asc' }
-    })
-
-    // Get statistics (only approved/published content for public visibility)
-    const stats = await Promise.all([
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.event.findMany({
+        where: { startDate: { gte: new Date() }, isPublished: true, isApproved: true },
+        take: 3,
+        include: { _count: { select: { rsvps: true } } },
+        orderBy: { startDate: "asc" },
+      }),
       prisma.project.count({ where: { isApproved: true } }),
       prisma.user.count(),
       prisma.event.count({ where: { isPublished: true, isApproved: true } }),
-      prisma.service.count({ where: { isApproved: true } })
+      prisma.service.count({ where: { isApproved: true } }),
     ])
-
     return {
       featuredProjects,
       recentPosts,
       upcomingEvents,
-      stats: {
-        projects: stats[0],
-        users: stats[1],
-        events: stats[2],
-        services: stats[3]
-      }
+      stats: { projects: counts[0], users: counts[1], events: counts[2], services: counts[3] },
     }
-  } catch (error) {
-    console.error('Error fetching home page data:', error)
-    return {
-      featuredProjects: [],
-      recentPosts: [],
-      upcomingEvents: [],
-      stats: { projects: 0, users: 0, events: 0, services: 0 }
-    }
+  } catch {
+    return { featuredProjects: [], recentPosts: [], upcomingEvents: [], stats: { projects: 0, users: 0, events: 0, services: 0 } }
   }
 }
+
+const fmt = (d: Date) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
 
 export default async function HomePage() {
   const { featuredProjects, recentPosts, upcomingEvents, stats } = await getHomePageData()
 
-  const getCategoryIcon = (category: string | null | undefined) => {
-    if (!category) return "🚁"
-    
-    switch (category.toLowerCase()) {
-      case "agriculture":
-        return "🌾"
-      case "environmental":
-        return "🌍"
-      case "delivery":
-        return "📦"
-      case "conference":
-        return "🎤"
-      case "workshop":
-        return "🛠️"
-      case "training":
-        return "🎓"
-      default:
-        return "🚁"
-    }
-  }
-
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
-  }
-
-  const formatTime = (date: Date) => {
-    return new Date(date).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
   return (
-    <div className="space-y-16">
-      {/* ── Hero ── */}
-      <section className="relative overflow-hidden rounded-2xl bg-brand-gradient min-h-[480px] flex items-center">
-        {/* Decorative circles */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/4" />
-        <div className="relative w-full px-8 py-16 md:py-24 text-center text-white">
-          <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium mb-6 border border-white/20">
-            <Zap className="h-4 w-4" />
-            Rwanda's Premier Drone Community
-          </div>
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
-            Innovating with Drones<br className="hidden md:block" /> in Rwanda
-          </h1>
-          <p className="text-lg md:text-xl text-white/80 mb-10 max-w-2xl mx-auto leading-relaxed">
-            The one-stop platform connecting drone pilots, regulators, businesses and innovators
-            shaping the future of drone technology across East Africa.
+    <>
+      {/* ── 1. Hero ──────────────────────────────────────────── */}
+      <section className="mk-hero" id="hero" aria-label="Hero">
+        <div className="mk-hero__bg" aria-hidden="true" />
+        <div className="mk-hero__content">
+          <p className="mk-eyebrow mk-eyebrow--light">Rwanda Drone Community</p>
+          <h1>The platform that connects Rwanda&apos;s drone ecosystem</h1>
+          <p className="mk-hero__sub">
+            Discover projects, join events, connect with pilots, and access opportunities shaping drone
+            innovation across East Africa.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/projects">
-              <Button size="lg" className="bg-white text-[#002674] hover:bg-white/90 font-bold shadow-xl border-0 rounded-full px-8">
-                Explore Projects <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button size="lg" variant="outline" className="border-2 border-white/60 text-white hover:bg-white/10 bg-transparent rounded-full px-8">
-                Join the Community
-              </Button>
-            </Link>
+          <div className="mk-hero__actions">
+            <Link href="/projects" className="mk-btn mk-btn--white">Explore projects</Link>
+            <Link href="/register" className="mk-btn mk-btn--ghost-inv">Join the community</Link>
           </div>
         </div>
       </section>
 
-      {/* ── Stats ── */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { icon: Award, value: `${stats.projects}+`, label: "Active Projects", color: "text-[#002674]", bg: "bg-[#002674]/8" },
-          { icon: Users, value: `${stats.users}+`, label: "Community Members", color: "text-[#0096FC]", bg: "bg-[#0096FC]/8" },
-          { icon: TrendingUp, value: stats.events, label: "Events & Workshops", color: "text-[#002674]", bg: "bg-[#002674]/8" },
-          { icon: Globe, value: stats.services, label: "Service Providers", color: "text-[#0096FC]", bg: "bg-[#0096FC]/8" },
-        ].map(({ icon: Icon, value, label, color, bg }) => (
-          <Card key={label} className="text-center hover:shadow-lg transition-all duration-300 border-border/60 hover:-translate-y-0.5">
-            <CardContent className="p-6">
-              <div className={`inline-flex items-center justify-center w-12 h-12 ${bg} rounded-xl mb-4`}>
-                <Icon className={`h-6 w-6 ${color}`} />
+      {/* ── 2. Feature row — img right ───────────────────────── */}
+      <article className="mk-feature mk-feature--img-right" id="discover">
+        <div className="mk-feature__media">
+          <figure>
+            <img src="/images/rwanda-drone-1.jpg" alt="Drone operators in Rwanda" loading="lazy" />
+            <p className="mk-photo-credit"><a href="https://www.flickr.com/photos/paulkagame/49492233882/" target="_blank" rel="noopener noreferrer">© Paul Kagame / Flickr</a></p>
+          </figure>
+        </div>
+        <div className="mk-feature__text">
+          <p className="mk-eyebrow mk-eyebrow--inline"><span style={{ display: "inline-block", width: 8, height: 8, marginRight: 8, borderRadius: "50%", background: "#0058dd", verticalAlign: "middle" }} />Drone Community</p>
+          <h2>From the air to the community — connect pilots, partners, and programmes</h2>
+          <p>Discover the full spectrum of Rwanda's drone ecosystem: skilled pilots, innovative projects, and support organisations all in one place.</p>
+          <Link href="/projects" className="mk-text-link">Explore projects →</Link>
+        </div>
+      </article>
+
+      {/* ── 3. Feature row — img left ────────────────────────── */}
+      <article className="mk-feature mk-feature--img-left">
+        <div className="mk-feature__media">
+          <figure>
+            <img src="/images/rwanda-drone-2.jpg" alt="Drone operators and service providers" loading="lazy" />
+            <p className="mk-photo-credit"><a href="https://www.flickr.com/photos/paulkagame/49491530603/" target="_blank" rel="noopener noreferrer">© Paul Kagame / Flickr</a></p>
+          </figure>
+        </div>
+        <div className="mk-feature__text">
+          <h2>One platform for pilots, operators, and service providers</h2>
+          <p>
+            List your organisation, discover service opportunities, and connect with businesses seeking drone expertise across agriculture, delivery, surveying, and more.
+          </p>
+          <Link href="/services" className="mk-text-link">Browse services →</Link>
+        </div>
+      </article>
+
+      {/* ── 4. Feature row — img right ───────────────────────── */}
+      <article className="mk-feature mk-feature--img-right">
+        <div className="mk-feature__media">
+          <figure>
+            <img src="/images/rwanda-drone-3.jpg" alt="Drone programme coordination" loading="lazy" />
+            <p className="mk-photo-credit"><a href="https://www.flickr.com/photos/paulkagame/49492274612/" target="_blank" rel="noopener noreferrer">© Paul Kagame / Flickr</a></p>
+          </figure>
+        </div>
+        <div className="mk-feature__text">
+          <h2>Smarter, more coordinated drone programmes</h2>
+          <p>Organisations running drone training, certification, and deployment programmes can publish opportunities and reach the right participants efficiently.</p>
+          <Link href="/opportunities" className="mk-text-link">View opportunities →</Link>
+        </div>
+      </article>
+
+      {/* ── 5. Feature row — img left ────────────────────────── */}
+      <article className="mk-feature mk-feature--img-left">
+        <div className="mk-feature__media">
+          <figure>
+            <img src="/images/rwanda-drone-4.jpg" alt="Learning and training resources" loading="lazy" />
+            <p className="mk-photo-credit"><a href="https://www.flickr.com/photos/paulkagame/49492065031/" target="_blank" rel="noopener noreferrer">© Paul Kagame / Flickr</a></p>
+          </figure>
+        </div>
+        <div className="mk-feature__text">
+          <h2>Opportunities and skills for your drone career</h2>
+          <p>
+            Access training resources, certifications, and career opportunities that match your skills and ambitions — whether you&apos;re a beginner or a licensed professional.
+          </p>
+          <Link href="/resources" className="mk-text-link">Find resources →</Link>
+        </div>
+      </article>
+
+      {/* ── 6. Hero block ────────────────────────────────────── */}
+      <section className="mk-hero-block" id="visibility" aria-label="Visibility for innovators">
+        <div className="mk-hero-block__bg" aria-hidden="true" />
+        <div className="mk-hero-block__inner">
+          <p className="mk-eyebrow mk-eyebrow--light"><span style={{ display: "inline-block", width: 8, height: 8, marginRight: 8, borderRadius: "50%", background: "#fff", verticalAlign: "middle" }} />Building the future</p>
+          <h2>Visibility for Rwanda&apos;s drone innovators</h2>
+          <p>
+            Give your drone projects and organisation a profile — stories and impact visible to partners, investors, regulators, and the wider East African community.
+          </p>
+          <Link href="/register" className="mk-btn mk-btn--white" style={{ marginTop: "8px", display: "inline-flex" }}>Get started</Link>
+        </div>
+      </section>
+
+      {/* ── 7. Split cards ───────────────────────────────────── */}
+      <section className="mk-split-cards" aria-label="Highlights">
+        <article className="mk-split-card">
+          <img src="/images/rwanda-drone-5.jpg" alt="East Africa drone ecosystem" loading="lazy" />
+          <div className="mk-split-card__overlay" />
+          <p className="mk-photo-credit" style={{ zIndex: 2 }}><a href="https://www.flickr.com/photos/paulkagame/albums/72157712984865473/" target="_blank" rel="noopener noreferrer">© Paul Kagame / Flickr</a></p>
+          <div className="mk-split-card__text">
+            <h3>East Africa&apos;s drone ecosystem</h3>
+            <p>
+              Help international partners and investors discover Rwanda&apos;s ecosystem — collaborations, funding pathways, and market access across the region.
+            </p>
+          </div>
+        </article>
+        <article className="mk-split-card">
+          <img src="/images/rwanda-drone-1.jpg" alt="Inclusive drone innovation" loading="lazy" />
+          <div className="mk-split-card__overlay" />
+          <p className="mk-photo-credit" style={{ zIndex: 2 }}><a href="https://www.flickr.com/photos/paulkagame/49492233882/" target="_blank" rel="noopener noreferrer">© Paul Kagame / Flickr</a></p>
+          <div className="mk-split-card__text">
+            <h3>Inclusive and open to all</h3>
+            <p>
+              Bring opportunities to more people — across cities and districts — not only those already inside the industry. Everyone has a role in Rwanda&apos;s sky.
+            </p>
+          </div>
+        </article>
+      </section>
+
+      {/* ── 8. CTA band ──────────────────────────────────────── */}
+      <section className="mk-cta-band" id="opportunities" aria-label="Call to action">
+        <h2>Connect with operators and programmes ready to work with you</h2>
+        <Link href="/register" className="mk-btn mk-btn--primary">Join the community</Link>
+      </section>
+
+      {/* ── 9. Icon cards ────────────────────────────────────── */}
+      <section className="mk-icon-cards" id="community" aria-label="Platform features">
+        <article className="mk-icon-card">
+          <img src="/images/showcase-profile-icon.svg" alt="" width={56} height={56} />
+          <h3>Showcase Your Profile</h3>
+          <p>
+            Put your drone project, club, or service in front of the local and global innovation community. Attract visibility, partners, and collaborators.
+          </p>
+          <Link href="/projects/new" className="mk-text-link">Share a project →</Link>
+        </article>
+        <article className="mk-icon-card">
+          <img src="/images/partnership-icon.svg" alt="" width={56} height={56} />
+          <h3>Strategic Partnerships</h3>
+          <p>Connect with organisations offering funding, mentorship, training, and tools to accelerate your drone operations and career.</p>
+          <Link href="/opportunities" className="mk-text-link">View opportunities →</Link>
+        </article>
+        <article className="mk-icon-card">
+          <img src="/images/collaborate-icon.svg" alt="" width={56} height={56} />
+          <h3>Collaborate and Innovate</h3>
+          <p>
+            Engage with ecosystem players through events, discussion forums, and shared resources designed to drive collective growth in Rwanda&apos;s drone sector.
+          </p>
+          <Link href="/forum" className="mk-text-link">Join the forum →</Link>
+        </article>
+      </section>
+
+      {/* ── Stats divider ─────────────────────────────────────── */}
+      {(stats.projects > 0 || stats.users > 0) && (
+        <section
+          style={{
+            background: "linear-gradient(135deg, #002674 0%, #0058dd 100%)",
+            padding: "48px 24px",
+            color: "#fff",
+          }}
+          aria-label="Community statistics"
+        >
+          <div style={{ maxWidth: "var(--t-max)", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "32px", textAlign: "center" }}>
+            {[
+              { value: `${stats.projects}+`, label: "Active Projects" },
+              { value: `${stats.users}+`,    label: "Community Members" },
+              { value: `${stats.events}+`,   label: "Events & Workshops" },
+              { value: `${stats.services}+`, label: "Service Providers" },
+            ].map(s => (
+              <div key={s.label}>
+                <div style={{ fontSize: "clamp(2rem, 4vw, 2.75rem)", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontSize: "14px", marginTop: "6px", color: "rgba(255,255,255,0.75)" }}>{s.label}</div>
               </div>
-              <h3 className="text-3xl font-extrabold mb-1">{value}</h3>
-              <p className="text-muted-foreground text-sm">{label}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
-
-      {/* ── Featured Projects ── */}
-      <section className="space-y-6">
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-xs font-semibold text-[#0096FC] uppercase tracking-widest mb-1">Showcase</p>
-            <h2 className="text-3xl font-bold">Featured Projects</h2>
-            <p className="text-muted-foreground mt-1">Discover innovative drone projects making impact across Rwanda</p>
+            ))}
           </div>
-          <Link href="/projects">
-            <Button variant="outline" size="sm">View All <ChevronRight className="h-4 w-4" /></Button>
-          </Link>
-        </div>
+        </section>
+      )}
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {featuredProjects.map((project) => {
-            let technologies: string[] = []
-            try { technologies = project.technologies ? JSON.parse(project.technologies) : [] } catch {}
-            return (
-              <Link key={project.id} href={`/projects/${project.id}`} className="block group">
-                <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 group-hover:-translate-y-1 border-border/60">
-                  <div className="aspect-video bg-gradient-to-br from-[#002674]/10 to-[#0096FC]/10 relative overflow-hidden">
-                    <img src={project.image || "/placeholder.svg"} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <div className="absolute top-3 left-3">
-                      <Badge className="bg-white/90 text-[#002674] text-xs font-semibold backdrop-blur-sm border-0">
-                        {getCategoryIcon(project.category?.name)} {project.category?.name || 'Uncategorized'}
-                      </Badge>
-                    </div>
-                  </div>
-                  <CardContent className="p-5">
-                    <h3 className="font-bold text-base mb-1.5 group-hover:text-[#0096FC] transition-colors line-clamp-1">{project.title}</h3>
-                    <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{project.description}</p>
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {technologies.slice(0, 2).map(t => <Badge key={t} variant="outline" className="text-xs">{t}</Badge>)}
-                      {technologies.length > 2 && <Badge variant="outline" className="text-xs">+{technologies.length - 2}</Badge>}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-7 w-7">
-                          <AvatarImage src={project.author.avatar || "/placeholder.svg"} />
-                          <AvatarFallback className="text-xs bg-brand-gradient text-white">{project.author.fullName.split(" ").map(n => n[0]).join("")}</AvatarFallback>
-                        </Avatar>
-                        <p className="text-sm font-medium">{project.author.fullName}</p>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{project.viewsCount}</span>
-                        <span className="flex items-center gap-1"><Heart className="h-3 w-3" />{project.likesCount}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            )
-          })}
-          {featuredProjects.length === 0 && (
-            <div className="col-span-3 text-center py-12 text-muted-foreground">
-              <Award className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p>No featured projects yet. Be the first to share yours!</p>
-              <Link href="/projects/new" className="mt-4 inline-block"><Button size="sm">Share a Project</Button></Link>
+      {/* ── Featured Projects ─────────────────────────────────── */}
+      {featuredProjects.length > 0 && (
+        <section className="mk-section" aria-label="Featured projects">
+          <div className="mk-section__header">
+            <div>
+              <p className="mk-eyebrow mk-eyebrow--inline">Showcase</p>
+              <h2 className="mk-section__title">Featured Projects</h2>
+              <p className="mk-section__sub">Innovative drone projects making impact across Rwanda</p>
             </div>
-          )}
-        </div>
-      </section>
-
-      {/* ── Recent Forum Discussions ── */}
-      <section className="space-y-6">
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-xs font-semibold text-[#0096FC] uppercase tracking-widest mb-1">Community</p>
-            <h2 className="text-3xl font-bold">Recent Discussions</h2>
-            <p className="text-muted-foreground mt-1">Join the conversation and share your expertise</p>
-          </div>
-          <Link href="/forum"><Button variant="outline" size="sm">View Forum <ChevronRight className="h-4 w-4" /></Button></Link>
-        </div>
-
-        <div className="grid gap-3">
-          {recentPosts.map((post) => (
-            <Link key={post.id} href={`/forum/${post.category.name.toLowerCase()}/${post.id}`} className="block group">
-              <Card className="hover:shadow-md transition-all border-border/60 hover:border-[#0096FC]/30">
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <Badge variant="outline" className="text-xs mb-2">{post.category.name}</Badge>
-                      <h3 className="font-semibold group-hover:text-[#0096FC] transition-colors truncate">{post.title}</h3>
-                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                        <Avatar className="h-5 w-5">
-                          <AvatarImage src={post.author.avatar || ""} />
-                          <AvatarFallback className="text-[9px] bg-brand-gradient text-white">{post.author.fullName[0]}</AvatarFallback>
-                        </Avatar>
-                        <span>{post.author.fullName}</span>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1"><MessageSquare className="h-4 w-4" />{post._count.comments}</span>
-                        <span className="flex items-center gap-1"><Eye className="h-4 w-4" />{post.viewsCount}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 justify-end"><Clock className="h-3 w-3" />{formatDate(post.createdAt)}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <Link href="/projects" className="mk-text-link" style={{ display: "inline-flex", alignItems: "center", gap: "4px", whiteSpace: "nowrap" }}>
+              View all <ChevronRight size={14} />
             </Link>
-          ))}
-          {recentPosts.length === 0 && (
-            <Card className="border-dashed">
-              <CardContent className="py-10 text-center text-muted-foreground">
-                <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                <p>No discussions yet. Start the first one!</p>
-                <Link href="/forum/new" className="mt-3 inline-block"><Button size="sm">Start Discussion</Button></Link>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </section>
-
-      {/* ── Upcoming Events ── */}
-      <section className="space-y-6">
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-xs font-semibold text-[#0096FC] uppercase tracking-widest mb-1">Calendar</p>
-            <h2 className="text-3xl font-bold">Upcoming Events</h2>
-            <p className="text-muted-foreground mt-1">Don't miss these exciting drone community events</p>
           </div>
-          <Link href="/events"><Button variant="outline" size="sm">View All <ChevronRight className="h-4 w-4" /></Button></Link>
-        </div>
-        <div className="grid md:grid-cols-3 gap-5">
-          {upcomingEvents.map((event) => (
-            <Link key={event.id} href={`/events/${event.id}`} className="block group">
-              <Card className="hover:shadow-lg transition-all duration-300 group-hover:-translate-y-0.5 border-border/60 overflow-hidden">
-                <div className="h-1.5 bg-brand-gradient" />
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">{getCategoryIcon(event.category)}</span>
-                    <Badge variant="outline" className="text-xs">{event.category || 'General'}</Badge>
+
+          <div className="mk-cards-grid">
+            {featuredProjects.map(project => {
+              let techs: string[] = []
+              try { techs = project.technologies ? JSON.parse(project.technologies) : [] } catch {}
+              return (
+                <Link key={project.id} href={`/projects/${project.id}`} className="mk-card">
+                  <img
+                    src={project.image || "/placeholder.svg"}
+                    alt={project.title}
+                    className="mk-card__img"
+                  />
+                  <div className="mk-card__body">
+                    {project.category && <span className="mk-card__cat">{project.category.name}</span>}
+                    <h3 className="mk-card__title">{project.title}</h3>
+                    <p className="mk-card__desc">{project.description}</p>
+                    {techs.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
+                        {techs.slice(0, 3).map(t => (
+                          <span key={t} style={{ fontSize: "11px", fontWeight: 600, padding: "2px 8px", borderRadius: "999px", background: "rgba(0,88,221,0.08)", color: "#0058dd" }}>{t}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <h3 className="font-bold text-base mb-3 group-hover:text-[#0096FC] transition-colors line-clamp-2">{event.title}</h3>
-                  <div className="space-y-1.5 text-sm text-muted-foreground mb-4">
-                    <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-[#002674]" />{formatDate(event.startDate)} at {formatTime(event.startDate)}</div>
-                    <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-[#0096FC]" />{event.location}</div>
-                    <div className="flex items-center gap-2"><Users className="h-4 w-4 text-[#002674]" />{event._count.rsvps} registered</div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#002674] dark:text-[#0096FC]">
-                      {event.price === 0 ? "Free" : `${event.price.toLocaleString()} ${event.currency}`}
+                  <div className="mk-card__footer">
+                    <span style={{ fontWeight: 600, color: "#002674" }}>{project.author.fullName}</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><Eye size={13} />{project.viewsCount}</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><Heart size={13} />{project.likesCount}</span>
                     </span>
-                    <Button size="sm">Register</Button>
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-          {upcomingEvents.length === 0 && (
-            <div className="col-span-3 text-center py-12 text-muted-foreground">
-              <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p>No upcoming events. Check back soon!</p>
-            </div>
-          )}
-        </div>
-      </section>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
-      {/* ── CTA Banner ── */}
-      <section className="relative overflow-hidden rounded-2xl bg-brand-gradient text-white p-10 md:p-14 text-center">
-        <div className="absolute top-0 right-0 w-72 h-72 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4" />
-        <div className="relative">
-          <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-3">Get Started</p>
-          <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Ready to Share Your Innovation?</h2>
-          <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
-            Join thousands of drone pilots, engineers, and innovators building Rwanda's drone future together.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/projects/new">
-              <Button size="lg" className="bg-white text-[#002674] hover:bg-white/90 font-bold shadow-xl border-0 rounded-full px-8">
-                Share Your Project <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button size="lg" variant="outline" className="border-2 border-white/60 text-white hover:bg-white/10 bg-transparent rounded-full px-8">
-                Create Free Account
-              </Button>
+      {/* ── Recent Forum Discussions ──────────────────────────── */}
+      {recentPosts.length > 0 && (
+        <section style={{ background: "var(--t-surface)", padding: "64px 0" }} aria-label="Forum discussions">
+          <div style={{ maxWidth: "var(--t-max)", margin: "0 auto", padding: "0 24px" }}>
+            <div className="mk-section__header" style={{ marginBottom: "24px" }}>
+              <div>
+                <p className="mk-eyebrow mk-eyebrow--inline">Community</p>
+                <h2 className="mk-section__title">Recent Discussions</h2>
+                <p className="mk-section__sub">Join the conversation and share your expertise</p>
+              </div>
+              <Link href="/forum" className="mk-text-link" style={{ display: "inline-flex", alignItems: "center", gap: "4px", whiteSpace: "nowrap" }}>
+                View forum <ChevronRight size={14} />
+              </Link>
+            </div>
+
+            <div>
+              {recentPosts.map(post => (
+                <Link
+                  key={post.id}
+                  href={`/forum/${post.category.name.toLowerCase().replace(/\s+/g, "-")}/${post.id}`}
+                  className="mk-list-row"
+                >
+                  <div style={{
+                    width: 44, height: 44, borderRadius: "10px", flexShrink: 0,
+                    background: "linear-gradient(135deg, #002674 0%, #0058dd 100%)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <MessageSquare size={18} color="rgba(255,255,255,0.9)" />
+                  </div>
+                  <div className="mk-list-row__body">
+                    <div className="mk-list-row__title">{post.title}</div>
+                    <div className="mk-list-row__meta">
+                      <span style={{ background: "rgba(0,88,221,0.08)", color: "#0058dd", padding: "1px 7px", borderRadius: "999px", fontSize: "11px", fontWeight: 600, marginRight: "8px" }}>
+                        {post.category.name}
+                      </span>
+                      {post.author.fullName}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "13px", color: "var(--t-muted-dark)" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><MessageSquare size={13} />{post._count.comments}</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><Eye size={13} />{post.viewsCount}</span>
+                    </div>
+                    <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px", display: "flex", alignItems: "center", gap: "4px", justifyContent: "flex-end" }}>
+                      <Clock size={11} />{fmt(post.createdAt)}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Upcoming Events ───────────────────────────────────── */}
+      {upcomingEvents.length > 0 && (
+        <section className="mk-section" aria-label="Upcoming events">
+          <div className="mk-section__header">
+            <div>
+              <p className="mk-eyebrow mk-eyebrow--inline">Calendar</p>
+              <h2 className="mk-section__title">Upcoming Events</h2>
+              <p className="mk-section__sub">Don&apos;t miss these exciting drone community events</p>
+            </div>
+            <Link href="/events" className="mk-text-link" style={{ display: "inline-flex", alignItems: "center", gap: "4px", whiteSpace: "nowrap" }}>
+              View all <ChevronRight size={14} />
             </Link>
           </div>
-        </div>
-      </section>
-    </div>
+
+          <div className="mk-cards-grid">
+            {upcomingEvents.map(event => (
+              <Link key={event.id} href={`/events/${event.id}`} className="mk-card">
+                <div style={{ height: "6px", background: "linear-gradient(135deg, #002674 0%, #0058dd 100%)" }} />
+                <div className="mk-card__body">
+                  <span className="mk-card__cat">{event.category || "General"}</span>
+                  <h3 className="mk-card__title">{event.title}</h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "16px" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--t-muted-dark)" }}>
+                      <Calendar size={13} color="#002674" />
+                      {fmt(event.startDate)}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--t-muted-dark)" }}>
+                      <MapPin size={13} color="#0058dd" />{event.location}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--t-muted-dark)" }}>
+                      <Users size={13} color="#002674" />{event._count.rsvps} registered
+                    </span>
+                  </div>
+                </div>
+                <div className="mk-card__footer">
+                  <span style={{ fontWeight: 700, color: "#002674" }}>
+                    {event.price === 0 ? "Free" : `${event.price.toLocaleString()} ${event.currency}`}
+                  </span>
+                  <span className="mk-text-link" style={{ fontSize: "13px" }}>Register →</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+    </>
   )
 }
