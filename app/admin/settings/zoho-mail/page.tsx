@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -37,6 +37,14 @@ interface ZohoStatus {
 }
 
 export default function ZohoMailSettingsPage() {
+  return (
+    <Suspense>
+      <ZohoMailSettingsContent />
+    </Suspense>
+  )
+}
+
+function ZohoMailSettingsContent() {
   const searchParams = useSearchParams()
   const [status, setStatus] = useState<ZohoStatus | null>(null)
   const [loading, setLoading] = useState(true)
