@@ -4,6 +4,8 @@ import { validatePassword, hashPassword } from "@/lib/auth"
 import { userRegistrationSchema } from "@/lib/validation"
 import { authRateLimit } from "@/lib/rate-limit"
 import { generateTokens } from "@/lib/jwt-utils"
+import { sendEmail } from "@/lib/email"
+import { welcomeEmail } from "@/lib/email-templates"
 
 export async function POST(request: NextRequest) {
   try {
@@ -90,6 +92,12 @@ export async function POST(request: NextRequest) {
       },
       redirectTo: "/complete-profile"
     })
+
+    // Send welcome email (non-blocking)
+    const welcome = welcomeEmail(fullName)
+    sendEmail({ to: email, subject: welcome.subject, html: welcome.html }).catch((err) =>
+      console.error("[Register] Welcome email failed:", err)
+    )
 
     // Set HTTP-only cookies for tokens
     response.cookies.set("accessToken", accessToken, {

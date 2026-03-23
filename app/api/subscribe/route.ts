@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { sendEmail } from '@/lib/email'
+import { subscriptionConfirmEmail } from '@/lib/email-templates'
 
 export const ALLOWED_TOPICS = ['events', 'opportunities', 'projects', 'resources', 'forum', 'news']
 
@@ -50,6 +52,12 @@ export async function POST(req: NextRequest) {
         confirmedAt: new Date(),
       },
     })
+
+    // Send confirmation email (non-blocking)
+    const confirm = subscriptionConfirmEmail(name || null, cleanTopics, subscriber.token)
+    sendEmail({ to: email, subject: confirm.subject, html: confirm.html }).catch((err) =>
+      console.error("[Subscribe] Confirmation email failed:", err)
+    )
 
     return NextResponse.json({ success: true, token: subscriber.token, updated: false }, { status: 201 })
   } catch (error) {

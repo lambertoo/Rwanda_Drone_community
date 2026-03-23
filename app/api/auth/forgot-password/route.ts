@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/email'
+import { passwordResetEmail } from '@/lib/email-templates'
 import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
@@ -30,17 +31,9 @@ export async function POST(request: NextRequest) {
 
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${token}`
 
-    await sendEmail({
-      to: user.email,
-      subject: "Reset your Rwanda Drone Community password",
-      html: `
-        <p>Hi ${(user as any).fullName || (user as any).username || "there"},</p>
-        <p>You requested a password reset. Click the link below to set a new password:</p>
-        <p><a href="${resetUrl}" style="color:#0066cc">${resetUrl}</a></p>
-        <p>This link expires in <strong>1 hour</strong>. If you did not request this, please ignore this email.</p>
-        <p>— Rwanda Drone Community</p>
-      `,
-    })
+    const name = (user as any).fullName || (user as any).username || "there"
+    const reset = passwordResetEmail(name, resetUrl)
+    await sendEmail({ to: user.email, subject: reset.subject, html: reset.html })
 
     if (process.env.NODE_ENV === "development") {
       console.log(`[DEV] Password reset URL for ${email}: ${resetUrl}`)

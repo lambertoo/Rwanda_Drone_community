@@ -50,6 +50,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
+    // Google-only accounts have no password
+    if (!user.password) {
+      await sleep(INVALID_CREDENTIALS_DELAY_MS)
+      return NextResponse.json(
+        { error: "This account uses Google Sign-In. Please sign in with Google." },
+        { status: 401 }
+      )
+    }
+
     // Verify password against hashed password
     let isValidPassword = false
     try {
