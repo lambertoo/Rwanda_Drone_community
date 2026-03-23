@@ -37,6 +37,19 @@ export function LoginLayout({ children }: LoginLayoutProps) {
     )
   }
 
+  // ── Unauthenticated: no sidebar, just header + content ──────────
+  if (!loading && !user) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-1 p-3 sm:p-4 lg:p-6 bg-background">
+          <div className="max-w-7xl mx-auto">{children}</div>
+        </main>
+      </div>
+    )
+  }
+
+  // ── Authenticated: full sidebar layout ───────────────────────────
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
