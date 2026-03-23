@@ -11,7 +11,7 @@ export function addSecurityHeaders(response: NextResponse): NextResponse {
   // Content Security Policy
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none';"
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.open-meteo.com https://aviationweather.gov https://*.tile.openstreetmap.org; frame-ancestors 'none';"
   )
 
   // HSTS (HTTP Strict Transport Security) - only for HTTPS
@@ -33,7 +33,7 @@ export function addSecurityHeadersToResponse(response: Response): Response {
   // Content Security Policy
   newResponse.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none';"
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.open-meteo.com https://aviationweather.gov https://*.tile.openstreetmap.org; frame-ancestors 'none';"
   )
 
   return newResponse

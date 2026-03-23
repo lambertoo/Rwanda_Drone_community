@@ -226,26 +226,27 @@ interface MetarApiResponse {
 
 type LocationMode = "district" | "gps" | "custom"
 
-// ── Open-Meteo fetch ──────────────────────────────────────────
+// ── Open-Meteo fetch (via server-side proxy to avoid CSP) ─────
 async function fetchOpenMeteo(lat: number, lon: number): Promise<WeatherData & { rawLocation: string }> {
-  const url = new URL("https://api.open-meteo.com/v1/forecast")
-  url.searchParams.set("latitude", lat.toString())
-  url.searchParams.set("longitude", lon.toString())
-  url.searchParams.set("current", [
-    "temperature_2m", "relative_humidity_2m", "apparent_temperature",
-    "weather_code", "pressure_msl", "wind_speed_10m", "wind_direction_10m",
-    "cloud_cover", "precipitation",
-  ].join(","))
-  url.searchParams.set("daily", [
-    "weather_code", "temperature_2m_max", "temperature_2m_min",
-    "sunrise", "sunset", "precipitation_probability_max", "wind_speed_10m_max",
-  ].join(","))
-  url.searchParams.set("wind_speed_unit", "kmh")
-  url.searchParams.set("timezone", "Africa/Kigali")
-  url.searchParams.set("forecast_days", "5")
+  const params = new URLSearchParams({
+    latitude: lat.toString(),
+    longitude: lon.toString(),
+    current: [
+      "temperature_2m", "relative_humidity_2m", "apparent_temperature",
+      "weather_code", "pressure_msl", "wind_speed_10m", "wind_direction_10m",
+      "cloud_cover", "precipitation",
+    ].join(","),
+    daily: [
+      "weather_code", "temperature_2m_max", "temperature_2m_min",
+      "sunrise", "sunset", "precipitation_probability_max", "wind_speed_10m_max",
+    ].join(","),
+    wind_speed_unit: "kmh",
+    timezone: "Africa/Kigali",
+    forecast_days: "5",
+  })
 
-  const res = await fetch(url.toString())
-  if (!res.ok) throw new Error(`Open-Meteo error: ${res.status}`)
+  const res = await fetch(`/api/weather/forecast?${params.toString()}`)
+  if (!res.ok) throw new Error(`Weather API error: ${res.status}`)
   const data = await res.json()
 
   const c = data.current
