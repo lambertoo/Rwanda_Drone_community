@@ -38,6 +38,41 @@ const STATIC_ZONES: MapZone[] = [
   { name: "Presidential Palace area", lat: -1.9528, lon: 30.0616, radius: 1.5, color: "#ef4444", fillColor: "#ef4444", description: "Full restriction – no exceptions.", type: "restricted", source: "static" },
 ]
 
+// Rwanda airport runways — approximate from aeronautical charts
+// Endpoints computed from center + heading + length
+const RUNWAYS = [
+  {
+    icao: "HRYR",
+    name: "Kigali International",
+    designation: "10/28",
+    // heading ~096°/276°, ~3700m, width 45m
+    // center: -1.9686, 30.1395
+    endpoints: [[-1.9703, 30.1560], [-1.9669, 30.1230]] as [number, number][],
+    widthM: 45,
+    elev: "1489m / 4885ft",
+  },
+  {
+    icao: "HRZA",
+    name: "Kamembe",
+    designation: "05/23",
+    // heading ~046°/226°, ~1800m, width 30m
+    // center: -2.4620, 28.9077
+    endpoints: [[-2.4564, 28.9135], [-2.4676, 28.9019]] as [number, number][],
+    widthM: 30,
+    elev: "1590m / 5217ft",
+  },
+  {
+    icao: "HRHU",
+    name: "Huye",
+    designation: "10/28",
+    // heading ~097°/277°, ~800m, width 18m
+    // center: -2.6008, 29.7279
+    endpoints: [[-2.6012, 29.7315], [-2.6004, 29.7243]] as [number, number][],
+    widthM: 18,
+    elev: "1768m / 5800ft",
+  },
+]
+
 interface DynamicZone {
   id: string
   name: string
@@ -57,26 +92,31 @@ function formatDate(d?: string | null) {
   return new Date(d).toLocaleDateString()
 }
 
+// Rwanda bounding box with padding
+const RWANDA_BOUNDS: [[number, number], [number, number]] = [[-3.0, 28.6], [-1.0, 31.0]]
+const RWANDA_CENTER: [number, number] = [-1.9403, 29.8739]
+
 export default function AirspaceMap() {
-  const mapRef = useRef<HTMLDivElement>(null)
+  const mapRef         = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
+  const dynLayerRef    = useRef<any>(null)   // LayerGroup for dynamic zones
   const [dynamicZones, setDynamicZones] = useState<DynamicZone[]>([])
 
-  // Fetch zones from DB. If DB has zones, they replace the static hardcoded ones.
-  // If DB is empty (not yet seeded), fall back to static zones.
   useEffect(() => {
     fetch('/api/airspace/zones')
       .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) setDynamicZones(data)
-      })
+      .then(data => { if (Array.isArray(data)) setDynamicZones(data) })
       .catch(() => {})
   }, [])
 
+  // ── Map initialisation — runs once ────────────────────────────────
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return
 
     import("leaflet").then(L => {
+      // Guard against React strict-mode double-invoke
+      if (mapInstanceRef.current) return
+
       delete (L.Icon.Default.prototype as any)._getIconUrl
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
@@ -85,47 +125,148 @@ export default function AirspaceMap() {
       })
 
       const map = L.map(mapRef.current!, {
-        center: [-1.9403, 29.8739],
+        center: RWANDA_CENTER,
         zoom: 8,
+        minZoom: 7,
+        maxZoom: 17,
+        maxBounds: RWANDA_BOUNDS,
+        maxBoundsViscosity: 1.0,
         zoomControl: true,
       })
       mapInstanceRef.current = map
+      dynLayerRef.current = L.layerGroup().addTo(map)
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 18,
+        maxZoom: 19,
       }).addTo(map)
 
-      // If DB is empty (not seeded yet), fall back to hardcoded static zones
-      const useStatic = dynamicZones.length === 0
-      if (useStatic) {
-        for (const zone of STATIC_ZONES) {
-          if (!zone.radius) continue
-          const opacity = zone.type === "advisory" ? 0.08 : 0.18
-          const weight = zone.type === "advisory" ? 1 : 2
-          const dashArray = zone.type === "advisory" ? "6 4" : undefined
-          L.circle([zone.lat, zone.lon], {
-            radius: zone.radius * 1000,
-            color: zone.color,
-            fillColor: zone.fillColor,
-            fillOpacity: opacity,
-            weight,
-            dashArray,
-          })
-            .bindPopup(
-              `<div style="min-width:180px">
-                <strong style="font-size:13px">${zone.name}</strong>
-                <p style="margin:4px 0 0;font-size:12px;color:#666">${zone.description}</p>
-              </div>`
-            )
-            .addTo(map)
+      // ── Static airspace zones ─────────────────────────────────
+      for (const zone of STATIC_ZONES) {
+        if (!zone.radius) continue
+        const opacity = zone.type === "advisory" ? 0.08 : 0.18
+        const weight  = zone.type === "advisory" ? 1 : 2
+        const dashArray = zone.type === "advisory" ? "6 4" : undefined
+        L.circle([zone.lat, zone.lon], {
+          radius: zone.radius * 1000,
+          color: zone.color, fillColor: zone.fillColor, fillOpacity: opacity, weight, dashArray,
+        })
+          .bindPopup(
+            `<div style="min-width:180px">
+              <strong style="font-size:13px">${zone.name}</strong>
+              <p style="margin:4px 0 0;font-size:12px;color:#666">${zone.description}</p>
+            </div>`
+          )
+          .addTo(map)
+      }
+
+      // ── Runway visualization (visible at zoom ≥ 12) ──────────
+      const runwayLayers: any[] = []
+
+      for (const rwy of RUNWAYS) {
+        // Runway centerline
+        const centerline = L.polyline(rwy.endpoints, {
+          color: "#94a3b8",
+          weight: 5,
+          opacity: 0,
+          lineCap: "square",
+        })
+          .bindPopup(
+            `<div style="min-width:160px">
+              <strong style="font-size:13px">✈ ${rwy.icao} — ${rwy.name}</strong>
+              <p style="margin:4px 0 0;font-size:12px;color:#555">Runway ${rwy.designation}</p>
+              <p style="margin:2px 0 0;font-size:11px;color:#888">Width: ${rwy.widthM}m · Elev: ${rwy.elev}</p>
+            </div>`
+          )
+          .addTo(map)
+
+        // Runway threshold tick marks
+        const tickA = L.polyline([rwy.endpoints[0]], {
+          color: "#64748b", weight: 2, opacity: 0,
+        }).addTo(map)
+
+        const tickB = L.polyline([rwy.endpoints[1]], {
+          color: "#64748b", weight: 2, opacity: 0,
+        }).addTo(map)
+
+        // Threshold markers (small circles)
+        const markerA = L.circleMarker(rwy.endpoints[0] as L.LatLngExpression, {
+          radius: 5, color: "#64748b", fillColor: "#ffffff", fillOpacity: 0.8, weight: 2, opacity: 0,
+        })
+          .bindTooltip(`RWY ${rwy.designation.split("/")[1]}`, { permanent: false, direction: "top" })
+          .addTo(map)
+
+        const markerB = L.circleMarker(rwy.endpoints[1] as L.LatLngExpression, {
+          radius: 5, color: "#64748b", fillColor: "#ffffff", fillOpacity: 0.8, weight: 2, opacity: 0,
+        })
+          .bindTooltip(`RWY ${rwy.designation.split("/")[0]}`, { permanent: false, direction: "top" })
+          .addTo(map)
+
+        runwayLayers.push(centerline, markerA, markerB)
+      }
+
+      // Airport center markers (always visible)
+      const airportIcon = L.divIcon({
+        className: "",
+        html: `<div style="
+          background:#1e40af;color:white;border-radius:50%;
+          width:20px;height:20px;display:flex;align-items:center;
+          justify-content:center;font-size:11px;border:2px solid white;
+          box-shadow:0 1px 3px rgba(0,0,0,0.4)">✈</div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+      })
+
+      for (const rwy of RUNWAYS) {
+        const center: L.LatLngExpression = [
+          (rwy.endpoints[0][0] + rwy.endpoints[1][0]) / 2,
+          (rwy.endpoints[0][1] + rwy.endpoints[1][1]) / 2,
+        ]
+        L.marker(center, { icon: airportIcon })
+          .bindPopup(
+            `<div style="min-width:160px">
+              <strong style="font-size:13px">✈ ${rwy.icao} — ${rwy.name}</strong>
+              <p style="margin:4px 0 0;font-size:12px;color:#555">RWY ${rwy.designation} · ${rwy.widthM}m wide</p>
+              <p style="margin:2px 0 0;font-size:11px;color:#888">Elev: ${rwy.elev}</p>
+              <p style="margin:4px 0 0;font-size:11px;color:#1e40af">Zoom in (≥12) to see runway</p>
+            </div>`
+          )
+          .addTo(map)
+      }
+
+      // Show/hide runway layers based on zoom
+      function updateRunwayVisibility() {
+        const zoom = map.getZoom()
+        const visible = zoom >= 12
+        for (const layer of runwayLayers) {
+          if (layer.setStyle) {
+            layer.setStyle({ opacity: visible ? 1 : 0, fillOpacity: visible ? 0.8 : 0 })
+          }
         }
       }
 
-      // Draw DB zones (replaces static when seeded)
+      map.on("zoomend", updateRunwayVisibility)
+      updateRunwayVisibility()
+    })
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove()
+        mapInstanceRef.current = null
+        dynLayerRef.current = null
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Dynamic zones — update layer when data arrives ─────────────
+  useEffect(() => {
+    if (!dynLayerRef.current || dynamicZones.length === 0) return
+    import("leaflet").then(L => {
+      dynLayerRef.current.clearLayers()
       for (const zone of dynamicZones) {
-        const color = SEVERITY_COLOR[zone.severity] || "#6b7280"
-        const isTemp = !!zone.endDate
+        const color   = SEVERITY_COLOR[zone.severity] || "#6b7280"
+        const isTemp  = !!zone.endDate
         const dateNote = isTemp
           ? `<p style="margin:4px 0 0;font-size:11px;color:#888">
               ${formatDate(zone.startDate) ? `From: ${formatDate(zone.startDate)} ` : ''}
@@ -134,8 +275,7 @@ export default function AirspaceMap() {
           : ''
         L.circle([zone.lat, zone.lon], {
           radius: zone.radius * 1000,
-          color,
-          fillColor: color,
+          color, fillColor: color,
           fillOpacity: isTemp ? 0.12 : 0.20,
           weight: isTemp ? 2 : 3,
           dashArray: isTemp ? "8 4" : undefined,
@@ -149,22 +289,16 @@ export default function AirspaceMap() {
               <p style="margin:4px 0 0;font-size:11px;color:#888">Added by: ${zone.createdBy?.fullName || 'Authority'}</p>
             </div>`
           )
-          .addTo(map)
+          .addTo(dynLayerRef.current)
       }
     })
-
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove()
-        mapInstanceRef.current = null
-      }
-    }
   }, [dynamicZones])
 
   return (
     <div className="relative rounded-lg overflow-hidden border">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
       <div ref={mapRef} style={{ height: "480px", width: "100%" }} />
+
       {/* Legend */}
       <div className="absolute bottom-4 right-4 bg-background/90 backdrop-blur-sm rounded-lg border p-3 text-xs space-y-1.5 z-[1000]">
         <p className="font-semibold text-sm mb-2">Legend</p>
@@ -180,8 +314,14 @@ export default function AirspaceMap() {
             <span>{l.label}</span>
           </div>
         ))}
-        <p className="pt-1 text-muted-foreground border-t mt-1 text-[10px]">
-          {dynamicZones.length > 0 ? `${dynamicZones.length} zone${dynamicZones.length !== 1 ? 's' : ''} from database` : 'Using built-in zones (not yet seeded)'}
+        <div className="flex items-center gap-2 pt-1 border-t mt-1">
+          <div className="w-3 h-0.5 bg-slate-400 rounded" />
+          <span>Runway (zoom ≥ 12)</span>
+        </div>
+        <p className="text-muted-foreground text-[10px] border-t mt-1 pt-1">
+          {dynamicZones.length > 0
+            ? `${dynamicZones.length} zone${dynamicZones.length !== 1 ? 's' : ''} from database`
+            : 'Using built-in zones'}
         </p>
       </div>
     </div>
