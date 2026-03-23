@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
-import { ArrowLeft, Save, Upload, User, Briefcase, Shield, Bell } from "lucide-react"
+import { ArrowLeft, Save, Upload, User, Briefcase, Shield, Bell, Mail } from "lucide-react"
 import Link from "next/link"
 import { AuthGuard } from "@/components/auth-guard"
 
@@ -304,7 +304,7 @@ function EditProfilePageContent() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="basic" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Basic Info
@@ -320,6 +320,9 @@ function EditProfilePageContent() {
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
               Notifications
+            </TabsTrigger>
+            <TabsTrigger value="mailing" className="flex items-center gap-2">
+              <Mail className="h-4 w-4" /> Mailing
             </TabsTrigger>
             <TabsTrigger value="security" className="flex items-center gap-2">
               Security
@@ -774,6 +777,11 @@ function EditProfilePageContent() {
               </Card>
             </TabsContent>
 
+            {/* Mailing Tab */}
+            <TabsContent value="mailing" className="space-y-6">
+              <MailingPreferencesForm email={profile.email} />
+            </TabsContent>
+
             {/* Security Tab */}
             <TabsContent value="security" className="space-y-6">
               <Card>
@@ -802,6 +810,131 @@ function EditProfilePageContent() {
         </Tabs>
       </div>
     </div>
+  )
+}
+
+const MAILING_TOPICS = [
+  { id: "events",        label: "Events & Programmes",     desc: "Workshops, meetups and competitions" },
+  { id: "opportunities", label: "Opportunities & Jobs",    desc: "Grants, jobs and open calls" },
+  { id: "projects",      label: "Community Projects",      desc: "New projects shared by members" },
+  { id: "resources",     label: "Resources & Guides",      desc: "Manuals, reports and reference docs" },
+  { id: "forum",         label: "Forum Highlights",        desc: "Top discussions and answers" },
+  { id: "news",          label: "Platform News",           desc: "Updates about the RDC platform" },
+]
+
+function MailingPreferencesForm({ email }: { email: string }) {
+  const [subStatus, setSubStatus]   = useState<"loading"|"subscribed"|"unsubscribed"|"none">("loading")
+  const [topics, setTopics]         = useState<string[]>([])
+  const [saving, setSaving]         = useState(false)
+  const [saved, setSaved]           = useState(false)
+  const [token, setToken]           = useState("")
+
+  useEffect(() => {
+    // Load existing subscription by trying to subscribe with 0 topics (idempotent PUT)
+    fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, topics: [] }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          setToken(d.token || "")
+          // Load their current topics via a GET-like POST
+          return fetch(`/api/subscribe?email=${encodeURIComponent(email)}`)
+            .then(r => r.json())
+            .then(sub => {
+              setTopics(sub.topics || [])
+              setSubStatus(sub.isActive ? "subscribed" : "unsubscribed")
+            })
+            .catch(() => { setTopics([]); setSubStatus("subscribed") })
+        }
+      })
+      .catch(() => setSubStatus("none"))
+  }, [email])
+
+  function toggleTopic(id: string) {
+    setTopics(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id])
+    setSaved(false)
+  }
+
+  async function savePreferences() {
+    setSaving(true)
+    const res = await fetch("/api/subscribe", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, topics }),
+    }).catch(() => null)
+    setSaving(false)
+    if (res?.ok) { setSaved(true); setSubStatus("subscribed"); setTimeout(() => setSaved(false), 3000) }
+  }
+
+  async function unsubscribe() {
+    if (!token) return
+    await fetch("/api/unsubscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    })
+    setSubStatus("unsubscribed")
+  }
+
+  async function resubscribe() {
+    const res = await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, topics: topics.length ? topics : ["events","news"] }),
+    }).then(r => r.json()).catch(() => null)
+    if (res?.success) { setToken(res.token); setSubStatus("subscribed") }
+  }
+
+  if (subStatus === "loading") return <p className="text-sm text-muted-foreground py-4">Loading preferences…</p>
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5" /> Mailing Preferences</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {subStatus === "unsubscribed" ? (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">You are currently unsubscribed from community emails.</p>
+            <Button type="button" onClick={resubscribe} style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff" }}>
+              Re-subscribe
+            </Button>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">Choose which types of content you want to receive at <strong>{email}</strong>.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {MAILING_TOPICS.map(t => (
+                <label key={t.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px", borderRadius: 10, border: `1px solid ${topics.includes(t.id) ? "#0058dd" : "rgba(0,38,116,0.1)"}`, background: topics.includes(t.id) ? "rgba(0,88,221,0.04)" : "#fff", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={topics.includes(t.id)}
+                    onChange={() => toggleTopic(t.id)}
+                    style={{ accentColor: "#0058dd", marginTop: 2, flexShrink: 0 }}
+                  />
+                  <div>
+                    <p style={{ fontWeight: 600, fontSize: 13, color: "#0f172a", margin: "0 0 2px" }}>{t.label}</p>
+                    <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>{t.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <div className="flex items-center gap-3">
+              <Button type="button" onClick={savePreferences} disabled={saving} style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff" }}>
+                {saving ? "Saving…" : "Save Preferences"}
+              </Button>
+              {saved && <span className="text-sm text-green-600">✓ Saved</span>}
+              <button type="button" onClick={unsubscribe} style={{ fontSize: 13, color: "#94a3b8", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+                Unsubscribe from all
+              </button>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 

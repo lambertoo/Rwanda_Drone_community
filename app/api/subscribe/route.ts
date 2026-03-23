@@ -86,3 +86,18 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to update preferences. Please try again.' }, { status: 500 })
   }
 }
+
+// GET /api/subscribe?email=xxx — fetch existing subscriber preferences
+export async function GET(req: NextRequest) {
+  const email = req.nextUrl.searchParams.get('email')
+  if (!email || !isValidEmail(email)) {
+    return NextResponse.json({ error: 'Valid email required' }, { status: 400 })
+  }
+  try {
+    const subscriber = await prisma.subscriber.findUnique({ where: { email } })
+    if (!subscriber) return NextResponse.json({ topics: [], isActive: false })
+    return NextResponse.json({ topics: subscriber.topics, isActive: subscriber.isActive, token: subscriber.token })
+  } catch {
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  }
+}
