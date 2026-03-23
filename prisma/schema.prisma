@@ -16,7 +16,7 @@ model User {
   fullName          String
   avatar            String?
   bio               String?
-  location          Region?
+  location          String?
   website           String?
   phone             String?
   joinedAt          DateTime           @default(now())

@@ -15,6 +15,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader, Camera, Plane, GraduationCap, Wrench } from "lucide-react"
 import { RoleCheck } from "@/components/role-check"
+import { PhoneInput } from "@/components/ui/phone-input"
+import { LocationPicker } from "@/components/ui/location-picker"
 
 const roleInfo = {
   hobbyist: {
@@ -60,6 +62,7 @@ function CompleteProfileForm() {
     phone: "",
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [phoneValid, setPhoneValid] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
 
@@ -141,6 +144,12 @@ function CompleteProfileForm() {
     // Validate required fields
     if (!formData.username || !formData.role || !formData.phone) {
       setError("Username, role, and phone number are required")
+      setIsLoading(false)
+      return
+    }
+
+    if (!phoneValid) {
+      setError("Please enter a valid phone number")
       setIsLoading(false)
       return
     }
@@ -239,49 +248,12 @@ function CompleteProfileForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <Select
+                <Label>Location</Label>
+                <LocationPicker
                   value={formData.location}
-                  onValueChange={(value) => handleInputChange("location", value)}
+                  onChange={(val) => handleInputChange("location", val)}
                   disabled={isLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="KIGALI_NYARUGENGE">Kigali - Nyarugenge</SelectItem>
-                    <SelectItem value="KIGALI_KICUKIRO">Kigali - Kicukiro</SelectItem>
-                    <SelectItem value="KIGALI_GASABO">Kigali - Gasabo</SelectItem>
-                    <SelectItem value="SOUTH_HUYE">South - Huye</SelectItem>
-                    <SelectItem value="SOUTH_NYAMAGABE">South - Nyamagabe</SelectItem>
-                    <SelectItem value="SOUTH_NYARUGURU">South - Nyaruguru</SelectItem>
-                    <SelectItem value="SOUTH_MUHANGA">South - Muhanga</SelectItem>
-                    <SelectItem value="SOUTH_KAMONYI">South - Kamonyi</SelectItem>
-                    <SelectItem value="SOUTH_GISAGARA">South - Gisagara</SelectItem>
-                    <SelectItem value="SOUTH_NYANZA">South - Nyanza</SelectItem>
-                    <SelectItem value="SOUTH_RUHANGO">South - Ruhango</SelectItem>
-                    <SelectItem value="NORTH_MUSANZE">North - Musanze</SelectItem>
-                    <SelectItem value="NORTH_GICUMBI">North - Gicumbi</SelectItem>
-                    <SelectItem value="NORTH_RULINDO">North - Rulindo</SelectItem>
-                    <SelectItem value="NORTH_BURERA">North - Burera</SelectItem>
-                    <SelectItem value="NORTH_GAKENKE">North - Gakenke</SelectItem>
-                    <SelectItem value="EAST_KAYONZA">East - Kayonza</SelectItem>
-                    <SelectItem value="EAST_NGOMA">East - Ngoma</SelectItem>
-                    <SelectItem value="EAST_KIREHE">East - Kirehe</SelectItem>
-                    <SelectItem value="EAST_NYAGATARE">East - Nyagatare</SelectItem>
-                    <SelectItem value="EAST_BUGESERA">East - Bugesera</SelectItem>
-                    <SelectItem value="EAST_RWAMAGANA">East - Rwamagana</SelectItem>
-                    <SelectItem value="EAST_GATSIBO">East - Gatsibo</SelectItem>
-                    <SelectItem value="WEST_RUBAVU">West - Rubavu</SelectItem>
-                    <SelectItem value="WEST_RUSIZI">West - Rusizi</SelectItem>
-                    <SelectItem value="WEST_NYAMASHEKE">West - Nyamasheke</SelectItem>
-                    <SelectItem value="WEST_RUTSIRO">West - Rutsiro</SelectItem>
-                    <SelectItem value="WEST_KARONGI">West - Karongi</SelectItem>
-                    <SelectItem value="WEST_NGORORERO">West - Ngororero</SelectItem>
-                    <SelectItem value="WEST_NYABIHU">West - Nyabihu</SelectItem>
-                    <SelectItem value="UNKNOWN">Unknown</SelectItem>
-                  </SelectContent>
-                </Select>
+                />
               </div>
             </div>
 
@@ -299,14 +271,14 @@ function CompleteProfileForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
-                <Input
-                  type="tel"
-                  id="phone"
-                  placeholder="+250 123 456 789"
-                  required
+                <Label>Phone Number *</Label>
+                <PhoneInput
                   value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
+                  onChange={(val, valid) => {
+                    handleInputChange("phone", val)
+                    setPhoneValid(valid)
+                  }}
+                  required
                   disabled={isLoading}
                 />
               </div>
