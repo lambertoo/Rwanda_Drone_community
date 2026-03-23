@@ -20,12 +20,13 @@ const footerLinks = {
     { label: "Post an Opportunity", href: "/opportunities/new" },
     { label: "Create an Event",     href: "/events/new" },
   ],
-  regulators: [
-    { label: "RISA",                href: "https://www.risa.gov.rw/", external: true },
-    { label: "RISA Drone Centre",   href: "https://www.risa.gov.rw/projects/drone-operation-center-doc", external: true },
-    { label: "CAA Rwanda",          href: "https://www.caa.gov.rw/", external: true },
-    { label: "RURA",                href: "https://www.rura.rw/", external: true },
-    { label: "Rwanda National Police", href: "https://www.police.gov.rw/", external: true },
+  quickLinks: [
+    { label: "RISA",                href: "https://www.risa.gov.rw/" },
+    { label: "RISA Drone Centre",   href: "https://www.risa.gov.rw/projects/drone-operation-center-doc" },
+    { label: "CAA Rwanda",          href: "https://www.caa.gov.rw/" },
+    { label: "RURA",                href: "https://www.rura.rw/" },
+    { label: "MINICT",              href: "https://www.minict.gov.rw/" },
+    { label: "Rwanda National Police", href: "https://www.police.gov.rw/" },
   ],
 }
 
@@ -57,6 +58,14 @@ export function MarketingFooter() {
             </p>
           </div>
 
+          {/* Quick Links */}
+          <div className="mk-footer-col">
+            <h4>Quick Links</h4>
+            {footerLinks.quickLinks.map(link => (
+              <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>
+            ))}
+          </div>
+
           {/* Community */}
           <div className="mk-footer-col">
             <h4>Community</h4>
@@ -81,13 +90,6 @@ export function MarketingFooter() {
             ))}
           </div>
 
-          {/* Regulators / Quick Links */}
-          <div className="mk-footer-col">
-            <h4>Regulatory Bodies</h4>
-            {footerLinks.regulators.map(link => (
-              <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>
-            ))}
-          </div>
         </div>
 
         {/* Bottom bar */}
