@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import FormEditor from "@/components/forms/form-editor"
 import { AuthGuard } from "@/components/auth-guard"
@@ -12,7 +12,8 @@ interface Form {
   sections: any[]
 }
 
-export default function EditFormPage({ params }: { params: { id: string } }) {
+export default function EditFormPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = use(paramsPromise)
   const router = useRouter()
   const [form, setForm] = useState<Form | null>(null)
   const [loading, setLoading] = useState(true)

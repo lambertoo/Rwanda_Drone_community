@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -44,7 +44,8 @@ interface Project {
   }
 }
 
-export default function EditProjectPage({ params }: { params: { id: string } }) {
+export default function EditProjectPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = use(paramsPromise)
   const { user, isAuthenticated, loading: authLoading } = useAuth()
   const router = useRouter()
   const [project, setProject] = useState<Project | null>(null)

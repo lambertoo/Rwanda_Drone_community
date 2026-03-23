@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -46,7 +46,8 @@ interface Form {
   sections: any[]
 }
 
-export default function FormEntriesPage({ params }: { params: { id: string } }) {
+export default function FormEntriesPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = use(paramsPromise)
   const router = useRouter()
   const [form, setForm] = useState<Form | null>(null)
   const [entries, setEntries] = useState<FormEntry[]>([])
