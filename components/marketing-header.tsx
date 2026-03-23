@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
@@ -65,6 +65,15 @@ export function MarketingHeader({ onSidebarToggle }: MarketingHeaderProps) {
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null)
   const [pendingCount, setPendingCount]     = useState(0)
   const [profileOpen, setProfileOpen]       = useState(false)
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleDropdownEnter = (label: string) => {
+    if (leaveTimer.current) clearTimeout(leaveTimer.current)
+    setOpenDropdown(label)
+  }
+  const handleDropdownLeave = () => {
+    leaveTimer.current = setTimeout(() => setOpenDropdown(null), 120)
+  }
 
   const { user, logout } = useAuth()
   const pathname = usePathname()
@@ -119,8 +128,8 @@ export function MarketingHeader({ onSidebarToggle }: MarketingHeaderProps) {
             <div
               key={section.label}
               style={{ position: "relative" }}
-              onMouseEnter={() => setOpenDropdown(section.label)}
-              onMouseLeave={() => setOpenDropdown(null)}
+              onMouseEnter={() => handleDropdownEnter(section.label)}
+              onMouseLeave={handleDropdownLeave}
             >
               {section.href ? (
                 <Link
@@ -143,9 +152,11 @@ export function MarketingHeader({ onSidebarToggle }: MarketingHeaderProps) {
 
               {openDropdown === section.label && (
                 <div style={{
-                  position: "absolute", top: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)",
+                  position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)",
+                  paddingTop: 8, minWidth: 280, zIndex: 60,
+                }}>
+                <div style={{
                   background: "#fff", borderRadius: 16, padding: 10,
-                  minWidth: 280, zIndex: 60,
                   boxShadow: "0 12px 40px rgba(0,11,79,0.12), 0 2px 8px rgba(0,0,0,0.06)",
                   border: "1px solid rgba(0,38,116,0.08)",
                 }}>
@@ -163,6 +174,7 @@ export function MarketingHeader({ onSidebarToggle }: MarketingHeaderProps) {
                       </div>
                     </Link>
                   ))}
+                </div>
                 </div>
               )}
             </div>
