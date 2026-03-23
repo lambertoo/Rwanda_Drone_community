@@ -1472,7 +1472,7 @@
   gap: 36px;
   margin: 48px 0 40px;
 }
-@media (min-width: 640px) { .mk-footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr; } }
+@media (min-width: 640px) { .mk-footer-grid { grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr; } }
 .mk-footer-brand p {
   font-size: 13px;
   color: #6b7280;
