@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { sendEmail } from '@/lib/email'
 
 export async function POST(
   request: NextRequest,
@@ -19,12 +20,33 @@ export async function POST(
       return NextResponse.json({ error: 'Form not found' }, { status: 404 })
     }
 
+    const formSettings = form.settings as any
+
     if (!form.isActive || !form.isPublic) {
-      return NextResponse.json({ error: 'Form is not available for submissions' }, { status: 403 })
+      return NextResponse.json({
+        error: formSettings?.closedMessage || 'This form is no longer accepting responses.',
+      }, { status: 403 })
     }
 
-    // Enforce allowMultipleSubmissions setting
-    const formSettings = form.settings as any
+    // Enforce close date
+    if (formSettings?.closeDate) {
+      const closeDate = new Date(formSettings.closeDate)
+      if (Date.now() > closeDate.getTime()) {
+        return NextResponse.json({
+          error: formSettings?.closedMessage || 'This form has been closed.',
+        }, { status: 403 })
+      }
+    }
+
+    // Enforce max responses
+    if (formSettings?.maxResponses) {
+      const count = await prisma.formEntry.count({ where: { formId } })
+      if (count >= formSettings.maxResponses) {
+        return NextResponse.json({
+          error: formSettings?.closedMessage || 'This form has reached its maximum number of responses.',
+        }, { status: 403 })
+      }
+    }
     if (formSettings?.allowMultipleSubmissions === false) {
       const ip =
         request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
@@ -89,6 +111,25 @@ export async function POST(
         values: { create: allFieldValues },
       },
     })
+
+    // Send notification emails (non-blocking)
+    if (formSettings?.notifyEmails) {
+      const emails = formSettings.notifyEmails.split(',').map((e: string) => e.trim()).filter(Boolean)
+      const summaryHtml = allFieldValues
+        .map((v) => {
+          const field = formWithFields.sections.flatMap(s => s.fields).find(f => f.id === v.fieldId)
+          return `<tr><td style="padding:4px 8px;font-weight:600;vertical-align:top;">${field?.label || ''}</td><td style="padding:4px 8px;">${v.value || '—'}</td></tr>`
+        })
+        .join('')
+
+      for (const email of emails) {
+        sendEmail({
+          to: email,
+          subject: `New response: ${formWithFields.title}`,
+          html: `<p>A new response was submitted to <strong>${formWithFields.title}</strong>.</p><table style="border-collapse:collapse;margin-top:12px;">${summaryHtml}</table>`,
+        }).catch((err) => console.error('[FormSubmit] Notification email failed:', err))
+      }
+    }
 
     return NextResponse.json({
       success: true,

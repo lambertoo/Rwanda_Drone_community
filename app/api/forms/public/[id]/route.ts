@@ -35,11 +35,28 @@ export async function GET(
       return NextResponse.json({ error: 'Form not found' }, { status: 404 })
     }
 
-    if (!form.isActive || !form.isPublic) {
-      return NextResponse.json({ error: 'Form is not available' }, { status: 403 })
+    const formSettings = form.settings as any
+    let isClosed = !form.isActive || !form.isPublic
+    let closedReason = formSettings?.closedMessage || 'This form is no longer accepting responses.'
+
+    // Check close date
+    if (!isClosed && formSettings?.closeDate) {
+      if (Date.now() > new Date(formSettings.closeDate).getTime()) {
+        isClosed = true
+        closedReason = formSettings?.closedMessage || 'This form has been closed.'
+      }
     }
 
-    return NextResponse.json(form)
+    // Check max responses
+    if (!isClosed && formSettings?.maxResponses) {
+      const count = await prisma.formEntry.count({ where: { formId } })
+      if (count >= formSettings.maxResponses) {
+        isClosed = true
+        closedReason = formSettings?.closedMessage || 'This form has reached its maximum number of responses.'
+      }
+    }
+
+    return NextResponse.json({ ...form, isClosed, closedReason })
   } catch (error) {
     console.error('Error fetching public form:', error)
     return NextResponse.json({ error: 'Failed to fetch form' }, { status: 500 })
