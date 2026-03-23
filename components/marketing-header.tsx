@@ -13,10 +13,6 @@ import {
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { NotificationBell } from "@/components/notification-bell"
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 
 /* ── Shared nav data (mirrors app-sidebar sections) ─────────────────── */
@@ -68,6 +64,7 @@ export function MarketingHeader({ onSidebarToggle }: MarketingHeaderProps) {
   const [openDropdown, setOpenDropdown]     = useState<string | null>(null)
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null)
   const [pendingCount, setPendingCount]     = useState(0)
+  const [profileOpen, setProfileOpen]       = useState(false)
 
   const { user, logout } = useAuth()
   const pathname = usePathname()
@@ -98,15 +95,15 @@ export function MarketingHeader({ onSidebarToggle }: MarketingHeaderProps) {
   return (
     <header className="mk-site-header">
       <div className="mk-header-inner">
-        {/* Sidebar toggle (authenticated, mobile) */}
+        {/* Sidebar toggle — visible on all screen sizes when authenticated */}
         {onSidebarToggle && (
           <button
-            className="lg:hidden"
             onClick={onSidebarToggle}
-            aria-label="Open menu"
-            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: "6px", color: "#002674" }}
+            aria-label="Open navigation"
+            style={{ background: "none", border: "1px solid rgba(0,38,116,0.12)", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", padding: "6px 8px", color: "#002674", gap: 6 }}
           >
-            <Menu size={20} />
+            <Menu size={17} />
+            <span style={{ fontSize: 12, fontWeight: 600, display: "none" }} className="sm:inline">Menu</span>
           </button>
         )}
 
@@ -191,42 +188,19 @@ export function MarketingHeader({ onSidebarToggle }: MarketingHeaderProps) {
               {/* Notification bell */}
               <NotificationBell />
 
-              {/* Avatar dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button style={{ background: "none", border: "none", cursor: "pointer", padding: 0, borderRadius: "50%" }}>
-                    <Avatar style={{ width: 32, height: 32, outline: "2px solid rgba(0,88,221,0.2)", outlineOffset: 1 }}>
-                      <AvatarImage src={user.avatar || "/placeholder-user.jpg"} alt={user.fullName} />
-                      <AvatarFallback style={{ background: "#002674", color: "#fff", fontSize: 12, fontWeight: 700 }}>
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <p style={{ fontWeight: 600, fontSize: 13 }}>{user.fullName}</p>
-                      <p style={{ fontSize: 12, color: "#6b7280" }}>{user.email}</p>
-                      {user.role && (
-                        <Badge variant="secondary" style={{ fontSize: 11, width: "fit-content" }}>
-                          {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                        </Badge>
-                      )}
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link href="/profile" style={{ display: "flex", alignItems: "center", gap: 8 }}><User size={14} />Profile</Link></DropdownMenuItem>
-                  <DropdownMenuItem asChild><Link href="/settings" style={{ display: "flex", alignItems: "center", gap: 8 }}><Settings size={14} />Settings</Link></DropdownMenuItem>
-                  {user.role === "admin" && (
-                    <DropdownMenuItem asChild><Link href="/admin" style={{ display: "flex", alignItems: "center", gap: 8 }}><Shield size={14} />Admin Panel</Link></DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} style={{ color: "#ef4444", cursor: "pointer" }}>
-                    <LogOut size={14} style={{ marginRight: 8 }} />Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Avatar — opens right-side profile panel */}
+              <button
+                onClick={() => setProfileOpen(true)}
+                aria-label="Open profile"
+                style={{ background: "none", border: "none", cursor: "pointer", padding: 0, borderRadius: "50%" }}
+              >
+                <Avatar style={{ width: 32, height: 32, outline: "2px solid rgba(0,88,221,0.2)", outlineOffset: 1 }}>
+                  <AvatarImage src={user.avatar || "/placeholder-user.jpg"} alt={user.fullName} />
+                  <AvatarFallback style={{ background: "#002674", color: "#fff", fontSize: 12, fontWeight: 700 }}>
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
             </div>
           ) : (
             <>
@@ -247,6 +221,80 @@ export function MarketingHeader({ onSidebarToggle }: MarketingHeaderProps) {
           </button>
         )}
       </div>
+
+      {/* ── Profile side panel (authenticated) ──────────────────────── */}
+      {profileOpen && (
+        <>
+          <div
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 60, backdropFilter: "blur(2px)" }}
+            onClick={() => setProfileOpen(false)}
+          />
+          <div style={{
+            position: "fixed", top: 0, right: 0, bottom: 0, width: 300, zIndex: 70,
+            background: "#fff", boxShadow: "-4px 0 32px rgba(0,11,79,0.14)",
+            display: "flex", flexDirection: "column",
+            transform: "translateX(0)", transition: "transform 0.25s",
+          }}>
+            {/* Panel header */}
+            <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid rgba(0,38,116,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontWeight: 700, fontSize: 14, color: "#002674" }}>My Account</span>
+              <button onClick={() => setProfileOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", display: "flex", padding: 4 }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* User info */}
+            {user && (
+              <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid rgba(0,38,116,0.06)", display: "flex", alignItems: "center", gap: 14 }}>
+                <Avatar style={{ width: 48, height: 48, flexShrink: 0, outline: "3px solid rgba(0,88,221,0.15)", outlineOffset: 2 }}>
+                  <AvatarImage src={user.avatar || "/placeholder-user.jpg"} alt={user.fullName} />
+                  <AvatarFallback style={{ background: "#002674", color: "#fff", fontSize: 16, fontWeight: 700 }}>{initials}</AvatarFallback>
+                </Avatar>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontWeight: 700, fontSize: 14, color: "#0f172a", margin: "0 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.fullName}</p>
+                  <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 6px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</p>
+                  {user.role && (
+                    <Badge variant="secondary" style={{ fontSize: 11 }}>
+                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Nav links */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px 12px" }}>
+              {[
+                { href: "/profile",  icon: User,     label: "My Profile" },
+                { href: "/settings", icon: Settings,  label: "Settings" },
+                ...(user?.role === "admin" ? [{ href: "/admin", icon: Shield, label: "Admin Panel" }] : []),
+              ].map(({ href, icon: Icon, label }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={() => setProfileOpen(false)}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 10, textDecoration: "none", color: "#374151", fontSize: 14, fontWeight: 500, marginBottom: 2 }}
+                  className="hover:bg-[#f4f6fb] transition-colors"
+                >
+                  <Icon size={16} color="#0058dd" />
+                  {label}
+                </Link>
+              ))}
+            </div>
+
+            {/* Logout */}
+            <div style={{ padding: "12px 12px 20px", borderTop: "1px solid rgba(0,38,116,0.06)" }}>
+              <button
+                onClick={() => { setProfileOpen(false); handleLogout() }}
+                style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 10, background: "#fff5f5", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 14, fontWeight: 600 }}
+              >
+                <LogOut size={16} />
+                Log out
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Guest mobile drawer */}
       {mobileOpen && (
