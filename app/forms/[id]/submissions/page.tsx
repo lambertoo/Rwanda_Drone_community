@@ -1,38 +1,42 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { 
-  ArrowLeft, 
-  Download, 
-  Eye, 
+import {
+  ArrowLeft,
+  Download,
+  Eye,
   Calendar,
-  User,
-  FileText
+  FileText,
+  Search,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  X,
+  BarChart3,
 } from "lucide-react"
 import { AuthGuard } from "@/components/auth-guard"
+
+interface FieldInfo {
+  id: string
+  label: string
+  name: string
+  type: string
+}
 
 interface FormSubmission {
   id: string
   formId: string
-  meta: {
-    submittedAt: string
-    userAgent?: string
-    referrer?: string
-  }
+  createdAt: string
+  meta: any
   values: {
     id: string
     fieldId: string
-    value: string
-    field: {
-      id: string
-      label: string
-      name: string
-      type: string
-    }
+    value: string | null
+    field: FieldInfo
   }[]
 }
 
@@ -43,268 +47,461 @@ interface Form {
   sections: {
     id: string
     title: string
-    fields: {
-      id: string
-      name: string
-      label: string
-      type: string
-    }[]
+    fields: FieldInfo[]
   }[]
 }
+
+type SortDir = "asc" | "desc"
 
 export default function FormSubmissionsPage() {
   const params = useParams()
   const router = useRouter()
   const formId = params.id as string
-  
+
   const [form, setForm] = useState<Form | null>(null)
   const [submissions, setSubmissions] = useState<FormSubmission[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (formId) {
-      fetchFormAndSubmissions()
-    }
-  }, [formId])
+  // UI state
+  const [search, setSearch] = useState("")
+  const [sortField, setSortField] = useState<string>("_date")
+  const [sortDir, setSortDir] = useState<SortDir>("desc")
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [detailId, setDetailId] = useState<string | null>(null)
+  const [tab, setTab] = useState<"table" | "summary">("table")
 
-  const fetchFormAndSubmissions = async () => {
+  useEffect(() => {
+    if (formId) fetchAll()
+  }, [formId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchAll = async () => {
     try {
       setError(null)
-      
-      // Fetch form details
-      const formResponse = await fetch(`/api/forms/${formId}`, {
-        credentials: 'include'
-      })
-      
-      if (formResponse.ok) {
-        const formData = await formResponse.json()
-        // Map the API response to the expected format
-        const mappedForm = {
-          id: formData.id,
-          title: formData.title,
-          description: formData.description,
-          sections: formData.sections?.map((section: any) => ({
-            id: section.id,
-            title: section.title,
-            fields: section.fields?.map((field: any) => ({
-              id: field.id,
-              name: field.name,
-              label: field.label,
-              type: field.type
-            })) || []
-          })) || []
-        }
-        setForm(mappedForm)
-      } else if (formResponse.status === 401) {
-        setError('Authentication required. Please log in to view submissions.')
+      const [formRes, subRes] = await Promise.all([
+        fetch(`/api/forms/${formId}`, { credentials: "include" }),
+        fetch(`/api/forms/${formId}/submissions?includeValues=true`, { credentials: "include" }),
+      ])
+
+      if (!formRes.ok) {
+        setError(formRes.status === 401 ? "Please log in." : "Form not found.")
         return
-      } else if (formResponse.status === 404) {
-        setError('Form not found.')
-        return
-      } else {
-        setError('Failed to load form details.')
+      }
+      if (!subRes.ok) {
+        setError("Failed to load submissions.")
         return
       }
 
-      // Fetch submissions with values
-      const submissionsResponse = await fetch(`/api/forms/${formId}/submissions?includeValues=true`, {
-        credentials: 'include'
+      const formData = await formRes.json()
+      setForm({
+        id: formData.id,
+        title: formData.title,
+        description: formData.description,
+        sections: formData.sections?.map((s: any) => ({
+          id: s.id,
+          title: s.title,
+          fields: s.fields?.map((f: any) => ({ id: f.id, name: f.name, label: f.label, type: f.type })) || [],
+        })) || [],
       })
-      
-      if (submissionsResponse.ok) {
-        const submissionsData = await submissionsResponse.json()
-        setSubmissions(submissionsData)
-      } else if (submissionsResponse.status === 401) {
-        setError('Authentication required. Please log in to view submissions.')
-        return
-      } else {
-        setError('Failed to load submissions.')
-        return
-      }
-    } catch (error) {
-      console.error('Error fetching form and submissions:', error)
-      setError('Network error. Please try again.')
+
+      setSubmissions(await subRes.json())
+    } catch {
+      setError("Network error.")
     } finally {
       setLoading(false)
     }
   }
 
-  const exportSubmissions = () => {
-    if (!form || !submissions || submissions.length === 0) return
+  // All fields flattened
+  const allFields = useMemo(() => form?.sections?.flatMap((s) => s.fields) || [], [form])
 
-    // Create CSV content with table structure
-    const fieldHeaders = form.sections?.flatMap(section => 
-      section.fields?.map(field => field.label || 'Untitled Field') || []
-    ) || []
-    
-    const headers = ['Submission #', 'Submitted At', ...fieldHeaders]
-    
-    const csvContent = [
-      headers.join(','),
-      ...submissions.map((submission, index) => {
-        const values = form.sections?.flatMap(section => 
-          section.fields?.map(field => {
-            const value = submission.values?.find(v => v.field.name === field.name)
-            return `"${(value?.value || 'No response').replace(/"/g, '""')}"`
-          }) || []
-        ) || []
-        const submissionNumber = index + 1
-        const submittedAt = submission.meta?.submittedAt ? new Date(submission.meta.submittedAt).toLocaleString() : 'Unknown date'
-        return [submissionNumber, `"${submittedAt}"`, ...values].join(',')
+  // Get cell value
+  const getCellValue = (submission: FormSubmission, fieldName: string): string => {
+    const val = submission.values?.find((v) => v.field.name === fieldName)
+    return val?.value || ""
+  }
+
+  // Filtered & sorted
+  const processed = useMemo(() => {
+    let list = [...submissions]
+
+    // Search
+    if (search) {
+      const q = search.toLowerCase()
+      list = list.filter((s) =>
+        s.values?.some((v) => v.value?.toLowerCase().includes(q)) ||
+        new Date(s.meta?.submittedAt || s.createdAt).toLocaleString().toLowerCase().includes(q)
+      )
+    }
+
+    // Sort
+    list.sort((a, b) => {
+      let va: string, vb: string
+      if (sortField === "_date") {
+        va = a.meta?.submittedAt || a.createdAt || ""
+        vb = b.meta?.submittedAt || b.createdAt || ""
+      } else {
+        va = getCellValue(a, sortField)
+        vb = getCellValue(b, sortField)
+      }
+      const cmp = va.localeCompare(vb, undefined, { numeric: true })
+      return sortDir === "asc" ? cmp : -cmp
+    })
+
+    return list
+  }, [submissions, search, sortField, sortDir]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc")
+    } else {
+      setSortField(field)
+      setSortDir("asc")
+    }
+  }
+
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) return null
+    return sortDir === "asc" ? <ChevronUp className="w-3 h-3 inline ml-1" /> : <ChevronDown className="w-3 h-3 inline ml-1" />
+  }
+
+  // Selection
+  const toggleSelect = (id: string) => {
+    const next = new Set(selected)
+    next.has(id) ? next.delete(id) : next.add(id)
+    setSelected(next)
+  }
+
+  const toggleSelectAll = () => {
+    if (selected.size === processed.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(processed.map((s) => s.id)))
+    }
+  }
+
+  // Delete
+  const handleDelete = async (ids: string[]) => {
+    if (!confirm(`Delete ${ids.length} submission${ids.length > 1 ? "s" : ""}?`)) return
+    try {
+      const res = await fetch(`/api/forms/${formId}/submissions`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ submissionIds: ids }),
       })
-    ].join('\n')
+      if (res.ok) {
+        setSubmissions(submissions.filter((s) => !ids.includes(s.id)))
+        setSelected(new Set())
+        setDetailId(null)
+      }
+    } catch {
+      alert("Failed to delete.")
+    }
+  }
 
-    // Download CSV
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
+  // Export
+  const exportCSV = () => {
+    if (!form || processed.length === 0) return
+    const headers = ["#", "Submitted At", ...allFields.map((f) => f.label)]
+    const rows = processed.map((s, i) => {
+      const date = s.meta?.submittedAt ? new Date(s.meta.submittedAt).toLocaleString() : ""
+      const vals = allFields.map((f) => `"${(getCellValue(s, f.name) || "").replace(/"/g, '""')}"`)
+      return [i + 1, `"${date}"`, ...vals].join(",")
+    })
+    const csv = [headers.join(","), ...rows].join("\n")
+    const blob = new Blob([csv], { type: "text/csv" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
     a.href = url
     a.download = `${form.title}-submissions.csv`
     a.click()
-    window.URL.revokeObjectURL(url)
+    URL.revokeObjectURL(url)
   }
+
+  // Detail modal
+  const detailSubmission = submissions.find((s) => s.id === detailId)
+
+  // Summary stats
+  const summaryData = useMemo(() => {
+    if (!allFields.length || !submissions.length) return []
+    return allFields.map((field) => {
+      const values = submissions
+        .map((s) => getCellValue(s, field.name))
+        .filter(Boolean)
+      const counts: Record<string, number> = {}
+      values.forEach((v) => {
+        // For choice fields, count each option
+        try {
+          const arr = JSON.parse(v)
+          if (Array.isArray(arr)) {
+            arr.forEach((item: string) => { counts[item] = (counts[item] || 0) + 1 })
+            return
+          }
+        } catch {}
+        counts[v] = (counts[v] || 0) + 1
+      })
+      return { field, totalResponses: values.length, counts }
+    })
+  }, [allFields, submissions]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p>Loading submissions...</p>
-          </div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="max-w-6xl mx-auto p-6">
-        <Card>
-          <CardContent className="text-center py-12">
-            <h3 className="text-lg font-semibold mb-2 text-red-600">Error</h3>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <div className="flex gap-2 justify-center">
-              <Button onClick={() => window.location.reload()}>
-                Try Again
-              </Button>
-              <Button variant="outline" onClick={() => router.push('/login')}>
-                Login
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="max-w-2xl mx-auto p-6 text-center">
+        <p className="text-red-600 mb-4">{error}</p>
+        <Button onClick={() => window.location.reload()}>Retry</Button>
       </div>
     )
   }
 
   return (
     <AuthGuard>
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.back()}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold">Form Submissions</h1>
-              {form && (
-                <p className="text-muted-foreground">{form.title}</p>
+      <div className="min-h-screen bg-muted/30">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-background border-b">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="sm" onClick={() => router.back()}>
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <div>
+                <h1 className="text-lg font-semibold">{form?.title || "Submissions"}</h1>
+                <p className="text-xs text-muted-foreground">{submissions.length} response{submissions.length !== 1 ? "s" : ""}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {selected.size > 0 && (
+                <Button size="sm" variant="destructive" onClick={() => handleDelete(Array.from(selected))}>
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete ({selected.size})
+                </Button>
               )}
+              <Button size="sm" variant="outline" onClick={exportCSV} disabled={processed.length === 0}>
+                <Download className="w-3.5 h-3.5 mr-1.5" /> Export
+              </Button>
             </div>
           </div>
-          {submissions.length > 0 && (
-            <Button onClick={exportSubmissions}>
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          {/* Tabs + Search */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex gap-1 bg-muted rounded-lg p-1">
+              <button
+                onClick={() => setTab("table")}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${tab === "table" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <FileText className="w-3.5 h-3.5 inline mr-1.5" />Responses
+              </button>
+              <button
+                onClick={() => setTab("summary")}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${tab === "summary" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <BarChart3 className="w-3.5 h-3.5 inline mr-1.5" />Summary
+              </button>
+            </div>
+            {tab === "table" && (
+              <div className="relative w-64">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search responses..."
+                  className="pl-9 h-9"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Table Tab */}
+          {tab === "table" && (
+            <>
+              {processed.length === 0 ? (
+                <div className="bg-background rounded-xl border p-12 text-center">
+                  <FileText className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
+                  <p className="font-medium mb-1">{submissions.length === 0 ? "No responses yet" : "No matching responses"}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {submissions.length === 0 ? "Share your form to start collecting responses." : "Try a different search term."}
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-background rounded-xl border overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/40">
+                          <th className="w-10 px-3 py-3">
+                            <input
+                              type="checkbox"
+                              checked={selected.size === processed.length && processed.length > 0}
+                              onChange={toggleSelectAll}
+                              className="rounded"
+                            />
+                          </th>
+                          <th className="px-3 py-3 text-left font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none whitespace-nowrap" onClick={() => toggleSort("_date")}>
+                            Date <SortIcon field="_date" />
+                          </th>
+                          {allFields.map((field) => (
+                            <th
+                              key={field.id}
+                              className="px-3 py-3 text-left font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none whitespace-nowrap"
+                              onClick={() => toggleSort(field.name)}
+                            >
+                              {field.label} <SortIcon field={field.name} />
+                            </th>
+                          ))}
+                          <th className="w-10 px-3 py-3" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {processed.map((submission) => (
+                          <tr
+                            key={submission.id}
+                            className={`border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors ${selected.has(submission.id) ? "bg-primary/5" : ""}`}
+                            onClick={() => setDetailId(submission.id)}
+                          >
+                            <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                checked={selected.has(submission.id)}
+                                onChange={() => toggleSelect(submission.id)}
+                                className="rounded"
+                              />
+                            </td>
+                            <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
+                              {new Date(submission.meta?.submittedAt || submission.createdAt).toLocaleDateString()}{" "}
+                              <span className="text-xs">{new Date(submission.meta?.submittedAt || submission.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                            </td>
+                            {allFields.map((field) => {
+                              const val = getCellValue(submission, field.name)
+                              return (
+                                <td key={field.id} className="px-3 py-3 max-w-[200px] truncate" title={val}>
+                                  {val || <span className="text-muted-foreground/40">—</span>}
+                                </td>
+                              )
+                            })}
+                            <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={() => handleDelete([submission.id])}
+                                className="p-1 rounded hover:bg-red-50 text-muted-foreground/40 hover:text-red-600"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Summary Tab */}
+          {tab === "summary" && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-background rounded-xl border p-5">
+                  <p className="text-sm text-muted-foreground">Total Responses</p>
+                  <p className="text-3xl font-bold mt-1">{submissions.length}</p>
+                </div>
+                <div className="bg-background rounded-xl border p-5">
+                  <p className="text-sm text-muted-foreground">Last Response</p>
+                  <p className="text-lg font-semibold mt-1">
+                    {submissions.length > 0
+                      ? new Date(submissions[0].meta?.submittedAt || submissions[0].createdAt).toLocaleDateString()
+                      : "—"}
+                  </p>
+                </div>
+                <div className="bg-background rounded-xl border p-5">
+                  <p className="text-sm text-muted-foreground">Completion Rate</p>
+                  <p className="text-3xl font-bold mt-1">
+                    {submissions.length > 0
+                      ? Math.round(
+                          (submissions.filter((s) => s.values?.some((v) => v.value)).length / submissions.length) * 100
+                        )
+                      : 0}%
+                  </p>
+                </div>
+              </div>
+
+              {summaryData.map(({ field, totalResponses, counts }) => (
+                <div key={field.id} className="bg-background rounded-xl border p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium">{field.label}</h3>
+                    <Badge variant="outline">{totalResponses} responses</Badge>
+                  </div>
+                  {Object.keys(counts).length > 0 && Object.keys(counts).length <= 20 ? (
+                    <div className="space-y-2">
+                      {Object.entries(counts)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([value, count]) => (
+                          <div key={value} className="flex items-center gap-3">
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-0.5">
+                                <span className="text-sm truncate max-w-[300px]">{value}</span>
+                                <span className="text-xs text-muted-foreground">{count} ({Math.round((count / totalResponses) * 100)}%)</span>
+                              </div>
+                              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-primary rounded-full transition-all"
+                                  style={{ width: `${(count / totalResponses) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">{totalResponses} unique text responses</p>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
-        {!form ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <h3 className="text-lg font-semibold mb-2">Form not found</h3>
-              <p className="text-muted-foreground">The form you're looking for doesn't exist.</p>
-            </CardContent>
-          </Card>
-        ) : submissions.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <div className="text-muted-foreground/70 mb-4">
-                <FileText className="w-16 h-16 mx-auto" />
+        {/* Detail Modal */}
+        {detailSubmission && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-end">
+            <div className="w-full max-w-md h-full bg-background border-l shadow-xl overflow-y-auto">
+              <div className="sticky top-0 bg-background border-b px-4 py-3 flex items-center justify-between z-10">
+                <h3 className="font-semibold">Response Detail</h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => { handleDelete([detailSubmission.id]) }}
+                    className="p-1.5 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => setDetailId(null)} className="p-1.5 rounded hover:bg-muted">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <h3 className="text-lg font-semibold mb-2">No submissions yet</h3>
-              <p className="text-muted-foreground mb-4">This form hasn't received any submissions yet.</p>
-              <Button onClick={() => window.open(`/forms/public/${form.id}`, '_blank')}>
-                <Eye className="w-4 h-4 mr-2" />
-                View Public Form
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Badge variant="default">
-                  {submissions.length} submission{submissions.length !== 1 ? 's' : ''}
-                </Badge>
+              <div className="p-4 space-y-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Calendar className="w-4 h-4" />
+                  {new Date(detailSubmission.meta?.submittedAt || detailSubmission.createdAt).toLocaleString()}
+                </div>
+                {allFields.map((field) => {
+                  const val = getCellValue(detailSubmission, field.name)
+                  return (
+                    <div key={field.id} className="border-b pb-3">
+                      <p className="text-xs text-muted-foreground mb-1">{field.label}</p>
+                      <p className="text-sm whitespace-pre-wrap">{val || <span className="text-muted-foreground/40 italic">No response</span>}</p>
+                    </div>
+                  )
+                })}
               </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-border">
-                <thead>
-                  <tr className="bg-muted/50">
-                    <th className="border border-border px-4 py-3 text-left text-sm font-semibold text-foreground">
-                      Submission #
-                    </th>
-                    <th className="border border-border px-4 py-3 text-left text-sm font-semibold text-foreground">
-                      Submitted At
-                    </th>
-                    {form.sections?.map(section => 
-                      section.fields?.map(field => (
-                        <th key={field.id} className="border border-border px-4 py-3 text-left text-sm font-semibold text-foreground">
-                          {field.label || 'Untitled Field'}
-                        </th>
-                      )) || []
-                    ).flat()}
-                  </tr>
-                </thead>
-                <tbody>
-                  {submissions?.map((submission, index) => (
-                    <tr key={submission.id} className="hover:bg-muted/50">
-                      <td className="border border-border px-4 py-3 text-sm text-foreground">
-                        {index + 1}
-                      </td>
-                      <td className="border border-border px-4 py-3 text-sm text-foreground">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-muted-foreground" />
-                          {submission.meta?.submittedAt ? new Date(submission.meta.submittedAt).toLocaleString() : 'Unknown date'}
-                        </div>
-                      </td>
-                      {form.sections?.map(section => 
-                        section.fields?.map(field => {
-                          const value = submission.values?.find(v => v.field.name === field.name)
-                          return (
-                            <td key={field.id} className="border border-border px-4 py-3 text-sm text-foreground">
-                              <div className="max-w-xs truncate" title={value?.value || 'No response'}>
-                                {value?.value || 'No response'}
-                              </div>
-                            </td>
-                          )
-                        }) || []
-                      ).flat()}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
         )}
