@@ -8,15 +8,19 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { 
-  Database, 
-  Download, 
-  Upload, 
-  Trash2, 
+import Link from "next/link"
+import {
+  Database,
+  Download,
+  Upload,
+  Trash2,
   AlertTriangle,
   CheckCircle,
   Clock,
-  HardDrive
+  HardDrive,
+  Mail,
+  ChevronRight,
+  FileText,
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
@@ -124,6 +128,66 @@ export default function AdminSettingsPage() {
           Manage system settings and database operations
         </p>
       </div>
+
+      {/* Integrations */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5" />
+            Email Integration
+          </CardTitle>
+          <CardDescription>
+            Configure transactional email for password resets, notifications, and more.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link
+            href="/admin/settings/zoho-mail"
+            className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                <Mail className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">Zoho Mail</p>
+                <p className="text-xs text-muted-foreground">OAuth 2.0 · Transactional email via Zoho Mail API</p>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
+        </CardContent>
+      </Card>
+
+      {/* Legal Pages */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Legal Pages
+          </CardTitle>
+          <CardDescription>
+            Edit the content of your Privacy Policy and Terms of Use pages.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link
+            href="/admin/settings/pages"
+            className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                <FileText className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">Privacy Policy &amp; Terms of Use</p>
+                <p className="text-xs text-muted-foreground">Edit with live preview · Markdown supported</p>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
+        </CardContent>
+      </Card>
 
       {/* Database Management */}
       <Card>

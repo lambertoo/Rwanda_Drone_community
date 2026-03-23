@@ -737,6 +737,19 @@
 .dir-row__link:hover { background: rgba(20,184,166,0.1); border-color: rgba(13,148,136,0.4); }
 .dir-count { font-size: 13px; color: #64748b; margin-bottom: 12px; }
 .dir-count strong { color: #0f172a; }
+/* ── Prose (static pages: privacy, terms) ───────────────────── */
+.prose-page { color: #374151; line-height: 1.75; font-size: 15px; }
+.prose-h1 { font-size: 28px; font-weight: 800; color: #002674; margin: 36px 0 12px; }
+.prose-h2 { font-size: 20px; font-weight: 700; color: #002674; margin: 32px 0 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(0,38,116,0.08); }
+.prose-h3 { font-size: 16px; font-weight: 700; color: #0f172a; margin: 24px 0 8px; }
+.prose-p  { margin: 0 0 14px; }
+.prose-ul { margin: 0 0 14px; padding-left: 22px; }
+.prose-ul li { margin-bottom: 6px; }
+.prose-page strong { color: #0f172a; font-weight: 700; }
+.prose-page em { font-style: italic; color: #374151; }
+.prose-page code { background: #f1f5f9; border-radius: 4px; padding: 1px 6px; font-size: 13px; font-family: monospace; color: #0f172a; }
+.prose-page a { color: #0058dd; text-decoration: underline; }
+.prose-page a:hover { color: #002674; }
 /* ── Directory grid card ─────────────────────────────────── */
 .dir-grid-card {
   display: flex; flex-direction: column; align-items: center; text-align: center;
