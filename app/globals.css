@@ -12,7 +12,7 @@
     --t-surface: #f4f6fb;
     --t-muted: rgba(255, 255, 255, 0.82);
     --t-muted-dark: rgba(0, 38, 116, 0.72);
-    --t-max: 1200px;
+    --t-max: 100%;
     --t-radius-lg: 16px;
     --t-radius-pill: 999px;
     --t-shadow-header: 0 1px 0 rgba(0, 38, 116, 0.06);

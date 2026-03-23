@@ -62,7 +62,7 @@ export function LoginLayout({ children }: LoginLayoutProps) {
 
           {/* Main content — full width, no persistent sidebar */}
           <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-6 bg-background overflow-auto flex flex-col">
-            <div className="max-w-7xl mx-auto w-full flex-1">{children}</div>
+            <div className="w-full w-full flex-1">{children}</div>
             <MarketingFooter />
           </main>
         </div>
@@ -82,7 +82,7 @@ export function LoginLayout({ children }: LoginLayoutProps) {
       ) : (
         <>
           <main className="flex-1 p-3 sm:p-4 lg:p-6 bg-background">
-            <div className="max-w-7xl mx-auto">{children}</div>
+            <div className="w-full">{children}</div>
           </main>
           <MarketingFooter />
         </>
