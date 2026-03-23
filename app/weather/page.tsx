@@ -151,7 +151,7 @@ function parseMetarTime(reportTime: string) {
     if (isNaN(d.getTime())) return reportTime.length >= 16 ? reportTime.substring(11, 16) : reportTime
     return d.toLocaleTimeString("en-GB", {
       hour: "2-digit", minute: "2-digit", timeZone: "Africa/Kigali",
-    }) + " CAT"
+    }) + " GMT+2"
   } catch {
     return reportTime.length >= 16 ? reportTime.substring(11, 16) : reportTime
   }

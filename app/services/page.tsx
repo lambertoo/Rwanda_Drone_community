@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 export const dynamic = "force-dynamic"
 import Link from "next/link"
-import { MapPin, Phone, Mail, Globe, BadgeCheck, Star, Plus, ArrowUpRight } from "lucide-react"
+import { MapPin, Phone, Mail, Globe, BadgeCheck, Star, Plus, ArrowUpRight, LayoutList, LayoutGrid } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface Service {
@@ -62,6 +62,7 @@ export default function ServicesPage() {
   // pending = what's in the sidebar checkboxes before Apply
   const [pendingCats, setPendingCats]   = useState<string[]>([])
   const [pendingRegs, setPendingRegs]   = useState<string[]>([])
+  const [viewMode, setViewMode]         = useState<"list" | "grid">("list")
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -196,19 +197,25 @@ export default function ServicesPage() {
       {/* ── Feed ─────────────────────────────────────── */}
       <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <p className="dir-count">
+          <p className="dir-count" style={{ margin: 0 }}>
             Showing <strong>{displayed.length}</strong> {displayed.length === 1 ? "provider" : "providers"}
           </p>
-          <Link href="/services/new">
-            <Button size="sm" style={{ background: "#002674", color: "#fff", borderRadius: 999 }} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" /> List your service
-            </Button>
-          </Link>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button onClick={() => setViewMode("list")} title="List view" style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "list" ? "#002674" : "#fff", color: viewMode === "list" ? "#fff" : "#64748b", borderColor: viewMode === "list" ? "#002674" : "#e2e8f0" }}><LayoutList size={15} /></button>
+              <button onClick={() => setViewMode("grid")} title="Grid view" style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "grid" ? "#002674" : "#fff", color: viewMode === "grid" ? "#fff" : "#64748b", borderColor: viewMode === "grid" ? "#002674" : "#e2e8f0" }}><LayoutGrid size={15} /></button>
+            </div>
+            <Link href="/services/new">
+              <Button size="sm" style={{ background: "#002674", color: "#fff", borderRadius: 999 }} className="gap-1.5">
+                <Plus className="h-3.5 w-3.5" /> List your service
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {loading ? (
-          <div className="dir-list">
-            {[...Array(5)].map((_, i) => <div key={i} className="rounded-xl bg-muted animate-pulse h-24" />)}
+          <div style={{ display: "grid", gridTemplateColumns: viewMode === "grid" ? "repeat(auto-fill,minmax(240px,1fr))" : "1fr", gap: 12 }}>
+            {[...Array(5)].map((_, i) => <div key={i} className="rounded-xl bg-muted animate-pulse" style={{ height: viewMode === "grid" ? 200 : 90 }} />)}
           </div>
         ) : displayed.length === 0 ? (
           <div style={{ textAlign: "center", padding: "48px 16px", color: "#64748b" }}>
@@ -216,7 +223,7 @@ export default function ServicesPage() {
             <p style={{ fontSize: 14, marginBottom: 20 }}>Try adjusting your filters or search term.</p>
             <button className="dir-clear-btn" style={{ fontSize: 14 }} onClick={clearFilters}>Clear filters</button>
           </div>
-        ) : (
+        ) : viewMode === "list" ? (
           <div className="dir-list">
             {displayed.map(service => {
               const name = service.provider.organization || service.provider.fullName
@@ -234,42 +241,46 @@ export default function ServicesPage() {
                         </h2>
                         <p className="dir-row__cat">{service.category}</p>
                       </div>
-                      <span className="dir-row__link" aria-hidden="true">
-                        <ArrowUpRight size={16} />
-                      </span>
+                      <span className="dir-row__link" aria-hidden="true"><ArrowUpRight size={16} /></span>
                     </div>
                     <div className="dir-row__meta">
-                      <span className="dir-row__meta-item">
-                        <MapPin size={13} style={{ color: "#94a3b8" }} />
-                        {formatRegion(service.region)}
-                      </span>
+                      <span className="dir-row__meta-item"><MapPin size={13} style={{ color: "#94a3b8" }} />{formatRegion(service.region)}</span>
                       {service.reviewCount > 0 && (
-                        <span className="dir-row__meta-item">
-                          <Star size={13} style={{ color: "#f59e0b", fill: "#f59e0b" }} />
-                          {service.rating.toFixed(1)} · {service.reviewCount} review{service.reviewCount !== 1 ? "s" : ""}
-                        </span>
+                        <span className="dir-row__meta-item"><Star size={13} style={{ color: "#f59e0b", fill: "#f59e0b" }} />{service.rating.toFixed(1)} · {service.reviewCount} review{service.reviewCount !== 1 ? "s" : ""}</span>
                       )}
-                      {service.phone && (
-                        <span className="dir-row__meta-item">
-                          <Phone size={13} style={{ color: "#94a3b8" }} />
-                          {service.phone}
-                        </span>
-                      )}
-                      {service.email && (
-                        <span className="dir-row__meta-item">
-                          <Mail size={13} style={{ color: "#94a3b8" }} />
-                          {service.email}
-                        </span>
-                      )}
-                      {service.website && (
-                        <span className="dir-row__meta-item">
-                          <Globe size={13} style={{ color: "#94a3b8" }} />
-                          Website
-                        </span>
-                      )}
+                      {service.phone && <span className="dir-row__meta-item"><Phone size={13} style={{ color: "#94a3b8" }} />{service.phone}</span>}
+                      {service.email && <span className="dir-row__meta-item"><Mail size={13} style={{ color: "#94a3b8" }} />{service.email}</span>}
+                      {service.website && <span className="dir-row__meta-item"><Globe size={13} style={{ color: "#94a3b8" }} />Website</span>}
                     </div>
                     {service.description && (
                       <p style={{ marginTop: 8, fontSize: 13, color: "#64748b", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                        {service.description}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 16 }}>
+            {displayed.map(service => {
+              const name = service.provider.organization || service.provider.fullName
+              return (
+                <Link key={service.id} href={`/services/${service.id}`} className="dir-grid-card">
+                  <div className="dir-grid-card__avatar">{getInitials(name)}</div>
+                  <div style={{ flex: 1 }}>
+                    <h2 className="dir-grid-card__name">
+                      {name}
+                      {service.provider.isVerified && <BadgeCheck style={{ display: "inline", marginLeft: 5, verticalAlign: "middle", color: "#0058dd", width: 14, height: 14 }} />}
+                    </h2>
+                    <p className="dir-row__cat" style={{ marginBottom: 8 }}>{service.category}</p>
+                    <div className="dir-row__meta">
+                      <span className="dir-row__meta-item"><MapPin size={12} style={{ color: "#94a3b8" }} />{formatRegion(service.region)}</span>
+                      {service.reviewCount > 0 && <span className="dir-row__meta-item"><Star size={12} style={{ color: "#f59e0b", fill: "#f59e0b" }} />{service.rating.toFixed(1)}</span>}
+                    </div>
+                    {service.description && (
+                      <p style={{ marginTop: 8, fontSize: 12, color: "#64748b", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
                         {service.description}
                       </p>
                     )}

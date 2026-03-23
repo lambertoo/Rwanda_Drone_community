@@ -460,6 +460,29 @@
 .evt-info-card > button, .evt-info-card > a {
   display: block; margin: 0 20px;
 }
+/* ── Events grid card ────────────────────────────────────── */
+.evt-grid-card {
+  display: flex; flex-direction: column; border-radius: 14px; overflow: hidden;
+  background: #fff; border: 1px solid rgba(0,38,116,0.08);
+  box-shadow: 0 1px 4px rgba(0,38,116,0.06); text-decoration: none;
+  transition: box-shadow 0.18s, transform 0.18s;
+}
+.evt-grid-card:hover { box-shadow: 0 6px 20px rgba(0,38,116,0.13); transform: translateY(-2px); }
+.evt-grid-card__top {
+  position: relative; height: 160px; overflow: hidden; background: #f1f5f9; flex-shrink: 0;
+}
+.evt-grid-card__date { position: absolute; bottom: 10px; left: 10px; }
+.evt-grid-card__badge {
+  position: absolute; top: 10px; right: 10px;
+  font-size: 11px; font-weight: 800; color: #fff; border-radius: 999px; padding: 2px 10px;
+}
+.evt-grid-card__body {
+  padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 4px; flex: 1;
+}
+.evt-grid-card__title {
+  font-size: 15px; font-weight: 700; color: #0f172a; margin: 4px 0 0; line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 /* ──────────────────────────────────────────────────────── */
 
 /* ── Directory / Services page styles ───────────────────── */
@@ -714,6 +737,24 @@
 .dir-row__link:hover { background: rgba(20,184,166,0.1); border-color: rgba(13,148,136,0.4); }
 .dir-count { font-size: 13px; color: #64748b; margin-bottom: 12px; }
 .dir-count strong { color: #0f172a; }
+/* ── Directory grid card ─────────────────────────────────── */
+.dir-grid-card {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 24px 16px 20px; border-radius: 14px; background: #fff;
+  border: 1px solid rgba(0,38,116,0.08); box-shadow: 0 1px 4px rgba(0,38,116,0.06);
+  text-decoration: none; transition: box-shadow 0.18s, transform 0.18s; gap: 10px;
+}
+.dir-grid-card:hover { box-shadow: 0 6px 20px rgba(0,38,116,0.13); transform: translateY(-2px); }
+.dir-grid-card__avatar {
+  width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg,#002674,#0058dd);
+  color: #fff; font-weight: 800; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+}
+.dir-grid-card__name {
+  font-size: 15px; font-weight: 700; color: #0f172a; margin: 0 0 2px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 /* ──────────────────────────────────────────────────────── */
 
 /* ── Marketing / Landing page styles ────────────────────── */

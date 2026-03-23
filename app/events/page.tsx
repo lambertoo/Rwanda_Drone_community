@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 export const dynamic = "force-dynamic"
 import Link from "next/link"
-import { MapPin, Plus, Calendar, Users, ArrowUpRight } from "lucide-react"
+import { MapPin, Plus, Calendar, Users, ArrowUpRight, LayoutList, LayoutGrid } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
 
@@ -50,6 +50,7 @@ export default function EventsPage() {
   const [pendingLocs, setPendingLocs]   = useState<string[]>([])
   const [selCats, setSelCats]           = useState<string[]>([])
   const [selLocs, setSelLocs]           = useState<string[]>([])
+  const [viewMode, setViewMode]         = useState<"list" | "grid">("list")
   const { user } = useAuth()
 
   useEffect(() => {
@@ -156,13 +157,27 @@ export default function EventsPage() {
 
       {/* ── Event feed ─────────────────────────────────── */}
       <div>
-        <p className="dir-count" style={{ marginBottom: 16 }}>
-          Showing <strong>{displayed.length}</strong> {displayed.length === 1 ? "event" : "events"}
-        </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <p className="dir-count" style={{ margin: 0 }}>
+            Showing <strong>{displayed.length}</strong> {displayed.length === 1 ? "event" : "events"}
+          </p>
+          <div style={{ display: "flex", gap: 4 }}>
+            <button
+              onClick={() => setViewMode("list")}
+              title="List view"
+              style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "list" ? "#002674" : "#fff", color: viewMode === "list" ? "#fff" : "#64748b", borderColor: viewMode === "list" ? "#002674" : "#e2e8f0" }}
+            ><LayoutList size={15} /></button>
+            <button
+              onClick={() => setViewMode("grid")}
+              title="Grid view"
+              style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "grid" ? "#002674" : "#fff", color: viewMode === "grid" ? "#fff" : "#64748b", borderColor: viewMode === "grid" ? "#002674" : "#e2e8f0" }}
+            ><LayoutGrid size={15} /></button>
+          </div>
+        </div>
 
         {loading ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
-            {[...Array(4)].map((_, i) => <div key={i} className="rounded-xl bg-muted animate-pulse" style={{ height: 120 }} />)}
+          <div style={{ display: "grid", gridTemplateColumns: viewMode === "grid" ? "repeat(auto-fill,minmax(260px,1fr))" : "1fr", gap: 16 }}>
+            {[...Array(4)].map((_, i) => <div key={i} className="rounded-xl bg-muted animate-pulse" style={{ height: viewMode === "grid" ? 220 : 90 }} />)}
           </div>
         ) : displayed.length === 0 ? (
           <div style={{ textAlign: "center", padding: "48px 16px", color: "#64748b" }}>
@@ -171,27 +186,20 @@ export default function EventsPage() {
             <p style={{ fontSize: 14, marginBottom: 16 }}>Try adjusting your filters or search.</p>
             {activeFilters > 0 && <button className="dir-clear-btn" onClick={clearFilters}>Clear filters</button>}
           </div>
-        ) : (
+        ) : viewMode === "list" ? (
           <div className="evt-list">
             {displayed.map(event => (
               <Link key={event.id} href={`/events/${event.id}`} className="evt-row">
-                {/* Date block */}
                 <DateBlock dateStr={event.startDate} />
-
-                {/* Flyer thumbnail */}
                 {event.flyer && (
                   <div style={{ width: 80, height: 56, borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
                     <img src={event.flyer} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   </div>
                 )}
-
-                {/* Body */}
                 <div className="evt-row__body">
                   <div className="evt-row__head">
                     <div style={{ minWidth: 0 }}>
-                      {event.category && (
-                        <span className="evt-row__cat">{event.category.name}</span>
-                      )}
+                      {event.category && <span className="evt-row__cat">{event.category.name}</span>}
                       <h2 className="evt-row__title">{event.title}</h2>
                     </div>
                     <span className="dir-row__link" aria-hidden="true"><ArrowUpRight size={16} /></span>
@@ -201,19 +209,45 @@ export default function EventsPage() {
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                       {fmtDate(event.startDate)} · {fmtTime(event.startDate)}
                     </span>
+                    <span className="dir-row__meta-item"><MapPin size={13} style={{ color: "#94a3b8" }} />{event.venue ? `${event.venue}, ` : ""}{event.location}</span>
+                    <span className="dir-row__meta-item"><Users size={13} style={{ color: "#94a3b8" }} />{event.organizer.organization || event.organizer.fullName}</span>
+                    {event.price === 0
+                      ? <span style={{ fontSize: 11, fontWeight: 800, color: "#16a34a", background: "#dcfce7", borderRadius: 999, padding: "1px 8px" }}>Free</span>
+                      : <span style={{ fontSize: 11, fontWeight: 700, color: "#0058dd" }}>{event.price.toLocaleString()} {event.currency}</span>}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 16 }}>
+            {displayed.map(event => (
+              <Link key={event.id} href={`/events/${event.id}`} className="evt-grid-card">
+                {/* Card image / date header */}
+                <div className="evt-grid-card__top">
+                  {event.flyer
+                    ? <img src={event.flyer} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#002674,#0058dd)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Calendar size={32} style={{ color: "rgba(255,255,255,0.4)" }} />
+                      </div>
+                  }
+                  <div className="evt-grid-card__date">
+                    <DateBlock dateStr={event.startDate} />
+                  </div>
+                  {event.price === 0
+                    ? <span className="evt-grid-card__badge" style={{ background: "#16a34a" }}>Free</span>
+                    : <span className="evt-grid-card__badge" style={{ background: "#0058dd" }}>{event.price.toLocaleString()} {event.currency}</span>
+                  }
+                </div>
+                <div className="evt-grid-card__body">
+                  {event.category && <span className="evt-row__cat">{event.category.name}</span>}
+                  <h2 className="evt-grid-card__title">{event.title}</h2>
+                  <div className="evt-row__meta" style={{ marginTop: 8 }}>
+                    <span className="dir-row__meta-item"><MapPin size={12} style={{ color: "#94a3b8" }} />{event.location}</span>
                     <span className="dir-row__meta-item">
-                      <MapPin size={13} style={{ color: "#94a3b8" }} />
-                      {event.venue ? `${event.venue}, ` : ""}{event.location}
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                      {fmtDate(event.startDate)}
                     </span>
-                    <span className="dir-row__meta-item">
-                      <Users size={13} style={{ color: "#94a3b8" }} />
-                      {event.organizer.organization || event.organizer.fullName}
-                    </span>
-                    {event.price === 0 ? (
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#16a34a", background: "#dcfce7", borderRadius: 999, padding: "1px 8px" }}>Free</span>
-                    ) : (
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "#0058dd" }}>{event.price.toLocaleString()} {event.currency}</span>
-                    )}
                   </div>
                 </div>
               </Link>

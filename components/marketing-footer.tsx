@@ -20,6 +20,13 @@ const footerLinks = {
     { label: "Post an Opportunity", href: "/opportunities/new" },
     { label: "Create an Event",     href: "/events/new" },
   ],
+  regulators: [
+    { label: "RISA",                href: "https://www.risa.gov.rw/", external: true },
+    { label: "RISA Drone Centre",   href: "https://www.risa.gov.rw/projects/drone-operation-center-doc", external: true },
+    { label: "CAA Rwanda",          href: "https://www.caa.gov.rw/", external: true },
+    { label: "RURA",                href: "https://www.rura.rw/", external: true },
+    { label: "Rwanda National Police", href: "https://www.police.gov.rw/", external: true },
+  ],
 }
 
 export function MarketingFooter() {
@@ -71,6 +78,14 @@ export function MarketingFooter() {
             <h4>Get Involved</h4>
             {footerLinks.getInvolved.map(link => (
               <Link key={link.href} href={link.href}>{link.label}</Link>
+            ))}
+          </div>
+
+          {/* Regulators / Quick Links */}
+          <div className="mk-footer-col">
+            <h4>Regulatory Bodies</h4>
+            {footerLinks.regulators.map(link => (
+              <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>
             ))}
           </div>
         </div>

@@ -36,6 +36,8 @@ const STATIC_ZONES: MapZone[] = [
   { name: "Bugesera Industrial Zone", lat: -2.2137, lon: 30.2554, radius: 5, color: "#22c55e", fillColor: "#22c55e", description: "Drone operations permitted with prior notification.", type: "permitted", source: "static" },
   { name: "Kigali CBD", lat: -1.9441, lon: 30.0619, radius: 2, color: "#eab308", fillColor: "#eab308", description: "Cat A only, below 120m AMSL.", type: "restricted", source: "static" },
   { name: "Presidential Palace area", lat: -1.9528, lon: 30.0616, radius: 1.5, color: "#ef4444", fillColor: "#ef4444", description: "Full restriction – no exceptions.", type: "restricted", source: "static" },
+  { name: "Kigali Intl Airport Bugesera (HRKI)", lat: -2.1597, lon: 30.1198, radius: 5, color: "#ef4444", fillColor: "#ef4444", description: "5km full ban. New Kigali International Airport — Bugesera. CAA authorization required.", type: "airport", source: "static" },
+  { name: "Bugesera Airport 10km advisory", lat: -2.1597, lon: 30.1198, radius: 10, color: "#f97316", fillColor: "#f97316", description: "10km advisory zone around new Kigali International Airport Bugesera. Prior notification required.", type: "advisory", source: "static" },
 ]
 
 // Rwanda airport runways — approximate from aeronautical charts
@@ -70,6 +72,16 @@ const RUNWAYS = [
     endpoints: [[-2.6012, 29.7315], [-2.6004, 29.7243]] as [number, number][],
     widthM: 18,
     elev: "1768m / 5800ft",
+  },
+  {
+    icao: "HRKI",
+    name: "Kigali Intl Airport Bugesera",
+    designation: "09/27",
+    // heading ~090°/270°, ~3800m, width 60m
+    // center: -2.1597, 30.1198
+    endpoints: [[-2.1597, 30.1027], [-2.1597, 30.1369]] as [number, number][],
+    widthM: 60,
+    elev: "1374m / 4508ft",
   },
 ]
 
