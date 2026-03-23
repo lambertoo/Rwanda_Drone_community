@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 export const dynamic = 'force-dynamic'
 import Link from "next/link"
 import {
@@ -68,7 +68,8 @@ const TYPE_COLORS: Record<string, string> = {
 function formatType(t: string) { return t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) }
 function formatDate(d: string) { return new Date(d).toLocaleDateString('en-RW', { month: 'long', year: 'numeric' }) }
 
-export default function ClubDetailPage({ params }: { params: { id: string } }) {
+export default function ClubDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = use(paramsPromise)
   const { user } = useAuth()
   const [club, setClub] = useState<Club | null>(null)
   const [loading, setLoading] = useState(true)
