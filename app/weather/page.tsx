@@ -12,6 +12,7 @@ import {
   Loader2, Wind, Thermometer, Eye, Droplets, Gauge, CloudRain,
   Sun, Cloud, CloudSnow, Zap, RefreshCw, CheckCircle, XCircle,
   AlertTriangle, MapPin, Clock, Sunrise, Sunset, LocateFixed, Search, Plane,
+  Radio, FileText,
 } from "lucide-react"
 
 // ── locations ─────────────────────────────────────────────────
@@ -33,13 +34,62 @@ const RWANDA_DISTRICTS = [
   { name: "Bugesera", lat: -2.2137, lon: 30.2554 },
 ]
 
-// Rwanda airports — used for proximity reference
+// Rwanda airports — METAR/TAF reference + proximity zones
 const AIRPORTS = [
   { icao: "HRYR", name: "Kigali International Airport", lat: -1.9686, lon: 30.1395, banKm: 5, advisoryKm: 10 },
   { icao: "HRZA", name: "Kamembe Airport (Rusizi)", lat: -2.4620, lon: 28.9077, banKm: 3, advisoryKm: 5 },
   { icao: "HRHU", name: "Huye Airport", lat: -2.6008, lon: 29.7279, banKm: 3, advisoryKm: 5 },
   { icao: "HRMU", name: "Musanze (proposed)", lat: -1.4985, lon: 29.6346, banKm: 2, advisoryKm: 4 },
 ]
+
+// ── WMO weather code helpers ───────────────────────────────────
+const WMO_DESCRIPTIONS: Record<number, string> = {
+  0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
+  45: "Fog", 48: "Rime fog",
+  51: "Light drizzle", 53: "Moderate drizzle", 55: "Dense drizzle",
+  56: "Light freezing drizzle", 57: "Heavy freezing drizzle",
+  61: "Slight rain", 63: "Moderate rain", 65: "Heavy rain",
+  66: "Light freezing rain", 67: "Heavy freezing rain",
+  71: "Slight snow", 73: "Moderate snow", 75: "Heavy snow", 77: "Snow grains",
+  80: "Slight rain showers", 81: "Moderate rain showers", 82: "Violent rain showers",
+  85: "Slight snow showers", 86: "Heavy snow showers",
+  95: "Thunderstorm", 96: "Thunderstorm with hail", 99: "Thunderstorm with heavy hail",
+}
+
+function wmoDescription(code: number) {
+  return WMO_DESCRIPTIONS[code] ?? "Unknown"
+}
+
+function wmoToIcon(code: number): string {
+  if (code === 0) return "01d"
+  if (code <= 2) return "02d"
+  if (code === 3) return "04d"
+  if (code === 45 || code === 48) return "50d"
+  if (code >= 51 && code <= 57) return "09d"
+  if (code >= 61 && code <= 67) return "10d"
+  if (code >= 71 && code <= 77) return "13d"
+  if (code >= 80 && code <= 82) return "09d"
+  if (code >= 85 && code <= 86) return "13d"
+  if (code >= 95) return "11d"
+  return "04d"
+}
+
+/** Estimated visibility from WMO code (km) */
+function wmoVisibilityKm(code: number): number {
+  if (code === 45 || code === 48) return 0.5
+  if (code >= 51 && code <= 57) return 3
+  if (code === 61 || code === 63) return 5
+  if (code === 65 || code === 67) return 2
+  if (code >= 71 && code <= 77) return 4
+  if (code === 80 || code === 81) return 6
+  if (code === 82) return 2
+  if (code >= 85 && code <= 86) return 4
+  if (code >= 95) return 3
+  return 10
+}
+
+function isThunderstorm(code: number) { return code >= 95 }
+function isHeavyRain(code: number) { return [65, 67, 82].includes(code) }
 
 // ── helpers ────────────────────────────────────────────────────
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -62,12 +112,13 @@ function getNearestAirport(lat: number, lon: number) {
   return { airport: nearest, distKm: minDist }
 }
 
-function getWeatherIcon(icon: string, size = "h-8 w-8") {
-  if (icon.includes("01")) return <Sun className={`${size} text-yellow-400`} />
-  if (icon.includes("02") || icon.includes("03") || icon.includes("04")) return <Cloud className={`${size} text-muted-foreground`} />
-  if (icon.includes("09") || icon.includes("10")) return <CloudRain className={`${size} text-blue-400`} />
-  if (icon.includes("11")) return <Zap className={`${size} text-yellow-500`} />
-  if (icon.includes("13")) return <CloudSnow className={`${size} text-blue-200`} />
+function getWeatherIcon(iconCode: string, size = "h-8 w-8") {
+  if (iconCode.includes("01")) return <Sun className={`${size} text-yellow-400`} />
+  if (iconCode.includes("02") || iconCode.includes("03") || iconCode.includes("04")) return <Cloud className={`${size} text-muted-foreground`} />
+  if (iconCode.includes("09") || iconCode.includes("10")) return <CloudRain className={`${size} text-blue-400`} />
+  if (iconCode.includes("11")) return <Zap className={`${size} text-yellow-500`} />
+  if (iconCode.includes("13")) return <CloudSnow className={`${size} text-blue-200`} />
+  if (iconCode.includes("50")) return <Cloud className={`${size} text-gray-400`} />
   return <Cloud className={`${size} text-muted-foreground`} />
 }
 
@@ -76,8 +127,40 @@ function windDirection(deg: number) {
   return dirs[Math.round(deg / 45) % 8]
 }
 
-function formatTime(unix: number) {
-  return new Date(unix * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+/** Parse ISO local time string from Open-Meteo: "2026-03-18T06:12" → "06:12" */
+function formatTimeISO(isoStr: string) {
+  return isoStr?.split("T")[1]?.substring(0, 5) ?? "—"
+}
+
+// ── METAR helpers ─────────────────────────────────────────────
+/** Aviation Weather API returns visib in statute miles, or "9999" for ≥10km */
+function parseVisibilitySM(visib: string | number): number {
+  if (!visib) return 10
+  const s = String(visib)
+  if (s === "9999" || s.startsWith("P")) return 10
+  const n = parseFloat(s)
+  return isNaN(n) ? 10 : Math.min(n * 1.60934, 10) // SM → km
+}
+
+function parseMetarTime(reportTime: string) {
+  if (!reportTime) return "—"
+  try {
+    return new Date(reportTime + "Z").toLocaleTimeString("en-GB", {
+      hour: "2-digit", minute: "2-digit", timeZone: "Africa/Kigali",
+    }) + " CAT"
+  } catch {
+    return reportTime.substring(11, 16)
+  }
+}
+
+function cloudCoverLabel(cvg: string): string {
+  switch (cvg?.toUpperCase()) {
+    case "FEW": return "Few"
+    case "SCT": return "Scattered"
+    case "BKN": return "Broken ⚠"
+    case "OVC": return "Overcast ⚠"
+    default: return cvg ?? ""
+  }
 }
 
 // ── types ──────────────────────────────────────────────────────
@@ -88,34 +171,109 @@ interface WeatherData {
   temp: number
   feelsLike: number
   humidity: number
-  windSpeed: number
+  windSpeed: number   // km/h
   windDir: number
-  visibility: number
+  visibilityKm: number
   pressure: number
-  description: string
-  icon: string
-  sunrise: number
-  sunset: number
+  weatherCode: number
+  cloudCover: number  // 0–100 %
+  sunrise: string     // "HH:MM"
+  sunset: string      // "HH:MM"
   forecast: ForecastItem[]
 }
 
 interface ForecastItem {
-  dt: number
+  date: string
   temp: { min: number; max: number }
-  description: string
-  icon: string
-  windSpeed: number
-  pop: number
+  weatherCode: number
+  windSpeed: number   // km/h
+  pop: number         // 0–100
 }
 
-interface SafetyCheck {
-  label: string
-  pass: boolean
-  value: string
-  limit: string
+interface MetarEntry {
+  icaoId: string
+  name: string
+  rawOb: string
+  reportTime: string
+  temp: number
+  dewp: number
+  wdir: number | string
+  wspd: number        // knots
+  wgst?: number
+  visib: string
+  altim: number
+  wxString?: string
+  clouds?: Array<{ cover: string; base: number }>
+}
+
+interface TafEntry {
+  icaoId: string
+  rawTAF: string
+  issueTime: string
+}
+
+interface MetarApiResponse {
+  metar: MetarEntry[]
+  taf: TafEntry[]
+  fetchedAt: string
+  cached?: boolean
+  stale?: boolean
 }
 
 type LocationMode = "district" | "gps" | "custom"
+
+// ── Open-Meteo fetch ──────────────────────────────────────────
+async function fetchOpenMeteo(lat: number, lon: number): Promise<WeatherData & { rawLocation: string }> {
+  const url = new URL("https://api.open-meteo.com/v1/forecast")
+  url.searchParams.set("latitude", lat.toString())
+  url.searchParams.set("longitude", lon.toString())
+  url.searchParams.set("current", [
+    "temperature_2m", "relative_humidity_2m", "apparent_temperature",
+    "weather_code", "pressure_msl", "wind_speed_10m", "wind_direction_10m",
+    "cloud_cover", "precipitation",
+  ].join(","))
+  url.searchParams.set("daily", [
+    "weather_code", "temperature_2m_max", "temperature_2m_min",
+    "sunrise", "sunset", "precipitation_probability_max", "wind_speed_10m_max",
+  ].join(","))
+  url.searchParams.set("wind_speed_unit", "kmh")
+  url.searchParams.set("timezone", "Africa/Kigali")
+  url.searchParams.set("forecast_days", "5")
+
+  const res = await fetch(url.toString())
+  if (!res.ok) throw new Error(`Open-Meteo error: ${res.status}`)
+  const data = await res.json()
+
+  const c = data.current
+  const d = data.daily
+  const code: number = c.weather_code
+
+  const forecast: ForecastItem[] = (d.time as string[]).map((date: string, i: number) => ({
+    date,
+    temp: { min: d.temperature_2m_min[i], max: d.temperature_2m_max[i] },
+    weatherCode: d.weather_code[i],
+    windSpeed: d.wind_speed_10m_max[i],
+    pop: d.precipitation_probability_max[i] ?? 0,
+  }))
+
+  return {
+    rawLocation: "",
+    location: "",
+    lat, lon,
+    temp: c.temperature_2m,
+    feelsLike: c.apparent_temperature,
+    humidity: c.relative_humidity_2m,
+    windSpeed: c.wind_speed_10m,
+    windDir: c.wind_direction_10m,
+    visibilityKm: wmoVisibilityKm(code),
+    pressure: c.pressure_msl,
+    weatherCode: code,
+    cloudCover: c.cloud_cover,
+    sunrise: formatTimeISO(d.sunrise[0]),
+    sunset: formatTimeISO(d.sunset[0]),
+    forecast,
+  }
+}
 
 // ── component ─────────────────────────────────────────────────
 export default function WeatherPage() {
@@ -128,17 +286,16 @@ export default function WeatherPage() {
   const [gpsLoading, setGpsLoading] = useState(false)
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lon: number; label: string } | null>(null)
   const [weather, setWeather] = useState<WeatherData | null>(null)
+  const [metarData, setMetarData] = useState<MetarApiResponse | null>(null)
   const [loading, setLoading] = useState(false)
+  const [metarLoading, setMetarLoading] = useState(false)
   const [error, setError] = useState("")
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-
-  const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY
 
   const filteredDistricts = districtSearch
     ? RWANDA_DISTRICTS.filter(d => d.name.toLowerCase().includes(districtSearch.toLowerCase()))
     : RWANDA_DISTRICTS
 
-  // Get current fetch coordinates
   const getCoords = (): { lat: number; lon: number; label: string } | null => {
     if (mode === "district") return { lat: selectedDistrict.lat, lon: selectedDistrict.lon, label: selectedDistrict.name }
     if (mode === "gps") return gpsCoords
@@ -150,18 +307,13 @@ export default function WeatherPage() {
     return null
   }
 
-  // GPS detection
   const detectGPS = () => {
-    if (!navigator.geolocation) {
-      setError("GPS not supported by your browser")
-      return
-    }
+    if (!navigator.geolocation) { setError("GPS not supported by your browser"); return }
     setGpsLoading(true)
     setError("")
     navigator.geolocation.getCurrentPosition(
       pos => {
         const { latitude: lat, longitude: lon } = pos.coords
-        // Find nearest district name for labelling
         let nearest = RWANDA_DISTRICTS[0]
         let minDist = haversineKm(lat, lon, nearest.lat, nearest.lon)
         for (const d of RWANDA_DISTRICTS.slice(1)) {
@@ -172,72 +324,32 @@ export default function WeatherPage() {
         setGpsLoading(false)
         setMode("gps")
       },
-      err => {
-        setError(`GPS error: ${err.message}`)
-        setGpsLoading(false)
-      },
+      err => { setError(`GPS error: ${err.message}`); setGpsLoading(false) },
       { timeout: 10000, maximumAge: 60000 }
     )
   }
 
+  // Fetch METAR/TAF once (cached server-side for 30 min)
+  const fetchMetar = useCallback(async () => {
+    setMetarLoading(true)
+    try {
+      const res = await fetch("/api/weather/metar")
+      if (res.ok) setMetarData(await res.json())
+    } catch {
+      // Non-fatal: METAR is supplementary
+    } finally {
+      setMetarLoading(false)
+    }
+  }, [])
+
   const fetchWeather = useCallback(async () => {
-    if (!apiKey) return
     const coords = getCoords()
     if (!coords) return
     setLoading(true)
     setError("")
-
     try {
-      const [current, forecast] = await Promise.all([
-        fetch(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${coords.lat}&lon=${coords.lon}&appid=${apiKey}&units=metric`
-        ).then(r => r.json()),
-        fetch(
-          `https://api.openweathermap.org/data/2.5/forecast?lat=${coords.lat}&lon=${coords.lon}&appid=${apiKey}&units=metric&cnt=32`
-        ).then(r => r.json()),
-      ])
-
-      if (current.cod !== 200) throw new Error(current.message || "Failed to fetch weather")
-
-      const dailyMap: Record<string, any> = {}
-      for (const item of forecast.list || []) {
-        const date = new Date(item.dt * 1000).toDateString()
-        if (!dailyMap[date]) {
-          dailyMap[date] = { dt: item.dt, temps: [], descriptions: [], icons: [], winds: [], pops: [] }
-        }
-        dailyMap[date].temps.push(item.main.temp)
-        dailyMap[date].descriptions.push(item.weather[0].description)
-        dailyMap[date].icons.push(item.weather[0].icon)
-        dailyMap[date].winds.push(item.wind.speed)
-        dailyMap[date].pops.push(item.pop || 0)
-      }
-
-      const forecastItems: ForecastItem[] = Object.values(dailyMap).slice(0, 5).map((d: any) => ({
-        dt: d.dt,
-        temp: { min: Math.min(...d.temps), max: Math.max(...d.temps) },
-        description: d.descriptions[Math.floor(d.descriptions.length / 2)],
-        icon: d.icons[Math.floor(d.icons.length / 2)],
-        windSpeed: Math.max(...d.winds),
-        pop: Math.max(...d.pops),
-      }))
-
-      setWeather({
-        location: coords.label,
-        lat: coords.lat,
-        lon: coords.lon,
-        temp: current.main.temp,
-        feelsLike: current.main.feels_like,
-        humidity: current.main.humidity,
-        windSpeed: current.wind.speed * 3.6,
-        windDir: current.wind.deg || 0,
-        visibility: current.visibility / 1000,
-        pressure: current.main.pressure,
-        description: current.weather[0].description,
-        icon: current.weather[0].icon,
-        sunrise: current.sys.sunrise,
-        sunset: current.sys.sunset,
-        forecast: forecastItems,
-      })
+      const data = await fetchOpenMeteo(coords.lat, coords.lon)
+      setWeather({ ...data, location: coords.label })
       setLastUpdated(new Date())
     } catch (err: any) {
       setError(err.message || "Failed to fetch weather data")
@@ -245,18 +357,31 @@ export default function WeatherPage() {
       setLoading(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, selectedDistrict, gpsCoords, customLat, customLon, customName, apiKey])
+  }, [mode, selectedDistrict, gpsCoords, customLat, customLon, customName])
 
-  useEffect(() => {
-    fetchWeather()
-  }, [fetchWeather])
+  useEffect(() => { fetchWeather() }, [fetchWeather])
+  useEffect(() => { fetchMetar() }, [fetchMetar])
 
-  const getSafetyChecks = (w: WeatherData): SafetyCheck[] => [
+  const getSafetyChecks = (w: WeatherData) => [
     { label: "Wind speed", pass: w.windSpeed < 40, value: `${w.windSpeed.toFixed(0)} km/h`, limit: "< 40 km/h" },
-    { label: "Visibility", pass: w.visibility >= 5, value: `${w.visibility.toFixed(1)} km`, limit: "≥ 5 km" },
-    { label: "No thunderstorm", pass: !w.description.toLowerCase().includes("thunder"), value: w.description, limit: "No thunderstorm" },
-    { label: "No heavy rain", pass: !w.description.toLowerCase().includes("heavy"), value: w.description, limit: "No heavy rain" },
+    { label: "Visibility (est.)", pass: w.visibilityKm >= 5, value: `${w.visibilityKm.toFixed(0)} km`, limit: "≥ 5 km" },
+    { label: "No thunderstorm", pass: !isThunderstorm(w.weatherCode), value: wmoDescription(w.weatherCode), limit: "No thunderstorm" },
+    { label: "No heavy rain", pass: !isHeavyRain(w.weatherCode), value: wmoDescription(w.weatherCode), limit: "No heavy rain" },
   ]
+
+  // Find METAR entry closest to selected location
+  const nearestMetar = metarData?.metar?.length
+    ? metarData.metar.reduce<MetarEntry | null>((best, m) => {
+        if (!best) return m
+        const dBest = haversineKm(weather?.lat ?? 0, weather?.lon ?? 0,
+          AIRPORTS.find(a => a.icao === best.icaoId)?.lat ?? 0,
+          AIRPORTS.find(a => a.icao === best.icaoId)?.lon ?? 0)
+        const dCurr = haversineKm(weather?.lat ?? 0, weather?.lon ?? 0,
+          AIRPORTS.find(a => a.icao === m.icaoId)?.lat ?? 0,
+          AIRPORTS.find(a => a.icao === m.icaoId)?.lon ?? 0)
+        return dCurr < dBest ? m : best
+      }, null)
+    : null
 
   return (
     <div className="max-w-4xl mx-auto py-6 px-4 space-y-6">
@@ -264,7 +389,9 @@ export default function WeatherPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Weather Briefing</h1>
-          <p className="text-muted-foreground text-sm">Pre-flight weather conditions — search by district, GPS, or custom coordinates</p>
+          <p className="text-muted-foreground text-sm">
+            Pre-flight weather · <span className="text-xs">Open-Meteo forecast + Aviation Weather METAR/TAF</span>
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {lastUpdated && (
@@ -273,7 +400,7 @@ export default function WeatherPage() {
               {lastUpdated.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
             </span>
           )}
-          <Button variant="outline" size="icon" onClick={fetchWeather} disabled={loading || !apiKey}>
+          <Button variant="outline" size="icon" onClick={() => { fetchWeather(); fetchMetar() }} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
@@ -282,42 +409,31 @@ export default function WeatherPage() {
       {/* Location selector */}
       <Card>
         <CardContent className="pt-5 space-y-4">
-          {/* Mode toggle */}
           <div className="flex gap-2 flex-wrap">
             <Button size="sm" variant={mode === "district" ? "default" : "outline"} onClick={() => setMode("district")}>
               <MapPin className="h-3.5 w-3.5 mr-1.5" /> District
             </Button>
             <Button size="sm" variant={mode === "gps" ? "default" : "outline"} onClick={detectGPS} disabled={gpsLoading}>
               {gpsLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <LocateFixed className="h-3.5 w-3.5 mr-1.5" />}
-              {gpsLoading ? "Detecting…" : "Use my GPS location"}
+              {gpsLoading ? "Detecting…" : "Use my GPS"}
             </Button>
             <Button size="sm" variant={mode === "custom" ? "default" : "outline"} onClick={() => setMode("custom")}>
               <Search className="h-3.5 w-3.5 mr-1.5" /> Custom Coordinates
             </Button>
           </div>
 
-          {/* District search + select */}
           {mode === "district" && (
             <div className="space-y-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  className="pl-9"
-                  placeholder="Search district…"
-                  value={districtSearch}
-                  onChange={e => setDistrictSearch(e.target.value)}
-                />
+                <Input className="pl-9" placeholder="Search district…" value={districtSearch}
+                  onChange={e => setDistrictSearch(e.target.value)} />
               </div>
-              <Select
-                value={selectedDistrict.name}
-                onValueChange={v => {
-                  const d = RWANDA_DISTRICTS.find(d => d.name === v)
-                  if (d) { setSelectedDistrict(d); setDistrictSearch("") }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+              <Select value={selectedDistrict.name} onValueChange={v => {
+                const d = RWANDA_DISTRICTS.find(d => d.name === v)
+                if (d) { setSelectedDistrict(d); setDistrictSearch("") }
+              }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {filteredDistricts.map(d => (
                     <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
@@ -330,7 +446,6 @@ export default function WeatherPage() {
             </div>
           )}
 
-          {/* GPS result */}
           {mode === "gps" && gpsCoords && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
               <LocateFixed className="h-4 w-4 text-primary shrink-0" />
@@ -339,20 +454,22 @@ export default function WeatherPage() {
             </div>
           )}
 
-          {/* Custom coords */}
           {mode === "custom" && (
             <div className="grid sm:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label htmlFor="clat">Latitude</Label>
-                <Input id="clat" type="number" step="0.0001" placeholder="-1.9441" value={customLat} onChange={e => setCustomLat(e.target.value)} />
+                <Input id="clat" type="number" step="0.0001" placeholder="-1.9441" value={customLat}
+                  onChange={e => setCustomLat(e.target.value)} />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="clon">Longitude</Label>
-                <Input id="clon" type="number" step="0.0001" placeholder="30.0619" value={customLon} onChange={e => setCustomLon(e.target.value)} />
+                <Input id="clon" type="number" step="0.0001" placeholder="30.0619" value={customLon}
+                  onChange={e => setCustomLon(e.target.value)} />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="clabel">Label (optional)</Label>
-                <Input id="clabel" placeholder="My flight site" value={customName} onChange={e => setCustomName(e.target.value)} />
+                <Input id="clabel" placeholder="My flight site" value={customName}
+                  onChange={e => setCustomName(e.target.value)} />
               </div>
               <div className="sm:col-span-3">
                 <Button size="sm" onClick={fetchWeather} disabled={!customLat || !customLon || loading}>
@@ -360,31 +477,10 @@ export default function WeatherPage() {
                   Get weather for these coordinates
                 </Button>
               </div>
-              <p className="sm:col-span-3 text-xs text-muted-foreground">
-                Tip: right-click any location on Google Maps to copy its coordinates.
-              </p>
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* No API key */}
-      {!apiKey && (
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            <p className="font-medium mb-1">Weather API key not configured</p>
-            <p className="text-sm">Add <code className="bg-muted px-1 rounded">NEXT_PUBLIC_OPENWEATHER_API_KEY</code> to your <code className="bg-muted px-1 rounded">.env</code> file.</p>
-            <p className="text-sm mt-2 font-medium">Rwanda typical conditions (offline reference):</p>
-            <ul className="text-sm mt-1 space-y-1 text-muted-foreground">
-              <li>• Kigali (1,567m): 17–26°C, winds 10–20 km/h, two rainy seasons (Mar–May, Oct–Nov)</li>
-              <li>• Musanze (1,850m): 12–22°C, stronger winds, occasional mist near volcanoes</li>
-              <li>• Best flying: June–September (long dry season), December–February (short dry)</li>
-              <li>• Avoid: 1–4pm during rainy season (afternoon thunderstorms common)</li>
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
 
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
@@ -400,11 +496,12 @@ export default function WeatherPage() {
         const { airport: nearestAirport, distKm } = getNearestAirport(weather.lat, weather.lon)
         const inBan = distKm <= nearestAirport.banKm
         const inAdvisory = distKm <= nearestAirport.advisoryKm && !inBan
+        const icon = wmoToIcon(weather.weatherCode)
 
         return (
           <>
-            {/* Nearest airport reference */}
-            <Alert className={`${inBan ? "border-red-500 bg-red-50 dark:bg-red-950/20" : inAdvisory ? "border-orange-400 bg-orange-50 dark:bg-orange-950/20" : "border-border"}`}>
+            {/* Nearest airport */}
+            <Alert className={inBan ? "border-red-500 bg-red-50 dark:bg-red-950/20" : inAdvisory ? "border-orange-400 bg-orange-50 dark:bg-orange-950/20" : "border-border"}>
               <Plane className={`h-4 w-4 ${inBan ? "text-red-500" : inAdvisory ? "text-orange-500" : "text-muted-foreground"}`} />
               <AlertDescription className={inBan ? "text-red-800 dark:text-red-300" : inAdvisory ? "text-orange-800 dark:text-orange-300" : ""}>
                 <span className="font-medium">Nearest airport:</span> {nearestAirport.name} ({nearestAirport.icao}) — <strong>{distKm.toFixed(1)} km away</strong>
@@ -437,19 +534,19 @@ export default function WeatherPage() {
                       </p>
                       <div className="flex items-end gap-2">
                         <span className="text-5xl font-bold">{weather.temp.toFixed(0)}°C</span>
-                        {getWeatherIcon(weather.icon, "h-10 w-10")}
+                        {getWeatherIcon(icon, "h-10 w-10")}
                       </div>
-                      <p className="capitalize text-muted-foreground mt-1">{weather.description}</p>
-                      <p className="text-sm text-muted-foreground">Feels like {weather.feelsLike.toFixed(0)}°C</p>
+                      <p className="capitalize text-muted-foreground mt-1">{wmoDescription(weather.weatherCode)}</p>
+                      <p className="text-sm text-muted-foreground">Feels like {weather.feelsLike.toFixed(0)}°C · Cloud cover {weather.cloudCover}%</p>
                     </div>
                     <div className="text-right space-y-1 text-sm">
                       <div className="flex items-center justify-end gap-1.5">
                         <Sunrise className="h-4 w-4 text-orange-400" />
-                        <span>{formatTime(weather.sunrise)}</span>
+                        <span>{weather.sunrise}</span>
                       </div>
                       <div className="flex items-center justify-end gap-1.5">
                         <Sunset className="h-4 w-4 text-orange-600" />
-                        <span>{formatTime(weather.sunset)}</span>
+                        <span>{weather.sunset}</span>
                       </div>
                     </div>
                   </div>
@@ -471,15 +568,17 @@ export default function WeatherPage() {
                     <div className="flex items-center gap-2 text-sm">
                       <Eye className="h-4 w-4 text-green-400 shrink-0" />
                       <div>
-                        <p className="text-muted-foreground text-xs">Visibility</p>
-                        <p className="font-medium">{weather.visibility.toFixed(0)} km</p>
+                        <p className="text-muted-foreground text-xs">Visibility (est.)</p>
+                        <p className="font-medium">
+                          {weather.visibilityKm >= 10 ? "≥10 km" : `${weather.visibilityKm.toFixed(0)} km`}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Gauge className="h-4 w-4 text-purple-400 shrink-0" />
                       <div>
                         <p className="text-muted-foreground text-xs">Pressure</p>
-                        <p className="font-medium">{weather.pressure} hPa</p>
+                        <p className="font-medium">{weather.pressure.toFixed(0)} hPa</p>
                       </div>
                     </div>
                   </div>
@@ -536,28 +635,154 @@ export default function WeatherPage() {
               <CardContent>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                   {weather.forecast.map((f, i) => (
-                    <div key={f.dt} className="text-center p-3 rounded-lg bg-muted/40 space-y-2">
+                    <div key={f.date} className="text-center p-3 rounded-lg bg-muted/40 space-y-2">
                       <p className="text-xs font-medium text-muted-foreground">
-                        {i === 0 ? "Today" : new Date(f.dt * 1000).toLocaleDateString("en-GB", { weekday: "short", day: "numeric" })}
+                        {i === 0 ? "Today" : new Date(f.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric" })}
                       </p>
-                      <div className="flex justify-center">{getWeatherIcon(f.icon)}</div>
+                      <div className="flex justify-center">{getWeatherIcon(wmoToIcon(f.weatherCode))}</div>
                       <div>
                         <p className="font-semibold text-sm">{f.temp.max.toFixed(0)}°</p>
                         <p className="text-xs text-muted-foreground">{f.temp.min.toFixed(0)}°</p>
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-                          <Wind className="h-3 w-3" />{(f.windSpeed * 3.6).toFixed(0)} km/h
+                          <Wind className="h-3 w-3" />{f.windSpeed.toFixed(0)} km/h
                         </div>
-                        {f.pop > 0.2 && (
+                        {f.pop > 20 && (
                           <div className="flex items-center justify-center gap-1 text-xs text-blue-500">
-                            <Droplets className="h-3 w-3" />{(f.pop * 100).toFixed(0)}%
+                            <Droplets className="h-3 w-3" />{f.pop}%
                           </div>
                         )}
                       </div>
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* METAR / TAF section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Radio className="h-4 w-4" />
+                  Aviation Weather — METAR / TAF
+                  {metarData?.cached && (
+                    <Badge variant="outline" className="text-xs font-normal">cached</Badge>
+                  )}
+                  {metarData?.stale && (
+                    <Badge variant="outline" className="text-xs font-normal text-orange-500">stale</Badge>
+                  )}
+                  {metarLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {metarData?.metar && metarData.metar.length > 0 ? (
+                  <>
+                    {/* All airport METARs */}
+                    <div className="space-y-3">
+                      {metarData.metar
+                        .filter(m => m.icaoId && m.rawOb)
+                        .map((m, idx) => {
+                          const ap = AIRPORTS.find(a => a.icao === m.icaoId)
+                          const windKmh = m.wspd ? (m.wspd * 1.852).toFixed(0) : "—"
+                          const gustKmh = m.wgst ? ` G${(m.wgst * 1.852).toFixed(0)}` : ""
+                          const visKm = parseVisibilitySM(m.visib)
+                          const isNearest = nearestMetar?.icaoId === m.icaoId
+                          return (
+                            <div key={`${m.icaoId}-${idx}`} className={`rounded-lg border p-3 space-y-2 ${isNearest ? "border-primary/40 bg-primary/5" : ""}`}>
+                              <div className="flex items-center justify-between flex-wrap gap-2">
+                                <div className="flex items-center gap-2">
+                                  <Plane className="h-4 w-4 text-muted-foreground" />
+                                  <span className="font-semibold">{m.icaoId}</span>
+                                  <span className="text-sm text-muted-foreground">{m.name || ap?.name}</span>
+                                  {isNearest && <Badge variant="secondary" className="text-xs">Nearest</Badge>}
+                                </div>
+                                <span className="text-xs text-muted-foreground">{parseMetarTime(m.reportTime)}</span>
+                              </div>
+
+                              {/* Raw METAR */}
+                              <code className="block text-xs bg-muted/60 rounded px-2 py-1.5 font-mono break-all">
+                                {m.rawOb}
+                              </code>
+
+                              {/* Parsed summary */}
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                                <div>
+                                  <p className="text-muted-foreground">Wind</p>
+                                  <p className="font-medium">
+                                    {m.wdir === "VRB" ? "Variable" : `${m.wdir}°`} {windKmh}{gustKmh} km/h
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">Visibility</p>
+                                  <p className="font-medium">{visKm >= 10 ? "≥10 km" : `${visKm.toFixed(1)} km`}</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">Temp / Dew</p>
+                                  <p className="font-medium">{m.temp}° / {m.dewp}°C</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">QNH</p>
+                                  <p className="font-medium">{m.altim ? `${m.altim.toFixed(0)} hPa` : "—"}</p>
+                                </div>
+                              </div>
+
+                              {/* Cloud layers */}
+                              {m.clouds && m.clouds.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {m.clouds.map((cl, idx) => (
+                                    <Badge key={idx} variant="outline" className="text-xs font-mono">
+                                      {cloudCoverLabel(cl.cover)} {cl.base ? `${cl.base}ft` : ""}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Present weather */}
+                              {m.wxString && (
+                                <p className="text-xs text-orange-600 dark:text-orange-400">
+                                  ⚠ Present weather: {m.wxString}
+                                </p>
+                              )}
+                            </div>
+                          )
+                        })}
+                    </div>
+
+                    {/* TAF */}
+                    {metarData.taf && metarData.taf.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold flex items-center gap-1.5">
+                          <FileText className="h-4 w-4" /> TAF — HRYR Kigali
+                        </p>
+                        {metarData.taf.map(t => (
+                          <div key={t.icaoId} className="space-y-1">
+                            <code className="block text-xs bg-muted/60 rounded px-2 py-2 font-mono break-all whitespace-pre-wrap leading-relaxed">
+                              {t.rawTAF}
+                            </code>
+                            {t.issueTime && (
+                              <p className="text-xs text-muted-foreground">
+                                Issued: {parseMetarTime(t.issueTime)}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <p className="text-xs text-muted-foreground border-t pt-2">
+                      Source: <a href="https://aviationweather.gov" target="_blank" rel="noopener" className="underline">aviationweather.gov</a>
+                      {" · "}Cached for 30 min · Updated {metarData.fetchedAt ? new Date(metarData.fetchedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                    </p>
+                  </>
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    {metarLoading ? "Fetching aviation weather…" : "METAR data unavailable — check aviationweather.gov directly."}
+                    <p className="mt-2 text-xs">
+                      ICAO codes: HRYR (Kigali), HRZA (Kamembe), HRHU (Huye)
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -583,6 +808,10 @@ export default function WeatherPage() {
                     </ul>
                   </div>
                 </div>
+                <p className="text-xs text-muted-foreground mt-3 border-t pt-3">
+                  Forecast: <a href="https://open-meteo.com" target="_blank" rel="noopener" className="underline">Open-Meteo</a> (open-source, no API key required)
+                  {" · "}METAR/TAF: <a href="https://aviationweather.gov" target="_blank" rel="noopener" className="underline">US NWS Aviation Weather Center</a>
+                </p>
               </CardContent>
             </Card>
           </>
