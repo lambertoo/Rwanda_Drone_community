@@ -98,6 +98,8 @@ const FIELD_TYPES = [
   { value: "RATING", label: "Rating", icon: Star, category: "Rating" },
   { value: "MATRIX", label: "Matrix", icon: LayoutGrid, category: "Rating" },
   { value: "FILE_UPLOAD", label: "File Upload", icon: Upload, category: "Other" },
+  { value: "GPS_COORDINATES", label: "GPS Coordinates", icon: Hash, category: "Other" },
+  { value: "NATIONAL_ID", label: "National ID", icon: Hash, category: "Other" },
 ]
 
 const FIELD_ICON_MAP: Record<string, any> = Object.fromEntries(

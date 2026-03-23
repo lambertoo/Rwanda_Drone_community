@@ -122,7 +122,16 @@ const FIELD_ICONS = {
 
 export default function FormRenderer({ formData, onSubmit }: FormRendererProps) {
   const [currentStep, setCurrentStep] = useState(0)
-  const [formValues, setFormValues] = useState<Record<string, any>>({})
+  const [formValues, setFormValues] = useState<Record<string, any>>(() => {
+    // Prefill from URL params
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const prefilled: Record<string, any> = {}
+      params.forEach((value, key) => { prefilled[key] = value })
+      return prefilled
+    }
+    return {}
+  })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -584,6 +593,54 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
           </div>
         )}
 
+
+        {field.type === 'GPS_COORDINATES' && (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Latitude</Label>
+              <Input
+                type="number"
+                step="any"
+                placeholder="-1.9403"
+                value={typeof value === 'object' ? value?.lat || '' : ''}
+                onChange={(e) => handleInputChange(field.name, { ...(typeof value === 'object' ? value : {}), lat: e.target.value })}
+                className={error ? 'border-red-500' : ''}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Longitude</Label>
+              <Input
+                type="number"
+                step="any"
+                placeholder="29.8739"
+                value={typeof value === 'object' ? value?.lng || '' : ''}
+                onChange={(e) => handleInputChange(field.name, { ...(typeof value === 'object' ? value : {}), lng: e.target.value })}
+                className={error ? 'border-red-500' : ''}
+              />
+            </div>
+          </div>
+        )}
+
+        {field.type === 'NATIONAL_ID' && (
+          <div>
+            <Input
+              id={field.name}
+              type="text"
+              inputMode="numeric"
+              maxLength={16}
+              placeholder="1199880012345678"
+              value={value}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '').slice(0, 16)
+                handleInputChange(field.name, digits)
+              }}
+              className={error ? 'border-red-500' : ''}
+            />
+            {value && value.length > 0 && value.length !== 16 && (
+              <p className="text-xs text-amber-600 mt-1">{value.length}/16 digits</p>
+            )}
+          </div>
+        )}
 
         {field.type === 'TIME' && (
           <Input

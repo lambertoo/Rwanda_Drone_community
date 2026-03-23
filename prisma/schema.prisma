@@ -759,16 +759,22 @@ model FormField {
 }
 
 model FormEntry {
-  id        String      @id @default(cuid())
-  formId    String
-  userId    String?     // Optional - for logged in users
-  ip        String?
-  meta      Json?       // User agent, referrer, etc.
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  form      UniversalForm @relation(fields: [formId], references: [id], onDelete: Cascade)
-  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  values    FormValue[]
+  id             String      @id @default(cuid())
+  formId         String
+  userId         String?     // Optional - for logged in users
+  ip             String?
+  meta           Json?       // User agent, referrer, etc.
+  editToken      String?     @unique // Unique token for submission editing
+  status         String      @default("submitted") // submitted, pending_review, approved, rejected, revision_requested
+  reviewerId     String?     // Who reviewed this submission
+  reviewComment  String?     // Approver's comment
+  reviewedAt     DateTime?   // When it was reviewed
+  score          Float?      // Total score for quiz-style forms
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  form           UniversalForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  user           User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  values         FormValue[]
 
   @@map("form_entries")
 }
@@ -803,6 +809,10 @@ enum FormFieldType {
   LINEAR_SCALE
   MATRIX
   RATING
+  GPS_COORDINATES
+  NATIONAL_ID
+  SCORE
+  CALCULATED
 }
 
 // ===== DRONE EQUIPMENT MANAGEMENT =====

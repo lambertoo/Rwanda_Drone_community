@@ -20,6 +20,7 @@ import {
   ToggleRight,
 } from "lucide-react"
 import { AuthGuard } from "@/components/auth-guard"
+import FormQRCode from "@/components/forms/form-qr-code"
 
 interface Form {
   id: string
@@ -41,6 +42,8 @@ export default function FormsPage() {
   const [loading, setLoading] = useState(true)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
+  const [qrFormId, setQrFormId] = useState<string | null>(null)
+  const [qrFormTitle, setQrFormTitle] = useState("")
 
   useEffect(() => {
     fetchForms()
@@ -251,6 +254,12 @@ export default function FormsPage() {
                                   <Copy className="w-3.5 h-3.5" /> Duplicate
                                 </button>
                                 <button
+                                  onClick={() => { setQrFormId(form.id); setQrFormTitle(form.title); setMenuOpen(null) }}
+                                  className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted transition-colors"
+                                >
+                                  <Link2 className="w-3.5 h-3.5" /> QR Code
+                                </button>
+                                <button
                                   onClick={() => { toggleStatus(form.id, form.isActive); setMenuOpen(null) }}
                                   className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted transition-colors"
                                 >
@@ -277,6 +286,14 @@ export default function FormsPage() {
           )}
         </div>
       </div>
+      {/* QR Code Modal */}
+      {qrFormId && (
+        <FormQRCode
+          formId={qrFormId}
+          formTitle={qrFormTitle}
+          onClose={() => setQrFormId(null)}
+        />
+      )}
     </AuthGuard>
   )
 }

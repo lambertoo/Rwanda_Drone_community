@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/email'
+import crypto from 'crypto'
 
 export async function POST(
   request: NextRequest,
@@ -99,9 +100,16 @@ export async function POST(
       request.headers.get('x-real-ip') ||
       'unknown'
 
+    const editToken = crypto.randomBytes(24).toString('hex')
+
+    // Determine initial status: if form has approval workflow, set to pending_review
+    const needsApproval = formSettings?.requireApproval === true
+
     const submission = await prisma.formEntry.create({
       data: {
         formId,
+        editToken,
+        status: needsApproval ? 'pending_review' : 'submitted',
         meta: {
           ip,
           submittedAt: new Date().toISOString(),
@@ -134,6 +142,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       submissionId: submission.id,
+      editToken,
       message: 'Form submitted successfully',
     })
   } catch (error) {
