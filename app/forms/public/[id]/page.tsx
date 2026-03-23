@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import FormRenderer from "@/components/forms/form-renderer"
 import { Card, CardContent } from "@/components/ui/card"
@@ -17,6 +17,14 @@ interface FormData {
 }
 
 export default function PublicFormPage() {
+  return (
+    <Suspense>
+      <PublicFormContent />
+    </Suspense>
+  )
+}
+
+function PublicFormContent() {
   const params = useParams()
   const searchParams = useSearchParams()
   const formId = params.id as string

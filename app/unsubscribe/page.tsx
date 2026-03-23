@@ -1,12 +1,20 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 
 type State = "idle" | "loading" | "unsubscribed" | "resubscribed" | "not_found" | "error"
 
 export default function UnsubscribePage() {
+  return (
+    <Suspense>
+      <UnsubscribeContent />
+    </Suspense>
+  )
+}
+
+function UnsubscribeContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get("token")
 
