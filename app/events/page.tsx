@@ -104,7 +104,7 @@ export default function EventsPage() {
             </div>
             {user && (
               <Link href="/events/new" style={{ marginTop: 4 }}>
-                <Button style={{ background: "#002674", color: "#fff", borderRadius: 999 }} className="gap-1.5">
+                <Button style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", borderRadius: 999 }} className="gap-1.5">
                   <Plus className="h-4 w-4" /> Create Event
                 </Button>
               </Link>
@@ -118,7 +118,7 @@ export default function EventsPage() {
         <div className="dir-filters__head">
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" /></svg>
-            Filters{activeFilters > 0 && <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 800, background: "#0058dd", color: "#fff", borderRadius: 999, padding: "1px 7px" }}>{activeFilters}</span>}
+            Filters{activeFilters > 0 && <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 800, background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", borderRadius: 999, padding: "1px 7px" }}>{activeFilters}</span>}
           </span>
         </div>
         <div className="dir-filters__body">
@@ -165,12 +165,12 @@ export default function EventsPage() {
             <button
               onClick={() => setViewMode("list")}
               title="List view"
-              style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "list" ? "#002674" : "#fff", color: viewMode === "list" ? "#fff" : "#64748b", borderColor: viewMode === "list" ? "#002674" : "#e2e8f0" }}
+              style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "list" ? "linear-gradient(135deg,#002674,#0058dd)" : "#fff", color: viewMode === "list" ? "#fff" : "#64748b", borderColor: viewMode === "list" ? "#002674" : "#e2e8f0" }}
             ><LayoutList size={15} /></button>
             <button
               onClick={() => setViewMode("grid")}
               title="Grid view"
-              style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "grid" ? "#002674" : "#fff", color: viewMode === "grid" ? "#fff" : "#64748b", borderColor: viewMode === "grid" ? "#002674" : "#e2e8f0" }}
+              style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "grid" ? "linear-gradient(135deg,#002674,#0058dd)" : "#fff", color: viewMode === "grid" ? "#fff" : "#64748b", borderColor: viewMode === "grid" ? "#002674" : "#e2e8f0" }}
             ><LayoutGrid size={15} /></button>
           </div>
         </div>
@@ -236,7 +236,7 @@ export default function EventsPage() {
                   </div>
                   {event.price === 0
                     ? <span className="evt-grid-card__badge" style={{ background: "#16a34a" }}>Free</span>
-                    : <span className="evt-grid-card__badge" style={{ background: "#0058dd" }}>{event.price.toLocaleString()} {event.currency}</span>
+                    : <span className="evt-grid-card__badge" style={{ background: "linear-gradient(135deg,#002674,#0058dd)" }}>{event.price.toLocaleString()} {event.currency}</span>
                   }
                 </div>
                 <div className="evt-grid-card__body">

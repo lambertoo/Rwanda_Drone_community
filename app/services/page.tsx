@@ -159,7 +159,7 @@ export default function ServicesPage() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
             </svg>
-            Filters{activeFilters > 0 && <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 800, background: "#0058dd", color: "#fff", borderRadius: 999, padding: "1px 7px" }}>{activeFilters}</span>}
+            Filters{activeFilters > 0 && <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 800, background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", borderRadius: 999, padding: "1px 7px" }}>{activeFilters}</span>}
           </span>
         </div>
         <div className="dir-filters__body">
@@ -202,11 +202,11 @@ export default function ServicesPage() {
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ display: "flex", gap: 4 }}>
-              <button onClick={() => setViewMode("list")} title="List view" style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "list" ? "#002674" : "#fff", color: viewMode === "list" ? "#fff" : "#64748b", borderColor: viewMode === "list" ? "#002674" : "#e2e8f0" }}><LayoutList size={15} /></button>
-              <button onClick={() => setViewMode("grid")} title="Grid view" style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "grid" ? "#002674" : "#fff", color: viewMode === "grid" ? "#fff" : "#64748b", borderColor: viewMode === "grid" ? "#002674" : "#e2e8f0" }}><LayoutGrid size={15} /></button>
+              <button onClick={() => setViewMode("list")} title="List view" style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "list" ? "linear-gradient(135deg,#002674,#0058dd)" : "#fff", color: viewMode === "list" ? "#fff" : "#64748b", borderColor: viewMode === "list" ? "#002674" : "#e2e8f0" }}><LayoutList size={15} /></button>
+              <button onClick={() => setViewMode("grid")} title="Grid view" style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "grid" ? "linear-gradient(135deg,#002674,#0058dd)" : "#fff", color: viewMode === "grid" ? "#fff" : "#64748b", borderColor: viewMode === "grid" ? "#002674" : "#e2e8f0" }}><LayoutGrid size={15} /></button>
             </div>
             <Link href="/services/new">
-              <Button size="sm" style={{ background: "#002674", color: "#fff", borderRadius: 999 }} className="gap-1.5">
+              <Button size="sm" style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", borderRadius: 999 }} className="gap-1.5">
                 <Plus className="h-3.5 w-3.5" /> List your service
               </Button>
             </Link>

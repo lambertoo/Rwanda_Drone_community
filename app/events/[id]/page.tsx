@@ -74,9 +74,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const RSVPButton = () => {
     if (!event) return null
     if (!event.allowRegistration) return <Button disabled className="w-full rounded-full">Registration Closed</Button>
-    if (!user) return <Button asChild className="w-full rounded-full" style={{ background: "#002674" }}><Link href="/login">Log In to Register</Link></Button>
+    if (!user) return <Button asChild className="w-full rounded-full" style={{ background: "linear-gradient(135deg,#002674,#0058dd)" }}><Link href="/login">Log In to Register</Link></Button>
     if (event.registrationFormId) return (
-      <Button asChild className="w-full rounded-full" style={{ background: "#002674" }}>
+      <Button asChild className="w-full rounded-full" style={{ background: "linear-gradient(135deg,#002674,#0058dd)" }}>
         <Link href={`/forms/public/${event.registrationFormId}?eventId=${eventId}`}>Register Now</Link>
       </Button>
     )
@@ -88,7 +88,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     return (
       <Dialog>
         <DialogTrigger asChild>
-          <Button className="w-full rounded-full" style={{ background: "#002674" }} onClick={handleRSVP} disabled={rsvpStatus === 'loading'}>
+          <Button className="w-full rounded-full" style={{ background: "linear-gradient(135deg,#002674,#0058dd)" }} onClick={handleRSVP} disabled={rsvpStatus === 'loading'}>
             {rsvpStatus === 'loading' ? 'Registering…' : 'Register Now'}
           </Button>
         </DialogTrigger>

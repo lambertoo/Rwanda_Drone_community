@@ -196,7 +196,7 @@ export function MarketingHeader({ onSidebarToggle }: MarketingHeaderProps) {
               >
                 <Avatar style={{ width: 32, height: 32, outline: "2px solid rgba(0,88,221,0.2)", outlineOffset: 1 }}>
                   <AvatarImage src={user.avatar || "/placeholder-user.jpg"} alt={user.fullName} />
-                  <AvatarFallback style={{ background: "#002674", color: "#fff", fontSize: 12, fontWeight: 700 }}>
+                  <AvatarFallback style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", fontSize: 12, fontWeight: 700 }}>
                     {initials}
                   </AvatarFallback>
                 </Avatar>
@@ -248,7 +248,7 @@ export function MarketingHeader({ onSidebarToggle }: MarketingHeaderProps) {
               <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid rgba(0,38,116,0.06)", display: "flex", alignItems: "center", gap: 14 }}>
                 <Avatar style={{ width: 48, height: 48, flexShrink: 0, outline: "3px solid rgba(0,88,221,0.15)", outlineOffset: 2 }}>
                   <AvatarImage src={user.avatar || "/placeholder-user.jpg"} alt={user.fullName} />
-                  <AvatarFallback style={{ background: "#002674", color: "#fff", fontSize: 16, fontWeight: 700 }}>{initials}</AvatarFallback>
+                  <AvatarFallback style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", fontSize: 16, fontWeight: 700 }}>{initials}</AvatarFallback>
                 </Avatar>
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontWeight: 700, fontSize: 14, color: "#0f172a", margin: "0 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.fullName}</p>
