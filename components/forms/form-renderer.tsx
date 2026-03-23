@@ -82,6 +82,11 @@ export interface FormSettings {
   collectEmail?: boolean
   showProgressBar?: boolean
   submitButtonText?: string
+  closedMessage?: string
+  primaryColor?: string
+  coverImage?: string
+  closeDate?: string
+  maxResponses?: number | null
 }
 
 interface FormRendererProps {
@@ -91,6 +96,8 @@ interface FormRendererProps {
     description: string
     sections: FormSection[]
     settings: FormSettings
+    isClosed?: boolean
+    closedReason?: string
   }
   onSubmit: (data: any) => Promise<void>
 }
@@ -863,81 +870,104 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
     )
   }
 
+  const accentColor = settings?.primaryColor || '#2563eb'
+  const { isClosed, closedReason } = formData as any
+
+  // Closed form
+  if (isClosed) {
+    return (
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-background rounded-2xl border shadow-sm p-8 text-center">
+          <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-6 h-6 text-muted-foreground" />
+          </div>
+          <h2 className="text-xl font-semibold mb-2">Form Closed</h2>
+          <p className="text-muted-foreground">{closedReason || settings?.closedMessage || 'This form is no longer accepting responses.'}</p>
+        </div>
+      </div>
+    )
+  }
+
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-foreground mb-2">Form Submitted!</h2>
-              <p className="text-muted-foreground mb-6">{settings?.confirmationMessage || 'Thank you for your submission!'}</p>
-              {settings?.redirectUrl && (
-                <Button asChild className="w-full">
-                  <a href={settings.redirectUrl}>Continue</a>
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-background rounded-2xl border shadow-sm p-8 text-center animate-in fade-in-0 zoom-in-95 duration-300">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: accentColor + '15' }}>
+            <CheckCircle className="w-8 h-8" style={{ color: accentColor }} />
+          </div>
+          <h2 className="text-2xl font-semibold mb-2">Thank you!</h2>
+          <p className="text-muted-foreground mb-6">{settings?.confirmationMessage || 'Your response has been recorded.'}</p>
+          {settings?.redirectUrl && (
+            <Button asChild className="w-full" style={{ backgroundColor: accentColor }}>
+              <a href={settings.redirectUrl}>Continue</a>
+            </Button>
+          )}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-background border-b">
-        <div className="max-w-2xl mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold text-foreground mb-2">{title}</h1>
-          {description && (
-            <p className="text-muted-foreground">{description}</p>
-          )}
+    <div className="min-h-screen bg-muted/30">
+      {/* Cover Image */}
+      {settings?.coverImage && (
+        <div className="h-48 w-full overflow-hidden">
+          <img src={settings.coverImage} alt="" className="w-full h-full object-cover" />
         </div>
-      </div>
+      )}
 
       {/* Progress Bar */}
-      {settings?.showProgressBar && totalSteps > 1 && (
-        <div className="bg-background border-b">
-          <div className="max-w-2xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">Step {currentStep + 1} of {totalSteps}</span>
-              <span className="text-sm text-muted-foreground">{Math.round(progress)}% complete</span>
+      {settings?.showProgressBar !== false && totalSteps > 1 && (
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
+          <div className="max-w-2xl mx-auto px-4 py-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs text-muted-foreground font-medium">Step {currentStep + 1} of {totalSteps}</span>
+              <span className="text-xs text-muted-foreground">{Math.round(progress)}%</span>
             </div>
-            <Progress value={progress} className="h-2" />
+            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: accentColor }} />
+            </div>
           </div>
         </div>
       )}
 
       {/* Form Content */}
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">{currentSection.title}</CardTitle>
-            {currentSection.description && (
-              <p className="text-muted-foreground">{currentSection.description}</p>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-6">
+      <div className="max-w-2xl mx-auto px-4 py-10">
+        {/* Title */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold mb-1">{title}</h1>
+          {description && <p className="text-muted-foreground">{description}</p>}
+        </div>
+
+        {/* Section */}
+        <div className="bg-background rounded-2xl border shadow-sm p-6 md:p-8 animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+          {totalSteps > 1 && (
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold">{currentSection.title}</h2>
+              {currentSection.description && <p className="text-sm text-muted-foreground mt-1">{currentSection.description}</p>}
+            </div>
+          )}
+
+          <div className="space-y-6">
             {currentSection.fields && Array.isArray(currentSection.fields)
               ? currentSection.fields
                   .sort((a, b) => (a.order || 0) - (b.order || 0))
                   .filter(isFieldVisible)
                   .map((field) => (
-                    <div key={field.id}>
+                    <div key={field.id} className="animate-in fade-in-0 duration-200">
                       {renderField(field)}
                     </div>
                   ))
               : <div className="text-center text-muted-foreground py-4">No fields in this section</div>
             }
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Validation Errors Summary */}
+        {/* Validation Errors */}
         {Object.keys(errors).length > 0 && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mt-4">
-            <h4 className="text-sm font-medium text-red-800 mb-2">Please fix the following errors:</h4>
-            <ul className="text-sm text-red-700 space-y-1">
+          <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-xl p-4 mt-4">
+            <p className="text-sm font-medium text-red-800 dark:text-red-400 mb-1">Please fix the following:</p>
+            <ul className="text-sm text-red-700 dark:text-red-400/80 space-y-0.5">
               {Object.entries(errors).map(([fieldName, error]) => (
                 <li key={fieldName}>• {error}</li>
               ))}
@@ -946,43 +976,36 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
         )}
 
         {/* Navigation */}
-        <div className="flex items-center justify-between mt-8">
-          <Button
-            variant="outline"
-            onClick={handlePrevious}
-            disabled={currentStep === 0}
-            className="flex items-center gap-2"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </Button>
+        <div className="flex items-center justify-between mt-6">
+          {currentStep > 0 ? (
+            <Button variant="ghost" onClick={handlePrevious} className="flex items-center gap-1.5">
+              <ChevronLeft className="h-4 w-4" /> Back
+            </Button>
+          ) : <div />}
 
           {currentStep === totalSteps - 1 ? (
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || Object.keys(errors).length > 0}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-6 text-white"
+              style={{ backgroundColor: accentColor }}
             >
               {isSubmitting ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" />
                   Submitting...
                 </>
               ) : (
-                <>
-                  <CheckCircle className="h-4 w-4" />
-                  {settings?.submitButtonText || 'Submit'}
-                </>
+                settings?.submitButtonText || 'Submit'
               )}
             </Button>
           ) : (
             <Button
               onClick={handleNext}
-              disabled={Object.keys(errors).length > 0}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+              className="flex items-center gap-1.5 px-6 text-white"
+              style={{ backgroundColor: accentColor }}
             >
-              Next
-              <ChevronRight className="h-4 w-4" />
+              Next <ChevronRight className="h-4 w-4" />
             </Button>
           )}
         </div>
