@@ -17,6 +17,7 @@ import { Loader, Camera, Plane, GraduationCap, Wrench } from "lucide-react"
 import { RoleCheck } from "@/components/role-check"
 import { PhoneInput } from "@/components/ui/phone-input"
 import { LocationPicker } from "@/components/ui/location-picker"
+import { CountrySelect } from "@/components/ui/country-select"
 
 const roleInfo = {
   hobbyist: {
@@ -297,12 +298,10 @@ function CompleteProfileForm() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="pilotLicenseCountry">Pilot License Country</Label>
-                  <Input
-                    id="pilotLicenseCountry"
-                    placeholder="Enter the country that issued your pilot license"
+                  <Label>Pilot License Country</Label>
+                  <CountrySelect
                     value={formData.pilotLicenseCountry}
-                    onChange={(e) => handleInputChange("pilotLicenseCountry", e.target.value)}
+                    onChange={(val) => handleInputChange("pilotLicenseCountry", val)}
                     disabled={isLoading}
                   />
                 </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
@@ -13,7 +13,7 @@ const RWANDA_DATA: Record<string, string[]> = {
   West: ["Rubavu", "Rusizi", "Nyamasheke", "Rutsiro", "Karongi", "Ngororero", "Nyabihu"],
 }
 
-// Common countries with flag emojis (Rwanda first)
+// Countries with flags — Rwanda and neighbors first
 const COUNTRIES = [
   { code: "RW", name: "Rwanda", flag: "🇷🇼" },
   { code: "BI", name: "Burundi", flag: "🇧🇮" },
@@ -45,6 +45,72 @@ const COUNTRIES = [
   { code: "OTHER", name: "Other", flag: "🌍" },
 ]
 
+// Searchable country dropdown
+function CountryDropdown({ value, onChange, disabled }: { value: string; onChange: (code: string) => void; disabled?: boolean }) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState("")
+  const ref = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
+  }, [])
+
+  const selected = COUNTRIES.find((c) => c.code === value)
+  const filtered = search
+    ? COUNTRIES.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.code.toLowerCase().includes(search.toLowerCase()))
+    : COUNTRIES
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => { if (!disabled) { setOpen(!open); setTimeout(() => inputRef.current?.focus(), 50) } }}
+        disabled={disabled}
+        className="flex items-center justify-between w-full h-9 rounded-md border border-input bg-background px-3 text-sm hover:bg-accent transition-colors disabled:opacity-50"
+      >
+        {selected ? <span>{selected.flag} {selected.name}</span> : <span className="text-muted-foreground">Select country</span>}
+        <svg width="12" height="12" viewBox="0 0 12 12" className="ml-2 opacity-50"><path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none" /></svg>
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-lg">
+          <div className="p-2 border-b">
+            <input
+              ref={inputRef}
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search country..."
+              className="w-full h-8 px-2 text-sm rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              autoComplete="off"
+            />
+          </div>
+          <div className="max-h-56 overflow-y-auto p-1">
+            {filtered.length === 0 ? (
+              <p className="p-2 text-sm text-muted-foreground text-center">No countries found</p>
+            ) : (
+              filtered.map((c) => (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => { onChange(c.code); setSearch(""); setOpen(false) }}
+                  className={`flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-accent transition-colors ${value === c.code ? "bg-accent font-medium" : ""}`}
+                >
+                  <span>{c.flag}</span><span>{c.name}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface LocationPickerProps {
   value: string // stored as "Country|Province|District" or "Country|Freeform"
   onChange: (value: string) => void
@@ -74,7 +140,6 @@ export function LocationPicker({ value, onChange, disabled }: LocationPickerProp
   const [district, setDistrict] = useState(parsed.district)
   const [freeform, setFreeform] = useState(parsed.freeform)
 
-  // Sync from value on mount
   useEffect(() => {
     const p = parseLocation(value)
     setCountry(p.country)
@@ -96,28 +161,17 @@ export function LocationPicker({ value, onChange, disabled }: LocationPickerProp
 
   return (
     <div className="space-y-3">
-      <div>
-        <Label className="text-sm">Country</Label>
-        <select
-          value={country}
-          onChange={(e) => {
-            const c = e.target.value
-            setCountry(c)
-            setProvince("")
-            setDistrict("")
-            setFreeform("")
-            emit(c, "", "", "")
-          }}
-          disabled={disabled}
-          className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          {COUNTRIES.map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.flag} {c.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <CountryDropdown
+        value={country}
+        onChange={(c) => {
+          setCountry(c)
+          setProvince("")
+          setDistrict("")
+          setFreeform("")
+          emit(c, "", "", "")
+        }}
+        disabled={disabled}
+      />
 
       {isRwanda ? (
         <div className="grid grid-cols-2 gap-3">
@@ -125,37 +179,24 @@ export function LocationPicker({ value, onChange, disabled }: LocationPickerProp
             <Label className="text-sm">Province</Label>
             <select
               value={province}
-              onChange={(e) => {
-                const p = e.target.value
-                setProvince(p)
-                setDistrict("")
-                emit(country, p, "", "")
-              }}
+              onChange={(e) => { const p = e.target.value; setProvince(p); setDistrict(""); emit(country, p, "", "") }}
               disabled={disabled}
               className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Select province</option>
-              {Object.keys(RWANDA_DATA).map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
+              {Object.keys(RWANDA_DATA).map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
           <div>
             <Label className="text-sm">District</Label>
             <select
               value={district}
-              onChange={(e) => {
-                const d = e.target.value
-                setDistrict(d)
-                emit(country, province, d, "")
-              }}
+              onChange={(e) => { const d = e.target.value; setDistrict(d); emit(country, province, d, "") }}
               disabled={disabled || !province}
               className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
             >
               <option value="">Select district</option>
-              {districts.map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
+              {districts.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
           </div>
         </div>
@@ -164,11 +205,7 @@ export function LocationPicker({ value, onChange, disabled }: LocationPickerProp
           <Label className="text-sm">City / Region</Label>
           <Input
             value={freeform}
-            onChange={(e) => {
-              const f = e.target.value
-              setFreeform(f)
-              emit(country, "", "", f)
-            }}
+            onChange={(e) => { const f = e.target.value; setFreeform(f); emit(country, "", "", f) }}
             placeholder="Enter your city or region"
             disabled={disabled}
           />
@@ -190,7 +227,6 @@ export function formatLocation(value: string | null | undefined): string {
     const countryName = COUNTRIES.find((c) => c.code === parts[0])?.name || parts[0]
     return `${parts[1]}, ${countryName}`
   }
-  // Legacy enum
   if (value.includes("_")) {
     const [prov, dist] = value.split("_")
     return `${prov.charAt(0) + prov.slice(1).toLowerCase()} - ${dist.charAt(0) + dist.slice(1).toLowerCase()}, Rwanda`
