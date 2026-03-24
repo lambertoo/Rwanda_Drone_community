@@ -1,16 +1,19 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/auth-context"
 import {
-  Home, MessageSquare, Calendar, Briefcase, Users, FileText, Shield,
-  BookOpen, Camera, Wrench, GraduationCap, ClipboardList, Settings,
-  Map, Plane, BookMarked, AlertTriangle, ShoppingBag, Newspaper,
-  Bell, Star, UserCheck, Radio, Award, CloudSun, Search, Image, BarChart3, Code2,
-  BookMarked as LearnIcon, Trophy, Rss, Mail, type LucideIcon,
+  MessageSquare,
+  Shield,
+  BookOpen,
+  Wrench,
+  ShoppingBag,
+  User,
+  Award,
+  type LucideIcon,
+  Compass,
 } from "lucide-react"
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -21,7 +24,6 @@ interface NavItem {
   title: string
   href: string
   icon: LucideIcon
-  badge?: string
 }
 
 interface NavSection {
@@ -32,144 +34,46 @@ interface NavSection {
 export function AppSidebar({ className, onItemClick }: SidebarProps) {
   const pathname = usePathname()
   const { user } = useAuth()
-  const [unreadCount, setUnreadCount] = useState(0)
-
-  useEffect(() => {
-    if (user) {
-      fetch("/api/notifications", { credentials: "include" })
-        .then(r => r.json())
-        .then(d => { if (d.unreadCount) setUnreadCount(d.unreadCount) })
-        .catch(() => {})
-    }
-  }, [user])
 
   const getSections = (): NavSection[] => {
     const sections: NavSection[] = []
 
-    const mainItems: NavItem[] = [{ title: "Home", href: "/", icon: Home }]
-    if (user) {
-      mainItems.push({
-        title: "Notifications",
-        href: "/notifications",
-        icon: Bell,
-        badge: unreadCount > 0 ? String(unreadCount) : undefined,
-      })
-    }
-    sections.push({ items: mainItems })
-
+    // Main navigation — 5 items for everyone
     sections.push({
-      title: "Community",
       items: [
-        { title: "Forum",               href: "/forum",    icon: MessageSquare },
-        { title: "Projects",            href: "/projects", icon: Camera },
-        { title: "Events",              href: "/events",   icon: Calendar },
-        { title: "Drone Clubs",         href: "/clubs",    icon: Trophy },
-        { title: "Community Directory", href: "/pilots",   icon: Users },
-        { title: "Resources",           href: "/resources",icon: BookOpen },
+        { title: "Community", href: "/community", icon: MessageSquare },
+        { title: "Know-How", href: "/know-how", icon: BookOpen },
+        { title: "Drone Tools", href: "/drone-tools", icon: Compass },
+        { title: "Marketplace", href: "/marketplace", icon: ShoppingBag },
       ],
     })
 
-    const droneItems: NavItem[] = [
-      { title: "Airspace Map",    href: "/airspace", icon: Map },
-      { title: "Weather Briefing",href: "/weather",  icon: CloudSun },
-      { title: "Safety Center",   href: "/safety",   icon: AlertTriangle },
-    ]
-    if (user) {
-      droneItems.unshift(
-        { title: "My Fleet",     href: "/equipment", icon: Plane },
-        { title: "Flight Logbook",href: "/logbook",  icon: BookMarked },
-        { title: "Compliance",   href: "/compliance",icon: Award },
-      )
-    }
-    sections.push({ title: "Drone Tools", items: droneItems })
-
-    const learnItems: NavItem[] = [{ title: "Courses", href: "/learn", icon: LearnIcon }]
-    if (user) {
-      learnItems.push(
-        { title: "My Courses",  href: "/learn/my-courses", icon: BookOpen },
-        { title: "Mentorship",  href: "/mentorship",       icon: Users },
-      )
-    }
-    sections.push({ title: "Learn", items: learnItems })
-
-    const marketItems: NavItem[] = [
-      { title: "Marketplace",  href: "/marketplace",  icon: ShoppingBag },
-      { title: "Services",     href: "/services",     icon: Wrench },
-      { title: "Opportunities",href: "/opportunities",icon: Briefcase },
-    ]
-    if (user) {
-      marketItems.push({ title: "My Opportunities", href: "/opportunities/my-opportunities", icon: Briefcase })
-    }
-    sections.push({ title: "Marketplace & Work", items: marketItems })
-
-    const discoverItems: NavItem[] = [
-      { title: "Search",     href: "/search",     icon: Search },
-      { title: "Gallery",    href: "/gallery",    icon: Image },
-      { title: "News",       href: "/news",       icon: Newspaper },
-      { title: "Statistics", href: "/stats",      icon: BarChart3 },
-      { title: "Developers", href: "/developers", icon: Code2 },
-    ]
-    if (user) {
-      discoverItems.splice(1, 0, { title: "Activity Feed", href: "/feed", icon: Rss })
-    }
-    sections.push({ title: "Discover", items: discoverItems })
-
+    // My Account — logged in only
     if (user) {
       sections.push({
         title: "Account",
         items: [
-          { title: "My Profile", href: "/profile", icon: Users },
-          { title: "Forms",      href: "/forms",   icon: ClipboardList },
-          { title: "Settings",   href: "/settings",icon: Settings },
+          { title: "My Account", href: "/account", icon: User },
         ],
       })
     }
 
+    // Admin — admin role only
     if (user?.role === "admin") {
       sections.push({
         title: "Administration",
         items: [
-          { title: "Admin Dashboard",  href: "/admin",                  icon: Shield },
-          { title: "User Management",  href: "/admin/users",            icon: Users },
-          { title: "Content Approvals",href: "/admin/approvals",        icon: UserCheck },
-          { title: "Subscribers",      href: "/admin/subscribers",      icon: Mail },
-          { title: "News Management",  href: "/admin/news",             icon: Newspaper },
-          { title: "Safety Reports",   href: "/admin/safety-reports",   icon: AlertTriangle },
-          { title: "Feature Flags",    href: "/admin/feature-flags",    icon: Radio },
+          { title: "Admin Panel", href: "/admin", icon: Shield },
         ],
       })
     }
 
+    // Regulator — regulator role only
     if (user?.role === "regulator") {
       sections.push({
-        title: "Regulator",
+        title: "Regulation",
         items: [
-          { title: "Regulator Dashboard",href: "/regulator",             icon: Shield },
-          { title: "Content Review",     href: "/regulator/review",      icon: FileText },
-          { title: "Compliance Overview",href: "/regulator/compliance",  icon: Award },
-          { title: "Incident Reports",   href: "/regulator/incidents",   icon: AlertTriangle },
-        ],
-      })
-    }
-
-    if (user?.role === "service_provider") {
-      sections.push({
-        title: "Provider",
-        items: [
-          { title: "My Services",  href: "/provider/services",  icon: Wrench },
-          { title: "Portfolio",    href: "/provider/portfolio", icon: Camera },
-          { title: "My Reviews",   href: "/provider/reviews",   icon: Star },
-          { title: "Bookings",     href: "/provider/bookings",  icon: Calendar },
-        ],
-      })
-    }
-
-    if (user?.role === "student") {
-      sections.push({
-        title: "Student",
-        items: [
-          { title: "Learning Resources", href: "/student/resources",   icon: BookOpen },
-          { title: "Internships",        href: "/student/internships", icon: GraduationCap },
+          { title: "Regulator Panel", href: "/regulator", icon: Award },
         ],
       })
     }
@@ -177,45 +81,72 @@ export function AppSidebar({ className, onItemClick }: SidebarProps) {
     return sections
   }
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/")
+  const sections = getSections()
+
+  const isActive = (href: string) => {
+    if (href === "/") return pathname === "/"
+    return pathname.startsWith(href)
+  }
 
   return (
-    <div className={cn("app-sidebar-shell", className)}>
-      {/* User pill — shown when logged in */}
-      {user && (
-        <div style={{ padding: "4px 4px 10px" }}>
-          <div className="sidebar-user-pill">
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{user.fullName}</span>
+    <div className={cn("flex flex-col h-full", className)}>
+      {/* Logo */}
+      <div className="px-4 py-5 border-b">
+        <Link href="/" className="flex items-center gap-2" onClick={onItemClick}>
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-sm">RDC</span>
           </div>
+          <span className="font-semibold text-sm">Rwanda Drone Community</span>
+        </Link>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
+        {sections.map((section, sIndex) => (
+          <div key={sIndex}>
+            {section.title && (
+              <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {section.title}
+              </p>
+            )}
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const Icon = item.icon
+                const active = isActive(item.href)
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onItemClick}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    )}
+                  >
+                    <Icon className="w-4.5 h-4.5 flex-shrink-0" />
+                    <span>{item.title}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      {/* Footer */}
+      {!user && (
+        <div className="px-3 py-4 border-t">
+          <Link
+            href="/login"
+            onClick={onItemClick}
+            className="flex items-center justify-center w-full px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            Sign in
+          </Link>
         </div>
       )}
-
-      {getSections().map((section, i) => (
-        <div key={section.title ?? `s-${i}`} className="app-sidebar-section">
-          {section.title && (
-            <p className="app-sidebar-section-label">{section.title}</p>
-          )}
-          {section.items.map(item => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onItemClick}
-              className={cn("app-nav-item", isActive(item.href) && "is-active")}
-            >
-              <span className="app-nav-item__icon">
-                <item.icon size={16} />
-              </span>
-              <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {item.title}
-              </span>
-              {item.badge && (
-                <span className="app-nav-badge">{item.badge}</span>
-              )}
-            </Link>
-          ))}
-        </div>
-      ))}
     </div>
   )
 }

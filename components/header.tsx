@@ -151,8 +151,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild><Link href="/profile" className="flex items-center"><User className="mr-2 h-4 w-4" />Profile</Link></DropdownMenuItem>
-                    <DropdownMenuItem asChild><Link href="/settings" className="flex items-center"><Settings className="mr-2 h-4 w-4" />Settings</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild><Link href="/account" className="flex items-center"><User className="mr-2 h-4 w-4" />My Account</Link></DropdownMenuItem>
                     {user.role === "admin" && (
                       <DropdownMenuItem asChild><Link href="/admin" className="flex items-center"><Shield className="mr-2 h-4 w-4" />Admin Panel</Link></DropdownMenuItem>
                     )}
