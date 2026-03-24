@@ -172,13 +172,17 @@ export function MarketingHeader() {
                 {openDropdown === section.label && (
                   <div style={{
                     position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)",
-                    paddingTop: 8, minWidth: 300, zIndex: 60,
+                    paddingTop: 8, zIndex: 60,
                   }}>
                     <div style={{
                       background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)",
                       borderRadius: 16, padding: 8,
                       boxShadow: "0 12px 40px rgba(0,11,79,0.12), 0 2px 8px rgba(0,0,0,0.06)",
                       border: "1px solid rgba(0,38,116,0.08)",
+                      display: "grid",
+                      gridTemplateColumns: visibleItems.length > 3 ? "1fr 1fr" : "1fr",
+                      gap: 2,
+                      minWidth: visibleItems.length > 3 ? 480 : 280,
                     }}>
                       {visibleItems.map(item => (
                         <Link
@@ -186,12 +190,12 @@ export function MarketingHeader() {
                           href={item.href}
                           onClick={() => setOpenDropdown(null)}
                           className="hover:bg-[#f4f6fb] transition-colors"
-                          style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 12px", borderRadius: 10, textDecoration: "none" }}
+                          style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", borderRadius: 10, textDecoration: "none" }}
                         >
                           <item.icon size={15} color="#0058dd" style={{ marginTop: 3, flexShrink: 0 }} />
                           <div>
                             <div style={{ fontWeight: 600, fontSize: 13, color: "#002674", lineHeight: 1.2 }}>{item.label}</div>
-                            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{item.desc}</div>
+                            <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2, lineHeight: 1.3 }}>{item.desc}</div>
                           </div>
                         </Link>
                       ))}
