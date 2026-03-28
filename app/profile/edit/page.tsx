@@ -749,7 +749,43 @@ function EditProfilePageContent() {
               <MailingPreferencesForm email={profile.email} />
             </TabsContent>
 
-            {/* Security Tab */}
+            {/* Action Buttons (inside profile form) */}
+            <TabsContent value="basic" forceMount className="hidden data-[state=active]:block">
+              <div className="flex justify-end gap-4 pt-6">
+                <Link href={`/profile/${profile.username}`}>
+                  <Button type="button" variant="outline">Cancel</Button>
+                </Link>
+                <Button type="submit" disabled={saving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </TabsContent>
+            <TabsContent value="professional" forceMount className="hidden data-[state=active]:block">
+              <div className="flex justify-end gap-4 pt-6">
+                <Link href={`/profile/${profile.username}`}>
+                  <Button type="button" variant="outline">Cancel</Button>
+                </Link>
+                <Button type="submit" disabled={saving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </TabsContent>
+            <TabsContent value="mailing" forceMount className="hidden data-[state=active]:block">
+              <div className="flex justify-end gap-4 pt-6">
+                <Link href={`/profile/${profile.username}`}>
+                  <Button type="button" variant="outline">Cancel</Button>
+                </Link>
+                <Button type="submit" disabled={saving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </TabsContent>
+          </form>
+
+            {/* Security Tab — outside profile form to avoid nested <form> */}
             <TabsContent value="security" className="space-y-6">
               <Card>
                 <CardHeader>
@@ -760,20 +796,6 @@ function EditProfilePageContent() {
                 </CardContent>
               </Card>
             </TabsContent>
-
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-4 pt-6">
-              <Link href={`/profile/${profile.username}`}>
-                <Button type="button" variant="outline">
-                  Cancel
-                </Button>
-              </Link>
-              <Button type="submit" disabled={saving}>
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
-          </form>
         </Tabs>
       </div>
     </div>

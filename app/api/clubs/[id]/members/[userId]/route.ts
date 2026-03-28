@@ -7,17 +7,18 @@ export const dynamic = 'force-dynamic'
 // PATCH /api/clubs/[id]/members/[userId] — appoint/change role
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string; userId: string } }
+  { params }: { params: Promise<{ id: string; userId: string }> }
 ) {
   try {
+    const { id, userId } = await params
     const currentUser = await getCurrentUser()
     if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     // Only club admin (or platform admin) can change roles
     const callerMembership = await prisma.clubMembership.findUnique({
-      where: { clubId_userId: { clubId: params.id, userId: currentUser.id } },
+      where: { clubId_userId: { clubId: id, userId: currentUser.id } },
     })
-    const club = await prisma.club.findUnique({ where: { id: params.id } })
+    const club = await prisma.club.findUnique({ where: { id } })
 
     const isAdmin =
       currentUser.role === 'admin' ||
@@ -33,15 +34,15 @@ export async function PATCH(
 
     // Cannot demote the original creator unless it's the creator themselves doing a transfer
     if (
-      club?.createdById === params.userId &&
+      club?.createdById === userId &&
       role !== 'admin' &&
-      currentUser.id !== params.userId
+      currentUser.id !== userId
     ) {
       return NextResponse.json({ error: 'Cannot change the role of the club creator. Use transfer ownership instead.' }, { status: 400 })
     }
 
     const membership = await prisma.clubMembership.update({
-      where: { clubId_userId: { clubId: params.id, userId: params.userId } },
+      where: { clubId_userId: { clubId: id, userId } },
       data: { role },
       include: { user: { select: { id: true, fullName: true, username: true, avatar: true } } },
     })
@@ -55,16 +56,17 @@ export async function PATCH(
 // DELETE /api/clubs/[id]/members/[userId] — remove a member (admin only)
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string; userId: string } }
+  { params }: { params: Promise<{ id: string; userId: string }> }
 ) {
   try {
+    const { id, userId } = await params
     const currentUser = await getCurrentUser()
     if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const callerMembership = await prisma.clubMembership.findUnique({
-      where: { clubId_userId: { clubId: params.id, userId: currentUser.id } },
+      where: { clubId_userId: { clubId: id, userId: currentUser.id } },
     })
-    const club = await prisma.club.findUnique({ where: { id: params.id } })
+    const club = await prisma.club.findUnique({ where: { id } })
 
     const isAdmin =
       currentUser.role === 'admin' ||
@@ -74,14 +76,14 @@ export async function DELETE(
     if (!isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     // Cannot remove the original creator
-    if (club?.createdById === params.userId) {
+    if (club?.createdById === userId) {
       return NextResponse.json({ error: 'Cannot remove the club creator' }, { status: 400 })
     }
 
     await prisma.clubMembership.delete({
-      where: { clubId_userId: { clubId: params.id, userId: params.userId } },
+      where: { clubId_userId: { clubId: id, userId } },
     })
-    await prisma.club.update({ where: { id: params.id }, data: { memberCount: { decrement: 1 } } })
+    await prisma.club.update({ where: { id }, data: { memberCount: { decrement: 1 } } })
 
     return NextResponse.json({ success: true })
   } catch (error) {

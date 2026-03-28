@@ -4,9 +4,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { CheckCircle, XCircle, AlertTriangle, Eye, Clock, ExternalLink } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Eye, Clock, ExternalLink, MessageSquare, Briefcase, Calendar, FileText, Wrench, LayoutGrid } from 'lucide-react';
 import { Star } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
@@ -54,6 +53,7 @@ export default function ReviewContentsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [previewItem, setPreviewItem] = useState<any>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('all');
 
   const fetchPublishedItems = async () => {
     try {
@@ -533,7 +533,7 @@ export default function ReviewContentsPage() {
 
   if (authLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="p-6">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -543,7 +543,7 @@ export default function ReviewContentsPage() {
 
   if (!user || user.role !== 'admin') {
     return (
-      <div className="container mx-auto p-6">
+      <div className="p-6">
         <Card>
           <CardContent className="p-6">
             <div className="text-center">
@@ -561,7 +561,7 @@ export default function ReviewContentsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="p-6">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -693,50 +693,61 @@ export default function ReviewContentsPage() {
     );
   };
 
+  const TAB_ITEMS = [
+    { id: 'all', label: 'All', icon: LayoutGrid, countKey: null },
+    { id: 'forum', label: 'Forum', icon: MessageSquare, countKey: 'forum' },
+    { id: 'projects', label: 'Projects', icon: Briefcase, countKey: 'project' },
+    { id: 'events', label: 'Events', icon: Calendar, countKey: 'event' },
+    { id: 'resources', label: 'Resources', icon: FileText, countKey: 'resource' },
+    { id: 'opportunities', label: 'Opportunities', icon: Briefcase, countKey: 'opportunity' },
+    { id: 'services', label: 'Services', icon: Wrench, countKey: 'service' },
+  ];
+
   const totalPublished = publishedItems ? Object.values(publishedItems.counts).reduce((sum, count) => sum + count, 0) : 0;
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">Review Published Content</h1>
-        <p className="text-muted-foreground mt-2">
-          Review and manage already published content. You can unpublish content to remove it from public view.
+        <h1 className="text-2xl font-bold">Review Published Content</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Review and manage published content. Unpublish to remove from public view.
         </p>
-        {publishedItems && (
-          <div className="flex items-center gap-4 mt-4">
-            <Badge variant="outline" className="text-lg px-3 py-1">
-              Total Published: {totalPublished}
-            </Badge>
-          </div>
-        )}
       </div>
 
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="all">
-            All ({totalPublished})
-          </TabsTrigger>
-          <TabsTrigger value="forum">
-            Forum ({publishedItems?.counts.forum || 0})
-          </TabsTrigger>
-          <TabsTrigger value="projects">
-            Projects ({publishedItems?.counts.project || 0})
-          </TabsTrigger>
-          <TabsTrigger value="events">
-            Events ({publishedItems?.counts.event || 0})
-          </TabsTrigger>
-          <TabsTrigger value="resources">
-            Resources ({publishedItems?.counts.resource || 0})
-          </TabsTrigger>
-          <TabsTrigger value="opportunities">
-            Opportunities ({publishedItems?.counts.opportunity || 0})
-          </TabsTrigger>
-          <TabsTrigger value="services">
-            Services ({publishedItems?.counts.service || 0})
-          </TabsTrigger>
-        </TabsList>
+      {/* Quick Action style tabs */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {TAB_ITEMS.map(({ id, label, icon: Icon, countKey }) => {
+          const count = countKey ? (publishedItems?.counts as any)?.[countKey] || 0 : totalPublished;
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
+                isActive
+                  ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                  : 'bg-background hover:bg-muted border-border hover:border-primary/30'
+              }`}
+            >
+              <Icon className={`h-3.5 w-3.5`} />
+              <span>{label}</span>
+              {count > 0 && (
+                <Badge
+                  variant={isActive ? 'secondary' : 'outline'}
+                  className={`h-5 min-w-[20px] flex items-center justify-center text-[10px] px-1.5 ${
+                    isActive ? 'bg-primary-foreground/20 text-primary-foreground' : ''
+                  }`}
+                >
+                  {count}
+                </Badge>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-        <TabsContent value="all" className="mt-6">
+      {/* Tab content */}
+      {activeTab === 'all' && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -810,104 +821,26 @@ export default function ReviewContentsPage() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+      )}
 
-        <TabsContent value="forum" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                💬 Forum Posts
-              </CardTitle>
-              <CardDescription>
-                Published forum posts
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderPublishedItems(publishedItems?.data.forumPosts || [], 'forumPosts')}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="projects" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                🚁 Projects
-              </CardTitle>
-              <CardDescription>
-                Published projects
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderPublishedItems(publishedItems?.data.projects || [], 'projects')}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="events" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                📅 Events
-              </CardTitle>
-              <CardDescription>
-                Published events
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderPublishedItems(publishedItems?.data.events || [], 'events')}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="resources" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                📄 Resources
-              </CardTitle>
-              <CardDescription>
-                Published resources
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderPublishedItems(publishedItems?.data.resources || [], 'resources')}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="opportunities" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                💼 Opportunities
-              </CardTitle>
-              <CardDescription>
-                Published opportunities
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderPublishedItems(publishedItems?.data.opportunities || [], 'opportunities')}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="services" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                🔧 Services
-              </CardTitle>
-              <CardDescription>
-                Published services
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderPublishedItems(publishedItems?.data.services || [], 'services')}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {activeTab === 'forum' && (
+        <div>{renderPublishedItems(publishedItems?.data.forumPosts || [], 'forumPosts')}</div>
+      )}
+      {activeTab === 'projects' && (
+        <div>{renderPublishedItems(publishedItems?.data.projects || [], 'projects')}</div>
+      )}
+      {activeTab === 'events' && (
+        <div>{renderPublishedItems(publishedItems?.data.events || [], 'events')}</div>
+      )}
+      {activeTab === 'resources' && (
+        <div>{renderPublishedItems(publishedItems?.data.resources || [], 'resources')}</div>
+      )}
+      {activeTab === 'opportunities' && (
+        <div>{renderPublishedItems(publishedItems?.data.opportunities || [], 'opportunities')}</div>
+      )}
+      {activeTab === 'services' && (
+        <div>{renderPublishedItems(publishedItems?.data.services || [], 'services')}</div>
+      )}
 
       {/* Preview Modal */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>

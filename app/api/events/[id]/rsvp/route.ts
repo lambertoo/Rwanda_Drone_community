@@ -5,9 +5,10 @@ import { getCurrentUser, canRSVPEvents } from "@/lib/auth"
 // POST - RSVP for an event
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Authenticate user
     const currentUser = await getCurrentUser()
     if (!currentUser) {
@@ -25,7 +26,7 @@ export async function POST(
       )
     }
 
-    const eventId = params.id
+    const eventId = id
 
     // Check if event exists and allows registration
     const event = await prisma.event.findUnique({
@@ -117,9 +118,10 @@ export async function POST(
 // DELETE - Cancel RSVP for an event
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Authenticate user
     const currentUser = await getCurrentUser()
     if (!currentUser) {
@@ -129,7 +131,7 @@ export async function DELETE(
       )
     }
 
-    const eventId = params.id
+    const eventId = id
 
     // Check if RSVP exists
     const existingRSVP = await prisma.rsvp.findFirst({
@@ -171,9 +173,10 @@ export async function DELETE(
 // GET - Get RSVPs for an event (REQUIRES AUTHENTICATION)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Authenticate user
     const currentUser = await getCurrentUser()
     if (!currentUser) {
@@ -183,7 +186,7 @@ export async function GET(
       )
     }
 
-    const eventId = params.id
+    const eventId = id
 
     // Check if event exists
     const event = await prisma.event.findUnique({

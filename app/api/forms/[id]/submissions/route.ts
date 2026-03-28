@@ -4,9 +4,10 @@ import { verifyToken } from '@/lib/jwt-utils'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Verify authentication
     const token = request.cookies.get('accessToken')?.value
     if (!token) {
@@ -18,7 +19,7 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const formId = params.id
+    const formId = id
 
     // Check if form exists and user owns it
     const form = await prisma.universalForm.findUnique({
@@ -78,16 +79,17 @@ export async function GET(
 // DELETE /api/forms/[id]/submissions — delete one or more submissions
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const token = request.cookies.get('accessToken')?.value
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const payload = await verifyToken(token)
     if (!payload) return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
 
-    const formId = params.id
+    const formId = id
     const form = await prisma.universalForm.findUnique({
       where: { id: formId },
       select: { id: true, userId: true },

@@ -194,7 +194,19 @@ export default function FormsPage() {
                         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                           <span>{form._count.entries} response{form._count.entries !== 1 ? "s" : ""}</span>
                           <span>·</span>
-                          <span>{form.sections?.length || 0} section{(form.sections?.length || 0) !== 1 ? "s" : ""}</span>
+                          <span className="flex items-center gap-1">
+                            {form.settings?.googleSheetId ? (
+                              <>
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                                <span className="text-green-600">Sheet connected</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-1.5 h-1.5 rounded-full bg-gray-300 inline-block" />
+                                <span>No sheet</span>
+                              </>
+                            )}
+                          </span>
                           <span>·</span>
                           <span>Created {new Date(form.createdAt).toLocaleDateString()}</span>
                         </div>
@@ -202,6 +214,21 @@ export default function FormsPage() {
 
                       {/* Actions */}
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {form.settings?.googleSheetId && (
+                          <a
+                            href={`https://docs.google.com/spreadsheets/d/${form.settings.googleSheetId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 rounded-lg hover:bg-green-50 text-green-600 hover:text-green-700 transition-colors"
+                            title="Open Google Sheet"
+                          >
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M19 11V9h-5V5h-2v4H7v2h5v4h2v-4h5z" opacity="0" />
+                              <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" />
+                              <path d="M8 15h8v1.5H8zM8 12h8v1.5H8zM8 18h5v1.5H8z" />
+                            </svg>
+                          </a>
+                        )}
                         <button
                           onClick={() => router.push(`/forms/${form.id}/submissions`)}
                           className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"

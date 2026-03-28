@@ -6,9 +6,10 @@ import { getSession } from "@/lib/auth"
 // POST - Submit an application for an opportunity
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getSession(cookies())
     if (!session) {
       return NextResponse.json(
@@ -17,7 +18,7 @@ export async function POST(
       )
     }
 
-    const opportunityId = params.id
+    const opportunityId = id
     const body = await request.json()
     const { formId, fieldSubmissions } = body
 
@@ -104,9 +105,10 @@ export async function POST(
 // GET - Get user's application for an opportunity
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getSession(cookies())
     if (!session) {
       return NextResponse.json(
@@ -115,7 +117,7 @@ export async function GET(
       )
     }
 
-    const opportunityId = params.id
+    const opportunityId = id
 
     // Check if opportunity exists and has an application form
     const opportunity = await prisma.opportunity.findUnique({

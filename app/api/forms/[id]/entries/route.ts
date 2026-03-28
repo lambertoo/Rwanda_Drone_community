@@ -4,9 +4,10 @@ import { extractTokenFromRequest, verifyToken } from '@/lib/jwt-utils'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Verify authentication
     const token = extractTokenFromRequest(request)
     if (!token) {
@@ -18,7 +19,7 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const formId = params.id
+    const formId = id
 
     // Check if form exists and belongs to user
     const form = await prisma.universalForm.findFirst({

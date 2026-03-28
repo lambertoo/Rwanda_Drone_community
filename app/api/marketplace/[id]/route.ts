@@ -4,11 +4,12 @@ import { getCurrentUser } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const listing = await prisma.marketplaceListing.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         seller: {
           select: {
@@ -32,7 +33,7 @@ export async function GET(
 
     // Increment view count
     await prisma.marketplaceListing.update({
-      where: { id: params.id },
+      where: { id },
       data: { views: { increment: 1 } },
     })
 
@@ -45,14 +46,15 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const listing = await prisma.marketplaceListing.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!listing) {
@@ -67,7 +69,7 @@ export async function PUT(
     const { title, description, category, condition, price, currency, negotiable, location, images, status } = body
 
     const updated = await prisma.marketplaceListing.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(title !== undefined ? { title } : {}),
         ...(description !== undefined ? { description } : {}),
@@ -102,14 +104,15 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const listing = await prisma.marketplaceListing.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!listing) {
@@ -120,7 +123,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    await prisma.marketplaceListing.delete({ where: { id: params.id } })
+    await prisma.marketplaceListing.delete({ where: { id } })
 
     return NextResponse.json({ success: true, message: 'Listing deleted successfully' })
   } catch (error) {

@@ -109,33 +109,27 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
               <NotificationBell />
             </div>
 
-            {user?.role === 'admin' && pendingCount > 0 && (
-              <Link href="/admin/approvals">
-                <Button variant="ghost" size="icon" className="relative hidden sm:flex">
-                  <Bell className="h-4 w-4 text-orange-500" />
-                  <span className="absolute -top-1 -right-1 min-w-[12px] h-4 bg-orange-500 rounded-full text-[10px] text-white flex items-center justify-center px-1">
-                    {pendingCount > 99 ? '99+' : pendingCount}
-                  </span>
-                </Button>
-              </Link>
-            )}
-
             <div className="ml-1 pl-2 border-l border-border/60">
               {loading ? (
                 <div className="h-8 w-8 animate-pulse bg-muted rounded-full" />
               ) : user ? (
-                <DropdownMenu>
+                <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 rounded-full p-0">
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
                       <Avatar className="h-8 w-8 ring-2 ring-primary/20">
                         <AvatarImage src={user.avatar || "/placeholder-user.jpg"} alt={user.fullName} />
                         <AvatarFallback className="bg-brand-gradient text-white text-xs font-bold">
                           {user.fullName.split(" ").map(n => n[0]).join("")}
                         </AvatarFallback>
                       </Avatar>
+                      {pendingCount > 0 && (
+                        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-orange-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center px-1 ring-2 ring-background">
+                          {pendingCount > 99 ? '99+' : pendingCount}
+                        </span>
+                      )}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-64" align="end" forceMount>
+                  <DropdownMenuContent className="w-64 z-[100]" align="end" sideOffset={8} forceMount>
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex flex-col space-y-1.5">
                         <div className="flex items-center gap-2">
@@ -153,7 +147,19 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild><Link href="/account" className="flex items-center"><User className="mr-2 h-4 w-4" />My Account</Link></DropdownMenuItem>
                     {user.role === "admin" && (
-                      <DropdownMenuItem asChild><Link href="/admin" className="flex items-center"><Shield className="mr-2 h-4 w-4" />Admin Panel</Link></DropdownMenuItem>
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/approvals" className="flex items-center justify-between">
+                            <span className="flex items-center"><Shield className="mr-2 h-4 w-4" />Pending Approvals</span>
+                            {pendingCount > 0 && (
+                              <span className="min-w-[20px] h-5 bg-orange-500 rounded-full text-[11px] font-semibold text-white flex items-center justify-center px-1.5">
+                                {pendingCount > 99 ? '99+' : pendingCount}
+                              </span>
+                            )}
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href="/admin" className="flex items-center"><Settings className="mr-2 h-4 w-4" />Admin Panel</Link></DropdownMenuItem>
+                      </>
                     )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">

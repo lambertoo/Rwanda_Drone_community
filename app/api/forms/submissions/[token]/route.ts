@@ -4,11 +4,12 @@ import { prisma } from '@/lib/prisma'
 // GET — load submission by edit token (for editing)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    const { token } = await params
     const entry = await prisma.formEntry.findUnique({
-      where: { editToken: params.token },
+      where: { editToken: token },
       include: {
         form: {
           include: {
@@ -48,13 +49,14 @@ export async function GET(
 // PUT — update submission by edit token
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    const { token } = await params
     const body = await request.json()
 
     const entry = await prisma.formEntry.findUnique({
-      where: { editToken: params.token },
+      where: { editToken: token },
       include: {
         form: { include: { sections: { include: { fields: true } } } },
       },

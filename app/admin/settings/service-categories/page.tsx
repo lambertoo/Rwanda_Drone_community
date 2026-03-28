@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { AdminOnly } from '@/components/auth-guard'
 import { Plus, Wrench, Edit, Trash2, X } from 'lucide-react'
 
 interface ServiceCategory {
@@ -123,11 +122,9 @@ export default function ServiceCategoriesPage() {
   }, [])
 
   return (
-    <AdminOnly>
-      <div className="min-h-screen bg-muted/50 dark:bg-gray-900">
-        <div className="container mx-auto px-4 py-6">
+      <div className="p-6">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground dark:text-white mb-2">
+            <h1 className="text-2xl font-bold text-foreground dark:text-white mb-2">
               Service Categories
             </h1>
             <p className="text-muted-foreground dark:text-muted-foreground/50">
@@ -260,8 +257,6 @@ export default function ServiceCategoriesPage() {
               </div>
             )}
           </div>
-        </div>
       </div>
-    </AdminOnly>
   )
 }

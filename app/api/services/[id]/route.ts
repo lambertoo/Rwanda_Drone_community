@@ -4,10 +4,11 @@ import { getSession } from "@/lib/auth"
 import { cookies } from "next/headers"
 
 // READ - Get a single service
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const service = await prisma.service.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         provider: {
           select: {
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     // Note: viewsCount field doesn't exist in the current schema
     // await prisma.service.update({
-    //   where: { id: params.id },
+    //   where: { id },
     //   data: { viewsCount: { increment: 1 } }
     // })
 
@@ -47,17 +48,18 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // UPDATE - Update a service
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
-    
+
     let user = null
-    
+
     if (sessionId) {
       user = getSession(sessionId)
     }
-    
+
     if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -67,7 +69,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     // Check if service exists and user owns it
     const existingService = await prisma.service.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!existingService) {
@@ -105,7 +107,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     const updatedService = await prisma.service.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title,
         description,
@@ -142,17 +144,18 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE - Delete a service
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("session-id")?.value
-    
+
     let user = null
-    
+
     if (sessionId) {
       user = getSession(sessionId)
     }
-    
+
     if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -162,7 +165,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     // Check if service exists and user owns it
     const existingService = await prisma.service.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!existingService) {
@@ -181,7 +184,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     // Delete the service
     await prisma.service.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
     return NextResponse.json({ message: 'Service deleted successfully' })

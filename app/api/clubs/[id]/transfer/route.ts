@@ -5,14 +5,15 @@ import { getCurrentUser } from '@/lib/auth'
 export const dynamic = 'force-dynamic'
 
 // GET — list pending transfer requests for a club (current owner or target user)
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const currentUser = await getCurrentUser()
     if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const requests = await prisma.clubTransferRequest.findMany({
       where: {
-        clubId: params.id,
+        clubId: id,
         OR: [{ fromUserId: currentUser.id }, { toUserId: currentUser.id }],
       },
       include: {
@@ -29,12 +30,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // POST — initiate ownership transfer (current owner only)
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const currentUser = await getCurrentUser()
     if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const club = await prisma.club.findUnique({ where: { id: params.id } })
+    const club = await prisma.club.findUnique({ where: { id } })
     if (!club) return NextResponse.json({ error: 'Club not found' }, { status: 404 })
 
     if (club.createdById !== currentUser.id && currentUser.role !== 'admin') {
@@ -47,7 +49,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     // Target must be an active member
     const targetMembership = await prisma.clubMembership.findUnique({
-      where: { clubId_userId: { clubId: params.id, userId: toUserId } },
+      where: { clubId_userId: { clubId: id, userId: toUserId } },
       include: { user: { select: { id: true, fullName: true, username: true } } },
     })
     if (!targetMembership || targetMembership.status !== 'active') {
@@ -56,13 +58,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     // Cancel any existing pending transfer for this club
     await prisma.clubTransferRequest.updateMany({
-      where: { clubId: params.id, status: 'pending' },
+      where: { clubId: id, status: 'pending' },
       data: { status: 'cancelled', respondedAt: new Date() },
     })
 
     const request = await prisma.clubTransferRequest.create({
       data: {
-        clubId: params.id,
+        clubId: id,
         fromUserId: currentUser.id,
         toUserId,
         message: message || null,
@@ -80,8 +82,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 }
 
 // PATCH — respond to a transfer request (accept/reject by target, or cancel by sender)
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const currentUser = await getCurrentUser()
     if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -114,15 +117,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (action === 'accept') {
       // Transfer club ownership
       await prisma.club.update({
-        where: { id: params.id },
+        where: { id },
         data: { createdById: request.toUserId },
       })
 
       // Promote new owner to admin role in memberships
       await prisma.clubMembership.upsert({
-        where: { clubId_userId: { clubId: params.id, userId: request.toUserId } },
+        where: { clubId_userId: { clubId: id, userId: request.toUserId } },
         update: { role: 'admin' },
-        create: { clubId: params.id, userId: request.toUserId, role: 'admin', status: 'active' },
+        create: { clubId: id, userId: request.toUserId, role: 'admin', status: 'active' },
       })
 
       // Previous owner stays as admin member (they can step down themselves)

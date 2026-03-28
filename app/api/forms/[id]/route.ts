@@ -4,10 +4,11 @@ import { extractTokenFromRequest, verifyToken } from '@/lib/jwt-utils'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const formId = params.id
+    const { id } = await params
+    const formId = id
 
     const form = await prisma.universalForm.findUnique({
       where: { id: formId },
@@ -46,9 +47,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Verify authentication
     const token = extractTokenFromRequest(request)
     if (!token) {
@@ -60,7 +62,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const formId = params.id
+    const formId = id
     const body = await request.json()
     const { title, description, settings, allowSubmissions, sections, isActive, isPublic } = body
 
@@ -159,9 +161,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Verify authentication
     const token = extractTokenFromRequest(request)
     if (!token) {
@@ -173,7 +176,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const formId = params.id
+    const formId = id
 
     // Check if form exists and belongs to user
     const existingForm = await prisma.universalForm.findFirst({

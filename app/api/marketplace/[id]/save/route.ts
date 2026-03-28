@@ -4,14 +4,15 @@ import { getCurrentUser } from '@/lib/auth'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const listing = await prisma.marketplaceListing.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!listing) {
@@ -22,7 +23,7 @@ export async function POST(
       where: {
         userId_listingId: {
           userId: user.id,
-          listingId: params.id,
+          listingId: id,
         },
       },
     })
@@ -32,13 +33,13 @@ export async function POST(
         where: {
           userId_listingId: {
             userId: user.id,
-            listingId: params.id,
+            listingId: id,
           },
         },
       })
 
       await prisma.marketplaceListing.update({
-        where: { id: params.id },
+        where: { id },
         data: { saves: { decrement: 1 } },
       })
 
@@ -47,12 +48,12 @@ export async function POST(
       await prisma.listingSave.create({
         data: {
           userId: user.id,
-          listingId: params.id,
+          listingId: id,
         },
       })
 
       await prisma.marketplaceListing.update({
-        where: { id: params.id },
+        where: { id },
         data: { saves: { increment: 1 } },
       })
 
@@ -66,9 +67,10 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ saved: false })
 
@@ -76,7 +78,7 @@ export async function GET(
       where: {
         userId_listingId: {
           userId: user.id,
-          listingId: params.id,
+          listingId: id,
         },
       },
     })

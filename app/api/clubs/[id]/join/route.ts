@@ -4,13 +4,14 @@ import { getCurrentUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ isMember: false })
 
     const membership = await prisma.clubMembership.findUnique({
-      where: { clubId_userId: { clubId: params.id, userId: user.id } },
+      where: { clubId_userId: { clubId: id, userId: user.id } },
     })
 
     return NextResponse.json({ isMember: !!membership, membership })
@@ -19,23 +20,24 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const club = await prisma.club.findUnique({ where: { id: params.id } })
+    const club = await prisma.club.findUnique({ where: { id } })
     if (!club) return NextResponse.json({ error: 'Club not found' }, { status: 404 })
 
     const existing = await prisma.clubMembership.findUnique({
-      where: { clubId_userId: { clubId: params.id, userId: user.id } },
+      where: { clubId_userId: { clubId: id, userId: user.id } },
     })
     if (existing) return NextResponse.json({ error: 'Already a member' }, { status: 400 })
 
     const body = await req.json().catch(() => ({}))
     const membership = await prisma.clubMembership.create({
       data: {
-        clubId: params.id,
+        clubId: id,
         userId: user.id,
         role: 'member',
         status: club.registrationFormId ? 'pending' : 'active',
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     // Update member count
     await prisma.club.update({
-      where: { id: params.id },
+      where: { id },
       data: { memberCount: { increment: 1 } },
     })
 
@@ -55,17 +57,18 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     await prisma.clubMembership.delete({
-      where: { clubId_userId: { clubId: params.id, userId: user.id } },
+      where: { clubId_userId: { clubId: id, userId: user.id } },
     })
 
     await prisma.club.update({
-      where: { id: params.id },
+      where: { id },
       data: { memberCount: { decrement: 1 } },
     })
 

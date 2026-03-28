@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/email'
+import { appendSubmissionToSheet } from '@/lib/google-sheets'
 import crypto from 'crypto'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const formId = params.id
+    const { id: formId } = await params
     const body = await request.json()
 
     // Check if form exists and is active
@@ -119,6 +120,24 @@ export async function POST(
         values: { create: allFieldValues },
       },
     })
+
+    // Sync to Google Sheet (non-blocking)
+    if (formSettings?.googleSheetId) {
+      const allFields = formWithFields.sections.flatMap(s => s.fields)
+      const valuesMap: Record<string, string | null> = {}
+      allFields.forEach((field) => {
+        const fv = allFieldValues.find(v => v.fieldId === field.id)
+        valuesMap[field.name] = fv?.value ?? null
+      })
+      const entryCount = await prisma.formEntry.count({ where: { formId } })
+      appendSubmissionToSheet(
+        formSettings.googleSheetId,
+        entryCount,
+        new Date().toISOString(),
+        allFields.map(f => ({ label: f.label, name: f.name })),
+        valuesMap
+      ).catch((err) => console.error('[FormSubmit] Google Sheets sync failed:', err))
+    }
 
     // Send notification emails (non-blocking)
     if (formSettings?.notifyEmails) {

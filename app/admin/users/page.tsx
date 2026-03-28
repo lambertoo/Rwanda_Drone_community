@@ -393,16 +393,16 @@ function UserManagementPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="p-6">
         <div className="text-center">Loading users...</div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">User Management</h1>
+        <h1 className="text-2xl font-bold mb-2">User Management</h1>
         <p className="text-muted-foreground">
           Manage user accounts, roles, and permissions. Only administrators can assign admin and regulator roles.
         </p>
@@ -618,134 +618,82 @@ function UserManagementPage() {
         </Dialog>
       </div>
 
-      {/* User Summary Statistics */}
-      <div className="mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Total Users */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Users</p>
-                  <p className="text-2xl font-bold">{users.length}</p>
-                </div>
-                <Users className="h-8 w-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
+      {/* Role + Status filter tabs — Quick Action style */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {[
+          { id: 'all', label: 'All Users', count: users.length },
+          ...Object.entries(roleNames).map(([role, name]) => ({
+            id: role,
+            label: name,
+            count: users.filter(u => u.role === role).length,
+          })),
+          { id: '__sep__', label: '', count: 0 },
+          { id: 'active', label: 'Active', count: users.filter(u => u.isActive).length },
+          { id: 'verified', label: 'Verified', count: users.filter(u => u.isVerified).length },
+          { id: 'blocked', label: 'Blocked', count: users.filter(u => !u.isActive).length },
+        ].map(({ id, label, count }) => {
+          if (id === '__sep__') {
+            return <div key={id} className="w-px h-8 bg-border self-center mx-1" />
+          }
+          const isStatusTab = ['active', 'verified', 'blocked'].includes(id)
+          const isActive = isStatusTab
+            ? statusFilter === id
+            : (roleFilter === id || (!roleFilter && id === 'all'))
 
-          {/* Active Users */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Active Users</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {users.filter(user => user.isActive).length}
-                  </p>
-                </div>
-                <UserCheck className="h-8 w-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
+          const roleColor = !isStatusTab && id !== 'all' && !isActive
+            ? (roleColors as any)[id] || ''
+            : ''
+          const statusColor = isStatusTab && !isActive
+            ? id === 'active' ? 'bg-green-100 text-green-800'
+            : id === 'verified' ? 'bg-blue-100 text-blue-800'
+            : id === 'blocked' ? 'bg-red-100 text-red-800'
+            : ''
+            : ''
 
-          {/* Verified Users */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Verified Users</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {users.filter(user => user.isVerified).length}
-                  </p>
-                </div>
-                <CheckCircle className="h-8 w-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Blocked Users */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Blocked Users</p>
-                  <p className="text-2xl font-bold text-red-600">
-                    {users.filter(user => !user.isActive).length}
-                  </p>
-                </div>
-                <UserX className="h-8 w-8 text-red-600" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Role Breakdown */}
-        <div className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Users by Role</CardTitle>
-              <CardDescription>Breakdown of users across different roles</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                {Object.entries(roleNames).map(([role, name]) => {
-                  const count = users.filter(user => user.role === role).length
-                  return (
-                    <div key={role} className="text-center">
-                      <div className="text-2xl font-bold text-foreground">{count}</div>
-                      <div className="text-sm text-muted-foreground">{name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {users.length > 0 ? `(${count}) ${((count / users.length) * 100).toFixed(1)}%` : '(0) 0%'}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-
+          return (
+            <button
+              key={id}
+              onClick={() => {
+                if (isStatusTab) {
+                  setStatusFilter(statusFilter === id ? 'all' : id)
+                } else {
+                  setRoleFilter(id)
+                  setStatusFilter('all')
+                }
+              }}
+              className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
+                isActive
+                  ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                  : 'bg-background hover:bg-muted border-border hover:border-primary/30'
+              }`}
+            >
+              <span>{label}</span>
+              {count > 0 && (
+                <span
+                  className={`h-5 min-w-[20px] flex items-center justify-center text-[10px] font-semibold px-1.5 rounded-full ${
+                    isActive
+                      ? 'bg-primary-foreground/20 text-primary-foreground'
+                      : roleColor || statusColor || 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          )
+        })}
       </div>
 
-      {/* Filters and Search */}
-      <div className="mb-6 space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search users by name, username, email, or organization..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Filter by role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              {Object.entries(roleNames).map(([role, name]) => (
-                <SelectItem key={role} value={role}>{name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="blocked">Blocked</SelectItem>
-              <SelectItem value="verified">Verified</SelectItem>
-              <SelectItem value="unverified">Unverified</SelectItem>
-            </SelectContent>
-          </Select>
+      {/* Search */}
+      <div className="mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search users by name, username, email, or organization..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
       </div>
 
@@ -1353,9 +1301,5 @@ function UserManagementPage() {
 }
 
 export default function AdminUsersPage() {
-  return (
-    <AdminOnly>
-      <UserManagementPage />
-    </AdminOnly>
-  )
+  return <UserManagementPage />
 } 

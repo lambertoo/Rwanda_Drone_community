@@ -4,22 +4,23 @@ import { getCurrentUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     if (user.role !== 'admin' && user.role !== 'regulator') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const zone = await prisma.airspaceZone.findUnique({ where: { id: params.id } })
+    const zone = await prisma.airspaceZone.findUnique({ where: { id } })
     if (!zone) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
     const body = await req.json()
     const { name, description, type, lat, lon, radius, severity, province, startDate, endDate, isActive } = body
 
     const updated = await prisma.airspaceZone.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(name && { name }),
         ...(description && { description }),
@@ -45,15 +46,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     if (user.role !== 'admin' && user.role !== 'regulator') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    await prisma.airspaceZone.delete({ where: { id: params.id } })
+    await prisma.airspaceZone.delete({ where: { id } })
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Airspace zone DELETE error:', error)

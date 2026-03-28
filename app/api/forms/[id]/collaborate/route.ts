@@ -10,16 +10,17 @@ import crypto from 'crypto'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const token = request.cookies.get('accessToken')?.value
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const payload = await verifyToken(token)
     if (!payload) return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
 
-    const formId = params.id
+    const formId = id
 
     const form = await prisma.universalForm.findUnique({
       where: { id: formId },

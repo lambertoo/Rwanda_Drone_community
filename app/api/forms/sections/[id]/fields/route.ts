@@ -4,9 +4,10 @@ import { extractTokenFromRequest, verifyToken } from '@/lib/jwt-utils'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Verify authentication
     const token = extractTokenFromRequest(request)
     if (!token) {
@@ -18,7 +19,7 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const sectionId = params.id
+    const sectionId = id
     const body = await request.json()
     const { 
       type, 

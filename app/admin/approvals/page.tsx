@@ -4,9 +4,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { CheckCircle, XCircle, AlertTriangle, Eye, Clock, ExternalLink, Trash2, Star } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Eye, Clock, ExternalLink, Trash2, Star, MessageSquare, Briefcase, Calendar, FileText, Wrench, LayoutGrid } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
 
@@ -53,6 +52,7 @@ export default function AdminApprovalsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [previewItem, setPreviewItem] = useState<any>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('all');
 
   const fetchPendingItems = async () => {
     try {
@@ -603,7 +603,7 @@ export default function AdminApprovalsPage() {
 
   if (authLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="p-6">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -613,7 +613,7 @@ export default function AdminApprovalsPage() {
 
   if (!user || user.role !== 'admin') {
     return (
-      <div className="container mx-auto p-6">
+      <div className="p-6">
         <Card>
           <CardContent className="p-6">
             <div className="text-center">
@@ -631,7 +631,7 @@ export default function AdminApprovalsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="p-6">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -772,219 +772,124 @@ export default function AdminApprovalsPage() {
 
   const totalPending = pendingItems ? Object.values(pendingItems.counts).reduce((sum, count) => sum + count, 0) : 0;
 
+  const TAB_ITEMS = [
+    { id: 'all', label: 'All', icon: LayoutGrid, countKey: null },
+    { id: 'forum', label: 'Forum', icon: MessageSquare, countKey: 'forum' },
+    { id: 'projects', label: 'Projects', icon: Briefcase, countKey: 'project' },
+    { id: 'events', label: 'Events', icon: Calendar, countKey: 'event' },
+    { id: 'resources', label: 'Resources', icon: FileText, countKey: 'resource' },
+    { id: 'opportunities', label: 'Opportunities', icon: Briefcase, countKey: 'opportunity' },
+    { id: 'services', label: 'Services', icon: Wrench, countKey: 'service' },
+  ];
+
   return (
-    <div className="container mx-auto p-6">
+    <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">Content Approvals</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-2xl font-bold">Content Approvals</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Review and approve content before it becomes visible to the public.
         </p>
-        {pendingItems && (
-          <div className="flex items-center gap-4 mt-4">
-            <Badge variant="outline" className="text-lg px-3 py-1">
-              Total Pending: {totalPending}
-            </Badge>
-          </div>
-        )}
       </div>
 
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="all">
-            All ({totalPending})
-          </TabsTrigger>
-          <TabsTrigger value="forum">
-            Forum ({pendingItems?.counts.forum || 0})
-          </TabsTrigger>
-          <TabsTrigger value="projects">
-            Projects ({pendingItems?.counts.project || 0})
-          </TabsTrigger>
-          <TabsTrigger value="events">
-            Events ({pendingItems?.counts.event || 0})
-          </TabsTrigger>
-          <TabsTrigger value="resources">
-            Resources ({pendingItems?.counts.resource || 0})
-          </TabsTrigger>
-          <TabsTrigger value="opportunities">
-            Opportunities ({pendingItems?.counts.opportunity || 0})
-          </TabsTrigger>
-          <TabsTrigger value="services">
-            Services ({pendingItems?.counts.service || 0})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="all" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-orange-500" />
-                All Pending Content
-              </CardTitle>
-              <CardDescription>
-                Review all content waiting for approval
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {totalPending === 0 ? (
-                <div className="text-center py-8">
-                  <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">All caught up!</h3>
-                  <p className="text-muted-foreground">
-                    No content is currently pending approval.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {pendingItems?.data.forumPosts && pendingItems.data.forumPosts.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                        💬 Forum Posts ({pendingItems.data.forumPosts.length})
-                      </h3>
-                      {renderPendingItems(pendingItems.data.forumPosts, 'forumPosts')}
-                    </div>
-                  )}
-                  {pendingItems?.data.projects && pendingItems.data.projects.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                        🚁 Projects ({pendingItems.data.projects.length})
-                      </h3>
-                      {renderPendingItems(pendingItems.data.projects, 'projects')}
-                    </div>
-                  )}
-                  {pendingItems?.data.events && pendingItems.data.events.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                        📅 Events ({pendingItems.data.events.length})
-                      </h3>
-                      {renderPendingItems(pendingItems.data.events, 'events')}
-                    </div>
-                  )}
-                  {pendingItems?.data.resources && pendingItems.data.resources.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                        📄 Resources ({pendingItems.data.resources.length})
-                      </h3>
-                      {renderPendingItems(pendingItems.data.resources, 'resources')}
-                    </div>
-                  )}
-                  {pendingItems?.data.opportunities && pendingItems.data.opportunities.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                        💼 Opportunities ({pendingItems.data.opportunities.length})
-                      </h3>
-                      {renderPendingItems(pendingItems.data.opportunities, 'opportunities')}
-                    </div>
-                  )}
-                  {pendingItems?.data.services && pendingItems.data.services.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                        🔧 Services ({pendingItems.data.services.length})
-                      </h3>
-                      {renderPendingItems(pendingItems.data.services, 'services')}
-                    </div>
-                  )}
-                </div>
+      {/* Quick Action style tabs */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {TAB_ITEMS.map(({ id, label, icon: Icon, countKey }) => {
+          const count = countKey ? (pendingItems?.counts as any)?.[countKey] || 0 : totalPending;
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
+                isActive
+                  ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                  : 'bg-background hover:bg-muted border-border hover:border-primary/30'
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              <span>{label}</span>
+              {count > 0 && (
+                <Badge
+                  variant={isActive ? 'secondary' : 'outline'}
+                  className={`h-5 min-w-[20px] flex items-center justify-center text-[10px] px-1.5 ${
+                    isActive ? 'bg-primary-foreground/20 text-primary-foreground' : ''
+                  }`}
+                >
+                  {count}
+                </Badge>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </button>
+          );
+        })}
+      </div>
 
-        <TabsContent value="forum" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                💬 Forum Posts
-              </CardTitle>
-              <CardDescription>
-                Forum posts waiting for approval
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderPendingItems(pendingItems?.data.forumPosts || [], 'forumPosts')}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="projects" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                🚁 Projects
-              </CardTitle>
-              <CardDescription>
-                Projects waiting for approval
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderPendingItems(pendingItems?.data.projects || [], 'projects')}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="events" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                📅 Events
-              </CardTitle>
-              <CardDescription>
-                Events waiting for approval
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderPendingItems(pendingItems?.data.events || [], 'events')}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="resources" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                📄 Resources
-              </CardTitle>
-              <CardDescription>
-                Resources waiting for approval
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderPendingItems(pendingItems?.data.resources || [], 'resources')}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="opportunities" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                💼 Opportunities
-              </CardTitle>
-              <CardDescription>
-                Opportunities waiting for approval
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderPendingItems(pendingItems?.data.opportunities || [], 'opportunities')}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="services" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                🔧 Services
-              </CardTitle>
-              <CardDescription>
-                Services waiting for approval
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderPendingItems(pendingItems?.data.services || [], 'services')}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* Tab content */}
+      {activeTab === 'all' && (
+        totalPending === 0 ? (
+          <div className="text-center py-12">
+            <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">All caught up!</h3>
+            <p className="text-muted-foreground">No content is currently pending approval.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {pendingItems?.data.forumPosts && pendingItems.data.forumPosts.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Forum Posts ({pendingItems.data.forumPosts.length})</h3>
+                {renderPendingItems(pendingItems.data.forumPosts, 'forumPosts')}
+              </div>
+            )}
+            {pendingItems?.data.projects && pendingItems.data.projects.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Projects ({pendingItems.data.projects.length})</h3>
+                {renderPendingItems(pendingItems.data.projects, 'projects')}
+              </div>
+            )}
+            {pendingItems?.data.events && pendingItems.data.events.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Events ({pendingItems.data.events.length})</h3>
+                {renderPendingItems(pendingItems.data.events, 'events')}
+              </div>
+            )}
+            {pendingItems?.data.resources && pendingItems.data.resources.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Resources ({pendingItems.data.resources.length})</h3>
+                {renderPendingItems(pendingItems.data.resources, 'resources')}
+              </div>
+            )}
+            {pendingItems?.data.opportunities && pendingItems.data.opportunities.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Opportunities ({pendingItems.data.opportunities.length})</h3>
+                {renderPendingItems(pendingItems.data.opportunities, 'opportunities')}
+              </div>
+            )}
+            {pendingItems?.data.services && pendingItems.data.services.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Services ({pendingItems.data.services.length})</h3>
+                {renderPendingItems(pendingItems.data.services, 'services')}
+              </div>
+            )}
+          </div>
+        )
+      )}
+      {activeTab === 'forum' && (
+        <div>{renderPendingItems(pendingItems?.data.forumPosts || [], 'forumPosts')}</div>
+      )}
+      {activeTab === 'projects' && (
+        <div>{renderPendingItems(pendingItems?.data.projects || [], 'projects')}</div>
+      )}
+      {activeTab === 'events' && (
+        <div>{renderPendingItems(pendingItems?.data.events || [], 'events')}</div>
+      )}
+      {activeTab === 'resources' && (
+        <div>{renderPendingItems(pendingItems?.data.resources || [], 'resources')}</div>
+      )}
+      {activeTab === 'opportunities' && (
+        <div>{renderPendingItems(pendingItems?.data.opportunities || [], 'opportunities')}</div>
+      )}
+      {activeTab === 'services' && (
+        <div>{renderPendingItems(pendingItems?.data.services || [], 'services')}</div>
+      )}
 
       {/* Preview Modal */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>

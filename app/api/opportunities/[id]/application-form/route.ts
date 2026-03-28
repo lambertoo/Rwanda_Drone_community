@@ -6,10 +6,11 @@ import { getSession } from "@/lib/auth"
 // GET - Get application form for an opportunity
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const opportunityId = params.id
+    const { id } = await params
+    const opportunityId = id
 
     const form = await prisma.applicationForm.findUnique({
       where: { opportunityId },
@@ -43,9 +44,10 @@ export async function GET(
 // POST - Create or update application form for an opportunity
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getSession(cookies())
     if (!session) {
       return NextResponse.json(
@@ -54,7 +56,7 @@ export async function POST(
       )
     }
 
-    const opportunityId = params.id
+    const opportunityId = id
     const body = await request.json()
     const { title, description, fields } = body
 

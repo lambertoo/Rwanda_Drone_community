@@ -4,14 +4,15 @@ import { getCurrentUser } from '@/lib/auth'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const notification = await prisma.notification.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!notification) {
@@ -23,7 +24,7 @@ export async function PUT(
     }
 
     const updated = await prisma.notification.update({
-      where: { id: params.id },
+      where: { id },
       data: { isRead: true }
     })
 

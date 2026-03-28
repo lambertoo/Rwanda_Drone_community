@@ -4,9 +4,10 @@ import { extractTokenFromRequest, verifyToken } from '@/lib/jwt-utils'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Verify authentication
     const token = extractTokenFromRequest(request)
     if (!token) {
@@ -18,7 +19,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const sectionId = params.id
+    const sectionId = id
     const body = await request.json()
     const { title, description, order, conditional, isActive } = body
 
@@ -59,9 +60,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Verify authentication
     const token = extractTokenFromRequest(request)
     if (!token) {
@@ -73,7 +75,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const sectionId = params.id
+    const sectionId = id
 
     // Check if section exists and belongs to user's form
     const existingSection = await prisma.formSection.findFirst({

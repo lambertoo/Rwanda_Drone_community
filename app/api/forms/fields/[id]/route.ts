@@ -4,9 +4,10 @@ import { extractTokenFromRequest, verifyToken } from '@/lib/jwt-utils'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Verify authentication
     const token = extractTokenFromRequest(request)
     if (!token) {
@@ -18,7 +19,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const fieldId = params.id
+    const fieldId = id
     const body = await request.json()
     const { 
       type, 
@@ -85,9 +86,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Verify authentication
     const token = extractTokenFromRequest(request)
     if (!token) {
@@ -99,7 +101,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const fieldId = params.id
+    const fieldId = id
 
     // Check if field exists and belongs to user's form
     const existingField = await prisma.formField.findFirst({

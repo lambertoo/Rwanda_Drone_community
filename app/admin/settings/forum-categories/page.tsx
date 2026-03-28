@@ -10,17 +10,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  ArrowLeft,
+import {
+  Plus,
+  Edit,
+  Trash2,
   MessageSquare,
   Save,
   X
 } from "lucide-react"
-import Link from "next/link"
-import { AdminOnly } from "@/components/auth-guard"
 
 interface ForumCategory {
   id: string
@@ -138,7 +135,7 @@ function ForumCategoriesContent() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="p-6">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -147,17 +144,9 @@ function ForumCategoriesContent() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="p-6">
       <div className="mb-8">
-        <div className="flex items-center gap-4 mb-4">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/admin">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Admin
-            </Link>
-          </Button>
-        </div>
-        <h1 className="text-3xl font-bold mb-2">Forum Categories</h1>
+        <h1 className="text-2xl font-bold mb-2">Forum Categories</h1>
         <p className="text-muted-foreground">
           Manage forum categories and their settings
         </p>
@@ -321,9 +310,5 @@ function ForumCategoriesContent() {
 }
 
 export default function ForumCategoriesPage() {
-  return (
-    <AdminOnly>
-      <ForumCategoriesContent />
-    </AdminOnly>
-  )
+  return <ForumCategoriesContent />
 }

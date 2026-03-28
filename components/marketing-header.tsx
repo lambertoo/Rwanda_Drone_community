@@ -91,6 +91,7 @@ export function MarketingHeader() {
   const handleDropdownEnter = (label: string) => {
     if (leaveTimer.current) clearTimeout(leaveTimer.current)
     setOpenDropdown(label)
+    setProfileOpen(false)
   }
   const handleDropdownLeave = () => {
     leaveTimer.current = setTimeout(() => setOpenDropdown(null), 150)
@@ -239,33 +240,120 @@ export function MarketingHeader() {
 
           {user ? (
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              {/* Admin badge */}
-              {user.role === "admin" && pendingCount > 0 && (
-                <Link href="/admin/approvals" style={{ position: "relative", display: "flex" }}>
-                  <button style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#f97316", display: "flex" }}>
-                    <Bell size={18} />
-                    <span style={{ position: "absolute", top: 2, right: 2, minWidth: 14, height: 14, background: "#f97316", borderRadius: 999, fontSize: 9, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>
-                      {pendingCount > 99 ? "99+" : pendingCount}
-                    </span>
-                  </button>
-                </Link>
-              )}
-
               <NotificationBell />
 
-              {/* Avatar */}
-              <button
-                onClick={() => setProfileOpen(true)}
-                aria-label="Open profile"
-                style={{ background: "none", border: "none", cursor: "pointer", padding: 0, borderRadius: "50%" }}
+              {/* Avatar with pending badge + dropdown */}
+              <div
+                style={{ position: "relative" }}
+                onMouseEnter={() => setProfileOpen(true)}
+                onMouseLeave={() => setProfileOpen(false)}
               >
-                <Avatar style={{ width: 32, height: 32, outline: "2px solid rgba(0,88,221,0.2)", outlineOffset: 1 }}>
-                  <AvatarImage src={user.avatar || "/placeholder-user.jpg"} alt={user.fullName} />
-                  <AvatarFallback style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", fontSize: 12, fontWeight: 700 }}>
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-              </button>
+                <button
+                  onClick={() => setProfileOpen(!profileOpen)}
+                  aria-label="Open profile"
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: 0, borderRadius: "50%", position: "relative" }}
+                >
+                  <Avatar style={{ width: 32, height: 32, outline: "2px solid rgba(0,88,221,0.2)", outlineOffset: 1 }}>
+                    <AvatarImage src={user.avatar || "/placeholder-user.jpg"} alt={user.fullName} />
+                    <AvatarFallback style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", fontSize: 12, fontWeight: 700 }}>
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  {pendingCount > 0 && (
+                    <span style={{
+                      position: "absolute", top: -4, right: -4,
+                      minWidth: 18, height: 18,
+                      background: "#f97316", borderRadius: 999,
+                      fontSize: 10, fontWeight: 700, color: "#fff",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      padding: "0 4px",
+                      border: "2px solid #fff",
+                    }}>
+                      {pendingCount > 99 ? "99+" : pendingCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Dropdown overlay — same style as Community/Know-How menus */}
+                {profileOpen && (
+                  <div style={{
+                    position: "absolute", top: "100%", right: 0,
+                    paddingTop: 8, zIndex: 60,
+                  }}>
+                    <div style={{
+                      background: "rgba(255,255,255,0.98)", backdropFilter: "blur(20px)",
+                      borderRadius: 16, padding: 8, width: 260,
+                      boxShadow: "0 12px 40px rgba(0,11,79,0.12), 0 2px 8px rgba(0,0,0,0.06)",
+                      border: "1px solid rgba(0,38,116,0.08)",
+                    }}>
+                      {/* User info */}
+                      <div style={{ padding: "10px 10px 12px", borderBottom: "1px solid #f1f3f5", marginBottom: 4, display: "flex", alignItems: "center", gap: 10 }}>
+                        <Avatar style={{ width: 36, height: 36, flexShrink: 0, outline: "2px solid rgba(0,88,221,0.12)", outlineOffset: 1 }}>
+                          <AvatarImage src={user.avatar || "/placeholder-user.jpg"} alt={user.fullName} />
+                          <AvatarFallback style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", fontSize: 12, fontWeight: 700 }}>{initials}</AvatarFallback>
+                        </Avatar>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <p style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.fullName}</p>
+                          <p style={{ fontSize: 11, color: "#6b7280", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</p>
+                        </div>
+                        {user.role && (
+                          <Badge variant="secondary" style={{ fontSize: 10, flexShrink: 0, padding: "1px 6px" }}>
+                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Menu items */}
+                      {[
+                        { href: "/account?tab=profile", icon: User, label: "Profile" },
+                        { href: "/account?tab=settings", icon: Settings, label: "Settings" },
+                        { href: "/account?tab=notifications", icon: Bell, label: "Notifications" },
+                        { href: "/account?tab=forms", icon: ClipboardList, label: "My Forms" },
+                        ...(user?.role === "admin" ? [
+                          { href: "/admin", icon: Shield, label: "Admin Panel", badge: pendingCount },
+                        ] : []),
+                        ...(user?.role === "regulator" ? [{ href: "/regulator", icon: Award, label: "Regulator Panel" }] : []),
+                      ].map(({ href, icon: Icon, label, badge }: any) => (
+                        <Link
+                          key={href}
+                          href={href}
+                          onClick={() => setProfileOpen(false)}
+                          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "8px 10px", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 13, fontWeight: 500 }}
+                          className="hover:bg-[#f4f6fb] transition-colors"
+                        >
+                          <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <Icon size={15} color="#0058dd" />
+                            {label}
+                          </span>
+                          {badge > 0 && (
+                            <span style={{
+                              minWidth: 20, height: 20,
+                              background: "#f97316", borderRadius: 999,
+                              fontSize: 10, fontWeight: 700, color: "#fff",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              padding: "0 5px",
+                            }}>
+                              {badge > 99 ? "99+" : badge}
+                            </span>
+                          )}
+                        </Link>
+                      ))}
+
+                      {/* Divider + Logout */}
+                      <div style={{ borderTop: "1px solid #f1f3f5", marginTop: 4, paddingTop: 4 }}>
+                        <button
+                          onClick={() => { setProfileOpen(false); handleLogout() }}
+                          style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 13, fontWeight: 600 }}
+                          className="hover:bg-[#fef2f2] transition-colors"
+                        >
+                          <LogOut size={15} />
+                          Log out
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <>
@@ -284,79 +372,6 @@ export function MarketingHeader() {
           <span /><span /><span />
         </button>
       </div>
-
-      {/* ── Profile side panel ──────────────────────────────── */}
-      {profileOpen && (
-        <>
-          <div
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 60, backdropFilter: "blur(2px)" }}
-            onClick={() => setProfileOpen(false)}
-          />
-          <div style={{
-            position: "fixed", top: 0, right: 0, bottom: 0, width: 300, zIndex: 70,
-            background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)",
-            boxShadow: "-4px 0 32px rgba(0,11,79,0.14)",
-            display: "flex", flexDirection: "column",
-          }}>
-            <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid rgba(0,38,116,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontWeight: 700, fontSize: 14, color: "#002674" }}>My Account</span>
-              <button onClick={() => setProfileOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", display: "flex", padding: 4 }}>
-                <X size={18} />
-              </button>
-            </div>
-
-            {user && (
-              <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid rgba(0,38,116,0.06)", display: "flex", alignItems: "center", gap: 14 }}>
-                <Avatar style={{ width: 48, height: 48, flexShrink: 0, outline: "3px solid rgba(0,88,221,0.15)", outlineOffset: 2 }}>
-                  <AvatarImage src={user.avatar || "/placeholder-user.jpg"} alt={user.fullName} />
-                  <AvatarFallback style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", fontSize: 16, fontWeight: 700 }}>{initials}</AvatarFallback>
-                </Avatar>
-                <div style={{ minWidth: 0 }}>
-                  <p style={{ fontWeight: 700, fontSize: 14, color: "#0f172a", margin: "0 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.fullName}</p>
-                  <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 6px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</p>
-                  {user.role && (
-                    <Badge variant="secondary" style={{ fontSize: 11 }}>
-                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div style={{ flex: 1, overflowY: "auto", padding: "12px 12px" }}>
-              {[
-                { href: "/account?tab=profile", icon: User, label: "Profile" },
-                { href: "/account?tab=settings", icon: Settings, label: "Settings" },
-                { href: "/account?tab=notifications", icon: Bell, label: "Notifications" },
-                { href: "/account?tab=forms", icon: ClipboardList, label: "My Forms" },
-                ...(user?.role === "admin" ? [{ href: "/admin", icon: Shield, label: "Admin Panel" }] : []),
-                ...(user?.role === "regulator" ? [{ href: "/regulator", icon: Award, label: "Regulator Panel" }] : []),
-              ].map(({ href, icon: Icon, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setProfileOpen(false)}
-                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 10, textDecoration: "none", color: "#374151", fontSize: 14, fontWeight: 500, marginBottom: 2 }}
-                  className="hover:bg-[#f4f6fb] transition-colors"
-                >
-                  <Icon size={16} color="#0058dd" />
-                  {label}
-                </Link>
-              ))}
-            </div>
-
-            <div style={{ padding: "12px 12px 20px", borderTop: "1px solid rgba(0,38,116,0.06)" }}>
-              <button
-                onClick={() => { setProfileOpen(false); handleLogout() }}
-                style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 10, background: "#fff5f5", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 14, fontWeight: 600 }}
-              >
-                <LogOut size={16} />
-                Log out
-              </button>
-            </div>
-          </div>
-        </>
-      )}
 
       {/* ── Mobile menu drawer ──────────────────────────────── */}
       {mobileOpen && (

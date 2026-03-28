@@ -8,9 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Edit, Trash2, Plus, Briefcase, ArrowLeft } from "lucide-react"
-import { AdminOnly } from "@/components/auth-guard"
-import Link from "next/link"
+import { Edit, Trash2, Plus, Briefcase } from "lucide-react"
 
 interface EmploymentType {
   id: string
@@ -162,18 +160,9 @@ function EmploymentTypesContent() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/admin">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Admin
-          </Link>
-        </Button>
-      </div>
-
-      <div>
-        <h1 className="text-3xl font-bold">Employment Types</h1>
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Employment Types</h1>
         <p className="text-muted-foreground">
           Manage employment types for different opportunity categories
         </p>
@@ -350,9 +339,5 @@ function EmploymentTypesContent() {
 }
 
 export default function EmploymentTypesPage() {
-  return (
-    <AdminOnly>
-      <EmploymentTypesContent />
-    </AdminOnly>
-  )
+  return <EmploymentTypesContent />
 }

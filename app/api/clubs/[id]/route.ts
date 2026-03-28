@@ -4,10 +4,11 @@ import { getCurrentUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const club = await prisma.club.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         createdBy: { select: { id: true, fullName: true, avatar: true, username: true, organization: true } },
         memberships: {
@@ -30,16 +31,17 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const club = await prisma.club.findUnique({ where: { id: params.id } })
+    const club = await prisma.club.findUnique({ where: { id } })
     if (!club) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
     const isClubAdmin = await prisma.clubMembership.findUnique({
-      where: { clubId_userId: { clubId: params.id, userId: user.id } },
+      where: { clubId_userId: { clubId: id, userId: user.id } },
     })
     if (club.createdById !== user.id && user.role !== 'admin' && isClubAdmin?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -47,7 +49,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     const data = await req.json()
     const updated = await prisma.club.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(data.name && { name: data.name }),
         ...(data.description && { description: data.description }),
@@ -71,18 +73,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const club = await prisma.club.findUnique({ where: { id: params.id } })
+    const club = await prisma.club.findUnique({ where: { id } })
     if (!club) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     if (club.createdById !== user.id && user.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    await prisma.club.delete({ where: { id: params.id } })
+    await prisma.club.delete({ where: { id } })
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: 'Failed to delete club' }, { status: 500 })
