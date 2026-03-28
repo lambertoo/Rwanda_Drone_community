@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import DocumentEditor from "@/components/ui/document-editor"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -15,6 +16,7 @@ export default function NewServiceForm() {
   const [loading, setLoading] = useState(false)
   const [services, setServices] = useState<string[]>([])
   const [newService, setNewService] = useState("")
+  const [description, setDescription] = useState("")
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -105,13 +107,13 @@ export default function NewServiceForm() {
 
           <div className="space-y-2">
             <Label htmlFor="description">Description *</Label>
-            <Textarea
-              id="description"
-              name="description"
+            <DocumentEditor
+              value={description}
+              onChange={(html) => setDescription(html)}
               placeholder="Describe your services and what makes you unique..."
-              rows={4}
-              required
+              minHeight={250}
             />
+            <input type="hidden" name="description" value={description} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

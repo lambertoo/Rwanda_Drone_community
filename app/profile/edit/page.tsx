@@ -13,9 +13,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
-import { ArrowLeft, Save, Upload, User, Briefcase, Shield, Bell, Mail } from "lucide-react"
+import { Save, Upload, User, Briefcase, Shield, Bell, Mail, Lock } from "lucide-react"
 import Link from "next/link"
 import { AuthGuard } from "@/components/auth-guard"
 import { PhoneInput } from "@/components/ui/phone-input"
@@ -114,6 +113,8 @@ function EditProfilePageContent() {
             specializations: parseJsonField(userData.specializations),
             certifications: parseJsonField(userData.certifications)
           })
+          if (userData.privacySettings) setPrivacySettings(userData.privacySettings)
+          if (userData.notificationSettings) setNotificationSettings(userData.notificationSettings)
         } else {
           console.error('Failed to fetch profile')
         }
@@ -230,7 +231,9 @@ function EditProfilePageContent() {
           pilotLicense: formData.pilotLicense,
           experience: formData.experience,
           specializations: formData.specializations,
-          certifications: formData.certifications
+          certifications: formData.certifications,
+          privacySettings,
+          notificationSettings,
         }),
       })
 
@@ -293,47 +296,41 @@ function EditProfilePageContent() {
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Link href={`/profile/${profile.username}`}>
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Edit Profile</h1>
-            <p className="text-muted-foreground">Update your profile information and settings</p>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-foreground">Edit Profile</h1>
+          <p className="text-muted-foreground">Update your profile information and settings</p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="basic" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Basic Info
-            </TabsTrigger>
-            <TabsTrigger value="professional" className="flex items-center gap-2">
-              <Briefcase className="h-4 w-4" />
-              Professional
-            </TabsTrigger>
-            <TabsTrigger value="privacy" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Privacy
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Notifications
-            </TabsTrigger>
-            <TabsTrigger value="mailing" className="flex items-center gap-2">
-              <Mail className="h-4 w-4" /> Mailing
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              Security
-            </TabsTrigger>
-          </TabsList>
+        {/* Tab Navigation */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {[
+            { id: "basic", label: "Basic Info", icon: User },
+            { id: "professional", label: "Professional", icon: Briefcase },
+            { id: "privacy", label: "Privacy", icon: Shield },
+            { id: "notifications", label: "Notifications", icon: Bell },
+            { id: "mailing", label: "Mailing", icon: Mail },
+            { id: "security", label: "Security", icon: Lock },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                activeTab === tab.id
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : "bg-background hover:bg-muted border-border"
+              }`}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
+        <div className="space-y-6">
           <form onSubmit={handleSubmit}>
             {/* Basic Info Tab */}
-            <TabsContent value="basic" className="space-y-6">
+            {activeTab === "basic" && (<div className="space-y-6">
               {/* Profile Picture */}
               <Card>
                 <CardHeader>
@@ -492,10 +489,20 @@ function EditProfilePageContent() {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+
+              <div className="flex justify-end gap-4 pt-6">
+                <Link href={`/profile/${profile.username}`}>
+                  <Button type="button" variant="outline">Cancel</Button>
+                </Link>
+                <Button type="submit" disabled={saving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>)}
 
             {/* Professional Tab */}
-            <TabsContent value="professional" className="space-y-6">
+            {activeTab === "professional" && (<div className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Professional Information</CardTitle>
@@ -564,10 +571,20 @@ function EditProfilePageContent() {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+
+              <div className="flex justify-end gap-4 pt-6">
+                <Link href={`/profile/${profile.username}`}>
+                  <Button type="button" variant="outline">Cancel</Button>
+                </Link>
+                <Button type="submit" disabled={saving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>)}
 
             {/* Privacy Tab */}
-            <TabsContent value="privacy" className="space-y-6">
+            {activeTab === "privacy" && (<div className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Privacy Settings</CardTitle>
@@ -646,10 +663,20 @@ function EditProfilePageContent() {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+
+              <div className="flex justify-end gap-4 pt-6">
+                <Link href={`/profile/${profile.username}`}>
+                  <Button type="button" variant="outline">Cancel</Button>
+                </Link>
+                <Button type="submit" disabled={saving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>)}
 
             {/* Notifications Tab */}
-            <TabsContent value="notifications" className="space-y-6">
+            {activeTab === "notifications" && (<div className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Notification Preferences</CardTitle>
@@ -742,15 +769,22 @@ function EditProfilePageContent() {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+
+              <div className="flex justify-end gap-4 pt-6">
+                <Link href={`/profile/${profile.username}`}>
+                  <Button type="button" variant="outline">Cancel</Button>
+                </Link>
+                <Button type="submit" disabled={saving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>)}
 
             {/* Mailing Tab */}
-            <TabsContent value="mailing" className="space-y-6">
+            {activeTab === "mailing" && (<div className="space-y-6">
               <MailingPreferencesForm email={profile.email} />
-            </TabsContent>
 
-            {/* Action Buttons (inside profile form) */}
-            <TabsContent value="basic" forceMount className="hidden data-[state=active]:block">
               <div className="flex justify-end gap-4 pt-6">
                 <Link href={`/profile/${profile.username}`}>
                   <Button type="button" variant="outline">Cancel</Button>
@@ -760,43 +794,21 @@ function EditProfilePageContent() {
                   {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
-            </TabsContent>
-            <TabsContent value="professional" forceMount className="hidden data-[state=active]:block">
-              <div className="flex justify-end gap-4 pt-6">
-                <Link href={`/profile/${profile.username}`}>
-                  <Button type="button" variant="outline">Cancel</Button>
-                </Link>
-                <Button type="submit" disabled={saving}>
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </div>
-            </TabsContent>
-            <TabsContent value="mailing" forceMount className="hidden data-[state=active]:block">
-              <div className="flex justify-end gap-4 pt-6">
-                <Link href={`/profile/${profile.username}`}>
-                  <Button type="button" variant="outline">Cancel</Button>
-                </Link>
-                <Button type="submit" disabled={saving}>
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </div>
-            </TabsContent>
+            </div>)}
           </form>
 
-            {/* Security Tab — outside profile form to avoid nested <form> */}
-            <TabsContent value="security" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Change Password</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <PasswordChangeForm />
-                </CardContent>
-              </Card>
-            </TabsContent>
-        </Tabs>
+          {/* Security Tab — outside profile form to avoid nested <form> */}
+          {activeTab === "security" && (<div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Change Password</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <PasswordChangeForm />
+              </CardContent>
+            </Card>
+          </div>)}
+        </div>
       </div>
     </div>
   )

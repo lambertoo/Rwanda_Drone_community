@@ -1,37 +1,79 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { FileText, Save, Eye, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import { FileText, Save, CheckCircle, AlertCircle, Loader2, Plus, Trash2, X } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import DocumentEditor from "@/components/ui/document-editor"
 
-const PAGES = [
-  { slug: "privacy", label: "Privacy Policy" },
-  { slug: "terms",   label: "Terms of Use" },
-]
+interface PageData {
+  slug: string
+  title: string
+  content: string
+  updatedAt: string | null
+}
 
 export default function AdminPagesSettings() {
-  const [activeSlug, setActiveSlug] = useState("privacy")
-  const [pages, setPages] = useState<Record<string, { title: string; content: string; updatedAt: string | null }>>({})
+  const [pages, setPages] = useState<PageData[]>([])
+  const [activeSlug, setActiveSlug] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState<"idle" | "saved" | "error">("idle")
-  const [preview, setPreview] = useState(false)
+  const [showNewForm, setShowNewForm] = useState(false)
+  const [newTitle, setNewTitle] = useState("")
+  const [newSlug, setNewSlug] = useState("")
+  const [creating, setCreating] = useState(false)
 
   useEffect(() => {
-    Promise.all(PAGES.map(p => fetch(`/api/pages/${p.slug}`).then(r => r.json())))
-      .then(results => {
-        const map: Record<string, any> = {}
-        results.forEach((d, i) => { map[PAGES[i].slug] = d })
-        setPages(map)
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    fetchPages()
   }, [])
 
-  const current = pages[activeSlug]
+  const fetchPages = async () => {
+    try {
+      const res = await fetch("/api/admin/pages", { credentials: "include" })
+      if (res.ok) {
+        const data = await res.json()
+        setPages(data.pages)
+        // If no pages exist, create defaults
+        if (data.pages.length === 0) {
+          // Privacy and terms will be auto-created on first GET
+          const [p, t] = await Promise.all([
+            fetch("/api/pages/privacy").then(r => r.json()),
+            fetch("/api/pages/terms").then(r => r.json()),
+          ])
+          // Save them
+          await Promise.all([
+            fetch("/api/admin/pages/privacy", {
+              method: "PUT", credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ title: p.title, content: p.content }),
+            }),
+            fetch("/api/admin/pages/terms", {
+              method: "PUT", credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ title: t.title, content: t.content }),
+            }),
+          ])
+          const res2 = await fetch("/api/admin/pages", { credentials: "include" })
+          if (res2.ok) {
+            const data2 = await res2.json()
+            setPages(data2.pages)
+          }
+        }
+        if (!activeSlug && data.pages.length > 0) {
+          setActiveSlug(data.pages[0].slug)
+        }
+      }
+    } catch {}
+    finally { setLoading(false) }
+  }
 
-  function update(field: "title" | "content", value: string) {
-    setPages(prev => ({ ...prev, [activeSlug]: { ...prev[activeSlug], [field]: value } }))
+  const current = pages.find(p => p.slug === activeSlug)
+
+  function updateField(field: "title" | "content", value: string) {
+    setPages(prev => prev.map(p =>
+      p.slug === activeSlug ? { ...p, [field]: value } : p
+    ))
     setStatus("idle")
   }
 
@@ -55,145 +97,187 @@ export default function AdminPagesSettings() {
     }
   }
 
+  async function createPage() {
+    if (!newTitle.trim()) return
+    setCreating(true)
+    try {
+      const res = await fetch("/api/admin/pages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ title: newTitle.trim(), slug: newSlug.trim() || undefined }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setShowNewForm(false)
+        setNewTitle("")
+        setNewSlug("")
+        await fetchPages()
+        setActiveSlug(data.slug)
+      } else {
+        const err = await res.json()
+        alert(err.error || "Failed to create page")
+      }
+    } catch {
+      alert("Failed to create page")
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  async function deletePage(slug: string) {
+    if (!confirm(`Delete the "${pages.find(p => p.slug === slug)?.title}" page? This cannot be undone.`)) return
+    try {
+      const res = await fetch(`/api/admin/pages/${slug}`, { method: "DELETE", credentials: "include" })
+      if (res.ok) {
+        if (activeSlug === slug) setActiveSlug(null)
+        await fetchPages()
+      } else {
+        const err = await res.json()
+        alert(err.error || "Failed to delete page")
+      }
+    } catch {}
+  }
+
+  const isCorePage = (slug: string) => ["privacy", "terms"].includes(slug)
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    )
+  }
+
   return (
-    <div>
-      {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: "#002674", margin: "0 0 4px" }}>Legal Pages</h1>
-        <p style={{ fontSize: 14, color: "#64748b", margin: 0 }}>Edit the content of your Privacy Policy and Terms of Use pages.</p>
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Legal & Custom Pages</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Manage legal pages and create custom pages. Custom pages will appear in the footer under Guidelines.
+        </p>
       </div>
 
-      {/* Tab bar */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: "1px solid rgba(0,38,116,0.08)", paddingBottom: 0 }}>
-        {PAGES.map(p => (
-          <button
-            key={p.slug}
-            onClick={() => { setActiveSlug(p.slug); setPreview(false); setStatus("idle") }}
-            style={{
-              padding: "9px 20px", fontWeight: 600, fontSize: 14, border: "none", cursor: "pointer",
-              borderBottom: activeSlug === p.slug ? "2px solid #002674" : "2px solid transparent",
-              background: "none",
-              color: activeSlug === p.slug ? "#002674" : "#64748b",
-              marginBottom: -1,
-            }}
-          >
-            <FileText size={14} style={{ display: "inline", marginRight: 6, verticalAlign: "middle" }} />
-            {p.label}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 64 }}>
-          <Loader2 size={28} className="animate-spin" style={{ color: "#0058dd" }} />
-        </div>
-      ) : current ? (
-        <div style={{ display: "grid", gridTemplateColumns: preview ? "1fr 1fr" : "1fr", gap: 20 }}>
-          {/* Editor */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>Page Title</label>
-              <input
-                value={current.title}
-                onChange={e => update("title", e.target.value)}
-                style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid rgba(0,38,116,0.15)", fontSize: 14, color: "#0f172a", outline: "none" }}
-              />
-            </div>
-
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>Content (Markdown)</label>
-                <span style={{ fontSize: 11, color: "#94a3b8" }}>Supports **bold**, *italic*, # headings, - lists</span>
-              </div>
-              <textarea
-                value={current.content}
-                onChange={e => update("content", e.target.value)}
-                rows={28}
-                style={{ width: "100%", padding: "12px", borderRadius: 8, border: "1px solid rgba(0,38,116,0.15)", fontSize: 13, color: "#0f172a", fontFamily: "monospace", lineHeight: 1.6, resize: "vertical", outline: "none", boxSizing: "border-box" }}
-              />
-            </div>
-
-            {/* Action bar */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <button
-                onClick={save}
-                disabled={saving}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 22px", borderRadius: 8, border: "none", cursor: saving ? "not-allowed" : "pointer", background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", fontWeight: 700, fontSize: 14, opacity: saving ? 0.7 : 1 }}
-              >
-                {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-                {saving ? "Saving…" : "Save Changes"}
-              </button>
-
-              <button
-                onClick={() => setPreview(p => !p)}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 18px", borderRadius: 8, border: "1px solid rgba(0,38,116,0.15)", cursor: "pointer", background: "#fff", color: "#374151", fontWeight: 600, fontSize: 14 }}
-              >
-                <Eye size={15} /> {preview ? "Hide preview" : "Preview"}
-              </button>
-
-              <Link
-                href={`/${activeSlug}`}
-                target="_blank"
-                style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#0058dd", textDecoration: "none" }}
-              >
-                View live page ↗
-              </Link>
-
-              {status === "saved" && (
-                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#16a34a" }}>
-                  <CheckCircle size={15} /> Saved successfully
-                </span>
+      {/* Page tabs */}
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        {pages.map(p => (
+          <div key={p.slug} className="flex items-center gap-0">
+            <button
+              onClick={() => { setActiveSlug(p.slug); setStatus("idle") }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
+                activeSlug === p.slug
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : "bg-background hover:bg-muted border-border hover:border-primary/30"
+              }`}
+            >
+              <FileText className="h-3.5 w-3.5" />
+              {p.title || p.slug}
+              {isCorePage(p.slug) && (
+                <Badge variant="secondary" className="text-[9px] px-1 py-0">Core</Badge>
               )}
-              {status === "error" && (
-                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#ef4444" }}>
-                  <AlertCircle size={15} /> Save failed — try again
-                </span>
-              )}
-            </div>
-
-            {current.updatedAt && (
-              <p style={{ fontSize: 12, color: "#94a3b8", margin: 0 }}>
-                Last saved {new Date(current.updatedAt).toLocaleString("en-GB")}
-              </p>
+            </button>
+            {!isCorePage(p.slug) && activeSlug !== p.slug && (
+              <button
+                onClick={() => deletePage(p.slug)}
+                className="p-1 ml-0.5 rounded hover:bg-red-50 text-muted-foreground/40 hover:text-red-600 transition-colors"
+                title="Delete page"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
             )}
           </div>
+        ))}
 
-          {/* Live preview */}
-          {preview && (
-            <div style={{ border: "1px solid rgba(0,38,116,0.08)", borderRadius: 12, padding: "28px 32px", background: "#fff", overflow: "auto", maxHeight: 720 }}>
-              <h1 style={{ fontSize: 28, fontWeight: 800, color: "#002674", marginBottom: 24 }}>{current.title}</h1>
-              <div className="prose-page" dangerouslySetInnerHTML={{ __html: markdownToHtml(current.content) }} />
-            </div>
-          )}
+        {/* Add page button */}
+        {showNewForm ? (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-background">
+            <input
+              value={newTitle}
+              onChange={(e) => {
+                setNewTitle(e.target.value)
+                setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
+              }}
+              placeholder="Page title..."
+              className="text-xs bg-transparent border-none outline-none w-32"
+              autoFocus
+              onKeyDown={(e) => { if (e.key === "Enter") createPage(); if (e.key === "Escape") setShowNewForm(false) }}
+            />
+            <span className="text-[10px] text-muted-foreground">/{newSlug || "..."}</span>
+            <button onClick={createPage} disabled={creating || !newTitle.trim()} className="p-1 rounded hover:bg-primary/10 text-primary">
+              <CheckCircle className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => { setShowNewForm(false); setNewTitle(""); setNewSlug("") }} className="p-1 rounded hover:bg-muted text-muted-foreground">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowNewForm(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-dashed border-border hover:border-primary/30 hover:bg-muted transition-all text-muted-foreground"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Page
+          </button>
+        )}
+      </div>
+
+      {/* Editor */}
+      {current ? (
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">Page Title</label>
+            <input
+              value={current.title}
+              onChange={e => updateField("title", e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border text-sm outline-none focus:ring-1 focus:ring-primary/30"
+            />
+          </div>
+
+          <DocumentEditor
+            value={current.content}
+            onChange={(html) => updateField("content", html)}
+            label="Content"
+            placeholder="Write or upload your page content..."
+            minHeight={400}
+          />
+
+          {/* Action bar */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={save}
+              disabled={saving}
+              className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-70"
+              style={{ background: "linear-gradient(135deg,#002674,#0058dd)" }}
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+
+            <Link
+              href={`/${activeSlug}`}
+              target="_blank"
+              className="text-xs text-primary hover:underline"
+            >
+              View live page
+            </Link>
+
+            {status === "saved" && (
+              <span className="flex items-center gap-1.5 text-xs text-green-600">
+                <CheckCircle className="w-3.5 h-3.5" /> Saved
+              </span>
+            )}
+            {status === "error" && (
+              <span className="flex items-center gap-1.5 text-xs text-red-600">
+                <AlertCircle className="w-3.5 h-3.5" /> Failed
+              </span>
+            )}
+          </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="text-center py-12 text-muted-foreground text-sm">
+          Select a page to edit, or create a new one.
+        </div>
+      )}
     </div>
   )
-}
-
-function markdownToHtml(md: string): string {
-  return md
-    .split("\n\n")
-    .map(block => {
-      const lines = block.split("\n")
-      if (/^#{1,3} /.test(lines[0])) {
-        const level = lines[0].match(/^(#+)/)![1].length
-        const text = inlineFormat(lines[0].replace(/^#+\s*/, ""))
-        return `<h${level} class="prose-h${level}">${text}</h${level}>`
-      }
-      if (lines.every(l => /^[-*] /.test(l.trim()))) {
-        const items = lines.map(l => `<li>${inlineFormat(l.replace(/^[-*]\s*/, ""))}</li>`).join("")
-        return `<ul class="prose-ul">${items}</ul>`
-      }
-      return `<p class="prose-p">${inlineFormat(lines.join("<br/>"))}</p>`
-    })
-    .join("")
-}
-
-function inlineFormat(s: string): string {
-  return s
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/`(.+?)`/g, "<code>$1</code>")
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
 }

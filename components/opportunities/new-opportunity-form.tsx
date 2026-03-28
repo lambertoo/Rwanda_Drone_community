@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import DocumentEditor from "@/components/ui/document-editor"
 import { Plus, X } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createOpportunityAction } from "@/lib/actions"
@@ -359,13 +360,13 @@ export default function NewOpportunityForm() {
 
               <div className="space-y-2">
                 <Label htmlFor="description">Opportunity Description *</Label>
-                <Textarea
-                  id="description"
-                  name="description"
+                <DocumentEditor
+                  value={formData.description}
+                  onChange={(html) => setFormData(prev => ({ ...prev, description: html }))}
                   placeholder="Describe the role, responsibilities, and what you're looking for..."
-                  rows={4}
-                  required
+                  minHeight={250}
                 />
+                <input type="hidden" name="description" value={formData.description} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

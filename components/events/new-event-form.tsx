@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import DocumentEditor from "@/components/ui/document-editor"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -681,12 +682,11 @@ export default function NewEventForm() {
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="fullDescription">Full Description</Label>
-                <Textarea
-                  id="fullDescription"
+                <DocumentEditor
                   value={fullDescription}
-                  onChange={(e) => setFullDescription(e.target.value)}
+                  onChange={(html) => setFullDescription(html)}
                   placeholder="Detailed description of your event"
-                  rows={6}
+                  minHeight={250}
                 />
               </div>
 

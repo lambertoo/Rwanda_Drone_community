@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import DocumentEditor from "@/components/ui/document-editor"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -781,13 +782,11 @@ export default function EventEditForm({ event }: EventEditFormProps) {
                 <Label htmlFor="fullDescription" className="text-sm font-semibold text-foreground mb-3 block">
                   Full Description
                 </Label>
-                <Textarea
-                  id="fullDescription"
+                <DocumentEditor
                   value={fullDescription}
-                  onChange={(e) => setFullDescription(e.target.value)}
+                  onChange={(html) => setFullDescription(html)}
                   placeholder="Detailed description of your event"
-                  rows={6}
-                  className="border-border focus:border-blue-500 focus:ring-blue-500 resize-none"
+                  minHeight={250}
                 />
               </div>
 

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import DocumentEditor from "@/components/ui/document-editor"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -244,14 +245,11 @@ export function NewPostForm({ categories, onCancel }: NewPostFormProps) {
           {/* Content */}
           <div className="space-y-2">
             <Label htmlFor="content">Post Content *</Label>
-            <Textarea
-              id="content"
+            <DocumentEditor
               value={formState.content}
-              onChange={(e) => handleInputChange('content', e.target.value)}
-              placeholder="Write your post content here..."
-              rows={8}
-              className={validationErrors.content ? 'border-red-500' : ''}
-              disabled={isSubmitting}
+              onChange={(html) => handleInputChange('content', html)}
+              placeholder="Write your post content or upload a document (.docx, .pdf)..."
+              minHeight={250}
             />
             {validationErrors.content && (
               <p className="text-sm text-red-600">{validationErrors.content}</p>

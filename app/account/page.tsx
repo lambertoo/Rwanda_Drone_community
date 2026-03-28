@@ -2,12 +2,11 @@
 
 import { Suspense } from "react"
 import { HubLayout, type HubTab } from "@/components/hub-layout"
-import { User, Settings, Bell, ClipboardList, BarChart3 } from "lucide-react"
+import { User, Bell, ClipboardList } from "lucide-react"
 import dynamic from "next/dynamic"
 import { AuthGuard } from "@/components/auth-guard"
 
 const ProfileContent = dynamic(() => import("@/app/profile/edit/page"), { loading: () => <TabLoading /> })
-const SettingsContent = dynamic(() => import("@/app/settings/page"), { loading: () => <TabLoading /> })
 const NotificationsContent = dynamic(() => import("@/app/notifications/page"), { loading: () => <TabLoading /> })
 const FormsContent = dynamic(() => import("@/app/forms/page"), { loading: () => <TabLoading /> })
 
@@ -21,7 +20,6 @@ function TabLoading() {
 
 const TABS: HubTab[] = [
   { id: "profile", label: "Profile", icon: User, href: "/profile/edit" },
-  { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
   { id: "notifications", label: "Notifications", icon: Bell, href: "/notifications" },
   { id: "forms", label: "Forms", icon: ClipboardList, href: "/forms" },
 ]
@@ -34,7 +32,6 @@ export default function AccountPage() {
           {(activeTab) => (
             <>
               {activeTab === "profile" && <ProfileContent />}
-              {activeTab === "settings" && <SettingsContent />}
               {activeTab === "notifications" && <NotificationsContent />}
               {activeTab === "forms" && <FormsContent />}
             </>

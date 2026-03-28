@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import DocumentEditor from "@/components/ui/document-editor"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -773,13 +774,11 @@ export default function EditProjectForm({ projectId, initialData }: { projectId:
               <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="overview">Project Overview *</Label>
-                  <Textarea
-                    id="overview"
+                  <DocumentEditor
                     value={formData.overview}
-                    onChange={(e) => handleInputChange("overview", e.target.value)}
+                    onChange={(html) => handleInputChange("overview", html)}
                     placeholder="Detailed description of your project, its goals, and significance..."
-                    rows={6}
-                    required
+                    minHeight={250}
                   />
                 </div>
 

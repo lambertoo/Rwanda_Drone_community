@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-const ALLOWED_SLUGS = ['privacy', 'terms']
-
 const DEFAULTS: Record<string, { title: string; content: string }> = {
   privacy: {
     title: 'Privacy Policy',
@@ -19,10 +17,6 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params
-
-  if (!ALLOWED_SLUGS.includes(slug)) {
-    return NextResponse.json({ error: 'Page not found' }, { status: 404 })
-  }
 
   try {
     const setting = await prisma.systemSetting.findUnique({

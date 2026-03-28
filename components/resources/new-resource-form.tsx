@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import DocumentEditor from "@/components/ui/document-editor"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -245,12 +246,11 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
           <label htmlFor="description" className="block text-sm font-medium mb-2">
             Description
           </label>
-          <Textarea
-            id="description"
+          <DocumentEditor
             value={formData.description}
-            onChange={(e) => handleInputChange("description", e.target.value)}
+            onChange={(html) => handleInputChange("description", html)}
             placeholder="Describe the resource content"
-            rows={3}
+            minHeight={250}
           />
         </div>
 

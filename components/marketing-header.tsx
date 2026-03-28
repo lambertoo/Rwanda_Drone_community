@@ -306,11 +306,10 @@ export function MarketingHeader() {
                       {/* Menu items */}
                       {[
                         { href: "/account?tab=profile", icon: User, label: "Profile" },
-                        { href: "/account?tab=settings", icon: Settings, label: "Settings" },
                         { href: "/account?tab=notifications", icon: Bell, label: "Notifications" },
                         { href: "/account?tab=forms", icon: ClipboardList, label: "My Forms" },
                         ...(user?.role === "admin" ? [
-                          { href: "/admin", icon: Shield, label: "Admin Panel", badge: pendingCount },
+                          { href: "/admin", icon: Settings, label: "Settings", badge: pendingCount },
                         ] : []),
                         ...(user?.role === "regulator" ? [{ href: "/regulator", icon: Award, label: "Regulator Panel" }] : []),
                       ].map(({ href, icon: Icon, label, badge }: any) => (

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import DocumentEditor from "@/components/ui/document-editor"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { X, Plus, Loader } from "lucide-react"
@@ -111,13 +112,11 @@ export function EditPostForm({ post, onCancel, onSuccess }: EditPostFormProps) {
           {/* Content */}
           <div className="space-y-2">
             <Label htmlFor="content">Content</Label>
-            <Textarea
-              id="content"
+            <DocumentEditor
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(html) => setContent(html)}
               placeholder="Write your post content..."
-              rows={8}
-              required
+              minHeight={250}
             />
           </div>
 
