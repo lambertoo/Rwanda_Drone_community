@@ -9,13 +9,15 @@ import { createNotification } from '@/lib/notifications'
  * - Overdue maintenance
  */
 export async function GET(request: NextRequest) {
-  // Verify cron secret in production
+  // Verify cron secret — REQUIRED, not optional
   const cronSecret = process.env.CRON_SECRET
-  if (cronSecret) {
-    const authHeader = request.headers.get('authorization')
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+  if (!cronSecret) {
+    console.error('[Cron] CRON_SECRET not configured')
+    return NextResponse.json({ error: 'Not configured' }, { status: 500 })
+  }
+  const authHeader = request.headers.get('authorization')
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
