@@ -78,7 +78,17 @@ export async function PATCH(request: NextRequest) {
     for (const key of allowed) {
       if (key in body) data[key] = body[key] === "" ? null : body[key]
     }
-    const updatedUser = await prisma.user.update({ where: { id: user.userId }, data })
+    const updatedUser = await prisma.user.update({
+      where: { id: user.userId },
+      data,
+      select: {
+        id: true, email: true, username: true, fullName: true, avatar: true,
+        bio: true, location: true, website: true, phone: true, role: true,
+        isVerified: true, isActive: true, organization: true, pilotLicense: true,
+        experience: true, specializations: true, certifications: true,
+        joinedAt: true, lastActive: true,
+      },
+    })
     return NextResponse.json({ message: "Profile updated", user: updatedUser })
   } catch (error) {
     console.error("Profile patch error:", error)
