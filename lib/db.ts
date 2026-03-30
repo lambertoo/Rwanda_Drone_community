@@ -161,7 +161,7 @@ const mockUsers: User[] = [
     postsCount: 50,
     commentsCount: 200,
     projectsCount: 10,
-    organization: "Rwanda Drone Community Platform",
+    organization: "Rwanda UAS Community Platform",
   },
   {
     id: "2",

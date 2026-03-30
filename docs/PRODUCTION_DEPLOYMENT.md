@@ -1,7 +1,7 @@
 # Production Deployment Guide
 
 ## Overview
-This guide covers deploying the Rwanda Drone Community Platform to a production server without Docker.
+This guide covers deploying the Rwanda UAS Community Platform to a production server without Docker.
 
 ## Prerequisites
 - Server with Node.js 18+ installed
@@ -77,7 +77,7 @@ pm2 startup
 Create a service file at `/etc/systemd/system/rwanda-drone-platform.service`:
 ```ini
 [Unit]
-Description=Rwanda Drone Community Platform
+Description=Rwanda UAS Community Platform
 After=network.target postgresql.service
 
 [Service]

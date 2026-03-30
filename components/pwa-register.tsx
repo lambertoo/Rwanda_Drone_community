@@ -45,7 +45,7 @@ export function PWARegister() {
   return (
     <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-50 bg-card border rounded-xl shadow-lg p-4 flex items-start gap-3">
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm">Install Rwanda Drone Community</p>
+        <p className="font-semibold text-sm">Install Rwanda UAS Community</p>
         <p className="text-xs text-muted-foreground mt-0.5">
           Add to your home screen for quick access, even offline.
         </p>

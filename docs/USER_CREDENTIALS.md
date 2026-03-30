@@ -1,4 +1,4 @@
-# User Credentials - Rwanda Drone Community Platform
+# User Credentials - Rwanda UAS Community Platform
 
 **Date Created:** January 28, 2026  
 **Total Users:** 26 (1 admin + 25 test users)

@@ -16,28 +16,28 @@ const hostGrotesk = Host_Grotesk({ subsets: ["latin"], weight: ["400", "500", "6
 
 export const metadata: Metadata = {
   title: {
-    default: "Rwanda Drone Community",
-    template: "%s | Rwanda Drone Community",
+    default: "Rwanda UAS Community",
+    template: "%s | Rwanda UAS Community",
   },
   description: "Connect with drone enthusiasts, professionals, and businesses across Rwanda",
-  applicationName: "Rwanda Drone Community",
+  applicationName: "Rwanda UAS Community",
   keywords: ["drone", "Rwanda", "UAV", "community", "pilot", "CAA"],
-  authors: [{ name: "Rwanda Drone Community" }],
+  authors: [{ name: "Rwanda UAS Community" }],
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "RDC",
+    title: "RUC",
   },
   openGraph: {
     type: "website",
-    siteName: "Rwanda Drone Community",
-    title: "Rwanda Drone Community Platform",
+    siteName: "Rwanda UAS Community",
+    title: "Rwanda UAS Community Platform",
     description: "The one-stop platform for Rwanda's drone ecosystem",
   },
   twitter: {
     card: "summary",
-    title: "Rwanda Drone Community",
+    title: "Rwanda UAS Community",
     description: "The one-stop platform for Rwanda's drone ecosystem",
   },
   formatDetection: {

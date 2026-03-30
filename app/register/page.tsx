@@ -103,7 +103,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Join Rwanda Drone Community</CardTitle>
+          <CardTitle className="text-2xl">Join Rwanda UAS Community</CardTitle>
           <CardDescription>Create your account and connect with the drone community</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

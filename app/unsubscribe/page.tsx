@@ -128,7 +128,7 @@ function UnsubscribeContent() {
           display: "flex", alignItems: "center", justifyContent: "center",
           color: "#fff", fontWeight: 800, fontSize: "12px",
         }}>RDC</div>
-        <span style={{ fontWeight: 700, fontSize: "15px", color: "#002674" }}>Rwanda Drone Community</span>
+        <span style={{ fontWeight: 700, fontSize: "15px", color: "#002674" }}>Rwanda UAS Community</span>
       </div>
     </Link>
   )
@@ -168,7 +168,7 @@ function UnsubscribeContent() {
             You've been unsubscribed
           </h1>
           <p style={{ color: "#555", lineHeight: 1.6, marginBottom: "24px" }}>
-            <strong>{email}</strong> has been removed from the Rwanda Drone Community mailing list.
+            <strong>{email}</strong> has been removed from the Rwanda UAS Community mailing list.
             You won't receive any more emails from us.
           </p>
           <button
@@ -202,7 +202,7 @@ function UnsubscribeContent() {
             Welcome back!
           </h1>
           <p style={{ color: "#555", lineHeight: 1.6, marginBottom: "8px" }}>
-            <strong>{email}</strong> has been re-subscribed to the Rwanda Drone Community mailing list.
+            <strong>{email}</strong> has been re-subscribed to the Rwanda UAS Community mailing list.
           </p>
           <Link href="/subscribe" style={{ fontSize: "13px", color: "#0058dd" }}>
             Update your topic preferences →
@@ -271,7 +271,7 @@ function UnsubscribeContent() {
           Unsubscribe
         </h1>
         <p style={{ color: "#555", lineHeight: 1.6, marginBottom: "28px" }}>
-          Enter your email address below to unsubscribe from the Rwanda Drone Community mailing list.
+          Enter your email address below to unsubscribe from the Rwanda UAS Community mailing list.
         </p>
 
         <form onSubmit={handleEmailUnsubscribe} style={{ textAlign: "left" }}>

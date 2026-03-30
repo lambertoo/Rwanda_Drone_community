@@ -1,6 +1,6 @@
 # Git-Based Deployment Guide
 
-This guide covers deploying the Rwanda Drone Community Platform using Git (push/pull workflow).
+This guide covers deploying the Rwanda UAS Community Platform using Git (push/pull workflow).
 
 ## Prerequisites
 

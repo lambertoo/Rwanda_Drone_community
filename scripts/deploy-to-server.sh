@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Deployment script for Rwanda Drone Community Platform
+# Deployment script for Rwanda UAS Community Platform
 # Deploys to: deploy@172.239.238.32
 
 set -e  # Exit on error
@@ -233,7 +233,7 @@ verify_deployment() {
 # Main deployment function
 main() {
     echo "=========================================="
-    echo "Rwanda Drone Community Platform"
+    echo "Rwanda UAS Community Platform"
     echo "Deployment to ${SERVER_USER}@${SERVER_HOST}"
     echo "=========================================="
     echo ""

@@ -88,7 +88,7 @@ export default function StatsPage() {
           <h1 className="text-3xl font-bold">Community Statistics</h1>
         </div>
         <p className="text-muted-foreground">
-          Live snapshot of the Rwanda Drone Community platform
+          Live snapshot of the Rwanda UAS Community platform
         </p>
         {stats && (
           <p className="text-xs text-muted-foreground/60">

@@ -87,7 +87,7 @@ export default function SubscribePage() {
           <p style={{ color: "#444", lineHeight: 1.6, marginBottom: "24px" }}>
             {wasUpdated
               ? `Your preferences for ${email} have been updated.`
-              : `Welcome to the Rwanda Drone Community mailing list! We'll send relevant updates to ${email}.`
+              : `Welcome to the Rwanda UAS Community mailing list! We'll send relevant updates to ${email}.`
             }
           </p>
           <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
@@ -159,7 +159,7 @@ export default function SubscribePage() {
                 fontSize: "12px",
                 letterSpacing: "-0.5px",
               }}>RDC</div>
-              <span style={{ fontWeight: 700, fontSize: "15px", color: "#002674" }}>Rwanda Drone Community</span>
+              <span style={{ fontWeight: 700, fontSize: "15px", color: "#002674" }}>Rwanda UAS Community</span>
             </div>
           </Link>
           <h1 style={{ color: "#002674", fontSize: "26px", fontWeight: 800, marginBottom: "8px" }}>

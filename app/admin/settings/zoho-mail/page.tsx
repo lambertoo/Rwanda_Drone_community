@@ -56,7 +56,7 @@ function ZohoMailSettingsContent() {
   const [clientSecret, setClientSecret] = useState("")
   const [showSecret, setShowSecret] = useState(false)
   const [dc, setDc] = useState("com")
-  const [fromName, setFromName] = useState("Rwanda Drone Community")
+  const [fromName, setFromName] = useState("Rwanda UAS Community")
   const [testEmail, setTestEmail] = useState("")
 
   async function loadStatus() {
@@ -254,7 +254,7 @@ function ZohoMailSettingsContent() {
             </li>
             <li className="flex items-start gap-2">
               <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
-              <span>Fill in any name (e.g. <em>Rwanda Drone Community</em>) and homepage URL</span>
+              <span>Fill in any name (e.g. <em>Rwanda UAS Community</em>) and homepage URL</span>
             </li>
             <li className="flex items-start gap-2">
               <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
@@ -309,7 +309,7 @@ function ZohoMailSettingsContent() {
             <div className="space-y-1.5">
               <Label>Sender Name</Label>
               <Input
-                placeholder="Rwanda Drone Community"
+                placeholder="Rwanda UAS Community"
                 value={fromName}
                 onChange={e => setFromName(e.target.value)}
               />
@@ -439,7 +439,7 @@ function ZohoMailSettingsContent() {
                 <Input
                   value={fromName}
                   onChange={e => setFromName(e.target.value)}
-                  placeholder="Rwanda Drone Community"
+                  placeholder="Rwanda UAS Community"
                   className="flex-1"
                 />
                 <Button variant="outline" onClick={updateFromName} disabled={saving}>

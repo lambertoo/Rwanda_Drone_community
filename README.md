@@ -1,10 +1,10 @@
-# Rwanda Drone Community Platform
+# Rwanda UAS Community Platform
 
 
 
 ## Overview
 
-The Rwanda Drone Community Platform is a comprehensive web application designed to connect drone enthusiasts, professionals, and businesses across Rwanda. The platform facilitates knowledge sharing, project collaboration, event organization, and service provision within the drone community.
+The Rwanda UAS Community Platform is a comprehensive web application designed to connect drone enthusiasts, professionals, and businesses across Rwanda. The platform facilitates knowledge sharing, project collaboration, event organization, and service provision within the drone community.
 
 
 ## 🚀 Features
@@ -298,8 +298,8 @@ This platform is designed to serve the Rwanda drone community. Contributions are
 
 ## 📄 License
 
-This project is part of the Rwanda Drone Community Platform initiative.
+This project is part of the Rwanda UAS Community Platform initiative.
 
 ---
 
-**Built with ❤️ for the Rwanda Drone Community**
+**Built with ❤️ for the Rwanda UAS Community**

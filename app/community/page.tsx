@@ -49,18 +49,31 @@ const TABS: HubTab[] = [
 const DIRECTORY_SUB_TABS = [
   { id: "all", label: "All", icon: LayoutGrid },
   { id: "pilots", label: "Pilots", icon: Plane },
+  { id: "hobbyists", label: "Hobbyists", icon: UserCircle },
+  { id: "students", label: "Students", icon: Users },
   { id: "service-providers", label: "Service Providers", icon: Wrench },
   { id: "clubs", label: "Clubs", icon: Trophy },
-  { id: "hobbyists", label: "Hobbyists", icon: UserCircle },
 ]
+
+// Role mapping from tab id to API role value
+const TAB_TO_ROLE: Record<string, string> = {
+  pilots: "pilot",
+  hobbyists: "hobbyist",
+  students: "student",
+  "service-providers": "service_provider",
+}
 
 function DirectoryContent() {
   const [subTab, setSubTab] = useState("all")
 
+  // For people tabs, we load the pilots page which has its own filtering
+  // For service-providers and clubs, we load their own pages
+  const isPeopleTab = ["all", "pilots", "hobbyists", "students"].includes(subTab)
+
   return (
     <div>
-      {/* Sub-tabs */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto scrollbar-hide">
+      {/* Sub-tabs — pill style like opportunities */}
+      <div className="flex flex-wrap gap-1.5 mb-6 px-4 sm:px-6 lg:px-8">
         {DIRECTORY_SUB_TABS.map((tab) => {
           const Icon = tab.icon
           const active = subTab === tab.id
@@ -68,22 +81,21 @@ function DirectoryContent() {
             <button
               key={tab.id}
               onClick={() => setSubTab(tab.id)}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
                 active
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
+                  ? "bg-[#002674] text-white border-[#002674] shadow-sm"
+                  : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+              }`}
             >
-              <Icon className="w-3.5 h-3.5" />
-              {tab.label}
+              <Icon className="h-3.5 w-3.5" />
+              <span>{tab.label}</span>
             </button>
           )
         })}
       </div>
 
       {/* Sub-tab content */}
-      {(subTab === "all" || subTab === "pilots" || subTab === "hobbyists") && <PilotsContent />}
+      {isPeopleTab && <PilotsContent key={subTab} />}
       {subTab === "service-providers" && <ServicesContent />}
       {subTab === "clubs" && <ClubsContent />}
     </div>

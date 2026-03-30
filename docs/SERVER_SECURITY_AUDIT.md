@@ -5,7 +5,7 @@
 
 ## Executive Summary
 
-Comprehensive security hardening has been applied to the Rwanda Drone Community Platform server. All critical security measures are in place and the server is production-ready.
+Comprehensive security hardening has been applied to the Rwanda UAS Community Platform server. All critical security measures are in place and the server is production-ready.
 
 ## ✅ Security Measures Implemented
 

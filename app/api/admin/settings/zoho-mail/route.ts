@@ -12,7 +12,7 @@ export async function GET() {
     return NextResponse.json({
       isConnected,
       fromEmail: process.env.ZOHO_FROM_EMAIL || null,
-      fromName: process.env.ZOHO_FROM_NAME || "Rwanda Drone Community",
+      fromName: process.env.ZOHO_FROM_NAME || "Rwanda UAS Community",
       dc: process.env.ZOHO_DC || "com",
     })
   } catch (err) {
@@ -32,9 +32,9 @@ export async function POST(req: NextRequest) {
       if (!to) return NextResponse.json({ error: "to address required" }, { status: 400 })
       await sendZohoEmail({
         to,
-        subject: "Zoho Mail test — Rwanda Drone Community",
+        subject: "Zoho Mail test — Rwanda UAS Community",
         html: `
-          <p>This is a test email from your Rwanda Drone Community platform.</p>
+          <p>This is a test email from your Rwanda UAS Community platform.</p>
           <p>Zoho Mail OAuth 2.0 is configured correctly.</p>
           <p style="color:#888;font-size:12px">Sent at ${new Date().toISOString()}</p>
         `,

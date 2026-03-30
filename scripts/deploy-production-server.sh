@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Deploying Rwanda Drone Community Platform to Production Server..."
+echo "🚀 Deploying Rwanda UAS Community Platform to Production Server..."
 
 # Check if Node.js is installed
 if ! command -v node &> /dev/null; then
@@ -103,7 +103,7 @@ if [ -d ".next" ]; then
     echo "   PM2: pm2 start pnpm --name 'rwanda-drone-platform' -- start"
     echo "   Or use: pm2 start ecosystem.config.js (if configured)"
     echo ""
-    echo "🎉 Your Rwanda Drone Community Platform is ready for production!"
+    echo "🎉 Your Rwanda UAS Community Platform is ready for production!"
 else
     echo "❌ Build failed. Please check the error messages above."
     exit 1

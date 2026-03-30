@@ -75,7 +75,7 @@ async function setupAdminUser() {
           isActive: true,
           reputation: 100,
           location: 'UNKNOWN',
-          bio: 'System Administrator for Rwanda Drone Community Platform',
+          bio: 'System Administrator for Rwanda UAS Community Platform',
           website: 'https://rwandadrone.com'
         }
       });

@@ -136,7 +136,7 @@ export default function DevelopersPage() {
           <Badge>v1</Badge>
         </div>
         <p className="text-muted-foreground max-w-2xl">
-          Rwanda Drone Community exposes a REST API for building integrations. All endpoints are relative to the base URL.
+          Rwanda UAS Community exposes a REST API for building integrations. All endpoints are relative to the base URL.
           Authenticated endpoints require a valid session cookie obtained from <code className="bg-muted px-1 rounded text-xs">/api/auth/login</code>.
         </p>
       </div>

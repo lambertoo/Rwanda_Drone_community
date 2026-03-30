@@ -79,7 +79,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
             <div className="h-8 w-8 rounded-lg bg-brand-gradient flex items-center justify-center shadow-sm">
               <span className="text-white font-bold text-xs">RDC</span>
             </div>
-            <span className="hidden md:block font-bold text-sm text-gradient">Rwanda Drone Community</span>
+            <span className="hidden md:block font-bold text-sm text-gradient">Rwanda UAS Community</span>
           </Link>
 
           {/* Search */}

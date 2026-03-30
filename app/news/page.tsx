@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+// Tabs component replaced with pill-style filter tabs
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
 import {
@@ -140,41 +140,58 @@ export default function NewsPage() {
   ).slice(0, 20)
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Drone News & Updates</h1>
-          <p className="text-muted-foreground mt-1">Stay informed on drone industry, regulations, and community news</p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pb-16">
+      {/* Hero */}
+      <div className="relative bg-brand-gradient rounded-2xl overflow-hidden px-8 py-12 md:py-16">
+        <div className="pointer-events-none absolute -top-16 -right-16 h-72 w-72 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-12 -left-12 h-56 w-56 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute top-8 right-40 h-20 w-20 rounded-full bg-white/10" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="max-w-xl">
+            <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#0096FC]">
+              Stay Informed
+            </span>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-3">
+              Drone News & Updates
+            </h1>
+            <p className="text-white/75 text-base md:text-lg max-w-xl">
+              Stay informed on drone industry, regulations, and community news
+            </p>
+          </div>
         </div>
-        <Newspaper className="h-8 w-8 text-muted-foreground/50 hidden sm:block" />
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-lg">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-        <Input
-          placeholder="Search articles..."
-          className="pl-10"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      {/* Search + Category Pills */}
+      <div className="space-y-4">
+        <div className="relative max-w-lg">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Search articles..."
+            className="pl-10"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-1.5 flex-wrap">
+          {CATEGORIES.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setActiveCategory(tab.value)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                activeCategory === tab.value
+                  ? "bg-[#002674] text-white border-[#002674] shadow-sm"
+                  : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-4">
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-6">
-          <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-            <TabsList>
-              {CATEGORIES.map((c) => (
-                <TabsTrigger key={c.value} value={c.value}>
-                  {c.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            {CATEGORIES.map((cat) => (
-              <TabsContent key={cat.value} value={cat.value} className="space-y-6 mt-6">
                 {loading ? (
                   <div className="flex items-center justify-center py-20">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -300,9 +317,6 @@ export default function NewsPage() {
                     )}
                   </>
                 )}
-              </TabsContent>
-            ))}
-          </Tabs>
         </div>
 
         {/* Sidebar */}

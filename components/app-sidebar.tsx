@@ -96,7 +96,7 @@ export function AppSidebar({ className, onItemClick }: SidebarProps) {
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <span className="text-primary-foreground font-bold text-sm">RDC</span>
           </div>
-          <span className="font-semibold text-sm">Rwanda Drone Community</span>
+          <span className="font-semibold text-sm">Rwanda UAS Community</span>
         </Link>
       </div>
 

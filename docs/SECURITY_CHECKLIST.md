@@ -1,4 +1,4 @@
-# Security Checklist - Rwanda Drone Community Platform
+# Security Checklist - Rwanda UAS Community Platform
 
 ## ✅ COMPLETED SECURITY IMPROVEMENTS
 

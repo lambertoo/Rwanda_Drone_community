@@ -1,6 +1,6 @@
 # Global Notification System
 
-This document explains how to use the global notification system that's available across the entire Rwanda Drone Community Platform.
+This document explains how to use the global notification system that's available across the entire Rwanda UAS Community Platform.
 
 ## Overview
 

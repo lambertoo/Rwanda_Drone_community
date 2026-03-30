@@ -3,7 +3,7 @@
  */
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://uav.rw"
-const APP_NAME = "Rwanda Drone Community"
+const APP_NAME = "Rwanda UAS Community"
 
 function layout(content: string) {
   return `

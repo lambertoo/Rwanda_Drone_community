@@ -1,6 +1,6 @@
 # Simple Server Deployment Guide
 
-This guide provides step-by-step instructions for deploying the Rwanda Drone Community Platform to a production server without Docker.
+This guide provides step-by-step instructions for deploying the Rwanda UAS Community Platform to a production server without Docker.
 
 ## Prerequisites
 

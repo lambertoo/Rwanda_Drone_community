@@ -1,4 +1,4 @@
-# Rwanda Drone Community Platform - Requirements Checklist
+# Rwanda UAS Community Platform - Requirements Checklist
 
 ## 📦 Node.js Requirements
 

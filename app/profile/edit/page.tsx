@@ -113,8 +113,9 @@ function EditProfilePageContent() {
             specializations: parseJsonField(userData.specializations),
             certifications: parseJsonField(userData.certifications)
           })
-          if (userData.privacySettings) setPrivacySettings(userData.privacySettings)
-          if (userData.notificationSettings) setNotificationSettings(userData.notificationSettings)
+          const userSettings = userData.settings || {}
+          if (userSettings.privacySettings) setPrivacySettings(prev => ({ ...prev, ...userSettings.privacySettings }))
+          if (userSettings.notificationSettings) setNotificationSettings(prev => ({ ...prev, ...userSettings.notificationSettings }))
         } else {
           console.error('Failed to fetch profile')
         }

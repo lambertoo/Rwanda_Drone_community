@@ -125,8 +125,8 @@ export default function ServicesPage() {
 
   if (!mounted) {
     return (
-      <div className="dir-layout">
-        <div className="dir-hero-span"><div className="rounded-xl bg-muted animate-pulse h-36" /></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pb-16">
+        <div className="rounded-2xl bg-muted animate-pulse h-48" />
         <div className="rounded-xl bg-muted animate-pulse h-64" />
         <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="rounded-xl bg-muted animate-pulse h-24" />)}</div>
       </div>
@@ -134,23 +134,35 @@ export default function ServicesPage() {
   }
 
   return (
-    <div className="dir-layout">
-      {/* ── Hero ─────────────────────────────────────── */}
-      <div className="dir-hero-span">
-        <div className="dir-hero-wrap">
-          <div className="dir-hero">
-            <h1>Drone Service Providers</h1>
-            <p>Connect with trusted drone professionals, operators, and specialists across Rwanda.</p>
-            <input
-              className="dir-search-input"
-              type="search"
-              placeholder="Search providers, categories…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pb-16">
+      {/* Hero */}
+      <div className="relative bg-brand-gradient rounded-2xl overflow-hidden px-8 py-12 md:py-16">
+        <div className="pointer-events-none absolute -top-16 -right-16 h-72 w-72 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-12 -left-12 h-56 w-56 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute top-8 right-40 h-20 w-20 rounded-full bg-white/10" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="max-w-xl">
+            <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#0096FC]">
+              Professional Network
+            </span>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-3">
+              Drone Service Providers
+            </h1>
+            <p className="text-white/75 text-base md:text-lg max-w-xl">
+              Connect with trusted drone professionals, operators, and specialists across Rwanda.
+            </p>
           </div>
         </div>
       </div>
+
+      {/* Search */}
+      <input
+        className="w-full px-4 py-2 border rounded-lg bg-background text-sm"
+        type="search"
+        placeholder="Search providers, categories..."
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
 
       {/* ── Filters sidebar ──────────────────────────── */}
       <aside className="dir-filters" aria-label="Filters">

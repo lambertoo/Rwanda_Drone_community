@@ -257,19 +257,31 @@ export default function ForumPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Community Forum</h1>
-          <p className="text-muted-foreground">Connect, learn, and share with the Rwanda drone community</p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pb-16">
+      {/* Hero */}
+      <div className="relative bg-brand-gradient rounded-2xl overflow-hidden px-8 py-12 md:py-16">
+        <div className="pointer-events-none absolute -top-16 -right-16 h-72 w-72 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-12 -left-12 h-56 w-56 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute top-8 right-40 h-20 w-20 rounded-full bg-white/10" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="max-w-xl">
+            <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#0096FC]">
+              Knowledge Sharing
+            </span>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-3">
+              Community Forum
+            </h1>
+            <p className="text-white/75 text-base md:text-lg max-w-xl">
+              Connect, learn, and share with the Rwanda drone community
+            </p>
+          </div>
+          <Link href="/forum/new">
+            <Button className="bg-white text-[#002674] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              New Post
+            </Button>
+          </Link>
         </div>
-        <Link href="/forum/new">
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            New Post
-          </Button>
-        </Link>
       </div>
 
       {/* Search */}
@@ -299,19 +311,32 @@ export default function ForumPage() {
               <option value="mostReplied">Most Replied</option>
             </select>
             
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="px-3 py-1 text-sm border rounded-md bg-background"
-            >
-              <option value="all">All Categories</option>
+            <div className="flex gap-1.5 flex-wrap">
+              <button
+                onClick={() => setFilterCategory("all")}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                  filterCategory === "all"
+                    ? "bg-[#002674] text-white border-[#002674] shadow-sm"
+                    : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+                }`}
+              >
+                All
+              </button>
               {categories.map((category) => (
-                <option key={category.id} value={category.title}>
+                <button
+                  key={category.id}
+                  onClick={() => setFilterCategory(category.title)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                    filterCategory === category.title
+                      ? "bg-[#002674] text-white border-[#002674] shadow-sm"
+                      : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+                  }`}
+                >
                   {category.title}
-                </option>
+                </button>
               ))}
-            </select>
-            
+            </div>
+
             <select
               value={groupBy}
               onChange={(e) => setGroupBy(e.target.value)}

@@ -33,11 +33,12 @@ export async function GET(request: NextRequest) {
         experience: true,
         specializations: true,
         certifications: true,
+        settings: true,
         joinedAt: true,
         lastActive: true
       }
     })
-    
+
     if (!userProfile) {
       return NextResponse.json(
         { error: "User not found" },

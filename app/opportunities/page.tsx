@@ -334,7 +334,7 @@ export default function OpportunitiesPage() {
 
         <div className="relative z-10 max-w-2xl">
           <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#0096FC]">
-            Rwanda Drone Ecosystem
+            Rwanda UAS Ecosystem
           </span>
           <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-3">
             Grow with Rwanda's Drone Ecosystem

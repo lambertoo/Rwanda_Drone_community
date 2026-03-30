@@ -62,7 +62,7 @@ export default async function HomePage() {
       <section className="mk-hero" id="hero" aria-label="Hero">
         <div className="mk-hero__bg" aria-hidden="true" />
         <div className="mk-hero__content">
-          <p className="mk-eyebrow mk-eyebrow--light">Rwanda Drone Community</p>
+          <p className="mk-eyebrow mk-eyebrow--light">Rwanda UAS Community</p>
           <h1>The platform that connects Rwanda&apos;s drone ecosystem</h1>
           <p className="mk-hero__sub">
             Discover projects, join events, connect with pilots, and access opportunities shaping drone

@@ -2,9 +2,9 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Rwanda Drone Community',
-    short_name: 'RDC',
-    description: 'The one-stop platform for Rwanda\'s drone ecosystem — pilots, services, events, regulations, and more.',
+    name: 'Rwanda UAS Community',
+    short_name: 'RUC',
+    description: 'The one-stop platform for Rwanda\'s UAS ecosystem — pilots, services, events, regulations, and more.',
     start_url: '/',
     display: 'standalone',
     background_color: '#0f172a',

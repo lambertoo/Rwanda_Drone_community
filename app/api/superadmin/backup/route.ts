@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
           config: true
         },
         createdBy: superAdminUser.user.userId,
-        application: 'Rwanda Drone Community Platform'
+        application: 'Rwanda UAS Community Platform'
       }
 
       const fs = await import('fs')

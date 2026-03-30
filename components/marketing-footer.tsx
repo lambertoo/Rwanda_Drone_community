@@ -121,7 +121,7 @@ export function MarketingFooter() {
           <div className="mk-footer-brand">
             <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
               <div className="mk-logo__mark">RDC</div>
-              <span style={{ fontWeight: 700, fontSize: "14px", color: "#002674" }}>Rwanda Drone Community</span>
+              <span style={{ fontWeight: 700, fontSize: "14px", color: "#002674" }}>Rwanda UAS Community</span>
             </Link>
             <p>
               The hub connecting Rwanda's drone pilots, operators, innovators, and organizations shaping the future of unmanned aviation across East Africa.
@@ -161,7 +161,7 @@ export function MarketingFooter() {
 
         {/* Bottom bar */}
         <div className="mk-footer-bottom">
-          <span>&copy; {year} Rwanda Drone Community. All rights reserved.</span>
+          <span>&copy; {year} Rwanda UAS Community. All rights reserved.</span>
           <div style={{ display: "flex", gap: "20px" }}>
             <Link href="/privacy">Privacy Policy</Link>
             <Link href="/terms">Terms of Use</Link>

@@ -134,8 +134,8 @@ export function MarketingHeader() {
       <div className="mk-header-inner">
         {/* Logo */}
         <Link href="/" className="mk-logo">
-          <img src="/logo.png" alt="Rwanda Drone Community" style={{ height: '36px', width: 'auto' }} />
-          <span className="mk-logo__name">Rwanda Drone Community</span>
+          <img src="/logo.png" alt="Rwanda UAS Community" style={{ height: '36px', width: 'auto' }} />
+          <span className="mk-logo__name">Rwanda UAS Community</span>
         </Link>
 
         {/* Desktop nav */}
@@ -421,8 +421,8 @@ export function MarketingHeader() {
           <div className="mk-mobile-drawer">
             <div className="mk-mobile-drawer__head">
               <Link href="/" className="mk-logo" onClick={() => setMobileOpen(false)}>
-                <img src="/logo.png" alt="Rwanda Drone Community" style={{ height: '32px', width: 'auto' }} />
-                <span className="mk-logo__name">Rwanda Drone</span>
+                <img src="/logo.png" alt="Rwanda UAS Community" style={{ height: '32px', width: 'auto' }} />
+                <span className="mk-logo__name">Rwanda UAS</span>
               </Link>
               <button className="mk-mobile-drawer__close" onClick={() => setMobileOpen(false)}>
                 <X size={20} />

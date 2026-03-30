@@ -258,7 +258,7 @@ export default function GetStartedPage() {
             <h1 className="text-4xl font-bold text-foreground">Get Started</h1>
           </div>
           <p className="text-lg text-muted-foreground">
-            Welcome to Rwanda Drone Community Platform! Learn how to make the most of all features available to you.
+            Welcome to Rwanda UAS Community Platform! Learn how to make the most of all features available to you.
           </p>
           {user?.role && (
             <div className="mt-4 flex items-center gap-2">
@@ -292,7 +292,7 @@ export default function GetStartedPage() {
               <CardHeader>
                 <CardTitle>Platform Overview</CardTitle>
                 <CardDescription>
-                  Rwanda Drone Community Platform connects drone enthusiasts, pilots, service providers, and students
+                  Rwanda UAS Community Platform connects drone enthusiasts, pilots, service providers, and students
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

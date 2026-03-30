@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Rwanda Drone Community Platform - Production Rebuild Script
+# Rwanda UAS Community Platform - Production Rebuild Script
 # This script rebuilds and restarts the production application
 
 set -e  # Exit on any error
@@ -148,7 +148,7 @@ display_status() {
 
 # Main function
 main() {
-    echo "🔨 Rwanda Drone Community Platform - Production Rebuild"
+    echo "🔨 Rwanda UAS Community Platform - Production Rebuild"
     echo "====================================================="
     echo
     

@@ -214,7 +214,7 @@ setup_permissions() {
 # Main function
 main() {
     echo "=========================================="
-    echo "Rwanda Drone Community Platform"
+    echo "Rwanda UAS Community Platform"
     echo "Server Setup Script"
     echo "=========================================="
     echo ""

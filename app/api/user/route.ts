@@ -187,19 +187,21 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json()
-    const { 
-      fullName, 
-      username, 
-      bio, 
-      location, 
-      website, 
-      phone, 
+    const {
+      fullName,
+      username,
+      bio,
+      location,
+      website,
+      phone,
       avatar,
-      organization, 
-      pilotLicense, 
-      experience, 
-      specializations, 
-      certifications 
+      organization,
+      pilotLicense,
+      experience,
+      specializations,
+      certifications,
+      privacySettings,
+      notificationSettings,
     } = body
 
     // Check if username is already taken by another user
@@ -235,6 +237,13 @@ export async function PUT(request: Request) {
         experience: experience || undefined,
         specializations: specializations || undefined,
         certifications: certifications || undefined,
+        ...(privacySettings || notificationSettings ? {
+          settings: {
+            ...(await prisma.user.findUnique({ where: { id: user.id }, select: { settings: true } }))?.settings as any || {},
+            ...(privacySettings ? { privacySettings } : {}),
+            ...(notificationSettings ? { notificationSettings } : {}),
+          },
+        } : {}),
       },
       select: {
         id: true,
@@ -252,7 +261,8 @@ export async function PUT(request: Request) {
         experience: true,
         specializations: true,
         certifications: true,
-        role: true
+        role: true,
+        settings: true,
       }
     })
 

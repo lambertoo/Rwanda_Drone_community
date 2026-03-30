@@ -54,9 +54,9 @@ function getFutureDate(daysFromNow, hour = 9, minute = 0) {
 // 10 future events about Drone ecosystem and community in Rwanda
 const events = [
   {
-    title: "Rwanda Drone Community Annual Conference 2026",
+    title: "Rwanda UAS Community Annual Conference 2026",
     description: "Join us for the premier annual gathering of Rwanda's drone community. Featuring keynote speakers, technical workshops, networking opportunities, and the latest innovations in drone technology.",
-    fullDescription: `The Rwanda Drone Community Annual Conference is the largest gathering of drone professionals, enthusiasts, researchers, and policymakers in East Africa. This year's conference promises to be our biggest yet, with over 300 expected attendees from across the region.
+    fullDescription: `The Rwanda UAS Community Annual Conference is the largest gathering of drone professionals, enthusiasts, researchers, and policymakers in East Africa. This year's conference promises to be our biggest yet, with over 300 expected attendees from across the region.
 
 **Key Highlights:**
 - Keynote presentations from industry leaders and government officials

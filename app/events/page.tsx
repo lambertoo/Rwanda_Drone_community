@@ -51,6 +51,7 @@ export default function EventsPage() {
   const [selCats, setSelCats]           = useState<string[]>([])
   const [selLocs, setSelLocs]           = useState<string[]>([])
   const [viewMode, setViewMode]         = useState<"list" | "grid">("list")
+  const [activeCatFilter, setActiveCatFilter] = useState("all")
   const { user } = useAuth()
 
   useEffect(() => {
@@ -66,6 +67,7 @@ export default function EventsPage() {
 
   const displayed = useMemo(() => {
     let out = events
+    if (activeCatFilter !== "all") out = out.filter(e => e.category && e.category.name === activeCatFilter)
     if (selCats.length) out = out.filter(e => e.category && selCats.includes(e.category.name))
     if (selLocs.length) out = out.filter(e => selLocs.includes(e.location))
     if (search.trim()) {
@@ -73,7 +75,7 @@ export default function EventsPage() {
       out = out.filter(e => e.title.toLowerCase().includes(q) || e.description.toLowerCase().includes(q) || e.location.toLowerCase().includes(q))
     }
     return out
-  }, [events, selCats, selLocs, search])
+  }, [events, activeCatFilter, selCats, selLocs, search])
 
   const activeFilters = selCats.length + selLocs.length
 
@@ -86,74 +88,100 @@ export default function EventsPage() {
   const fmtTime = (s: string) => new Date(s).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
 
   return (
-    <div className="dir-layout">
-      {/* ── Hero ───────────────────────────────────────── */}
-      <div className="dir-hero-span">
-        <div className="dir-hero-wrap">
-          <div className="dir-hero" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-            <div>
-              <h1>Events &amp; Programmes</h1>
-              <p>Discover upcoming workshops, competitions, seminars, and meetups across Rwanda&apos;s drone ecosystem.</p>
-              <input
-                className="dir-search-input"
-                type="search"
-                placeholder="Search events…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-            </div>
-            {user && (
-              <Link href="/events/new" style={{ marginTop: 4 }}>
-                <Button style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", borderRadius: 999 }} className="gap-1.5">
-                  <Plus className="h-4 w-4" /> Create Event
-                </Button>
-              </Link>
-            )}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pb-16">
+      {/* Hero */}
+      <div className="relative bg-brand-gradient rounded-2xl overflow-hidden px-8 py-12 md:py-16">
+        <div className="pointer-events-none absolute -top-16 -right-16 h-72 w-72 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-12 -left-12 h-56 w-56 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute top-8 right-40 h-20 w-20 rounded-full bg-white/10" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="max-w-xl">
+            <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#0096FC]">
+              Rwanda UAS Ecosystem
+            </span>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-3">
+              Events & Programmes
+            </h1>
+            <p className="text-white/75 text-base md:text-lg max-w-xl">
+              Discover upcoming workshops, competitions, seminars, and meetups across Rwanda&apos;s drone ecosystem.
+            </p>
           </div>
+          {user && (
+            <Link href="/events/new">
+              <Button className="bg-white text-[#002674] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg flex items-center gap-2">
+                <Plus className="h-4 w-4" /> Create Event
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
-      {/* ── Filter sidebar ─────────────────────────────── */}
-      <aside className="dir-filters" aria-label="Filters">
-        <div className="dir-filters__head">
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" /></svg>
-            Filters{activeFilters > 0 && <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 800, background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", borderRadius: 999, padding: "1px 7px" }}>{activeFilters}</span>}
-          </span>
-        </div>
-        <div className="dir-filters__body">
-          {categories.length > 0 && (
-            <fieldset className="dir-fieldset">
-              <legend>Category</legend>
-              {categories.map(cat => (
-                <label key={cat} className="dir-check">
-                  <input type="checkbox" checked={pendingCats.includes(cat)} onChange={() => toggleCat(cat)} />
-                  <span className="dir-check__box" aria-hidden="true" />
-                  {cat}
-                </label>
-              ))}
-            </fieldset>
-          )}
-          {locations.length > 0 && (
-            <fieldset className="dir-fieldset">
-              <legend>Location</legend>
-              {locations.map(loc => (
-                <label key={loc} className="dir-check">
-                  <input type="checkbox" checked={pendingLocs.includes(loc)} onChange={() => toggleLoc(loc)} />
-                  <span className="dir-check__box" aria-hidden="true" />
-                  {loc}
-                </label>
-              ))}
-            </fieldset>
-          )}
-          <div className="dir-filters__actions">
-            <button className="dir-apply-btn" onClick={applyFilters}>
-              Apply Filters{(pendingCats.length + pendingLocs.length) > 0 && ` (${pendingCats.length + pendingLocs.length})`}
+      {/* Search */}
+      <input
+        className="w-full px-4 py-2 border rounded-lg bg-background text-sm"
+        type="search"
+        placeholder="Search events..."
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
+
+      {/* Category pill tabs */}
+      {categories.length > 0 && (
+        <div className="flex gap-1.5 flex-wrap">
+          <button
+            onClick={() => setActiveCatFilter("all")}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
+              activeCatFilter === "all"
+                ? "bg-[#002674] text-white border-[#002674] shadow-sm"
+                : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+            }`}
+          >
+            All
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCatFilter(cat)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                activeCatFilter === cat
+                  ? "bg-[#002674] text-white border-[#002674] shadow-sm"
+                  : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+              }`}
+            >
+              {cat}
             </button>
-            {activeFilters > 0 && <button className="dir-clear-btn" onClick={clearFilters}>Clear all</button>}
-          </div>
+          ))}
         </div>
-      </aside>
+      )}
+
+      {/* Location filter */}
+      {locations.length > 0 && (
+        <div className="flex gap-1.5 flex-wrap">
+          <button
+            onClick={() => { clearFilters() }}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
+              selLocs.length === 0
+                ? "bg-[#002674] text-white border-[#002674] shadow-sm"
+                : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+            }`}
+          >
+            All Locations
+          </button>
+          {locations.map(loc => (
+            <button
+              key={loc}
+              onClick={() => { setPendingLocs([loc]); setSelLocs([loc]) }}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                selLocs.includes(loc)
+                  ? "bg-[#002674] text-white border-[#002674] shadow-sm"
+                  : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+              }`}
+            >
+              {loc}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Event feed ─────────────────────────────────── */}
       <div>

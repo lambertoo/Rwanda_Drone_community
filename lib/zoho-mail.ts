@@ -21,7 +21,7 @@ function getConfig() {
   const refreshToken = process.env.ZOHO_REFRESH_TOKEN
   const accountId = process.env.ZOHO_ACCOUNT_ID
   const fromEmail = process.env.ZOHO_FROM_EMAIL || "noreply@uav.rw"
-  const fromName = process.env.ZOHO_FROM_NAME || "Rwanda Drone Community"
+  const fromName = process.env.ZOHO_FROM_NAME || "Rwanda UAS Community"
   const dc = process.env.ZOHO_DC || "com"
 
   if (!clientId || !clientSecret || !refreshToken || !accountId) {

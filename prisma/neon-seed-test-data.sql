@@ -23,7 +23,7 @@ INSERT INTO "public"."users" (
   true,
   100,
   'UNKNOWN',
-  'System Administrator for Rwanda Drone Community Platform',
+  'System Administrator for Rwanda UAS Community Platform',
   'https://rwandadrone.com'
 ) ON CONFLICT ("email") DO UPDATE SET
   "password" = EXCLUDED."password",
