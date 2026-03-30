@@ -106,7 +106,7 @@ function UnsubscribeContent() {
     padding: "48px 40px",
     maxWidth: "480px",
     width: "100%",
-    boxShadow: "0 8px 40px rgba(0,38,116,0.10)",
+    boxShadow: "0 8px 40px rgba(0,51,102,0.10)",
     textAlign: "center",
   }
 
@@ -124,11 +124,11 @@ function UnsubscribeContent() {
       <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
         <div style={{
           width: "36px", height: "36px", borderRadius: "8px",
-          background: "linear-gradient(135deg,#002674,#0058dd)",
+          background: "linear-gradient(135deg,#003366,#0066B3)",
           display: "flex", alignItems: "center", justifyContent: "center",
           color: "#fff", fontWeight: 800, fontSize: "12px",
         }}>RDC</div>
-        <span style={{ fontWeight: 700, fontSize: "15px", color: "#002674" }}>Rwanda UAS Community</span>
+        <span style={{ fontWeight: 700, fontSize: "15px", color: "#003366" }}>Rwanda UAS Community</span>
       </div>
     </Link>
   )
@@ -137,7 +137,7 @@ function UnsubscribeContent() {
     <div style={{ marginTop: "28px", borderTop: "1px solid #eee", paddingTop: "20px" }}>
       <Link href="/" style={{
         display: "inline-block",
-        background: "linear-gradient(135deg,#002674,#0058dd)",
+        background: "linear-gradient(135deg,#003366,#0066B3)",
         color: "#fff", padding: "10px 24px", borderRadius: "8px",
         textDecoration: "none", fontWeight: 600, fontSize: "14px",
       }}>
@@ -164,7 +164,7 @@ function UnsubscribeContent() {
         <div style={cardStyle}>
           {brandLink}
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>👋</div>
-          <h1 style={{ color: "#002674", fontSize: "22px", fontWeight: 700, marginBottom: "10px" }}>
+          <h1 style={{ color: "#003366", fontSize: "22px", fontWeight: 700, marginBottom: "10px" }}>
             You've been unsubscribed
           </h1>
           <p style={{ color: "#555", lineHeight: 1.6, marginBottom: "24px" }}>
@@ -176,9 +176,9 @@ function UnsubscribeContent() {
             style={{
               padding: "10px 24px",
               borderRadius: "8px",
-              border: "1.5px solid #0058dd",
+              border: "1.5px solid #0066B3",
               background: "#fff",
-              color: "#0058dd",
+              color: "#0066B3",
               fontWeight: 600,
               fontSize: "14px",
               cursor: "pointer",
@@ -198,13 +198,13 @@ function UnsubscribeContent() {
         <div style={cardStyle}>
           {brandLink}
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>🎉</div>
-          <h1 style={{ color: "#002674", fontSize: "22px", fontWeight: 700, marginBottom: "10px" }}>
+          <h1 style={{ color: "#003366", fontSize: "22px", fontWeight: 700, marginBottom: "10px" }}>
             Welcome back!
           </h1>
           <p style={{ color: "#555", lineHeight: 1.6, marginBottom: "8px" }}>
             <strong>{email}</strong> has been re-subscribed to the Rwanda UAS Community mailing list.
           </p>
-          <Link href="/subscribe" style={{ fontSize: "13px", color: "#0058dd" }}>
+          <Link href="/subscribe" style={{ fontSize: "13px", color: "#0066B3" }}>
             Update your topic preferences →
           </Link>
           {backHome}
@@ -219,7 +219,7 @@ function UnsubscribeContent() {
         <div style={cardStyle}>
           {brandLink}
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔍</div>
-          <h1 style={{ color: "#002674", fontSize: "22px", fontWeight: 700, marginBottom: "10px" }}>
+          <h1 style={{ color: "#003366", fontSize: "22px", fontWeight: 700, marginBottom: "10px" }}>
             Not found
           </h1>
           <p style={{ color: "#555", lineHeight: 1.6, marginBottom: "24px" }}>
@@ -237,7 +237,7 @@ function UnsubscribeContent() {
         <div style={cardStyle}>
           {brandLink}
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>⚠️</div>
-          <h1 style={{ color: "#002674", fontSize: "22px", fontWeight: 700, marginBottom: "10px" }}>
+          <h1 style={{ color: "#003366", fontSize: "22px", fontWeight: 700, marginBottom: "10px" }}>
             Something went wrong
           </h1>
           <p style={{ color: "#555", lineHeight: 1.6, marginBottom: "24px" }}>{errorMsg}</p>
@@ -246,9 +246,9 @@ function UnsubscribeContent() {
             style={{
               padding: "10px 24px",
               borderRadius: "8px",
-              border: "1.5px solid #0058dd",
+              border: "1.5px solid #0066B3",
               background: "#fff",
-              color: "#0058dd",
+              color: "#0066B3",
               fontWeight: 600,
               fontSize: "14px",
               cursor: "pointer",
@@ -267,7 +267,7 @@ function UnsubscribeContent() {
     <div style={pageStyle}>
       <div style={cardStyle}>
         {brandLink}
-        <h1 style={{ color: "#002674", fontSize: "22px", fontWeight: 700, marginBottom: "10px" }}>
+        <h1 style={{ color: "#003366", fontSize: "22px", fontWeight: 700, marginBottom: "10px" }}>
           Unsubscribe
         </h1>
         <p style={{ color: "#555", lineHeight: 1.6, marginBottom: "28px" }}>
@@ -275,7 +275,7 @@ function UnsubscribeContent() {
         </p>
 
         <form onSubmit={handleEmailUnsubscribe} style={{ textAlign: "left" }}>
-          <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#002674", marginBottom: "6px" }}>
+          <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#003366", marginBottom: "6px" }}>
             Email address
           </label>
           <input
@@ -294,7 +294,7 @@ function UnsubscribeContent() {
               boxSizing: "border-box",
               marginBottom: "16px",
             }}
-            onFocus={e => (e.target.style.borderColor = "#0058dd")}
+            onFocus={e => (e.target.style.borderColor = "#0066B3")}
             onBlur={e => (e.target.style.borderColor = "#d1d5db")}
           />
           {errorMsg && (
@@ -313,7 +313,7 @@ function UnsubscribeContent() {
               padding: "11px",
               borderRadius: "8px",
               border: "none",
-              background: "linear-gradient(135deg,#002674,#0058dd)",
+              background: "linear-gradient(135deg,#003366,#0066B3)",
               color: "#fff",
               fontWeight: 700,
               fontSize: "14px",

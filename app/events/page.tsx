@@ -33,7 +33,7 @@ function DateBlock({ dateStr }: { dateStr: string }) {
     <div style={{
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       width: 52, height: 56, borderRadius: 10, flexShrink: 0,
-      background: "linear-gradient(180deg,#002674 0%,#0058dd 100%)",
+      background: "linear-gradient(180deg,#003366 0%,#0066B3 100%)",
       color: "#fff",
     }}>
       <span style={{ fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{d.getDate()}</span>
@@ -96,7 +96,7 @@ export default function EventsPage() {
         <div className="pointer-events-none absolute top-8 right-40 h-20 w-20 rounded-full bg-white/10" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="max-w-xl">
-            <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#0096FC]">
+            <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#009FDA]">
               Rwanda UAS Ecosystem
             </span>
             <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-3">
@@ -108,7 +108,7 @@ export default function EventsPage() {
           </div>
           {user && (
             <Link href="/events/new">
-              <Button className="bg-white text-[#002674] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg flex items-center gap-2">
+              <Button className="bg-white text-[#003366] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg flex items-center gap-2">
                 <Plus className="h-4 w-4" /> Create Event
               </Button>
             </Link>
@@ -132,8 +132,8 @@ export default function EventsPage() {
             onClick={() => setActiveCatFilter("all")}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
               activeCatFilter === "all"
-                ? "bg-[#002674] text-white border-[#002674] shadow-sm"
-                : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+                ? "bg-[#003366] text-white border-[#003366] shadow-sm"
+                : "bg-background text-muted-foreground border-border/50 hover:border-[#009FDA]/50 hover:text-foreground"
             }`}
           >
             All
@@ -144,8 +144,8 @@ export default function EventsPage() {
               onClick={() => setActiveCatFilter(cat)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
                 activeCatFilter === cat
-                  ? "bg-[#002674] text-white border-[#002674] shadow-sm"
-                  : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+                  ? "bg-[#003366] text-white border-[#003366] shadow-sm"
+                  : "bg-background text-muted-foreground border-border/50 hover:border-[#009FDA]/50 hover:text-foreground"
               }`}
             >
               {cat}
@@ -161,8 +161,8 @@ export default function EventsPage() {
             onClick={() => { clearFilters() }}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
               selLocs.length === 0
-                ? "bg-[#002674] text-white border-[#002674] shadow-sm"
-                : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+                ? "bg-[#003366] text-white border-[#003366] shadow-sm"
+                : "bg-background text-muted-foreground border-border/50 hover:border-[#009FDA]/50 hover:text-foreground"
             }`}
           >
             All Locations
@@ -173,8 +173,8 @@ export default function EventsPage() {
               onClick={() => { setPendingLocs([loc]); setSelLocs([loc]) }}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
                 selLocs.includes(loc)
-                  ? "bg-[#002674] text-white border-[#002674] shadow-sm"
-                  : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+                  ? "bg-[#003366] text-white border-[#003366] shadow-sm"
+                  : "bg-background text-muted-foreground border-border/50 hover:border-[#009FDA]/50 hover:text-foreground"
               }`}
             >
               {loc}
@@ -193,12 +193,12 @@ export default function EventsPage() {
             <button
               onClick={() => setViewMode("list")}
               title="List view"
-              style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "list" ? "linear-gradient(135deg,#002674,#0058dd)" : "#fff", color: viewMode === "list" ? "#fff" : "#64748b", borderColor: viewMode === "list" ? "#002674" : "#e2e8f0" }}
+              style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "list" ? "linear-gradient(135deg,#003366,#0066B3)" : "#fff", color: viewMode === "list" ? "#fff" : "#64748b", borderColor: viewMode === "list" ? "#003366" : "#e2e8f0" }}
             ><LayoutList size={15} /></button>
             <button
               onClick={() => setViewMode("grid")}
               title="Grid view"
-              style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "grid" ? "linear-gradient(135deg,#002674,#0058dd)" : "#fff", color: viewMode === "grid" ? "#fff" : "#64748b", borderColor: viewMode === "grid" ? "#002674" : "#e2e8f0" }}
+              style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "grid" ? "linear-gradient(135deg,#003366,#0066B3)" : "#fff", color: viewMode === "grid" ? "#fff" : "#64748b", borderColor: viewMode === "grid" ? "#003366" : "#e2e8f0" }}
             ><LayoutGrid size={15} /></button>
           </div>
         </div>
@@ -241,7 +241,7 @@ export default function EventsPage() {
                     <span className="dir-row__meta-item"><Users size={13} style={{ color: "#94a3b8" }} />{event.organizer.organization || event.organizer.fullName}</span>
                     {event.price === 0
                       ? <span style={{ fontSize: 11, fontWeight: 800, color: "#16a34a", background: "#dcfce7", borderRadius: 999, padding: "1px 8px" }}>Free</span>
-                      : <span style={{ fontSize: 11, fontWeight: 700, color: "#0058dd" }}>{event.price.toLocaleString()} {event.currency}</span>}
+                      : <span style={{ fontSize: 11, fontWeight: 700, color: "#0066B3" }}>{event.price.toLocaleString()} {event.currency}</span>}
                   </div>
                 </div>
               </Link>
@@ -255,7 +255,7 @@ export default function EventsPage() {
                 <div className="evt-grid-card__top">
                   {event.flyer
                     ? <img src={event.flyer} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#002674,#0058dd)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#003366,#0066B3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <Calendar size={32} style={{ color: "rgba(255,255,255,0.4)" }} />
                       </div>
                   }
@@ -264,7 +264,7 @@ export default function EventsPage() {
                   </div>
                   {event.price === 0
                     ? <span className="evt-grid-card__badge" style={{ background: "#16a34a" }}>Free</span>
-                    : <span className="evt-grid-card__badge" style={{ background: "linear-gradient(135deg,#002674,#0058dd)" }}>{event.price.toLocaleString()} {event.currency}</span>
+                    : <span className="evt-grid-card__badge" style={{ background: "linear-gradient(135deg,#003366,#0066B3)" }}>{event.price.toLocaleString()} {event.currency}</span>
                   }
                 </div>
                 <div className="evt-grid-card__body">

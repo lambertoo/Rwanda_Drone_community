@@ -333,7 +333,7 @@ export default function OpportunitiesPage() {
         <div className="pointer-events-none absolute top-8 right-40 h-20 w-20 rounded-full bg-white/10" />
 
         <div className="relative z-10 max-w-2xl">
-          <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#0096FC]">
+          <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#009FDA]">
             Rwanda UAS Ecosystem
           </span>
           <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-3">
@@ -345,7 +345,7 @@ export default function OpportunitiesPage() {
           </p>
           {currentUser && (
             <Link href="/opportunities/new">
-              <Button className="bg-white text-[#002674] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg">
+              <Button className="bg-white text-[#003366] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg">
                 <Plus className="h-4 w-4 mr-2" />
                 Post Opportunity
               </Button>
@@ -375,8 +375,8 @@ export default function OpportunitiesPage() {
               onClick={() => setActiveTab(tab.value)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
                 activeTab === tab.value
-                  ? "bg-[#002674] text-white border-[#002674] shadow-sm"
-                  : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+                  ? "bg-[#003366] text-white border-[#003366] shadow-sm"
+                  : "bg-background text-muted-foreground border-border/50 hover:border-[#009FDA]/50 hover:text-foreground"
               }`}
             >
               {tab.label}
@@ -421,8 +421,8 @@ export default function OpportunitiesPage() {
       ) : visibleOpportunities.length === 0 ? (
         /* ── Empty state ── */
         <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-          <div className="p-5 rounded-full bg-[#002674]/10 dark:bg-[#0096FC]/10">
-            <Briefcase className="h-10 w-10 text-[#0096FC]" />
+          <div className="p-5 rounded-full bg-[#003366]/10 dark:bg-[#009FDA]/10">
+            <Briefcase className="h-10 w-10 text-[#009FDA]" />
           </div>
           <h3 className="text-lg font-semibold">No opportunities found</h3>
           <p className="text-muted-foreground max-w-sm text-sm">
@@ -443,12 +443,12 @@ export default function OpportunitiesPage() {
             return (
               <div
                 key={opportunity.id}
-                className="group bg-card rounded-2xl border border-border/40 hover:border-[#0096FC]/30 hover:shadow-xl transition-all p-5 flex flex-col"
+                className="group bg-card rounded-2xl border border-border/40 hover:border-[#009FDA]/30 hover:shadow-xl transition-all p-5 flex flex-col"
               >
                 {/* Top row: type badge + save button */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-[#002674]/10 text-[#002674] dark:bg-[#0096FC]/10 dark:text-[#0096FC]">
+                    <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-[#003366]/10 text-[#003366] dark:bg-[#009FDA]/10 dark:text-[#009FDA]">
                       {opportunity.opportunityType || "Other"}
                     </span>
                     {opportunity.isUrgent && (
@@ -462,8 +462,8 @@ export default function OpportunitiesPage() {
                     aria-label={isSaved ? "Unsave opportunity" : "Save opportunity"}
                     className={`p-1.5 rounded-lg transition-colors ${
                       isSaved
-                        ? "text-[#0096FC] bg-[#0096FC]/10"
-                        : "text-muted-foreground hover:text-[#0096FC] hover:bg-[#0096FC]/10"
+                        ? "text-[#009FDA] bg-[#009FDA]/10"
+                        : "text-muted-foreground hover:text-[#009FDA] hover:bg-[#009FDA]/10"
                     }`}
                   >
                     {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
@@ -472,7 +472,7 @@ export default function OpportunitiesPage() {
 
                 {/* Title */}
                 <Link href={`/opportunities/${opportunity.id}`} className="block mb-1">
-                  <h3 className="font-bold text-base line-clamp-2 group-hover:text-[#0096FC] transition-colors">
+                  <h3 className="font-bold text-base line-clamp-2 group-hover:text-[#009FDA] transition-colors">
                     {opportunity.title || "Untitled Opportunity"}
                   </h3>
                 </Link>
@@ -525,7 +525,7 @@ export default function OpportunitiesPage() {
                   <div className="flex items-center gap-2 min-w-0">
                     <Avatar className="h-7 w-7 shrink-0">
                       <AvatarImage src={opportunity.poster?.avatar || "/placeholder-user.jpg"} alt={opportunity.poster?.fullName} />
-                      <AvatarFallback className="text-xs bg-[#002674]/10 text-[#002674] dark:bg-[#0096FC]/10 dark:text-[#0096FC]">
+                      <AvatarFallback className="text-xs bg-[#003366]/10 text-[#003366] dark:bg-[#009FDA]/10 dark:text-[#009FDA]">
                         {opportunity.poster?.fullName?.split(" ").map((n) => n[0]).join("") || "?"}
                       </AvatarFallback>
                     </Avatar>
@@ -563,7 +563,7 @@ export default function OpportunitiesPage() {
             engineers across Rwanda.
           </p>
           <Link href="/opportunities/new">
-            <Button className="bg-white text-[#002674] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg">
+            <Button className="bg-white text-[#003366] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg">
               Post an Opportunity
             </Button>
           </Link>

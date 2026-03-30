@@ -77,11 +77,11 @@ export default function SubscribePage() {
           padding: "48px 40px",
           maxWidth: "480px",
           width: "100%",
-          boxShadow: "0 8px 40px rgba(0,38,116,0.10)",
+          boxShadow: "0 8px 40px rgba(0,51,102,0.10)",
           textAlign: "center",
         }}>
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>🎉</div>
-          <h1 style={{ color: "#002674", fontSize: "24px", fontWeight: 700, marginBottom: "12px" }}>
+          <h1 style={{ color: "#003366", fontSize: "24px", fontWeight: 700, marginBottom: "12px" }}>
             {wasUpdated ? "Preferences updated!" : "You're subscribed!"}
           </h1>
           <p style={{ color: "#444", lineHeight: 1.6, marginBottom: "24px" }}>
@@ -103,7 +103,7 @@ export default function SubscribePage() {
               href="/"
               style={{
                 display: "inline-block",
-                background: "linear-gradient(135deg,#002674,#0058dd)",
+                background: "linear-gradient(135deg,#003366,#0066B3)",
                 color: "#fff",
                 padding: "10px 24px",
                 borderRadius: "8px",
@@ -135,7 +135,7 @@ export default function SubscribePage() {
         padding: "48px 40px",
         maxWidth: "540px",
         width: "100%",
-        boxShadow: "0 8px 40px rgba(0,38,116,0.10)",
+        boxShadow: "0 8px 40px rgba(0,51,102,0.10)",
       }}>
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: "36px" }}>
@@ -150,7 +150,7 @@ export default function SubscribePage() {
                 width: "36px",
                 height: "36px",
                 borderRadius: "8px",
-                background: "linear-gradient(135deg,#002674,#0058dd)",
+                background: "linear-gradient(135deg,#003366,#0066B3)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -159,10 +159,10 @@ export default function SubscribePage() {
                 fontSize: "12px",
                 letterSpacing: "-0.5px",
               }}>RDC</div>
-              <span style={{ fontWeight: 700, fontSize: "15px", color: "#002674" }}>Rwanda UAS Community</span>
+              <span style={{ fontWeight: 700, fontSize: "15px", color: "#003366" }}>Rwanda UAS Community</span>
             </div>
           </Link>
-          <h1 style={{ color: "#002674", fontSize: "26px", fontWeight: 800, marginBottom: "8px" }}>
+          <h1 style={{ color: "#003366", fontSize: "26px", fontWeight: 800, marginBottom: "8px" }}>
             Stay in the loop
           </h1>
           <p style={{ color: "#555", fontSize: "15px", lineHeight: 1.5 }}>
@@ -173,7 +173,7 @@ export default function SubscribePage() {
         <form onSubmit={handleSubmit}>
           {/* Email */}
           <div style={{ marginBottom: "16px" }}>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#002674", marginBottom: "6px" }}>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#003366", marginBottom: "6px" }}>
               Email address <span style={{ color: "#e53e3e" }}>*</span>
             </label>
             <input
@@ -192,14 +192,14 @@ export default function SubscribePage() {
                 boxSizing: "border-box",
                 transition: "border-color 0.2s",
               }}
-              onFocus={e => (e.target.style.borderColor = "#0058dd")}
+              onFocus={e => (e.target.style.borderColor = "#0066B3")}
               onBlur={e => (e.target.style.borderColor = "#d1d5db")}
             />
           </div>
 
           {/* Name */}
           <div style={{ marginBottom: "24px" }}>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#002674", marginBottom: "6px" }}>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#003366", marginBottom: "6px" }}>
               Your name <span style={{ color: "#999", fontWeight: 400 }}>(optional)</span>
             </label>
             <input
@@ -217,7 +217,7 @@ export default function SubscribePage() {
                 boxSizing: "border-box",
                 transition: "border-color 0.2s",
               }}
-              onFocus={e => (e.target.style.borderColor = "#0058dd")}
+              onFocus={e => (e.target.style.borderColor = "#0066B3")}
               onBlur={e => (e.target.style.borderColor = "#d1d5db")}
             />
           </div>
@@ -225,7 +225,7 @@ export default function SubscribePage() {
           {/* Topics */}
           <div style={{ marginBottom: "28px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-              <label style={{ fontSize: "13px", fontWeight: 600, color: "#002674" }}>
+              <label style={{ fontSize: "13px", fontWeight: 600, color: "#003366" }}>
                 What interests you? <span style={{ color: "#e53e3e" }}>*</span>
               </label>
               <button
@@ -233,7 +233,7 @@ export default function SubscribePage() {
                 onClick={toggleAll}
                 style={{
                   fontSize: "12px",
-                  color: "#0058dd",
+                  color: "#0066B3",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
@@ -258,13 +258,13 @@ export default function SubscribePage() {
                     gap: "8px",
                     padding: "10px 12px",
                     borderRadius: "8px",
-                    border: `1.5px solid ${selected.includes(topic.id) ? "#0058dd" : "#e5e7eb"}`,
+                    border: `1.5px solid ${selected.includes(topic.id) ? "#0066B3" : "#e5e7eb"}`,
                     background: selected.includes(topic.id) ? "#eff6ff" : "#fafafa",
                     cursor: "pointer",
                     transition: "all 0.15s",
                     fontSize: "13px",
                     fontWeight: selected.includes(topic.id) ? 600 : 400,
-                    color: selected.includes(topic.id) ? "#002674" : "#374151",
+                    color: selected.includes(topic.id) ? "#003366" : "#374151",
                     userSelect: "none",
                   }}
                 >
@@ -272,7 +272,7 @@ export default function SubscribePage() {
                     type="checkbox"
                     checked={selected.includes(topic.id)}
                     onChange={() => toggleTopic(topic.id)}
-                    style={{ accentColor: "#0058dd", width: "15px", height: "15px", flexShrink: 0 }}
+                    style={{ accentColor: "#0066B3", width: "15px", height: "15px", flexShrink: 0 }}
                   />
                   <span>{topic.emoji}</span>
                   <span style={{ lineHeight: 1.3 }}>{topic.label}</span>
@@ -305,7 +305,7 @@ export default function SubscribePage() {
               padding: "12px",
               borderRadius: "8px",
               border: "none",
-              background: state === "loading" ? "#94a3b8" : "linear-gradient(135deg,#002674,#0058dd)",
+              background: state === "loading" ? "#94a3b8" : "linear-gradient(135deg,#003366,#0066B3)",
               color: "#fff",
               fontWeight: 700,
               fontSize: "15px",

@@ -971,7 +971,7 @@ function MailingPreferencesForm({ email }: { email: string }) {
         {subStatus === "unsubscribed" ? (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">You are currently unsubscribed from community emails.</p>
-            <Button type="button" onClick={resubscribe} style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff" }}>
+            <Button type="button" onClick={resubscribe} style={{ background: "linear-gradient(135deg,#003366,#0066B3)", color: "#fff" }}>
               Re-subscribe
             </Button>
           </div>
@@ -980,12 +980,12 @@ function MailingPreferencesForm({ email }: { email: string }) {
             <p className="text-sm text-muted-foreground">Choose which types of content you want to receive at <strong>{email}</strong>.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {MAILING_TOPICS.map(t => (
-                <label key={t.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px", borderRadius: 10, border: `1px solid ${topics.includes(t.id) ? "#0058dd" : "rgba(0,38,116,0.1)"}`, background: topics.includes(t.id) ? "rgba(0,88,221,0.04)" : "#fff", cursor: "pointer" }}>
+                <label key={t.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px", borderRadius: 10, border: `1px solid ${topics.includes(t.id) ? "#0066B3" : "rgba(0,51,102,0.1)"}`, background: topics.includes(t.id) ? "rgba(0,102,179,0.04)" : "#fff", cursor: "pointer" }}>
                   <input
                     type="checkbox"
                     checked={topics.includes(t.id)}
                     onChange={() => toggleTopic(t.id)}
-                    style={{ accentColor: "#0058dd", marginTop: 2, flexShrink: 0 }}
+                    style={{ accentColor: "#0066B3", marginTop: 2, flexShrink: 0 }}
                   />
                   <div>
                     <p style={{ fontWeight: 600, fontSize: 13, color: "#0f172a", margin: "0 0 2px" }}>{t.label}</p>
@@ -995,7 +995,7 @@ function MailingPreferencesForm({ email }: { email: string }) {
               ))}
             </div>
             <div className="flex items-center gap-3">
-              <Button type="button" onClick={savePreferences} disabled={saving} style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff" }}>
+              <Button type="button" onClick={savePreferences} disabled={saving} style={{ background: "linear-gradient(135deg,#003366,#0066B3)", color: "#fff" }}>
                 {saving ? "Saving…" : "Save Preferences"}
               </Button>
               {saved && <span className="text-sm text-green-600">✓ Saved</span>}

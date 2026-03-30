@@ -285,7 +285,7 @@ export default function ClubDetailPage({ params: paramsPromise }: { params: Prom
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-extrabold">{club.name}</h1>
-            {club.isFeatured && <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-[#0096FC] text-white">Featured</span>}
+            {club.isFeatured && <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-[#009FDA] text-white">Featured</span>}
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${TYPE_COLORS[club.type] || TYPE_COLORS.general}`}>
@@ -293,11 +293,11 @@ export default function ClubDetailPage({ params: paramsPromise }: { params: Prom
             </span>
             {club.location && (
               <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                <MapPin className="h-3.5 w-3.5 text-[#0096FC]" /> {club.location}
+                <MapPin className="h-3.5 w-3.5 text-[#009FDA]" /> {club.location}
               </span>
             )}
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Users className="h-3.5 w-3.5 text-[#0096FC]" /> {memberCount} members
+              <Users className="h-3.5 w-3.5 text-[#009FDA]" /> {memberCount} members
             </span>
             <span className="text-sm text-muted-foreground">Since {formatDate(club.createdAt)}</span>
           </div>
@@ -356,17 +356,17 @@ export default function ClubDetailPage({ params: paramsPromise }: { params: Prom
                 <h3 className="font-bold mb-4">Club Info</h3>
                 <div className="space-y-3 text-sm">
                   {club.email && (
-                    <a href={`mailto:${club.email}`} className="flex items-center gap-2 text-muted-foreground hover:text-[#0096FC] transition-colors">
+                    <a href={`mailto:${club.email}`} className="flex items-center gap-2 text-muted-foreground hover:text-[#009FDA] transition-colors">
                       <Mail className="h-4 w-4 shrink-0" /> {club.email}
                     </a>
                   )}
                   {club.phone && (
-                    <a href={`tel:${club.phone}`} className="flex items-center gap-2 text-muted-foreground hover:text-[#0096FC] transition-colors">
+                    <a href={`tel:${club.phone}`} className="flex items-center gap-2 text-muted-foreground hover:text-[#009FDA] transition-colors">
                       <Phone className="h-4 w-4 shrink-0" /> {club.phone}
                     </a>
                   )}
                   {club.website && (
-                    <a href={club.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-muted-foreground hover:text-[#0096FC] transition-colors">
+                    <a href={club.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-muted-foreground hover:text-[#009FDA] transition-colors">
                       <Globe className="h-4 w-4 shrink-0" /> Visit Website <ExternalLink className="h-3 w-3" />
                     </a>
                   )}
@@ -378,7 +378,7 @@ export default function ClubDetailPage({ params: paramsPromise }: { params: Prom
                       if (!href) return null
                       return (
                         <a key={key} href={href} target="_blank" rel="noopener noreferrer" title={label}
-                          className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-[#0096FC] hover:text-white transition-colors">
+                          className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-[#009FDA] hover:text-white transition-colors">
                           <Icon className="h-3.5 w-3.5" />
                         </a>
                       )
@@ -391,7 +391,7 @@ export default function ClubDetailPage({ params: paramsPromise }: { params: Prom
                   <Users className="h-8 w-8 text-white mx-auto mb-2" />
                   <h3 className="font-bold text-white mb-1">Join This Club</h3>
                   <p className="text-white/75 text-xs mb-3">Connect with {memberCount} members</p>
-                  <Button onClick={handleJoin} disabled={joinLoading} size="sm" className="bg-white text-[#002674] hover:bg-white/90 rounded-full w-full">
+                  <Button onClick={handleJoin} disabled={joinLoading} size="sm" className="bg-white text-[#003366] hover:bg-white/90 rounded-full w-full">
                     {joinLoading ? 'Joining...' : 'Join Now'}
                   </Button>
                 </div>
@@ -404,7 +404,7 @@ export default function ClubDetailPage({ params: paramsPromise }: { params: Prom
         <TabsContent value="members">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {club.memberships.map(m => (
-              <div key={m.id} className="flex items-center gap-3 bg-card border border-border/40 rounded-xl p-4 hover:border-[#0096FC]/30 hover:shadow-md transition-all">
+              <div key={m.id} className="flex items-center gap-3 bg-card border border-border/40 rounded-xl p-4 hover:border-[#009FDA]/30 hover:shadow-md transition-all">
                 <Link href={`/profile/${m.user.username}`} className="flex items-center gap-3 flex-1 min-w-0">
                   <Avatar className="h-10 w-10 shrink-0">
                     <AvatarImage src={m.user.avatar || '/placeholder-user.jpg'} />
@@ -419,7 +419,7 @@ export default function ClubDetailPage({ params: paramsPromise }: { params: Prom
                 </Link>
                 <div className="flex items-center gap-1 shrink-0">
                   {m.role !== 'member' && (
-                    <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${m.role === 'admin' ? 'bg-[#002674] text-white dark:bg-[#0096FC]' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'}`}>
+                    <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${m.role === 'admin' ? 'bg-[#003366] text-white dark:bg-[#009FDA]' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'}`}>
                       {m.role}
                     </span>
                   )}
@@ -466,15 +466,15 @@ export default function ClubDetailPage({ params: paramsPromise }: { params: Prom
                 <h2 className="text-lg font-bold mb-4">Club Settings</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Link href={`/clubs/${club.id}/edit`}>
-                    <div className="p-4 border border-border/40 rounded-xl hover:border-[#0096FC]/30 hover:bg-muted/30 transition-all cursor-pointer">
-                      <Settings className="h-6 w-6 text-[#0096FC] mb-2" />
+                    <div className="p-4 border border-border/40 rounded-xl hover:border-[#009FDA]/30 hover:bg-muted/30 transition-all cursor-pointer">
+                      <Settings className="h-6 w-6 text-[#009FDA] mb-2" />
                       <h3 className="font-semibold">Edit Club Info</h3>
                       <p className="text-sm text-muted-foreground">Update name, description, images, contact</p>
                     </div>
                   </Link>
                   <Link href={`/clubs/${club.id}/registration-form`}>
-                    <div className="p-4 border border-border/40 rounded-xl hover:border-[#0096FC]/30 hover:bg-muted/30 transition-all cursor-pointer">
-                      <UserCheck className="h-6 w-6 text-[#0096FC] mb-2" />
+                    <div className="p-4 border border-border/40 rounded-xl hover:border-[#009FDA]/30 hover:bg-muted/30 transition-all cursor-pointer">
+                      <UserCheck className="h-6 w-6 text-[#009FDA] mb-2" />
                       <h3 className="font-semibold">Registration Form</h3>
                       <p className="text-sm text-muted-foreground">
                         {club.registrationFormId ? 'Edit your custom join form' : 'Create a custom join form for new members'}

@@ -265,7 +265,7 @@ export default function ForumPage() {
         <div className="pointer-events-none absolute top-8 right-40 h-20 w-20 rounded-full bg-white/10" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="max-w-xl">
-            <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#0096FC]">
+            <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#009FDA]">
               Knowledge Sharing
             </span>
             <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-3">
@@ -276,7 +276,7 @@ export default function ForumPage() {
             </p>
           </div>
           <Link href="/forum/new">
-            <Button className="bg-white text-[#002674] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg flex items-center gap-2">
+            <Button className="bg-white text-[#003366] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg flex items-center gap-2">
               <Plus className="h-4 w-4" />
               New Post
             </Button>
@@ -316,8 +316,8 @@ export default function ForumPage() {
                 onClick={() => setFilterCategory("all")}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
                   filterCategory === "all"
-                    ? "bg-[#002674] text-white border-[#002674] shadow-sm"
-                    : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+                    ? "bg-[#003366] text-white border-[#003366] shadow-sm"
+                    : "bg-background text-muted-foreground border-border/50 hover:border-[#009FDA]/50 hover:text-foreground"
                 }`}
               >
                 All
@@ -328,8 +328,8 @@ export default function ForumPage() {
                   onClick={() => setFilterCategory(category.title)}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
                     filterCategory === category.title
-                      ? "bg-[#002674] text-white border-[#002674] shadow-sm"
-                      : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+                      ? "bg-[#003366] text-white border-[#003366] shadow-sm"
+                      : "bg-background text-muted-foreground border-border/50 hover:border-[#009FDA]/50 hover:text-foreground"
                   }`}
                 >
                   {category.title}

@@ -229,7 +229,7 @@ export default function ProjectsPage() {
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="max-w-xl">
-            <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#0096FC]">
+            <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#009FDA]">
               Community Showcase
             </span>
             <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-3">
@@ -240,7 +240,7 @@ export default function ProjectsPage() {
             </p>
           </div>
           <Link href="/projects/new" className="shrink-0">
-            <Button className="bg-white text-[#002674] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg">
+            <Button className="bg-white text-[#003366] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg">
               <Plus className="h-4 w-4 mr-2" />
               Share Project
             </Button>
@@ -252,8 +252,8 @@ export default function ProjectsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Total */}
         <div className="bg-card rounded-2xl border border-border/40 p-5 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-[#002674]/10 dark:bg-[#0096FC]/10 shrink-0">
-            <Award className="h-5 w-5 text-[#002674] dark:text-[#0096FC]" />
+          <div className="p-3 rounded-xl bg-[#003366]/10 dark:bg-[#009FDA]/10 shrink-0">
+            <Award className="h-5 w-5 text-[#003366] dark:text-[#009FDA]" />
           </div>
           <div>
             <p className="text-2xl font-extrabold text-gradient">{totalProjects}</p>
@@ -272,8 +272,8 @@ export default function ProjectsPage() {
         </div>
         {/* Organizations */}
         <div className="bg-card rounded-2xl border border-border/40 p-5 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-[#002674]/10 dark:bg-[#0096FC]/10 shrink-0">
-            <Users className="h-5 w-5 text-[#002674] dark:text-[#0096FC]" />
+          <div className="p-3 rounded-xl bg-[#003366]/10 dark:bg-[#009FDA]/10 shrink-0">
+            <Users className="h-5 w-5 text-[#003366] dark:text-[#009FDA]" />
           </div>
           <div>
             <p className="text-2xl font-extrabold text-gradient">{uniqueOrganizations}</p>
@@ -303,8 +303,8 @@ export default function ProjectsPage() {
               onClick={() => setActiveTab(tab.value)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
                 activeTab === tab.value
-                  ? "bg-[#002674] text-white border-[#002674] shadow-sm"
-                  : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+                  ? "bg-[#003366] text-white border-[#003366] shadow-sm"
+                  : "bg-background text-muted-foreground border-border/50 hover:border-[#009FDA]/50 hover:text-foreground"
               }`}
             >
               {tab.label}
@@ -334,8 +334,8 @@ export default function ProjectsPage() {
       {displayedProjects.length === 0 ? (
         /* ── Empty state ── */
         <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-          <div className="p-5 rounded-full bg-[#002674]/10 dark:bg-[#0096FC]/10">
-            <FolderOpen className="h-10 w-10 text-[#0096FC]" />
+          <div className="p-5 rounded-full bg-[#003366]/10 dark:bg-[#009FDA]/10">
+            <FolderOpen className="h-10 w-10 text-[#009FDA]" />
           </div>
           <h3 className="text-lg font-semibold">No projects found</h3>
           <p className="text-muted-foreground max-w-sm text-sm">
@@ -356,10 +356,10 @@ export default function ProjectsPage() {
             return (
               <div
                 key={project.id}
-                className="group bg-card rounded-2xl border border-border/40 hover:border-[#0096FC]/30 hover:shadow-xl transition-all flex flex-col overflow-hidden"
+                className="group bg-card rounded-2xl border border-border/40 hover:border-[#009FDA]/30 hover:shadow-xl transition-all flex flex-col overflow-hidden"
               >
                 {/* Cover / thumbnail area */}
-                <div className="relative h-32 bg-gradient-to-br from-[#002674]/80 to-[#0096FC]/60 flex items-center justify-center">
+                <div className="relative h-32 bg-gradient-to-br from-[#003366]/80 to-[#009FDA]/60 flex items-center justify-center">
                   <span className="text-4xl select-none">{getCategoryIcon(project.category)}</span>
                   {/* Category badge overlay */}
                   <span className="absolute top-3 left-3 px-2.5 py-0.5 text-xs font-semibold rounded-full bg-white/20 text-white backdrop-blur-sm">
@@ -380,7 +380,7 @@ export default function ProjectsPage() {
                 <div className="p-5 flex flex-col flex-1">
                   {/* Title */}
                   <Link href={`/projects/${project.id}`} className="block mb-1">
-                    <h3 className="font-bold text-base line-clamp-2 group-hover:text-[#0096FC] transition-colors">
+                    <h3 className="font-bold text-base line-clamp-2 group-hover:text-[#009FDA] transition-colors">
                       {project.title}
                     </h3>
                   </Link>
@@ -416,7 +416,7 @@ export default function ProjectsPage() {
                       <div className="flex items-center gap-2 min-w-0">
                         <Avatar className="h-7 w-7 shrink-0">
                           <AvatarImage src={project.lead.avatar || "/placeholder-user.jpg"} alt={project.lead.name} />
-                          <AvatarFallback className="text-xs bg-[#002674]/10 text-[#002674] dark:bg-[#0096FC]/10 dark:text-[#0096FC]">
+                          <AvatarFallback className="text-xs bg-[#003366]/10 text-[#003366] dark:bg-[#009FDA]/10 dark:text-[#009FDA]">
                             {project.lead.name?.split(" ").map((n) => n[0]).join("") || "?"}
                           </AvatarFallback>
                         </Avatar>
@@ -448,7 +448,7 @@ export default function ProjectsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="w-full rounded-lg border-[#0096FC]/30 text-[#002674] dark:text-[#0096FC] hover:bg-[#0096FC]/10 hover:border-[#0096FC] text-xs h-8 transition-colors"
+                        className="w-full rounded-lg border-[#009FDA]/30 text-[#003366] dark:text-[#009FDA] hover:bg-[#009FDA]/10 hover:border-[#009FDA] text-xs h-8 transition-colors"
                       >
                         View Project
                       </Button>
@@ -474,7 +474,7 @@ export default function ProjectsPage() {
             of innovators.
           </p>
           <Link href="/projects/new">
-            <Button className="bg-white text-[#002674] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg">
+            <Button className="bg-white text-[#003366] font-semibold hover:bg-white/90 rounded-xl px-6 shadow-lg">
               <Upload className="h-4 w-4 mr-2" />
               Share Your Project
             </Button>

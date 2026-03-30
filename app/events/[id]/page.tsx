@@ -74,9 +74,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const RSVPButton = () => {
     if (!event) return null
     if (!event.allowRegistration) return <Button disabled className="w-full rounded-full">Registration Closed</Button>
-    if (!user) return <Button asChild className="w-full rounded-full" style={{ background: "linear-gradient(135deg,#002674,#0058dd)" }}><Link href="/login">Log In to Register</Link></Button>
+    if (!user) return <Button asChild className="w-full rounded-full" style={{ background: "linear-gradient(135deg,#003366,#0066B3)" }}><Link href="/login">Log In to Register</Link></Button>
     if (event.registrationFormId) return (
-      <Button asChild className="w-full rounded-full" style={{ background: "linear-gradient(135deg,#002674,#0058dd)" }}>
+      <Button asChild className="w-full rounded-full" style={{ background: "linear-gradient(135deg,#003366,#0066B3)" }}>
         <Link href={`/forms/public/${event.registrationFormId}?eventId=${eventId}`}>Register Now</Link>
       </Button>
     )
@@ -88,7 +88,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     return (
       <Dialog>
         <DialogTrigger asChild>
-          <Button className="w-full rounded-full" style={{ background: "linear-gradient(135deg,#002674,#0058dd)" }} onClick={handleRSVP} disabled={rsvpStatus === 'loading'}>
+          <Button className="w-full rounded-full" style={{ background: "linear-gradient(135deg,#003366,#0066B3)" }} onClick={handleRSVP} disabled={rsvpStatus === 'loading'}>
             {rsvpStatus === 'loading' ? 'Registering…' : 'Register Now'}
           </Button>
         </DialogTrigger>
@@ -103,7 +103,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 320 }}>
       <div style={{ textAlign: "center" }}>
-        <Loader2 className="h-10 w-10 animate-spin mx-auto mb-3 text-[#0058dd]" />
+        <Loader2 className="h-10 w-10 animate-spin mx-auto mb-3 text-[#0066B3]" />
         <p style={{ color: "#64748b" }}>Loading event…</p>
       </div>
     </div>
@@ -211,7 +211,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                   const name = typeof spk === "string" ? spk : spk.name || spk
                   return (
                     <div key={i} style={{ textAlign: "center", padding: "16px 8px", background: "#f8fafc", borderRadius: 12 }}>
-                      <div style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg,#002674,#0058dd)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", color: "#fff", fontWeight: 800, fontSize: 18 }}>
+                      <div style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg,#003366,#0066B3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", color: "#fff", fontWeight: 800, fontSize: 18 }}>
                         {name.split(" ").map((n: string) => n[0]).join("").toUpperCase()}
                       </div>
                       <p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", margin: 0 }}>{name}</p>
@@ -248,14 +248,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
             <dl className="evt-info-card__dl">
               <div className="evt-info-card__row">
-                <Clock size={15} style={{ color: "#0058dd", flexShrink: 0 }} />
+                <Clock size={15} style={{ color: "#0066B3", flexShrink: 0 }} />
                 <div>
                   <dt>Time</dt>
                   <dd>{fmtTime(event.startDate)} – {fmtTime(event.endDate)}</dd>
                 </div>
               </div>
               <div className="evt-info-card__row">
-                <MapPin size={15} style={{ color: "#0058dd", flexShrink: 0 }} />
+                <MapPin size={15} style={{ color: "#0066B3", flexShrink: 0 }} />
                 <div>
                   <dt>Venue</dt>
                   <dd>{event.venue || event.location}</dd>
@@ -263,7 +263,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               </div>
               <div className="evt-info-card__row">
-                <Users size={15} style={{ color: "#0058dd", flexShrink: 0 }} />
+                <Users size={15} style={{ color: "#0066B3", flexShrink: 0 }} />
                 <div>
                   <dt>Organizer</dt>
                   <dd>{event.organizer.organization || event.organizer.fullName}</dd>
@@ -271,7 +271,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               </div>
               {spotsLeft !== null && (
                 <div className="evt-info-card__row">
-                  <Calendar size={15} style={{ color: "#0058dd", flexShrink: 0 }} />
+                  <Calendar size={15} style={{ color: "#0066B3", flexShrink: 0 }} />
                   <div>
                     <dt>Capacity</dt>
                     <dd>{event.registeredCount} registered · {spotsLeft} spots left</dd>

@@ -77,7 +77,7 @@ function FooterNewsletter() {
             type="submit"
             className="mk-footer-newsletter-submit"
             disabled={status === "loading"}
-            style={{ background: "linear-gradient(135deg,#002674,#0058dd)", opacity: status === "loading" ? 0.7 : 1, cursor: status === "loading" ? "not-allowed" : "pointer" }}
+            style={{ background: "linear-gradient(135deg,#003366,#0066B3)", opacity: status === "loading" ? 0.7 : 1, cursor: status === "loading" ? "not-allowed" : "pointer" }}
           >
             {status === "loading" ? "Subscribing..." : "Subscribe"}
           </button>
@@ -121,7 +121,7 @@ export function MarketingFooter() {
           <div className="mk-footer-brand">
             <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
               <div className="mk-logo__mark">RDC</div>
-              <span style={{ fontWeight: 700, fontSize: "14px", color: "#002674" }}>Rwanda UAS Community</span>
+              <span style={{ fontWeight: 700, fontSize: "14px", color: "#003366" }}>Rwanda UAS Community</span>
             </Link>
             <p>
               The hub connecting Rwanda's drone pilots, operators, innovators, and organizations shaping the future of unmanned aviation across East Africa.

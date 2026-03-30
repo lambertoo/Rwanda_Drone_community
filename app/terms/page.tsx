@@ -38,7 +38,7 @@ function StaticPage({ slug }: { slug: string }) {
         <ArrowLeft size={14} /> Back to home
       </Link>
 
-      <h1 style={{ fontSize: "clamp(26px,4vw,36px)", fontWeight: 800, color: "#002674", marginBottom: 8 }}>{data.title}</h1>
+      <h1 style={{ fontSize: "clamp(26px,4vw,36px)", fontWeight: 800, color: "#003366", marginBottom: 8 }}>{data.title}</h1>
 
       {data.updatedAt && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#94a3b8", marginBottom: 36 }}>

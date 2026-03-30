@@ -84,7 +84,7 @@ export default async function HomePage() {
           </figure>
         </div>
         <div className="mk-feature__text">
-          <p className="mk-eyebrow mk-eyebrow--inline"><span style={{ display: "inline-block", width: 8, height: 8, marginRight: 8, borderRadius: "50%", background: "#0058dd", verticalAlign: "middle" }} />Drone Community</p>
+          <p className="mk-eyebrow mk-eyebrow--inline"><span style={{ display: "inline-block", width: 8, height: 8, marginRight: 8, borderRadius: "50%", background: "#0066B3", verticalAlign: "middle" }} />Drone Community</p>
           <h2>From the air to the community — connect pilots, partners, and programmes</h2>
           <p>Discover the full spectrum of Rwanda's drone ecosystem: skilled pilots, innovative projects, and support organisations all in one place.</p>
           <Link href="/projects" className="mk-text-link">Explore projects →</Link>
@@ -215,7 +215,7 @@ export default async function HomePage() {
       {(stats.projects > 0 || stats.users > 0) && (
         <section
           style={{
-            background: "linear-gradient(135deg, #002674 0%, #0058dd 100%)",
+            background: "linear-gradient(135deg, #003366 0%, #0066B3 100%)",
             padding: "48px 24px",
             color: "#fff",
           }}
@@ -269,13 +269,13 @@ export default async function HomePage() {
                     {techs.length > 0 && (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
                         {techs.slice(0, 3).map(t => (
-                          <span key={t} style={{ fontSize: "11px", fontWeight: 600, padding: "2px 8px", borderRadius: "999px", background: "rgba(0,88,221,0.08)", color: "#0058dd" }}>{t}</span>
+                          <span key={t} style={{ fontSize: "11px", fontWeight: 600, padding: "2px 8px", borderRadius: "999px", background: "rgba(0,102,179,0.08)", color: "#0066B3" }}>{t}</span>
                         ))}
                       </div>
                     )}
                   </div>
                   <div className="mk-card__footer">
-                    <span style={{ fontWeight: 600, color: "#002674" }}>{project.author.fullName}</span>
+                    <span style={{ fontWeight: 600, color: "#003366" }}>{project.author.fullName}</span>
                     <span style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><Eye size={13} />{project.viewsCount}</span>
                       <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><Heart size={13} />{project.likesCount}</span>
@@ -312,7 +312,7 @@ export default async function HomePage() {
                 >
                   <div style={{
                     width: 44, height: 44, borderRadius: "10px", flexShrink: 0,
-                    background: "linear-gradient(135deg, #002674 0%, #0058dd 100%)",
+                    background: "linear-gradient(135deg, #003366 0%, #0066B3 100%)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
                     <MessageSquare size={18} color="rgba(255,255,255,0.9)" />
@@ -320,7 +320,7 @@ export default async function HomePage() {
                   <div className="mk-list-row__body">
                     <div className="mk-list-row__title">{post.title}</div>
                     <div className="mk-list-row__meta">
-                      <span style={{ background: "rgba(0,88,221,0.08)", color: "#0058dd", padding: "1px 7px", borderRadius: "999px", fontSize: "11px", fontWeight: 600, marginRight: "8px" }}>
+                      <span style={{ background: "rgba(0,102,179,0.08)", color: "#0066B3", padding: "1px 7px", borderRadius: "999px", fontSize: "11px", fontWeight: 600, marginRight: "8px" }}>
                         {post.category.name}
                       </span>
                       {post.author.fullName}
@@ -359,25 +359,25 @@ export default async function HomePage() {
           <div className="mk-cards-grid">
             {upcomingEvents.map(event => (
               <Link key={event.id} href={`/events/${event.id}`} className="mk-card">
-                <div style={{ height: "6px", background: "linear-gradient(135deg, #002674 0%, #0058dd 100%)" }} />
+                <div style={{ height: "6px", background: "linear-gradient(135deg, #003366 0%, #0066B3 100%)" }} />
                 <div className="mk-card__body">
                   <span className="mk-card__cat">{event.category || "General"}</span>
                   <h3 className="mk-card__title">{event.title}</h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "16px" }}>
                     <span style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--t-muted-dark)" }}>
-                      <Calendar size={13} color="#002674" />
+                      <Calendar size={13} color="#003366" />
                       {fmt(event.startDate)}
                     </span>
                     <span style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--t-muted-dark)" }}>
-                      <MapPin size={13} color="#0058dd" />{event.location}
+                      <MapPin size={13} color="#0066B3" />{event.location}
                     </span>
                     <span style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--t-muted-dark)" }}>
-                      <Users size={13} color="#002674" />{event._count.rsvps} registered
+                      <Users size={13} color="#003366" />{event._count.rsvps} registered
                     </span>
                   </div>
                 </div>
                 <div className="mk-card__footer">
-                  <span style={{ fontWeight: 700, color: "#002674" }}>
+                  <span style={{ fontWeight: 700, color: "#003366" }}>
                     {event.price === 0 ? "Free" : `${event.price.toLocaleString()} ${event.currency}`}
                   </span>
                   <span className="mk-text-link" style={{ fontSize: "13px" }}>Register →</span>

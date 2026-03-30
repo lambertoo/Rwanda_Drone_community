@@ -83,8 +83,8 @@ function DirectoryContent() {
               onClick={() => setSubTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
                 active
-                  ? "bg-[#002674] text-white border-[#002674] shadow-sm"
-                  : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+                  ? "bg-[#003366] text-white border-[#003366] shadow-sm"
+                  : "bg-background text-muted-foreground border-border/50 hover:border-[#009FDA]/50 hover:text-foreground"
               }`}
             >
               <Icon className="h-3.5 w-3.5" />

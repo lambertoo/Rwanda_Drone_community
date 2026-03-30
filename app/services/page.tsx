@@ -142,7 +142,7 @@ export default function ServicesPage() {
         <div className="pointer-events-none absolute top-8 right-40 h-20 w-20 rounded-full bg-white/10" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="max-w-xl">
-            <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#0096FC]">
+            <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#009FDA]">
               Professional Network
             </span>
             <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-3">
@@ -171,7 +171,7 @@ export default function ServicesPage() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
             </svg>
-            Filters{activeFilters > 0 && <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 800, background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", borderRadius: 999, padding: "1px 7px" }}>{activeFilters}</span>}
+            Filters{activeFilters > 0 && <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 800, background: "linear-gradient(135deg,#003366,#0066B3)", color: "#fff", borderRadius: 999, padding: "1px 7px" }}>{activeFilters}</span>}
           </span>
         </div>
         <div className="dir-filters__body">
@@ -214,11 +214,11 @@ export default function ServicesPage() {
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ display: "flex", gap: 4 }}>
-              <button onClick={() => setViewMode("list")} title="List view" style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "list" ? "linear-gradient(135deg,#002674,#0058dd)" : "#fff", color: viewMode === "list" ? "#fff" : "#64748b", borderColor: viewMode === "list" ? "#002674" : "#e2e8f0" }}><LayoutList size={15} /></button>
-              <button onClick={() => setViewMode("grid")} title="Grid view" style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "grid" ? "linear-gradient(135deg,#002674,#0058dd)" : "#fff", color: viewMode === "grid" ? "#fff" : "#64748b", borderColor: viewMode === "grid" ? "#002674" : "#e2e8f0" }}><LayoutGrid size={15} /></button>
+              <button onClick={() => setViewMode("list")} title="List view" style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "list" ? "linear-gradient(135deg,#003366,#0066B3)" : "#fff", color: viewMode === "list" ? "#fff" : "#64748b", borderColor: viewMode === "list" ? "#003366" : "#e2e8f0" }}><LayoutList size={15} /></button>
+              <button onClick={() => setViewMode("grid")} title="Grid view" style={{ padding: "5px 8px", borderRadius: 7, border: "1px solid", cursor: "pointer", background: viewMode === "grid" ? "linear-gradient(135deg,#003366,#0066B3)" : "#fff", color: viewMode === "grid" ? "#fff" : "#64748b", borderColor: viewMode === "grid" ? "#003366" : "#e2e8f0" }}><LayoutGrid size={15} /></button>
             </div>
             <Link href="/services/new">
-              <Button size="sm" style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", borderRadius: 999 }} className="gap-1.5">
+              <Button size="sm" style={{ background: "linear-gradient(135deg,#003366,#0066B3)", color: "#fff", borderRadius: 999 }} className="gap-1.5">
                 <Plus className="h-3.5 w-3.5" /> List your service
               </Button>
             </Link>
@@ -248,7 +248,7 @@ export default function ServicesPage() {
                         <h2 className="dir-row__name">
                           {name}
                           {service.provider.isVerified && (
-                            <BadgeCheck style={{ display: "inline", marginLeft: 6, verticalAlign: "middle", color: "#0058dd", width: 15, height: 15 }} />
+                            <BadgeCheck style={{ display: "inline", marginLeft: 6, verticalAlign: "middle", color: "#0066B3", width: 15, height: 15 }} />
                           )}
                         </h2>
                         <p className="dir-row__cat">{service.category}</p>
@@ -284,7 +284,7 @@ export default function ServicesPage() {
                   <div style={{ flex: 1 }}>
                     <h2 className="dir-grid-card__name">
                       {name}
-                      {service.provider.isVerified && <BadgeCheck style={{ display: "inline", marginLeft: 5, verticalAlign: "middle", color: "#0058dd", width: 14, height: 14 }} />}
+                      {service.provider.isVerified && <BadgeCheck style={{ display: "inline", marginLeft: 5, verticalAlign: "middle", color: "#0066B3", width: 14, height: 14 }} />}
                     </h2>
                     <p className="dir-row__cat" style={{ marginBottom: 8 }}>{service.category}</p>
                     <div className="dir-row__meta">

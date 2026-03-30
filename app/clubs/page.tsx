@@ -81,11 +81,11 @@ export default function ClubsPage() {
       <div className="relative overflow-hidden bg-brand-gradient py-14 px-6 mb-8 rounded-2xl">
         <div className="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-white/5" />
         <div className="absolute -bottom-8 -left-8 w-48 h-48 rounded-full bg-white/5" />
-        <div className="absolute top-1/2 right-1/4 w-32 h-32 rounded-full bg-[#0096FC]/20" />
+        <div className="absolute top-1/2 right-1/4 w-32 h-32 rounded-full bg-[#009FDA]/20" />
         <div className="relative max-w-3xl">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-px h-5 bg-[#0096FC]" />
-            <span className="text-[#0096FC] text-sm font-semibold uppercase tracking-widest">Community Hubs</span>
+            <div className="w-px h-5 bg-[#009FDA]" />
+            <span className="text-[#009FDA] text-sm font-semibold uppercase tracking-widest">Community Hubs</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-3 leading-tight">
             Connect with Drone Clubs,<br />Fuel Your Growth
@@ -95,7 +95,7 @@ export default function ClubsPage() {
           </p>
           {user && (
             <Link href="/clubs/new">
-              <Button size="lg" className="bg-white text-[#002674] hover:bg-white/90 rounded-full font-semibold">
+              <Button size="lg" className="bg-white text-[#003366] hover:bg-white/90 rounded-full font-semibold">
                 <Plus className="h-4 w-4 mr-2" />
                 Create a Club
               </Button>
@@ -136,7 +136,7 @@ export default function ClubsPage() {
               onClick={() => setSelectedType(t.value)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 selectedType === t.value
-                  ? 'bg-[#002674] text-white dark:bg-[#0096FC]'
+                  ? 'bg-[#003366] text-white dark:bg-[#009FDA]'
                   : 'bg-muted hover:bg-muted/80 text-foreground'
               }`}
             >
@@ -158,7 +158,7 @@ export default function ClubsPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map(club => (
-            <div key={club.id} className="group bg-card rounded-2xl overflow-hidden border border-border/40 hover:border-[#0096FC]/30 hover:shadow-xl hover:shadow-[#002674]/5 transition-all duration-300 flex flex-col">
+            <div key={club.id} className="group bg-card rounded-2xl overflow-hidden border border-border/40 hover:border-[#009FDA]/30 hover:shadow-xl hover:shadow-[#003366]/5 transition-all duration-300 flex flex-col">
               {/* Cover */}
               <div className="relative h-32 overflow-hidden">
                 {club.coverImage ? (
@@ -168,7 +168,7 @@ export default function ClubsPage() {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 {club.isFeatured && (
-                  <span className="absolute top-2 right-2 px-2.5 py-0.5 text-xs font-bold rounded-full bg-[#0096FC] text-white">Featured</span>
+                  <span className="absolute top-2 right-2 px-2.5 py-0.5 text-xs font-bold rounded-full bg-[#009FDA] text-white">Featured</span>
                 )}
                 {/* Logo */}
                 <div className="absolute -bottom-6 left-4">
@@ -187,7 +187,7 @@ export default function ClubsPage() {
               {/* Body */}
               <div className="p-4 pt-8 flex flex-col flex-1">
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-bold text-base line-clamp-1 group-hover:text-[#0096FC] transition-colors flex-1 mr-2">
+                  <h3 className="font-bold text-base line-clamp-1 group-hover:text-[#009FDA] transition-colors flex-1 mr-2">
                     {club.name}
                   </h3>
                   <span className={`px-2 py-0.5 text-xs font-semibold rounded-full shrink-0 ${TYPE_COLORS[club.type] || TYPE_COLORS.general}`}>
@@ -202,12 +202,12 @@ export default function ClubsPage() {
                 <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
                   {club.location && (
                     <span className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3 text-[#0096FC]" />
+                      <MapPin className="h-3 w-3 text-[#009FDA]" />
                       {club.location}
                     </span>
                   )}
                   <span className="flex items-center gap-1">
-                    <Users className="h-3 w-3 text-[#0096FC]" />
+                    <Users className="h-3 w-3 text-[#009FDA]" />
                     {club._count?.memberships || club.memberCount || 0} members
                   </span>
                 </div>
@@ -229,8 +229,8 @@ export default function ClubsPage() {
 
       {filtered.length === 0 && !loading && (
         <div className="text-center py-16">
-          <div className="w-16 h-16 rounded-2xl bg-[#002674]/10 flex items-center justify-center mx-auto mb-4">
-            <Users className="h-8 w-8 text-[#002674] dark:text-[#0096FC]" />
+          <div className="w-16 h-16 rounded-2xl bg-[#003366]/10 flex items-center justify-center mx-auto mb-4">
+            <Users className="h-8 w-8 text-[#003366] dark:text-[#009FDA]" />
           </div>
           <h3 className="text-lg font-bold mb-2">No clubs found</h3>
           <p className="text-muted-foreground text-sm mb-4">Be the first to create a club in this category!</p>
@@ -249,9 +249,9 @@ export default function ClubsPage() {
           <h2 className="text-2xl font-extrabold text-white mb-2">Start Your Own Drone Club</h2>
           <p className="text-white/75 mb-6 text-sm max-w-md mx-auto">Create a club, build your community, and host events for drone enthusiasts across Rwanda.</p>
           {user ? (
-            <Link href="/clubs/new"><Button size="lg" className="bg-white text-[#002674] hover:bg-white/90 rounded-full font-semibold">Create a Club</Button></Link>
+            <Link href="/clubs/new"><Button size="lg" className="bg-white text-[#003366] hover:bg-white/90 rounded-full font-semibold">Create a Club</Button></Link>
           ) : (
-            <Link href="/register"><Button size="lg" className="bg-white text-[#002674] hover:bg-white/90 rounded-full font-semibold">Join the Community</Button></Link>
+            <Link href="/register"><Button size="lg" className="bg-white text-[#003366] hover:bg-white/90 rounded-full font-semibold">Join the Community</Button></Link>
           )}
         </div>
       </div>

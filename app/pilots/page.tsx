@@ -98,7 +98,7 @@ export default function PilotsPage() {
         <div className="pointer-events-none absolute top-8 right-40 h-20 w-20 rounded-full bg-white/10" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="max-w-xl">
-            <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#0096FC]">
+            <span className="inline-block mb-3 text-xs font-semibold uppercase tracking-widest text-[#009FDA]">
               Find & Connect
             </span>
             <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-3">
@@ -125,8 +125,8 @@ export default function PilotsPage() {
             onClick={() => setRole(tab.value)}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
               role === tab.value
-                ? "bg-[#002674] text-white border-[#002674] shadow-sm"
-                : "bg-background text-muted-foreground border-border/50 hover:border-[#0096FC]/50 hover:text-foreground"
+                ? "bg-[#003366] text-white border-[#003366] shadow-sm"
+                : "bg-background text-muted-foreground border-border/50 hover:border-[#009FDA]/50 hover:text-foreground"
             }`}
           >
             {tab.label}
@@ -163,7 +163,7 @@ export default function PilotsPage() {
                 ? formatDistrict(locations[0])
                 : `${locations.length} districts`}
             {locations.length > 0 && (
-              <span className="bg-[#002674] text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">{locations.length}</span>
+              <span className="bg-[#003366] text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">{locations.length}</span>
             )}
           </button>
 

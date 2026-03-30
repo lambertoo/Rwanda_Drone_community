@@ -177,8 +177,8 @@ export function MarketingHeader() {
                     <div style={{
                       background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)",
                       borderRadius: 16, padding: 8,
-                      boxShadow: "0 12px 40px rgba(0,11,79,0.12), 0 2px 8px rgba(0,0,0,0.06)",
-                      border: "1px solid rgba(0,38,116,0.08)",
+                      boxShadow: "0 12px 40px rgba(0,34,68,0.12), 0 2px 8px rgba(0,0,0,0.06)",
+                      border: "1px solid rgba(0,51,102,0.08)",
                       display: "grid",
                       gridTemplateColumns: visibleItems.length > 3 ? "1fr 1fr" : "1fr",
                       gap: 2,
@@ -192,9 +192,9 @@ export function MarketingHeader() {
                           className="hover:bg-[#f4f6fb] transition-colors"
                           style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", borderRadius: 10, textDecoration: "none" }}
                         >
-                          <item.icon size={15} color="#0058dd" style={{ marginTop: 3, flexShrink: 0 }} />
+                          <item.icon size={15} color="#0066B3" style={{ marginTop: 3, flexShrink: 0 }} />
                           <div>
-                            <div style={{ fontWeight: 600, fontSize: 13, color: "#002674", lineHeight: 1.2 }}>{item.label}</div>
+                            <div style={{ fontWeight: 600, fontSize: 13, color: "#003366", lineHeight: 1.2 }}>{item.label}</div>
                             <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2, lineHeight: 1.3 }}>{item.desc}</div>
                           </div>
                         </Link>
@@ -220,10 +220,10 @@ export function MarketingHeader() {
                 onChange={e => setSearchQuery(e.target.value)}
                 style={{
                   width: 180, height: 34, paddingLeft: 32, paddingRight: 12,
-                  borderRadius: 999, border: "1px solid rgba(0,38,116,0.12)",
-                  background: "rgba(0,38,116,0.04)", fontSize: 13, outline: "none",
+                  borderRadius: 999, border: "1px solid rgba(0,51,102,0.12)",
+                  background: "rgba(0,51,102,0.04)", fontSize: 13, outline: "none",
                 }}
-                className="focus:border-[#0058dd]/40 transition-colors"
+                className="focus:border-[#0066B3]/40 transition-colors"
               />
             </div>
           </form>
@@ -252,9 +252,9 @@ export function MarketingHeader() {
                   aria-label="Open profile"
                   style={{ background: "none", border: "none", cursor: "pointer", padding: 0, borderRadius: "50%", position: "relative" }}
                 >
-                  <Avatar style={{ width: 32, height: 32, outline: "2px solid rgba(0,88,221,0.2)", outlineOffset: 1 }}>
+                  <Avatar style={{ width: 32, height: 32, outline: "2px solid rgba(0,102,179,0.2)", outlineOffset: 1 }}>
                     <AvatarImage src={user.avatar || "/placeholder-user.jpg"} alt={user.fullName} />
-                    <AvatarFallback style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", fontSize: 12, fontWeight: 700 }}>
+                    <AvatarFallback style={{ background: "linear-gradient(135deg,#003366,#0066B3)", color: "#fff", fontSize: 12, fontWeight: 700 }}>
                       {initials}
                     </AvatarFallback>
                   </Avatar>
@@ -282,14 +282,14 @@ export function MarketingHeader() {
                     <div style={{
                       background: "rgba(255,255,255,0.98)", backdropFilter: "blur(20px)",
                       borderRadius: 16, padding: 8, width: 260,
-                      boxShadow: "0 12px 40px rgba(0,11,79,0.12), 0 2px 8px rgba(0,0,0,0.06)",
-                      border: "1px solid rgba(0,38,116,0.08)",
+                      boxShadow: "0 12px 40px rgba(0,34,68,0.12), 0 2px 8px rgba(0,0,0,0.06)",
+                      border: "1px solid rgba(0,51,102,0.08)",
                     }}>
                       {/* User info */}
                       <div style={{ padding: "10px 10px 12px", borderBottom: "1px solid #f1f3f5", marginBottom: 4, display: "flex", alignItems: "center", gap: 10 }}>
-                        <Avatar style={{ width: 36, height: 36, flexShrink: 0, outline: "2px solid rgba(0,88,221,0.12)", outlineOffset: 1 }}>
+                        <Avatar style={{ width: 36, height: 36, flexShrink: 0, outline: "2px solid rgba(0,102,179,0.12)", outlineOffset: 1 }}>
                           <AvatarImage src={user.avatar || "/placeholder-user.jpg"} alt={user.fullName} />
-                          <AvatarFallback style={{ background: "linear-gradient(135deg,#002674,#0058dd)", color: "#fff", fontSize: 12, fontWeight: 700 }}>{initials}</AvatarFallback>
+                          <AvatarFallback style={{ background: "linear-gradient(135deg,#003366,#0066B3)", color: "#fff", fontSize: 12, fontWeight: 700 }}>{initials}</AvatarFallback>
                         </Avatar>
                         <div style={{ minWidth: 0, flex: 1 }}>
                           <p style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.fullName}</p>
@@ -311,7 +311,7 @@ export function MarketingHeader() {
                           style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 13, fontWeight: 500 }}
                           className="hover:bg-[#f4f6fb] transition-colors"
                         >
-                          <Icon size={14} color="#0058dd" />{label}
+                          <Icon size={14} color="#0066B3" />{label}
                         </Link>
                       ))}
 
@@ -359,7 +359,7 @@ export function MarketingHeader() {
                               className="hover:bg-[#f4f6fb] transition-colors"
                             >
                               <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                <Settings size={14} color="#0058dd" />Settings
+                                <Settings size={14} color="#0066B3" />Settings
                               </span>
                               {pendingCount > 0 && (
                                 <span style={{ minWidth: 20, height: 20, background: "#f97316", borderRadius: 999, fontSize: 10, fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px" }}>
@@ -373,7 +373,7 @@ export function MarketingHeader() {
                               style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 13, fontWeight: 500 }}
                               className="hover:bg-[#f4f6fb] transition-colors"
                             >
-                              <Award size={14} color="#0058dd" />Regulator Panel
+                              <Award size={14} color="#0066B3" />Regulator Panel
                             </Link>
                           )}
                         </div>
@@ -438,7 +438,7 @@ export function MarketingHeader() {
                     style={{
                       display: "block", padding: "11px 16px",
                       fontSize: 14, fontWeight: 600, color: "#0f172a", textDecoration: "none",
-                      borderBottom: "1px solid rgba(0,38,116,0.06)",
+                      borderBottom: "1px solid rgba(0,51,102,0.06)",
                     }}
                   >
                     {section.label}
@@ -453,7 +453,7 @@ export function MarketingHeader() {
                       width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
                       padding: "11px 16px", background: "none", border: "none", cursor: "pointer",
                       fontSize: 14, fontWeight: 600, color: "#0f172a", textAlign: "left",
-                      borderBottom: "1px solid rgba(0,38,116,0.06)",
+                      borderBottom: "1px solid rgba(0,51,102,0.06)",
                     }}
                   >
                     {section.label}
@@ -468,10 +468,10 @@ export function MarketingHeader() {
                         display: "flex", alignItems: "center", gap: 10,
                         padding: "9px 16px 9px 32px",
                         fontSize: 13, color: "#374151", textDecoration: "none",
-                        borderBottom: "1px solid rgba(0,38,116,0.04)",
+                        borderBottom: "1px solid rgba(0,51,102,0.04)",
                       }}
                     >
-                      <item.icon size={14} color="#0058dd" />
+                      <item.icon size={14} color="#0066B3" />
                       {item.label}
                     </Link>
                   ))}
@@ -484,14 +484,14 @@ export function MarketingHeader() {
                 <Link
                   href="/account"
                   onClick={() => setMobileOpen(false)}
-                  style={{ display: "block", padding: 11, borderRadius: 8, border: "1px solid rgba(0,38,116,0.15)", color: "#002674", fontWeight: 600, fontSize: 14, textDecoration: "none", textAlign: "center", marginBottom: 8 }}
+                  style={{ display: "block", padding: 11, borderRadius: 8, border: "1px solid rgba(0,51,102,0.15)", color: "#003366", fontWeight: 600, fontSize: 14, textDecoration: "none", textAlign: "center", marginBottom: 8 }}
                 >
                   My Account
                 </Link>
               </div>
             ) : (
               <div className="mk-mobile-drawer__actions">
-                <Link href="/login" onClick={() => setMobileOpen(false)} style={{ textAlign: "center", display: "block", padding: 11, borderRadius: 8, border: "1px solid rgba(0,38,116,0.15)", color: "#002674", fontWeight: 600, fontSize: 14, textDecoration: "none" }}>
+                <Link href="/login" onClick={() => setMobileOpen(false)} style={{ textAlign: "center", display: "block", padding: 11, borderRadius: 8, border: "1px solid rgba(0,51,102,0.15)", color: "#003366", fontWeight: 600, fontSize: 14, textDecoration: "none" }}>
                   Sign In
                 </Link>
                 <Link href="/register" className="mk-btn--join" style={{ textAlign: "center" }} onClick={() => setMobileOpen(false)}>
@@ -506,7 +506,7 @@ export function MarketingHeader() {
       {/* ── Mobile search overlay ──────────────────────────── */}
       {mobileSearchOpen && (
         <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(255,255,255,0.95)", backdropFilter: "blur(10px)", display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 16, borderBottom: "1px solid rgba(0,38,116,0.08)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 16, borderBottom: "1px solid rgba(0,51,102,0.08)" }}>
             <form onSubmit={handleSearch} style={{ flex: 1 }}>
               <div style={{ position: "relative" }}>
                 <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
@@ -516,7 +516,7 @@ export function MarketingHeader() {
                   autoFocus
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  style={{ width: "100%", height: 44, paddingLeft: 40, borderRadius: 999, border: "1px solid rgba(0,38,116,0.15)", fontSize: 15, outline: "none" }}
+                  style={{ width: "100%", height: 44, paddingLeft: 40, borderRadius: 999, border: "1px solid rgba(0,51,102,0.15)", fontSize: 15, outline: "none" }}
                 />
               </div>
             </form>

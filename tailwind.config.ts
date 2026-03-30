@@ -13,8 +13,11 @@ const config: Config = {
   theme: {
   	extend: {
   		colors: {
-  			navy: { DEFAULT: '#002674', 50: '#e6ecf7', 100: '#ccd9ef', 500: '#002674' },
-  			cyan: { DEFAULT: '#0096FC', brand: '#0096FC' },
+  			navy: { DEFAULT: '#003366', 50: '#e8f0f7', 100: '#c8dced', 500: '#003366', 600: '#002244' },
+  			cyan: { DEFAULT: '#009FDA', brand: '#009FDA' },
+  			'rw-blue': { DEFAULT: '#0066B3', light: '#009FDA', dark: '#003366' },
+  			'rw-green': { DEFAULT: '#00A651' },
+  			'rw-gold': { DEFAULT: '#FFC72C' },
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

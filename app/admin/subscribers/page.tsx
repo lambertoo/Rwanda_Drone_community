@@ -113,7 +113,7 @@ export default function AdminSubscribersPage() {
   return (
     <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
       <div style={{ marginBottom: "28px" }}>
-        <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#002674", marginBottom: "6px" }}>
+        <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#003366", marginBottom: "6px" }}>
           Mailing List Subscribers
         </h1>
         <p style={{ color: "#666", fontSize: "14px" }}>
@@ -127,7 +127,7 @@ export default function AdminSubscribersPage() {
           <Card>
             <CardContent style={{ padding: "20px" }}>
               <p style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>Total</p>
-              <p style={{ fontSize: "28px", fontWeight: 700, color: "#002674" }}>{data.total}</p>
+              <p style={{ fontSize: "28px", fontWeight: 700, color: "#003366" }}>{data.total}</p>
             </CardContent>
           </Card>
           <Card>
@@ -140,7 +140,7 @@ export default function AdminSubscribersPage() {
             <Card key={t}>
               <CardContent style={{ padding: "20px" }}>
                 <p style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>{TOPIC_LABELS[t]}</p>
-                <p style={{ fontSize: "28px", fontWeight: 700, color: "#0058dd" }}>{data.byTopic[t] ?? 0}</p>
+                <p style={{ fontSize: "28px", fontWeight: 700, color: "#0066B3" }}>{data.byTopic[t] ?? 0}</p>
               </CardContent>
             </Card>
           ))}
@@ -164,7 +164,7 @@ export default function AdminSubscribersPage() {
                 fontSize: "13px",
                 outline: "none",
               }}
-              onFocus={e => (e.target.style.borderColor = "#0058dd")}
+              onFocus={e => (e.target.style.borderColor = "#0066B3")}
               onBlur={e => (e.target.style.borderColor = "#d1d5db")}
             />
             <select

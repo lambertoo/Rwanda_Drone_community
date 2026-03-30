@@ -247,7 +247,7 @@ export default function AdminPagesSettings() {
               onClick={save}
               disabled={saving}
               className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-70"
-              style={{ background: "linear-gradient(135deg,#002674,#0058dd)" }}
+              style={{ background: "linear-gradient(135deg,#003366,#0066B3)" }}
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {saving ? "Saving..." : "Save Changes"}

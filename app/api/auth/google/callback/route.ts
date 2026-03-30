@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { generateTokens } from "@/lib/jwt-utils"
+import { generateTokens, extractTokenFromRequest, verifyToken } from "@/lib/jwt-utils"
 import { sendEmail } from "@/lib/email"
 import { welcomeEmail } from "@/lib/email-templates"
 
@@ -16,6 +16,10 @@ interface GoogleUserInfo {
 
 /**
  * GET /api/auth/google/callback — Handle Google OAuth callback
+ *
+ * Two modes:
+ * 1. Login/Register — no JWT cookie, find or create user by Google ID/email
+ * 2. Link account — JWT cookie present, link Google to the logged-in user
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
@@ -34,6 +38,14 @@ export async function GET(req: NextRequest) {
   if (!cookieState || cookieState !== state) {
     console.error("[Google Auth] CSRF state mismatch")
     return NextResponse.redirect(`${appUrl}/login?error=invalid_state`)
+  }
+
+  // Check if user is already logged in (linking mode)
+  let loggedInUserId: string | null = null
+  const jwt = extractTokenFromRequest(req)
+  if (jwt) {
+    const payload = await verifyToken(jwt)
+    if (payload) loggedInUserId = payload.userId
   }
 
   try {
@@ -70,7 +82,30 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${appUrl}/login?error=no_email`)
     }
 
-    // 3. Find or create user
+    // ── Mode A: Link Google to existing logged-in user ──
+    if (loggedInUserId) {
+      // Check if this Google ID is already linked to another account
+      const existingGoogle = await prisma.user.findFirst({
+        where: { googleId: googleUser.sub, NOT: { id: loggedInUserId } },
+      })
+      if (existingGoogle) {
+        return NextResponse.redirect(`${appUrl}/profile/edit?error=google_already_linked`)
+      }
+
+      await prisma.user.update({
+        where: { id: loggedInUserId },
+        data: {
+          googleId: googleUser.sub,
+          avatar: (await prisma.user.findUnique({ where: { id: loggedInUserId }, select: { avatar: true } }))?.avatar || googleUser.picture,
+        },
+      })
+
+      const response = NextResponse.redirect(`${appUrl}/profile/edit?google_linked=true`)
+      response.cookies.set("google_oauth_state", "", { maxAge: 0, path: "/" })
+      return response
+    }
+
+    // ── Mode B: Login or Register ──
     let user = await prisma.user.findFirst({
       where: {
         OR: [
