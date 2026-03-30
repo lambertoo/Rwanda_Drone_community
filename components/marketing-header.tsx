@@ -239,13 +239,13 @@ export function MarketingHeader() {
           </button>
 
           {user ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <MessageBadge />
               <NotificationBell />
 
               {/* Avatar with pending badge + dropdown */}
               <div
-                style={{ position: "relative" }}
+                style={{ position: "relative", marginLeft: 2 }}
                 onMouseEnter={() => setProfileOpen(true)}
                 onMouseLeave={() => setProfileOpen(false)}
               >
