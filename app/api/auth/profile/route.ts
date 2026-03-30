@@ -35,7 +35,9 @@ export async function GET(request: NextRequest) {
         certifications: true,
         settings: true,
         joinedAt: true,
-        lastActive: true
+        lastActive: true,
+        googleId: true,
+        googleRefreshToken: true,
       }
     })
 
@@ -46,8 +48,14 @@ export async function GET(request: NextRequest) {
       )
     }
     
+    // Don't expose raw tokens — just booleans
+    const { googleRefreshToken, ...safeProfile } = userProfile
     return NextResponse.json({
-      user: userProfile
+      user: {
+        ...safeProfile,
+        googleLinked: !!userProfile.googleId,
+        googleSheetsConnected: !!googleRefreshToken,
+      }
     })
     
   } catch (error) {
