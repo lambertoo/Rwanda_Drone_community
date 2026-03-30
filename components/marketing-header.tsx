@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { NotificationBell } from "@/components/notification-bell"
+import { MessageBadge } from "@/components/messages/message-badge"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 
@@ -239,6 +240,7 @@ export function MarketingHeader() {
 
           {user ? (
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <MessageBadge />
               <NotificationBell />
 
               {/* Avatar with pending badge + dropdown */}

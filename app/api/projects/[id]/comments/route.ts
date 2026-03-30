@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthenticatedUser } from "@/lib/auth-middleware"
+import { createNotification } from "@/lib/notifications"
 
 export async function GET(
   request: Request,
@@ -108,9 +109,36 @@ export async function POST(
       },
     })
 
-    return NextResponse.json({ 
+    // Notify project author
+    const project = await prisma.project.findUnique({ where: { id }, select: { authorId: true, title: true } })
+    if (project && project.authorId !== user.id) {
+      createNotification({
+        userId: project.authorId,
+        type: "reply",
+        title: "New comment on your project",
+        body: `${user.fullName} commented on "${project.title}"`,
+        link: `/projects/${id}`,
+        data: { actorId: user.id, projectId: id },
+      })
+    }
+    // Notify parent comment author if reply
+    if (parentId) {
+      const parent = await prisma.comment.findUnique({ where: { id: parentId }, select: { authorId: true } })
+      if (parent && parent.authorId !== user.id && parent.authorId !== project?.authorId) {
+        createNotification({
+          userId: parent.authorId,
+          type: "reply",
+          title: "New reply to your comment",
+          body: `${user.fullName} replied to your comment`,
+          link: `/projects/${id}`,
+          data: { actorId: user.id, projectId: id },
+        })
+      }
+    }
+
+    return NextResponse.json({
       success: true,
-      comment 
+      comment
     })
   } catch (error) {
     console.error('Error creating comment:', error)

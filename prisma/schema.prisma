@@ -93,6 +93,16 @@ model User {
   approvedResources    Resource[]     @relation("ResourceApprover")
   approvedOpportunities Opportunity[] @relation("OpportunityApprover")
   approvedServices     Service[]      @relation("ServiceApprover")
+  // Messaging
+  conversationsAsA     Conversation[] @relation("ConversationUserA")
+  conversationsAsB     Conversation[] @relation("ConversationUserB")
+  sentMessages         Message[]      @relation("MessageSender")
+  // Safety
+  blockedUsers         UserBlock[]    @relation("BlockedByUser")
+  blockedByUsers       UserBlock[]    @relation("BlockedUser")
+  mutedConversations   ConversationMute[]
+  reportsFiled         UserReport[]   @relation("ReportFiler")
+  reportsReceived      UserReport[]   @relation("ReportTarget")
 
   @@map("users")
 }
@@ -1329,4 +1339,73 @@ model Subscriber {
   updatedAt   DateTime  @updatedAt
 
   @@map("subscribers")
+}
+
+// ===== DIRECT MESSAGING =====
+model Conversation {
+  id            String    @id @default(cuid())
+  participantA  String    // always the lexicographically smaller user ID
+  participantB  String
+  lastMessageAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  userA         User      @relation("ConversationUserA", fields: [participantA], references: [id], onDelete: Cascade)
+  userB         User      @relation("ConversationUserB", fields: [participantB], references: [id], onDelete: Cascade)
+  messages      Message[]
+  mutes         ConversationMute[]
+
+  @@unique([participantA, participantB])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+// ===== USER SAFETY =====
+model UserBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+  blocker   User     @relation("BlockedByUser", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("BlockedUser", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@map("user_blocks")
+}
+
+model ConversationMute {
+  id             String       @id @default(cuid())
+  userId         String
+  conversationId String
+  createdAt      DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conversationId])
+  @@map("conversation_mutes")
+}
+
+model UserReport {
+  id         String   @id @default(cuid())
+  reporterId String
+  targetId   String
+  reason     String   // harassment, spam, inappropriate, impersonation, other
+  details    String?
+  status     String   @default("pending") // pending, reviewed, resolved, dismissed
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  reporter   User     @relation("ReportFiler", fields: [reporterId], references: [id], onDelete: Cascade)
+  target     User     @relation("ReportTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@map("user_reports")
 }

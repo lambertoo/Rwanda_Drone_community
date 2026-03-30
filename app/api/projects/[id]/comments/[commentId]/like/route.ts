@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { createNotification } from "@/lib/notifications"
 
 export async function POST(
   request: Request,
@@ -59,7 +60,7 @@ export async function POST(
         },
       })
       isLiked = true
-      
+
       // Increase likes count
       await prisma.comment.update({
         where: { id: commentId },
@@ -69,13 +70,26 @@ export async function POST(
           },
         },
       })
-      
-      // Get updated likes count
+
+      // Get updated likes count + author for notification
       const updatedComment = await prisma.comment.findUnique({
         where: { id: commentId },
-        select: { likesCount: true },
+        select: { likesCount: true, authorId: true },
       })
       likesCount = updatedComment?.likesCount || 0
+
+      // Notify comment author
+      if (updatedComment && updatedComment.authorId !== userId) {
+        const actor = await prisma.user.findUnique({ where: { id: userId }, select: { fullName: true } })
+        createNotification({
+          userId: updatedComment.authorId,
+          type: "like",
+          title: "New like on your comment",
+          body: `${actor?.fullName || 'Someone'} liked your comment`,
+          link: `/projects/${id}`,
+          data: { actorId: userId, commentId },
+        })
+      }
     }
 
     return NextResponse.json({ isLiked, likesCount })

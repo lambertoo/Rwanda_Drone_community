@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthenticatedUser } from "@/lib/auth-middleware"
+import { createNotification } from "@/lib/notifications"
 
 export async function POST(
   request: Request,
@@ -70,7 +71,20 @@ export async function POST(
             increment: 1,
           },
         },
+        select: { likesCount: true, authorId: true },
       })
+
+      // Notify comment author
+      if (updatedComment.authorId !== user.id) {
+        createNotification({
+          userId: updatedComment.authorId,
+          type: "like",
+          title: "New like on your comment",
+          body: `${user.fullName} liked your comment`,
+          link: `/forum`,
+          data: { actorId: user.id, commentId: id },
+        })
+      }
 
       return NextResponse.json({
         isLiked: true,

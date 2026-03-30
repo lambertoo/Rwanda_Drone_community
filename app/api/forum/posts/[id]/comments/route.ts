@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthenticatedUser } from "@/lib/auth-middleware"
+import { createNotification } from "@/lib/notifications"
 
 export async function GET(
   request: Request,
@@ -115,6 +116,33 @@ export async function POST(
           lastReplyAt: new Date()
         }
       })
+    }
+
+    // Notify post author about new comment
+    const post = await prisma.forumPost.findUnique({ where: { id }, select: { authorId: true, title: true } })
+    if (post && post.authorId !== user.id) {
+      createNotification({
+        userId: post.authorId,
+        type: "reply",
+        title: "New comment on your post",
+        body: `${user.fullName} commented on "${post.title}"`,
+        link: `/forum`,
+        data: { actorId: user.id, postId: id },
+      })
+    }
+    // If it's a reply, also notify the parent comment author
+    if (parentId) {
+      const parent = await prisma.forumComment.findUnique({ where: { id: parentId }, select: { authorId: true } })
+      if (parent && parent.authorId !== user.id && parent.authorId !== post?.authorId) {
+        createNotification({
+          userId: parent.authorId,
+          type: "reply",
+          title: "New reply to your comment",
+          body: `${user.fullName} replied to your comment`,
+          link: `/forum`,
+          data: { actorId: user.id, postId: id },
+        })
+      }
     }
 
     return NextResponse.json({

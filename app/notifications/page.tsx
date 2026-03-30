@@ -11,7 +11,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   Bell, MessageSquare, Heart, CheckCircle, Calendar,
-  Briefcase, FileText, AlertTriangle, Info, Trash2, CheckCheck
+  Briefcase, FileText, AlertTriangle, Info, Trash2, CheckCheck, UserPlus
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
@@ -28,6 +28,8 @@ interface Notification {
 const typeIcon: Record<string, any> = {
   reply: MessageSquare,
   like: Heart,
+  follow: UserPlus,
+  message: MessageSquare,
   approval: CheckCircle,
   event_reminder: Calendar,
   application_update: Briefcase,
@@ -39,6 +41,8 @@ const typeIcon: Record<string, any> = {
 const typeColor: Record<string, string> = {
   reply: "text-blue-500",
   like: "text-red-500",
+  follow: "text-emerald-500",
+  message: "text-indigo-500",
   approval: "text-green-500",
   event_reminder: "text-purple-500",
   application_update: "text-orange-500",
