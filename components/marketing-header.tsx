@@ -134,7 +134,7 @@ export function MarketingHeader() {
       <div className="mk-header-inner">
         {/* Logo */}
         <Link href="/" className="mk-logo">
-          <div className="mk-logo__mark">RDC</div>
+          <img src="/logo.png" alt="Rwanda Drone Community" style={{ height: '36px', width: 'auto' }} />
           <span className="mk-logo__name">Rwanda Drone Community</span>
         </Link>
 
@@ -303,49 +303,91 @@ export function MarketingHeader() {
                         )}
                       </div>
 
-                      {/* Menu items */}
+                      {/* Menu items — grouped */}
                       {[
-                        { href: "/account?tab=profile", icon: User, label: "Profile" },
+                        { href: "/account?tab=profile", icon: User, label: "My Profile" },
                         { href: "/account?tab=notifications", icon: Bell, label: "Notifications" },
-                        { href: "/account?tab=forms", icon: ClipboardList, label: "My Forms" },
-                        ...(user?.role === "admin" ? [
-                          { href: "/admin", icon: Settings, label: "Settings", badge: pendingCount },
-                        ] : []),
-                        ...(user?.role === "regulator" ? [{ href: "/regulator", icon: Award, label: "Regulator Panel" }] : []),
-                      ].map(({ href, icon: Icon, label, badge }: any) => (
-                        <Link
-                          key={href}
-                          href={href}
-                          onClick={() => setProfileOpen(false)}
-                          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "8px 10px", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 13, fontWeight: 500 }}
+                      ].map(({ href, icon: Icon, label }: any) => (
+                        <Link key={href} href={href} onClick={() => setProfileOpen(false)}
+                          style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 13, fontWeight: 500 }}
                           className="hover:bg-[#f4f6fb] transition-colors"
                         >
-                          <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <Icon size={15} color="#0058dd" />
-                            {label}
-                          </span>
-                          {badge > 0 && (
-                            <span style={{
-                              minWidth: 20, height: 20,
-                              background: "#f97316", borderRadius: 999,
-                              fontSize: 10, fontWeight: 700, color: "#fff",
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                              padding: "0 5px",
-                            }}>
-                              {badge > 99 ? "99+" : badge}
-                            </span>
-                          )}
+                          <Icon size={14} color="#0058dd" />{label}
                         </Link>
                       ))}
 
-                      {/* Divider + Logout */}
+                      {/* My Content */}
+                      <div style={{ borderTop: "1px solid #f1f3f5", marginTop: 4, paddingTop: 4 }}>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 10px 2px" }}>My Content</p>
+                        {[
+                          { href: "/account?tab=forms", icon: ClipboardList, label: "My Forms" },
+                          { href: "/community?tab=forum", icon: MessageSquare, label: "My Posts" },
+                          { href: "/community?tab=projects", icon: Camera, label: "My Projects" },
+                          { href: "/community?tab=events", icon: Calendar, label: "My Events" },
+                        ].map(({ href, icon: Icon, label }: any) => (
+                          <Link key={href} href={href} onClick={() => setProfileOpen(false)}
+                            style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 13, fontWeight: 500 }}
+                            className="hover:bg-[#f4f6fb] transition-colors"
+                          >
+                            <Icon size={14} color="#64748b" />{label}
+                          </Link>
+                        ))}
+                      </div>
+
+                      {/* Drone Tools */}
+                      <div style={{ borderTop: "1px solid #f1f3f5", marginTop: 4, paddingTop: 4 }}>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 10px 2px" }}>Drone Tools</p>
+                        {[
+                          { href: "/drone-tools?tab=fleet", icon: Plane, label: "My Fleet" },
+                          { href: "/drone-tools?tab=logbook", icon: BookMarked, label: "Flight Logbook" },
+                          { href: "/drone-tools?tab=compliance", icon: Award, label: "Compliance" },
+                        ].map(({ href, icon: Icon, label }: any) => (
+                          <Link key={href} href={href} onClick={() => setProfileOpen(false)}
+                            style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 13, fontWeight: 500 }}
+                            className="hover:bg-[#f4f6fb] transition-colors"
+                          >
+                            <Icon size={14} color="#64748b" />{label}
+                          </Link>
+                        ))}
+                      </div>
+
+                      {/* Admin / Regulator */}
+                      {(user?.role === "admin" || user?.role === "regulator") && (
+                        <div style={{ borderTop: "1px solid #f1f3f5", marginTop: 4, paddingTop: 4 }}>
+                          {user.role === "admin" && (
+                            <Link href="/admin" onClick={() => setProfileOpen(false)}
+                              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "7px 10px", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 13, fontWeight: 500 }}
+                              className="hover:bg-[#f4f6fb] transition-colors"
+                            >
+                              <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                <Settings size={14} color="#0058dd" />Settings
+                              </span>
+                              {pendingCount > 0 && (
+                                <span style={{ minWidth: 20, height: 20, background: "#f97316", borderRadius: 999, fontSize: 10, fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px" }}>
+                                  {pendingCount > 99 ? "99+" : pendingCount}
+                                </span>
+                              )}
+                            </Link>
+                          )}
+                          {user.role === "regulator" && (
+                            <Link href="/regulator" onClick={() => setProfileOpen(false)}
+                              style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 13, fontWeight: 500 }}
+                              className="hover:bg-[#f4f6fb] transition-colors"
+                            >
+                              <Award size={14} color="#0058dd" />Regulator Panel
+                            </Link>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Logout */}
                       <div style={{ borderTop: "1px solid #f1f3f5", marginTop: 4, paddingTop: 4 }}>
                         <button
                           onClick={() => { setProfileOpen(false); handleLogout() }}
-                          style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 13, fontWeight: 600 }}
+                          style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 13, fontWeight: 600 }}
                           className="hover:bg-[#fef2f2] transition-colors"
                         >
-                          <LogOut size={15} />
+                          <LogOut size={14} />
                           Log out
                         </button>
                       </div>
@@ -379,7 +421,7 @@ export function MarketingHeader() {
           <div className="mk-mobile-drawer">
             <div className="mk-mobile-drawer__head">
               <Link href="/" className="mk-logo" onClick={() => setMobileOpen(false)}>
-                <div className="mk-logo__mark">RDC</div>
+                <img src="/logo.png" alt="Rwanda Drone Community" style={{ height: '32px', width: 'auto' }} />
                 <span className="mk-logo__name">Rwanda Drone</span>
               </Link>
               <button className="mk-mobile-drawer__close" onClick={() => setMobileOpen(false)}>
