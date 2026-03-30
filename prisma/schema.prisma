@@ -97,6 +97,7 @@ model User {
   conversationsAsA     Conversation[] @relation("ConversationUserA")
   conversationsAsB     Conversation[] @relation("ConversationUserB")
   sentMessages         Message[]      @relation("MessageSender")
+  preFlightChecks      PreFlightCheck[]
   // Safety
   blockedUsers         UserBlock[]    @relation("BlockedByUser")
   blockedByUsers       UserBlock[]    @relation("BlockedUser")
@@ -864,6 +865,7 @@ model Drone {
   flightLogs            FlightLog[]
   maintenanceLogs       DroneMaintenance[]
   batteries             Battery[]
+  preFlightChecks       PreFlightCheck[]
   @@map("drones")
 }
 
@@ -896,6 +898,21 @@ model Battery {
   updatedAt      DateTime  @updatedAt
   drone          Drone     @relation(fields: [droneId], references: [id], onDelete: Cascade)
   @@map("batteries")
+}
+
+// ===== PRE-FLIGHT CHECKS =====
+model PreFlightCheck {
+  id        String   @id @default(cuid())
+  droneId   String
+  userId    String
+  items     Json     // [{ label: string, checked: boolean }]
+  allPassed Boolean  @default(false)
+  notes     String?
+  createdAt DateTime @default(now())
+  drone     Drone    @relation(fields: [droneId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("preflight_checks")
 }
 
 // ===== FLIGHT LOGBOOK =====

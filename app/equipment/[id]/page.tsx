@@ -35,6 +35,11 @@ import {
   Save,
   Plane,
   AlertTriangle,
+  Zap,
+  Pencil,
+  MoreVertical,
+  BatteryWarning,
+  Activity,
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -291,6 +296,108 @@ export default function DroneDetailPage({
     } finally {
       setBattSubmitting(false)
     }
+  }
+
+  const [editBattId, setEditBattId] = useState<string | null>(null)
+  const [editBattForm, setEditBattForm] = useState({ serialNumber: '', capacity: '', health: '', notes: '' })
+
+  const handleChargeBattery = async (batteryId: string) => {
+    try {
+      const res = await fetch(`/api/drones/${id}/batteries/${batteryId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ action: 'charge' }),
+      })
+      if (res.ok) {
+        toast.success('Battery charged — cycle count updated')
+        fetchDrone()
+      } else {
+        toast.error('Failed to record charge')
+      }
+    } catch { toast.error('Failed to record charge') }
+  }
+
+  const handleEditBattery = async (batteryId: string) => {
+    try {
+      const res = await fetch(`/api/drones/${id}/batteries/${batteryId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          serialNumber: editBattForm.serialNumber,
+          capacity: editBattForm.capacity,
+          health: editBattForm.health,
+          notes: editBattForm.notes,
+        }),
+      })
+      if (res.ok) {
+        toast.success('Battery updated')
+        setEditBattId(null)
+        fetchDrone()
+      } else {
+        toast.error('Failed to update battery')
+      }
+    } catch { toast.error('Failed to update battery') }
+  }
+
+  const handleDeleteBattery = async (batteryId: string) => {
+    if (!confirm('Delete this battery? This cannot be undone.')) return
+    try {
+      const res = await fetch(`/api/drones/${id}/batteries/${batteryId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      if (res.ok) {
+        toast.success('Battery deleted')
+        fetchDrone()
+      } else {
+        toast.error('Failed to delete battery')
+      }
+    } catch { toast.error('Failed to delete battery') }
+  }
+
+  const [editMaintId, setEditMaintId] = useState<string | null>(null)
+  const [editMaintForm, setEditMaintForm] = useState({ type: '', description: '', cost: '', performedBy: '', nextDueDate: '' })
+
+  const handleEditMaintenance = async (logId: string) => {
+    try {
+      const res = await fetch(`/api/drones/${id}/maintenance/${logId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          type: editMaintForm.type,
+          description: editMaintForm.description,
+          cost: editMaintForm.cost,
+          performedBy: editMaintForm.performedBy,
+          nextDueDate: editMaintForm.nextDueDate || null,
+        }),
+      })
+      if (res.ok) {
+        toast.success('Maintenance log updated')
+        setEditMaintId(null)
+        fetchDrone()
+      } else {
+        toast.error('Failed to update')
+      }
+    } catch { toast.error('Failed to update') }
+  }
+
+  const handleDeleteMaintenance = async (logId: string) => {
+    if (!confirm('Delete this maintenance log?')) return
+    try {
+      const res = await fetch(`/api/drones/${id}/maintenance/${logId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      if (res.ok) {
+        toast.success('Maintenance log deleted')
+        fetchDrone()
+      } else {
+        toast.error('Failed to delete')
+      }
+    } catch { toast.error('Failed to delete') }
   }
 
   const getHealthColor = (health: number | null) => {
@@ -751,6 +858,36 @@ export default function DroneDetailPage({
                           )}
                         </div>
                       </div>
+                      <div className="flex gap-1 mt-2 pt-2 border-t">
+                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setEditMaintId(log.id); setEditMaintForm({ type: log.type, description: log.description, cost: log.cost?.toString() || '', performedBy: log.performedBy || '', nextDueDate: log.nextDueDate ? new Date(log.nextDueDate).toISOString().split('T')[0] : '' }) }}>
+                          <Pencil className="h-3 w-3 mr-1" /> Edit
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 text-xs text-red-600" onClick={() => handleDeleteMaintenance(log.id)}>
+                          <Trash2 className="h-3 w-3 mr-1" /> Delete
+                        </Button>
+                      </div>
+                      {editMaintId === log.id && (
+                        <div className="mt-3 pt-3 border-t space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <Select value={editMaintForm.type} onValueChange={v => setEditMaintForm(f => ({...f, type: v}))}>
+                              <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {maintenanceTypes.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                            <Input placeholder="Cost" type="number" value={editMaintForm.cost} onChange={e => setEditMaintForm(f => ({...f, cost: e.target.value}))} className="h-8 text-sm" />
+                          </div>
+                          <Input placeholder="Description" value={editMaintForm.description} onChange={e => setEditMaintForm(f => ({...f, description: e.target.value}))} className="h-8 text-sm" />
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input placeholder="Performed by" value={editMaintForm.performedBy} onChange={e => setEditMaintForm(f => ({...f, performedBy: e.target.value}))} className="h-8 text-sm" />
+                            <Input type="date" value={editMaintForm.nextDueDate} onChange={e => setEditMaintForm(f => ({...f, nextDueDate: e.target.value}))} className="h-8 text-sm" />
+                          </div>
+                          <div className="flex gap-2 justify-end">
+                            <Button size="sm" variant="ghost" onClick={() => setEditMaintId(null)}>Cancel</Button>
+                            <Button size="sm" onClick={() => handleEditMaintenance(log.id)}>Save</Button>
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 )
@@ -861,6 +998,31 @@ export default function DroneDetailPage({
             </Dialog>
           </div>
 
+          {drone.batteries.length > 0 && (
+            <Card className="bg-muted/30">
+              <CardContent className="p-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold">{drone.batteries.length}</p>
+                    <p className="text-xs text-muted-foreground">Total Batteries</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{Math.round(drone.batteries.reduce((s,b) => s + (b.health || 0), 0) / drone.batteries.length)}%</p>
+                    <p className="text-xs text-muted-foreground">Avg Health</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{drone.batteries.filter(b => (b.health || 100) < 30).length}</p>
+                    <p className="text-xs text-muted-foreground">Need Replacement</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{drone.batteries.reduce((s,b) => s + b.cycleCount, 0)}</p>
+                    <p className="text-xs text-muted-foreground">Total Cycles</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {drone.batteries.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12 gap-3">
@@ -894,6 +1056,16 @@ export default function DroneDetailPage({
                             {bat.health}%
                           </p>
                           <p className="text-xs text-muted-foreground">Health</p>
+                          {bat.health !== null && (
+                            <div className="w-full bg-muted rounded-full h-2 mt-1">
+                              <div className={`h-2 rounded-full ${bat.health >= 80 ? 'bg-green-500' : bat.health >= 50 ? 'bg-yellow-500' : bat.health >= 20 ? 'bg-orange-500' : 'bg-red-500'}`} style={{ width: `${bat.health}%` }} />
+                            </div>
+                          )}
+                          {bat.health !== null && bat.health < 50 && (
+                            <Badge variant="destructive" className="text-[10px] mt-1">
+                              {bat.health < 20 ? 'Critical — Replace' : 'Replace Soon'}
+                            </Badge>
+                          )}
                         </div>
                       )}
                     </div>
@@ -916,7 +1088,7 @@ export default function DroneDetailPage({
                         <div className="flex justify-between">
                           <span>Last Charged</span>
                           <span className="font-medium text-foreground">
-                            {new Date(bat.lastChargeDate).toLocaleDateString()}
+                            {Math.floor((Date.now() - new Date(bat.lastChargeDate).getTime()) / 86400000)} days ago
                           </span>
                         </div>
                       )}
@@ -925,6 +1097,33 @@ export default function DroneDetailPage({
                       <p className="text-xs text-muted-foreground border-t pt-2">
                         {bat.notes}
                       </p>
+                    )}
+                    <div className="flex gap-2 pt-2 border-t mt-2">
+                      <Button size="sm" variant="outline" className="flex-1" onClick={() => handleChargeBattery(bat.id)}>
+                        <Zap className="h-3 w-3 mr-1" /> Charge
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => { setEditBattId(bat.id); setEditBattForm({ serialNumber: bat.serialNumber || '', capacity: bat.capacity?.toString() || '', health: bat.health?.toString() || '', notes: bat.notes || '' }) }}>
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => handleDeleteBattery(bat.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    {editBattId === bat.id && (
+                      <div className="pt-3 border-t mt-2 space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input placeholder="Serial Number" value={editBattForm.serialNumber} onChange={e => setEditBattForm(f => ({...f, serialNumber: e.target.value}))} className="h-8 text-sm" />
+                          <Input placeholder="Capacity (mAh)" type="number" value={editBattForm.capacity} onChange={e => setEditBattForm(f => ({...f, capacity: e.target.value}))} className="h-8 text-sm" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input placeholder="Health %" type="number" min="0" max="100" value={editBattForm.health} onChange={e => setEditBattForm(f => ({...f, health: e.target.value}))} className="h-8 text-sm" />
+                          <Input placeholder="Notes" value={editBattForm.notes} onChange={e => setEditBattForm(f => ({...f, notes: e.target.value}))} className="h-8 text-sm" />
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                          <Button size="sm" variant="ghost" onClick={() => setEditBattId(null)}>Cancel</Button>
+                          <Button size="sm" onClick={() => handleEditBattery(bat.id)}>Save</Button>
+                        </div>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
