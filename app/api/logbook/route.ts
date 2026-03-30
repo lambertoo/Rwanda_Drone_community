@@ -96,6 +96,14 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Auto-increment battery cycle counts for this drone's batteries
+    if (droneId) {
+      prisma.battery.updateMany({
+        where: { droneId },
+        data: { cycleCount: { increment: 1 } },
+      }).catch(err => console.error('[Logbook] Battery cycle increment failed:', err))
+    }
+
     return NextResponse.json({ log }, { status: 201 })
   } catch (error) {
     console.error('Error creating flight log:', error)
