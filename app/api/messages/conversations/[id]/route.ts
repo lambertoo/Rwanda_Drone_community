@@ -78,6 +78,15 @@ export async function POST(
     const { content } = await request.json()
 
     if (!content?.trim()) return NextResponse.json({ error: 'Content required' }, { status: 400 })
+    if (content.length > 5000) return NextResponse.json({ error: 'Message too long (max 5000 characters)' }, { status: 400 })
+
+    // Simple per-user rate limit: max 30 messages per minute
+    const recentCount = await prisma.message.count({
+      where: { senderId: user.id, createdAt: { gte: new Date(Date.now() - 60_000) } },
+    })
+    if (recentCount >= 30) {
+      return NextResponse.json({ error: 'Too many messages. Please slow down.' }, { status: 429 })
+    }
 
     // Verify user is a participant
     const conversation = await prisma.conversation.findFirst({

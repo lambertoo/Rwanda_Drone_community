@@ -456,7 +456,8 @@ function MessagesContent() {
                     onChange={e => setNewMessage(e.target.value)}
                     placeholder="Type a message..."
                     className="flex-1 h-10"
-                    disabled={sending}
+                    maxLength={5000}
+                    disabled={sending || isBlocked}
                   />
                   <Button type="submit" size="icon" disabled={!newMessage.trim() || sending} className="shrink-0 h-10 w-10">
                     <Send className="h-4 w-4" />

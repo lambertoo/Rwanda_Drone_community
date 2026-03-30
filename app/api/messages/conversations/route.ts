@@ -76,6 +76,17 @@ export async function POST(request: NextRequest) {
     const recipient = await prisma.user.findUnique({ where: { id: recipientId }, select: { id: true } })
     if (!recipient) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
+    // Check if blocked
+    const blocked = await prisma.userBlock.findFirst({
+      where: {
+        OR: [
+          { blockerId: user.id, blockedId: recipientId },
+          { blockerId: recipientId, blockedId: user.id },
+        ],
+      },
+    })
+    if (blocked) return NextResponse.json({ error: 'Cannot message this user' }, { status: 403 })
+
     // Always store IDs in sorted order for unique constraint
     const [a, b] = [user.id, recipientId].sort()
 
