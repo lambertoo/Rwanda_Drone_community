@@ -13,14 +13,30 @@ import { google } from 'googleapis'
 
 function getAuth() {
   const email = process.env.GOOGLE_SHEETS_CLIENT_EMAIL
-  const key = process.env.GOOGLE_SHEETS_PRIVATE_KEY?.replace(/\\n/g, '\n')
+  let key = process.env.GOOGLE_SHEETS_PRIVATE_KEY
 
-  if (!email || !key) return null
+  if (!email || !key) {
+    console.error('[GoogleSheets] Missing env vars:', {
+      hasEmail: !!email,
+      hasKey: !!process.env.GOOGLE_SHEETS_PRIVATE_KEY,
+    })
+    return null
+  }
 
-  return new google.auth.JWT(email, undefined, key, [
-    'https://www.googleapis.com/auth/spreadsheets',
-    'https://www.googleapis.com/auth/drive',
-  ])
+  // Handle various private key formats from different env var providers
+  if (key.startsWith('"') && key.endsWith('"')) {
+    key = JSON.parse(key)
+  }
+  key = key.replace(/\\n/g, '\n')
+
+  return new google.auth.JWT({
+    email,
+    key,
+    scopes: [
+      'https://www.googleapis.com/auth/spreadsheets',
+      'https://www.googleapis.com/auth/drive',
+    ],
+  })
 }
 
 /**

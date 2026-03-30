@@ -118,9 +118,13 @@ export async function POST(
       spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${spreadsheetId}`,
       syncedRows: form.entries.length,
     })
-  } catch (error) {
-    console.error('[GoogleSheets] POST error:', error)
-    return NextResponse.json({ error: 'Failed to connect sheet' }, { status: 500 })
+  } catch (error: any) {
+    console.error('[GoogleSheets] POST error:', error?.message || error)
+    console.error('[GoogleSheets] POST stack:', error?.stack)
+    return NextResponse.json(
+      { error: 'Failed to connect sheet', detail: error?.message || 'Unknown error' },
+      { status: 500 }
+    )
   }
 }
 
