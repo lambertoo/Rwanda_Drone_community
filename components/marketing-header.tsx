@@ -304,64 +304,36 @@ export function MarketingHeader() {
                         )}
                       </div>
 
-                      {/* Menu items — grouped */}
+                      {/* Main menu — clean, 5 items max */}
                       {[
-                        { href: "/account?tab=profile", icon: User, label: "My Profile" },
-                        { href: "/account?tab=notifications", icon: Bell, label: "Notifications" },
-                      ].map(({ href, icon: Icon, label }: any) => (
+                        { href: "/account?tab=profile", icon: User, label: "My Profile", desc: "Edit profile, privacy & security" },
+                        { href: "/messages", icon: MessageSquare, label: "Messaging Center", desc: "Conversations & direct messages" },
+                        { href: "/account?tab=content", icon: ClipboardList, label: "My Content", desc: "Forms, posts, projects & events" },
+                        { href: "/drone-tools", icon: Plane, label: "Drone Tools", desc: "Fleet, logbook & compliance" },
+                      ].map(({ href, icon: Icon, label, desc }: any) => (
                         <Link key={href} href={href} onClick={() => setProfileOpen(false)}
-                          style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 13, fontWeight: 500 }}
+                          style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 10px", borderRadius: 8, textDecoration: "none" }}
                           className="hover:bg-[#f4f6fb] transition-colors"
                         >
-                          <Icon size={14} color="#0066B3" />{label}
+                          <Icon size={15} color="#0066B3" style={{ marginTop: 2, flexShrink: 0 }} />
+                          <div>
+                            <p style={{ fontWeight: 600, fontSize: 13, color: "#003366", margin: 0, lineHeight: 1.2 }}>{label}</p>
+                            <p style={{ fontSize: 11, color: "#6b7280", margin: 0, marginTop: 1 }}>{desc}</p>
+                          </div>
                         </Link>
                       ))}
-
-                      {/* My Content */}
-                      <div style={{ borderTop: "1px solid #f1f3f5", marginTop: 4, paddingTop: 4 }}>
-                        <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 10px 2px" }}>My Content</p>
-                        {[
-                          { href: "/account?tab=forms", icon: ClipboardList, label: "My Forms" },
-                          { href: "/community?tab=forum", icon: MessageSquare, label: "My Posts" },
-                          { href: "/community?tab=projects", icon: Camera, label: "My Projects" },
-                          { href: "/community?tab=events", icon: Calendar, label: "My Events" },
-                        ].map(({ href, icon: Icon, label }: any) => (
-                          <Link key={href} href={href} onClick={() => setProfileOpen(false)}
-                            style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 13, fontWeight: 500 }}
-                            className="hover:bg-[#f4f6fb] transition-colors"
-                          >
-                            <Icon size={14} color="#64748b" />{label}
-                          </Link>
-                        ))}
-                      </div>
-
-                      {/* Drone Tools */}
-                      <div style={{ borderTop: "1px solid #f1f3f5", marginTop: 4, paddingTop: 4 }}>
-                        <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 10px 2px" }}>Drone Tools</p>
-                        {[
-                          { href: "/drone-tools?tab=fleet", icon: Plane, label: "My Fleet" },
-                          { href: "/drone-tools?tab=logbook", icon: BookMarked, label: "Flight Logbook" },
-                          { href: "/drone-tools?tab=compliance", icon: Award, label: "Compliance" },
-                        ].map(({ href, icon: Icon, label }: any) => (
-                          <Link key={href} href={href} onClick={() => setProfileOpen(false)}
-                            style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 13, fontWeight: 500 }}
-                            className="hover:bg-[#f4f6fb] transition-colors"
-                          >
-                            <Icon size={14} color="#64748b" />{label}
-                          </Link>
-                        ))}
-                      </div>
 
                       {/* Admin / Regulator */}
                       {(user?.role === "admin" || user?.role === "regulator") && (
                         <div style={{ borderTop: "1px solid #f1f3f5", marginTop: 4, paddingTop: 4 }}>
                           {user.role === "admin" && (
                             <Link href="/admin" onClick={() => setProfileOpen(false)}
-                              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "7px 10px", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 13, fontWeight: 500 }}
+                              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "8px 10px", borderRadius: 8, textDecoration: "none" }}
                               className="hover:bg-[#f4f6fb] transition-colors"
                             >
                               <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                <Settings size={14} color="#0066B3" />Settings
+                                <Settings size={15} color="#0066B3" />
+                                <span style={{ fontWeight: 600, fontSize: 13, color: "#003366" }}>Settings</span>
                               </span>
                               {pendingCount > 0 && (
                                 <span style={{ minWidth: 20, height: 20, background: "#f97316", borderRadius: 999, fontSize: 10, fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px" }}>
@@ -372,10 +344,11 @@ export function MarketingHeader() {
                           )}
                           {user.role === "regulator" && (
                             <Link href="/regulator" onClick={() => setProfileOpen(false)}
-                              style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, textDecoration: "none", color: "#374151", fontSize: 13, fontWeight: 500 }}
+                              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, textDecoration: "none" }}
                               className="hover:bg-[#f4f6fb] transition-colors"
                             >
-                              <Award size={14} color="#0066B3" />Regulator Panel
+                              <Award size={15} color="#0066B3" />
+                              <span style={{ fontWeight: 600, fontSize: 13, color: "#003366" }}>Regulator Panel</span>
                             </Link>
                           )}
                         </div>
