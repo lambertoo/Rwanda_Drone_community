@@ -2,7 +2,10 @@ import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
 
 // JWT Configuration
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production'
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required')
+}
 const ACCESS_TOKEN_EXPIRY = '1h' // 1 hour
 const REFRESH_TOKEN_EXPIRY = '7d' // 7 days
 

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { extractTokenFromRequest, verifyToken } from "@/lib/jwt-utils"
 
 /**
  * GET /api/auth/google-sheets/callback — Handle Google OAuth callback for Sheets.
  * Exchanges the authorization code for tokens and stores them on the user record.
+ * userId comes from the JWT cookie (not the state param) to prevent tampering.
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
@@ -18,24 +20,30 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${appUrl}/forms?error=google_sheets_auth_failed`)
   }
 
-  // Verify state matches cookie
+  // Verify CSRF state matches cookie
   const cookieState = req.cookies.get("google_sheets_oauth_state")?.value
   if (!cookieState || cookieState !== state) {
     console.error("[GoogleSheets OAuth] State mismatch")
     return NextResponse.redirect(`${appUrl}/forms?error=invalid_state`)
   }
 
-  // Decode state to get userId and formId
-  let userId: string
-  let formId: string
+  // Get userId from JWT cookie (not from state param — prevents tampering)
+  const token = extractTokenFromRequest(req)
+  if (!token) {
+    return NextResponse.redirect(`${appUrl}/login?error=auth_required`)
+  }
+  const payload = await verifyToken(token)
+  if (!payload) {
+    return NextResponse.redirect(`${appUrl}/login?error=invalid_token`)
+  }
+  const userId = payload.userId
+
+  // Decode formId from state (formId is non-sensitive, just for redirect)
+  let formId = ""
   try {
     const parsed = JSON.parse(Buffer.from(state, "base64url").toString())
-    userId = parsed.userId
     formId = parsed.formId || ""
-  } catch {
-    console.error("[GoogleSheets OAuth] Failed to decode state")
-    return NextResponse.redirect(`${appUrl}/forms?error=invalid_state`)
-  }
+  } catch {}
 
   try {
     const clientId = process.env.GOOGLE_CLIENT_ID!
@@ -61,7 +69,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${appUrl}/forms?error=token_exchange_failed`)
     }
 
-    // Store tokens on user
+    // Store tokens on authenticated user
     await prisma.user.update({
       where: { id: userId },
       data: {

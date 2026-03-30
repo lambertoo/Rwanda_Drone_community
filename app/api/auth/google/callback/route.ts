@@ -20,12 +20,20 @@ interface GoogleUserInfo {
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const code = searchParams.get("code")
+  const state = searchParams.get("state")
   const error = searchParams.get("error")
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || ""
 
   if (error || !code) {
     return NextResponse.redirect(`${appUrl}/login?error=${error || "google_auth_failed"}`)
+  }
+
+  // Verify CSRF state
+  const cookieState = req.cookies.get("google_oauth_state")?.value
+  if (!cookieState || cookieState !== state) {
+    console.error("[Google Auth] CSRF state mismatch")
+    return NextResponse.redirect(`${appUrl}/login?error=invalid_state`)
   }
 
   try {
