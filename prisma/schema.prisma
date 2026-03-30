@@ -13,6 +13,9 @@ model User {
   email             String             @unique
   password          String?            // Hashed password (null for OAuth users)
   googleId          String?            @unique
+  googleAccessToken  String?           // OAuth access token for Google APIs (Sheets)
+  googleRefreshToken String?           // OAuth refresh token for Google APIs
+  googleTokenExpiry  DateTime?         // When the access token expires
   fullName          String
   avatar            String?
   bio               String?
@@ -36,6 +39,7 @@ model User {
   experience        String?
   specializations   Json?
   certifications    Json?
+  settings          Json?              // User preferences: privacySettings, notificationSettings
   opportunities     Opportunity[]
   applications      JobApplication[]
   rsvps             rsvp[]

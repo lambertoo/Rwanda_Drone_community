@@ -1,56 +1,76 @@
 import { google } from 'googleapis'
+import { prisma } from '@/lib/prisma'
 
 /**
- * Google Sheets integration for form responses.
+ * Google Sheets integration using the user's own OAuth tokens.
+ * Sheets are created in the user's Google Drive, owned by them.
  *
  * Required env vars:
- *   GOOGLE_SHEETS_CLIENT_EMAIL  – service account email
- *   GOOGLE_SHEETS_PRIVATE_KEY   – service account private key (PEM, with \n)
- *
- * Per-form config (stored in form.settings.googleSheetId):
- *   The Google Sheet must be shared with the service account email (Editor).
+ *   GOOGLE_CLIENT_ID      – OAuth client ID
+ *   GOOGLE_CLIENT_SECRET   – OAuth client secret
  */
 
-function getAuth() {
-  const email = process.env.GOOGLE_SHEETS_CLIENT_EMAIL
-  let key = process.env.GOOGLE_SHEETS_PRIVATE_KEY
-
-  if (!email || !key) {
-    console.error('[GoogleSheets] Missing env vars:', {
-      hasEmail: !!email,
-      hasKey: !!process.env.GOOGLE_SHEETS_PRIVATE_KEY,
-    })
-    return null
-  }
-
-  // Handle various private key formats from different env var providers
-  if (key.startsWith('"') && key.endsWith('"')) {
-    key = JSON.parse(key)
-  }
-  key = key.replace(/\\n/g, '\n')
-
-  return new google.auth.JWT({
-    email,
-    key,
-    scopes: [
-      'https://www.googleapis.com/auth/spreadsheets',
-      'https://www.googleapis.com/auth/drive',
-    ],
-  })
+export interface UserGoogleTokens {
+  accessToken: string
+  refreshToken: string | null
+  tokenExpiry: Date | null
+  userId: string
 }
 
 /**
- * Create a new Google Sheet for a form and return the spreadsheet ID.
+ * Build an OAuth2 client from user tokens, refreshing if expired.
+ */
+async function getAuthForUser(tokens: UserGoogleTokens) {
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+  )
+
+  oauth2Client.setCredentials({
+    access_token: tokens.accessToken,
+    refresh_token: tokens.refreshToken,
+    expiry_date: tokens.tokenExpiry?.getTime(),
+  })
+
+  // If token is expired or about to expire (within 5 min), refresh it
+  const isExpired = tokens.tokenExpiry && tokens.tokenExpiry.getTime() < Date.now() + 5 * 60 * 1000
+  if (isExpired && tokens.refreshToken) {
+    const { credentials } = await oauth2Client.refreshAccessToken()
+    oauth2Client.setCredentials(credentials)
+
+    // Persist refreshed tokens
+    await prisma.user.update({
+      where: { id: tokens.userId },
+      data: {
+        googleAccessToken: credentials.access_token,
+        googleRefreshToken: credentials.refresh_token || tokens.refreshToken,
+        googleTokenExpiry: credentials.expiry_date
+          ? new Date(credentials.expiry_date)
+          : undefined,
+      },
+    })
+  }
+
+  return oauth2Client
+}
+
+/**
+ * Check if a user has connected their Google account for Sheets.
+ */
+export function hasGoogleSheetsAuth(user: { googleAccessToken?: string | null; googleRefreshToken?: string | null }): boolean {
+  return !!(user.googleAccessToken && user.googleRefreshToken)
+}
+
+/**
+ * Create a new Google Sheet for a form in the user's Drive.
  */
 export async function createSheetForForm(
+  tokens: UserGoogleTokens,
   formTitle: string,
   fieldLabels: string[]
 ): Promise<string | null> {
-  const auth = getAuth()
-  if (!auth) return null
-
   try {
-    await auth.authorize()
+    const auth = await getAuthForUser(tokens)
     const sheets = google.sheets({ version: 'v4', auth })
 
     const res = await sheets.spreadsheets.create({
@@ -78,22 +98,7 @@ export async function createSheetForForm(
       },
     })
 
-    const spreadsheetId = res.data.spreadsheetId
-    if (!spreadsheetId) return null
-
-    // Make it accessible via link (anyone with link can view)
-    const drive = google.drive({ version: 'v3', auth })
-    await drive.permissions.create({
-      fileId: spreadsheetId,
-      requestBody: {
-        role: 'writer',
-        type: 'anyone',
-      },
-    }).catch(() => {
-      // Non-critical — sheet still works, just not publicly shared
-    })
-
-    return spreadsheetId
+    return res.data.spreadsheetId || null
   } catch (err) {
     console.error('[GoogleSheets] Failed to create sheet:', err)
     return null
@@ -104,17 +109,15 @@ export async function createSheetForForm(
  * Append a form submission as a new row in the linked Google Sheet.
  */
 export async function appendSubmissionToSheet(
+  tokens: UserGoogleTokens,
   spreadsheetId: string,
   rowNumber: number,
   submittedAt: string,
   fields: { label: string; name: string }[],
   values: Record<string, string | null>
 ): Promise<boolean> {
-  const auth = getAuth()
-  if (!auth) return false
-
   try {
-    await auth.authorize()
+    const auth = await getAuthForUser(tokens)
     const sheets = google.sheets({ version: 'v4', auth })
 
     const row = [
@@ -123,12 +126,10 @@ export async function appendSubmissionToSheet(
       ...fields.map((f) => {
         const val = values[f.name]
         if (!val) return ''
-        // Try to parse JSON arrays (checkboxes) into comma-separated
         try {
           const parsed = JSON.parse(val)
           if (Array.isArray(parsed)) return parsed.join(', ')
           if (typeof parsed === 'object') {
-            // Matrix responses — join as "row: value"
             return Object.entries(parsed)
               .map(([k, v]) => `${k}: ${v}`)
               .join('; ')
@@ -157,15 +158,13 @@ export async function appendSubmissionToSheet(
  * Sync all existing submissions to a Google Sheet (backfill).
  */
 export async function syncAllSubmissionsToSheet(
+  tokens: UserGoogleTokens,
   spreadsheetId: string,
   fields: { label: string; name: string }[],
   submissions: { submittedAt: string; values: Record<string, string | null> }[]
 ): Promise<boolean> {
-  const auth = getAuth()
-  if (!auth) return false
-
   try {
-    await auth.authorize()
+    const auth = await getAuthForUser(tokens)
     const sheets = google.sheets({ version: 'v4', auth })
 
     // Clear existing data (keep header)
@@ -208,14 +207,4 @@ export async function syncAllSubmissionsToSheet(
     console.error('[GoogleSheets] Failed to sync submissions:', err)
     return false
   }
-}
-
-/**
- * Check if Google Sheets integration is configured.
- */
-export function isGoogleSheetsConfigured(): boolean {
-  return !!(
-    process.env.GOOGLE_SHEETS_CLIENT_EMAIL &&
-    process.env.GOOGLE_SHEETS_PRIVATE_KEY
-  )
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/email'
-import { appendSubmissionToSheet } from '@/lib/google-sheets'
+import { appendSubmissionToSheet, hasGoogleSheetsAuth, UserGoogleTokens } from '@/lib/google-sheets'
 import crypto from 'crypto'
 
 export async function POST(
@@ -15,7 +15,10 @@ export async function POST(
     // Check if form exists and is active
     const form = await prisma.universalForm.findUnique({
       where: { id: formId },
-      select: { id: true, isActive: true, isPublic: true, settings: true },
+      select: {
+        id: true, isActive: true, isPublic: true, settings: true, userId: true,
+        user: { select: { id: true, googleAccessToken: true, googleRefreshToken: true, googleTokenExpiry: true } },
+      },
     })
 
     if (!form) {
@@ -121,8 +124,14 @@ export async function POST(
       },
     })
 
-    // Sync to Google Sheet (non-blocking)
-    if (formSettings?.googleSheetId) {
+    // Sync to Google Sheet (non-blocking) — uses form owner's Google tokens
+    if (formSettings?.googleSheetId && form.user && hasGoogleSheetsAuth(form.user)) {
+      const ownerTokens: UserGoogleTokens = {
+        accessToken: form.user.googleAccessToken!,
+        refreshToken: form.user.googleRefreshToken!,
+        tokenExpiry: form.user.googleTokenExpiry,
+        userId: form.user.id,
+      }
       const allFields = formWithFields.sections.flatMap(s => s.fields)
       const valuesMap: Record<string, string | null> = {}
       allFields.forEach((field) => {
@@ -131,6 +140,7 @@ export async function POST(
       })
       const entryCount = await prisma.formEntry.count({ where: { formId } })
       appendSubmissionToSheet(
+        ownerTokens,
         formSettings.googleSheetId,
         entryCount,
         new Date().toISOString(),

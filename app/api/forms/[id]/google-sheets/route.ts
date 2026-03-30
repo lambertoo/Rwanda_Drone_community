@@ -4,7 +4,8 @@ import { extractTokenFromRequest, verifyToken } from '@/lib/jwt-utils'
 import {
   createSheetForForm,
   syncAllSubmissionsToSheet,
-  isGoogleSheetsConfigured,
+  hasGoogleSheetsAuth,
+  UserGoogleTokens,
 } from '@/lib/google-sheets'
 
 // GET — check integration status
@@ -19,6 +20,11 @@ export async function GET(
     const payload = await verifyToken(token)
     if (!payload) return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
 
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { googleAccessToken: true, googleRefreshToken: true },
+    })
+
     const form = await prisma.universalForm.findFirst({
       where: { id: formId, userId: payload.userId },
       select: { settings: true },
@@ -26,9 +32,11 @@ export async function GET(
     if (!form) return NextResponse.json({ error: 'Form not found' }, { status: 404 })
 
     const settings = form.settings as any
+    const googleConnected = hasGoogleSheetsAuth(user || {})
+
     return NextResponse.json({
-      configured: isGoogleSheetsConfigured(),
-      connected: !!settings?.googleSheetId,
+      googleConnected,
+      sheetLinked: !!settings?.googleSheetId,
       spreadsheetId: settings?.googleSheetId || null,
       spreadsheetUrl: settings?.googleSheetId
         ? `https://docs.google.com/spreadsheets/d/${settings.googleSheetId}`
@@ -52,11 +60,24 @@ export async function POST(
     const payload = await verifyToken(token)
     if (!payload) return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
 
-    if (!isGoogleSheetsConfigured()) {
+    // Get user's Google tokens
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { id: true, googleAccessToken: true, googleRefreshToken: true, googleTokenExpiry: true },
+    })
+
+    if (!user || !hasGoogleSheetsAuth(user)) {
       return NextResponse.json(
-        { error: 'Google Sheets not configured. Add GOOGLE_SHEETS_CLIENT_EMAIL and GOOGLE_SHEETS_PRIVATE_KEY.' },
+        { error: 'Google account not connected. Please connect your Google account first.' },
         { status: 400 }
       )
+    }
+
+    const userTokens: UserGoogleTokens = {
+      accessToken: user.googleAccessToken!,
+      refreshToken: user.googleRefreshToken!,
+      tokenExpiry: user.googleTokenExpiry,
+      userId: user.id,
     }
 
     const form = await prisma.universalForm.findFirst({
@@ -77,7 +98,7 @@ export async function POST(
 
     // Create a new sheet if no existing ID provided
     if (!spreadsheetId) {
-      spreadsheetId = await createSheetForForm(form.title, fieldLabels) ?? undefined
+      spreadsheetId = await createSheetForForm(userTokens, form.title, fieldLabels) ?? undefined
       if (!spreadsheetId) {
         return NextResponse.json({ error: 'Failed to create Google Sheet' }, { status: 500 })
       }
@@ -106,6 +127,7 @@ export async function POST(
       })
 
       await syncAllSubmissionsToSheet(
+        userTokens,
         spreadsheetId,
         allFields.map((f) => ({ label: f.label, name: f.name })),
         submissions
@@ -120,7 +142,6 @@ export async function POST(
     })
   } catch (error: any) {
     console.error('[GoogleSheets] POST error:', error?.message || error)
-    console.error('[GoogleSheets] POST stack:', error?.stack)
     return NextResponse.json(
       { error: 'Failed to connect sheet', detail: error?.message || 'Unknown error' },
       { status: 500 }
