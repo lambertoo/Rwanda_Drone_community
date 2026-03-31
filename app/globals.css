@@ -215,7 +215,9 @@
     scrollbar-width: none;
     flex-wrap: nowrap !important;
   }
-  [role="tablist"]::-webkit-scrollbar, .flex.gap-1.bg-muted::-webkit-scrollbar { display: none; }
+  /* Hide scrollbars on tab bars */
+  .hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
 
   /* Cards need less padding on mobile */
   .p-6 { padding: 16px !important; }
