@@ -33,7 +33,7 @@ export function HubLayout({ title, tabs, defaultTab, children }: HubLayoutProps)
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Header with tabs */}
-      <div className="bg-background border-b sticky top-[57px] z-30">
+      <div className="bg-background border-b sticky top-[57px] z-[90]">
         <div className="max-w-6xl mx-auto px-3 sm:px-4">
           <div className="flex items-center gap-3 sm:gap-6 overflow-x-auto hide-scrollbar">
             {tabs.map((tab) => {

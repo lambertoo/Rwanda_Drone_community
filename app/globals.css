@@ -1270,11 +1270,11 @@
   color: var(--t-muted-dark);
 }
 
-/* Marketing header */
+/* Marketing header — must be above hero, cards, and all page content */
 .mk-site-header {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 100;
   background: var(--t-grad-header-frost);
   box-shadow: var(--t-shadow-header);
   backdrop-filter: blur(8px);
