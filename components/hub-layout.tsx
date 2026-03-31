@@ -33,9 +33,9 @@ export function HubLayout({ title, tabs, defaultTab, children }: HubLayoutProps)
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Header with tabs */}
-      <div className="bg-background border-b sticky top-14 z-10">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide">
+      <div className="bg-background border-b sticky top-[57px] z-30">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4">
+          <div className="flex items-center gap-3 sm:gap-6 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
             {tabs.map((tab) => {
               const Icon = tab.icon
               const active = activeTab === tab.id
@@ -60,7 +60,7 @@ export function HubLayout({ title, tabs, defaultTab, children }: HubLayoutProps)
       </div>
 
       {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {children(activeTab)}
       </div>
     </div>

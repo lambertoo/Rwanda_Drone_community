@@ -188,6 +188,49 @@
   }
 }
 
+/* ── Global mobile responsiveness fixes ──────────────── */
+@media (max-width: 640px) {
+  /* Ensure body doesn't overflow horizontally */
+  html, body { overflow-x: hidden; max-width: 100vw; }
+
+  /* Tighter padding on mobile for all max-w containers */
+  .max-w-5xl, .max-w-6xl, .max-w-7xl { padding-left: 12px !important; padding-right: 12px !important; }
+
+  /* Stack form grids on mobile */
+  .grid-cols-2, .sm\:grid-cols-2 { grid-template-columns: 1fr !important; }
+
+  /* Full-width buttons on mobile */
+  .dialog-footer button, .flex.justify-end.gap-2 button { min-width: 0; }
+
+  /* Tables scroll horizontally */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Smaller avatars on mobile */
+  .mk-mobile-drawer .mk-logo img { height: 28px !important; }
+
+  /* Hub layout tabs scroll horizontally on mobile */
+  [role="tablist"], .flex.gap-1.bg-muted, .flex.gap-2.mb-6 {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap !important;
+  }
+  [role="tablist"]::-webkit-scrollbar, .flex.gap-1.bg-muted::-webkit-scrollbar { display: none; }
+
+  /* Cards need less padding on mobile */
+  .p-6 { padding: 16px !important; }
+  .p-8 { padding: 16px !important; }
+
+  /* Sticky toolbars need full width */
+  .sticky { left: 0; right: 0; }
+}
+
+/* Safe area insets for notched phones */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .mk-mobile-drawer { padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+  .fixed.bottom-0, .fixed.bottom-4 { padding-bottom: env(safe-area-inset-bottom); }
+}
+
 @layer utilities {
   .btn-gradient {
     background: linear-gradient(to right, #003366, #009FDA);
@@ -1293,13 +1336,22 @@
 .mk-nav__link:hover { background: rgba(0,51,102,0.06); color: var(--t-navy); text-decoration: none; }
 .mk-nav__link.is-active { background: rgba(0,51,102,0.08); color: var(--t-navy); font-weight: 600; }
 .mk-header-actions {
-  display: none;
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex-shrink: 0;
   margin-left: auto;
 }
-@media (min-width: 900px) { .mk-header-actions { display: flex; } }
+/* On mobile, hide sign-in/join buttons (they're in the drawer) but keep icons */
+@media (max-width: 899px) {
+  .mk-header-actions .mk-btn--signin,
+  .mk-header-actions .mk-btn--join {
+    display: none;
+  }
+}
+@media (min-width: 900px) {
+  .mk-header-actions { gap: 8px; }
+}
 .mk-btn--signin {
   padding: 7px 16px;
   border-radius: 8px;
@@ -1349,12 +1401,14 @@
   background: var(--t-navy-deep);
   border-radius: 2px;
 }
-/* Mobile drawer */
+/* Mobile drawer — must be above everything (dialogs are z-50, toasts are z-[9999]) */
 .mk-mobile-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.4);
-  z-index: 98;
+  background: rgba(0,0,0,0.5);
+  z-index: 9990;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
 }
 .mk-mobile-drawer {
   position: fixed;
@@ -1363,13 +1417,19 @@
   bottom: 0;
   width: min(320px, 85vw);
   background: #fff;
-  z-index: 99;
+  z-index: 9991;
   padding: 20px 24px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow: -8px 0 40px rgba(0,51,102,0.15);
   display: flex;
   flex-direction: column;
   gap: 8px;
+  animation: slideInRight 0.2s ease-out;
+}
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
 }
 .mk-mobile-drawer__head {
   display: flex;
