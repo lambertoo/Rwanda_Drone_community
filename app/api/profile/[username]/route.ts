@@ -3,10 +3,10 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET(
   request: Request,
-  { params }: { params: { username: string } }
+  { params }: { params: Promise<{ username: string }> }
 ) {
   try {
-    const { username } = params
+    const { username } = await params
 
     if (!username) {
       return NextResponse.json(
@@ -36,6 +36,7 @@ export async function GET(
         specializations: true,
         certifications: true,
         reputation: true,
+        isVerified: true,
         postsCount: true,
         projectsCount: true,
         eventsCount: true,
