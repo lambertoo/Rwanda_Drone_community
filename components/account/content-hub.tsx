@@ -43,10 +43,17 @@ export default function ContentHub() {
   const [projects, setProjects] = useState<MyProject[]>([])
   const [events, setEvents] = useState<MyEvent[]>([])
 
+  const [error, setError] = useState<string | null>(null)
+
   useEffect(() => {
+    setLoading(true)
+    setError(null)
     fetch("/api/my-content", { credentials: "include" })
       .then(r => {
-        if (!r.ok) throw new Error("Failed to fetch")
+        if (!r.ok) {
+          if (r.status === 401) throw new Error("Please log in to view your content")
+          throw new Error(`Failed to fetch (${r.status})`)
+        }
         return r.json()
       })
       .then(data => {
@@ -55,7 +62,10 @@ export default function ContentHub() {
         setProjects(data.projects || [])
         setEvents(data.events || [])
       })
-      .catch((err) => console.error("My content fetch error:", err))
+      .catch((err) => {
+        console.error("My content fetch error:", err)
+        setError(err.message)
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -91,6 +101,11 @@ export default function ContentHub() {
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-sm text-destructive mb-3">{error}</p>
+          <Button size="sm" variant="outline" onClick={() => window.location.reload()}>Retry</Button>
         </div>
       ) : (
         <>
