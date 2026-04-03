@@ -2,12 +2,11 @@
 
 import { Suspense } from "react"
 import { HubLayout, type HubTab } from "@/components/hub-layout"
-import { User, FileText, Bell } from "lucide-react"
+import { User, Bell } from "lucide-react"
 import dynamic from "next/dynamic"
 import { AuthGuard } from "@/components/auth-guard"
 
 const ProfileContent = dynamic(() => import("@/app/profile/edit/page"), { loading: () => <TabLoading /> })
-const ContentHub = dynamic(() => import("@/components/account/content-hub"), { loading: () => <TabLoading /> })
 const NotificationsContent = dynamic(() => import("@/app/notifications/page"), { loading: () => <TabLoading /> })
 
 function TabLoading() {
@@ -20,7 +19,6 @@ function TabLoading() {
 
 const TABS: HubTab[] = [
   { id: "profile", label: "Profile", icon: User, href: "/profile/edit" },
-  { id: "content", label: "My Content", icon: FileText, href: "/account?tab=content" },
   { id: "notifications", label: "Notifications", icon: Bell, href: "/notifications" },
 ]
 
@@ -32,7 +30,6 @@ export default function AccountPage() {
           {(activeTab) => (
             <>
               {activeTab === "profile" && <ProfileContent />}
-              {activeTab === "content" && <ContentHub />}
               {activeTab === "notifications" && <NotificationsContent />}
             </>
           )}
