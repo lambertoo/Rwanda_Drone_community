@@ -20,6 +20,7 @@ import {
   Sparkles,
   Send,
   Loader2,
+  Eye,
 } from "lucide-react"
 import { AuthGuard } from "@/components/auth-guard"
 import {
@@ -1534,48 +1535,50 @@ export default function FormSubmissionsPage() {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-white">
-        {/* Sticky Header */}
-        <div className="sticky top-[57px] z-40 bg-background/95 backdrop-blur-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.back()}
-                >
-                  <ArrowLeft className="w-4 h-4" />
+        {/* Sticky toolbar — matches form edit page */}
+        <div className="sticky top-[57px] z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
+          <div className="max-w-7xl mx-auto px-4 h-12 flex items-center justify-between gap-3">
+            {/* Left: Back + Title + Status */}
+            <div className="flex items-center gap-2.5 min-w-0">
+              <button
+                onClick={() => router.push("/my-content")}
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <span className="text-border/60 select-none">|</span>
+              <h2 className="text-sm font-medium truncate max-w-[180px] sm:max-w-[280px]" title={form?.title}>
+                {form?.title || "Submissions"}
+              </h2>
+              <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                {submissions.length} response{submissions.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+            {/* Right: Actions */}
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              {selected.size > 0 && (
+                <Button size="sm" variant="destructive" onClick={() => handleDelete(Array.from(selected))}>
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete ({selected.size})
                 </Button>
-                <div>
-                  <h1 className="text-lg font-semibold">
-                    {form?.title || "Submissions"}
-                  </h1>
-                  <p className="text-xs text-muted-foreground">
-                    {submissions.length} response
-                    {submissions.length !== 1 ? "s" : ""}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {selected.size > 0 && (
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleDelete(Array.from(selected))}
-                  >
-                    <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete (
-                    {selected.size})
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={exportCSV}
-                  disabled={processed.length === 0}
-                >
-                  <Download className="w-3.5 h-3.5 mr-1.5" /> Export CSV
-                </Button>
-              </div>
+              )}
+              <Button size="sm" variant="outline" onClick={exportCSV} disabled={processed.length === 0}>
+                <Download className="w-3.5 h-3.5 mr-1.5" /> Export CSV
+              </Button>
+              <span className="w-px h-4 bg-border/60 hidden sm:block" />
+              <button
+                onClick={() => router.push(`/forms/${formId}/edit`)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md hover:bg-muted transition-colors"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Edit Form</span>
+              </button>
+              <button
+                onClick={() => window.open(`/forms/public/${formId}`, '_blank')}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md hover:bg-muted transition-colors"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Preview</span>
+              </button>
             </div>
           </div>
         </div>
