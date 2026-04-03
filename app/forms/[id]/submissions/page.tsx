@@ -17,6 +17,9 @@ import {
   X,
   BarChart3,
   PieChartIcon,
+  Sparkles,
+  Send,
+  Loader2,
 } from "lucide-react"
 import { AuthGuard } from "@/components/auth-guard"
 import {
@@ -83,7 +86,7 @@ interface Form {
 }
 
 type SortDir = "asc" | "desc"
-type TabType = "table" | "summary"
+type TabType = "table" | "summary" | "ai"
 
 // ---------------------------------------------------------------------------
 // Constants — Google Forms color palette
@@ -1256,7 +1259,55 @@ export default function FormSubmissionsPage() {
   const [sortDir, setSortDir] = useState<SortDir>("desc")
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [detailId, setDetailId] = useState<string | null>(null)
-  const [tab, setTab] = useState<TabType>("table")
+  const [tab, setTab] = useState<TabType>("summary")
+
+  // AI Analysis state
+  const [aiPrompt, setAiPrompt] = useState("")
+  const [aiResponse, setAiResponse] = useState("")
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiHistory, setAiHistory] = useState<{ prompt: string; response: string }[]>([])
+
+  const handleAiAnalyze = async (customPrompt?: string) => {
+    const prompt = customPrompt || aiPrompt.trim()
+    if (!prompt || aiLoading) return
+    setAiLoading(true)
+    setAiResponse("")
+    setAiPrompt("")
+
+    try {
+      const res = await fetch(`/api/forms/${formId}/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ prompt }),
+      })
+
+      if (!res.ok) {
+        const errText = await res.text()
+        setAiResponse(`Error: ${errText || "Failed to analyze"}`)
+        setAiLoading(false)
+        return
+      }
+
+      const reader = res.body?.getReader()
+      if (!reader) { setAiLoading(false); return }
+
+      const decoder = new TextDecoder()
+      let full = ""
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        full += chunk
+        setAiResponse(full)
+      }
+      setAiHistory((prev) => [...prev, { prompt, response: full }])
+    } catch {
+      setAiResponse("Error: Failed to connect to AI service.")
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   const fetchAll = useCallback(async () => {
     try {
@@ -1551,6 +1602,17 @@ export default function FormSubmissionsPage() {
                 <BarChart3 className="w-3.5 h-3.5 inline mr-1.5" />
                 Summary
               </button>
+              <button
+                onClick={() => setTab("ai")}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  tab === "ai"
+                    ? "bg-background shadow-sm font-medium"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 inline mr-1.5" />
+                AI Analysis
+              </button>
             </div>
             {tab === "table" && (
               <div className="relative w-64">
@@ -1749,6 +1811,119 @@ export default function FormSubmissionsPage() {
                   </p>
                   <p className="text-[13px] text-gray-500">
                     Summary will appear once you receive responses.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ============================================================= */}
+          {/* AI ANALYSIS TAB                                               */}
+          {/* ============================================================= */}
+          {tab === "ai" && (
+            <div className="space-y-5 max-w-4xl mx-auto">
+              {/* Header */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600">
+                    <Sparkles className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">AI Analysis</h2>
+                    <p className="text-[13px] text-gray-500">
+                      Ask questions about your {submissions.length} response{submissions.length !== 1 ? "s" : ""} — get tailored insights
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick prompts */}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  "Summarize the key findings from all responses",
+                  "What are the top 3 trends in this data?",
+                  "Identify the most common responses and outliers",
+                  "What actionable recommendations can you draw?",
+                  "Compare and contrast the different respondent profiles",
+                ].map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => handleAiAnalyze(q)}
+                    disabled={aiLoading}
+                    className="text-[13px] px-3 py-1.5 rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors disabled:opacity-50"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+
+              {/* Chat input */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-3">
+                <form
+                  onSubmit={(e) => { e.preventDefault(); handleAiAnalyze() }}
+                  className="flex items-end gap-2"
+                >
+                  <textarea
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault()
+                        handleAiAnalyze()
+                      }
+                    }}
+                    placeholder="Ask anything about your form responses..."
+                    rows={2}
+                    className="flex-1 resize-none border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                    disabled={aiLoading}
+                  />
+                  <button
+                    type="submit"
+                    disabled={aiLoading || !aiPrompt.trim()}
+                    className="p-2.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                  >
+                    {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </button>
+                </form>
+              </div>
+
+              {/* AI Response */}
+              {(aiResponse || aiLoading) && (
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4 text-indigo-600" />
+                    <span className="text-sm font-medium text-gray-900">AI Response</span>
+                    {aiLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500" />}
+                  </div>
+                  <div className="prose prose-sm max-w-none text-gray-700 [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_h1]:font-bold [&_h2]:font-semibold [&_h3]:font-semibold [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-4 [&_p]:mb-2 [&_h1]:mb-2 [&_h2]:mb-2 [&_h2]:mt-4 [&_h3]:mb-1 [&_h3]:mt-3 [&_strong]:font-semibold whitespace-pre-wrap">
+                    {aiResponse || "Analyzing your data..."}
+                  </div>
+                </div>
+              )}
+
+              {/* Previous analyses */}
+              {aiHistory.length > 1 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium text-gray-500">Previous analyses</h3>
+                  {aiHistory.slice(0, -1).reverse().map((item, i) => (
+                    <details key={i} className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                      <summary className="px-4 py-3 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50">
+                        {item.prompt}
+                      </summary>
+                      <div className="px-4 pb-4 pt-1 prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap border-t border-gray-100">
+                        {item.response}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              )}
+
+              {submissions.length === 0 && (
+                <div className="bg-white rounded-lg border border-gray-200 p-12 text-center shadow-sm">
+                  <Sparkles className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                  <p className="font-medium text-gray-900 mb-1">No data yet</p>
+                  <p className="text-[13px] text-gray-500">
+                    AI analysis will be available once you receive responses.
                   </p>
                 </div>
               )}

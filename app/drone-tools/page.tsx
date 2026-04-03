@@ -2,6 +2,7 @@
 
 import { Suspense } from "react"
 import { HubLayout, type HubTab } from "@/components/hub-layout"
+import { useAuth } from "@/lib/auth-context"
 import { Plane, BookMarked, Map, CloudSun, AlertTriangle, Award } from "lucide-react"
 import dynamic from "next/dynamic"
 
@@ -20,9 +21,9 @@ function TabLoading() {
   )
 }
 
-const TABS: HubTab[] = [
-  { id: "fleet", label: "My Fleet", icon: Plane, href: "/equipment" },
-  { id: "logbook", label: "Logbook", icon: BookMarked, href: "/logbook" },
+const ALL_TABS: (HubTab & { authOnly?: boolean })[] = [
+  { id: "fleet", label: "My Fleet", icon: Plane, href: "/equipment", authOnly: true },
+  { id: "logbook", label: "Logbook", icon: BookMarked, href: "/logbook", authOnly: true },
   { id: "airspace", label: "Airspace", icon: Map, href: "/airspace" },
   { id: "weather", label: "Weather", icon: CloudSun, href: "/weather" },
   { id: "safety", label: "Safety", icon: AlertTriangle, href: "/safety" },
@@ -30,9 +31,13 @@ const TABS: HubTab[] = [
 ]
 
 export default function DroneToolsPage() {
+  const { user } = useAuth()
+  const tabs = ALL_TABS.filter((t) => !t.authOnly || user)
+  const defaultTab = user ? "fleet" : "airspace"
+
   return (
     <Suspense fallback={<TabLoading />}>
-      <HubLayout title="Drone Tools" tabs={TABS} defaultTab="fleet">
+      <HubLayout title="Drone Tools" tabs={tabs} defaultTab={defaultTab}>
         {(activeTab) => (
           <>
             {activeTab === "fleet" && <FleetContent />}

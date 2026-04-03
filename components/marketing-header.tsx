@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context"
 import {
   X, Menu, Search,
   MessageSquare, Award,
-  User, Settings, LogOut, ClipboardList,
+  User, Settings, LogOut,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { NotificationBell } from "@/components/notification-bell"
@@ -181,7 +181,6 @@ export function MarketingHeader() {
                       {[
                         { href: "/account?tab=profile", icon: User, label: "My Profile", desc: "Personal details & account settings" },
                         { href: "/messages", icon: MessageSquare, label: "Messaging", desc: "Conversations & direct messages" },
-                        { href: "/account?tab=content", icon: ClipboardList, label: "My Content", desc: "Posts, projects & events" },
                       ].map(({ href, icon: Icon, label, desc }: any) => (
                         <Link key={href} href={href} onClick={() => setProfileOpen(false)}
                           style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 10px", borderRadius: 8, textDecoration: "none" }}
