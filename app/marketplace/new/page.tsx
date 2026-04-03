@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { ArrowLeft, Loader2, ImagePlus, Info } from 'lucide-react'
+import { ArrowLeft, Loader2, ImagePlus, X, Upload } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -52,6 +52,8 @@ export default function NewListingPage() {
   const router = useRouter()
 
   const [submitting, setSubmitting] = useState(false)
+  const [images, setImages] = useState<{ url: string; preview: string }[]>([])
+  const [uploading, setUploading] = useState(false)
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -74,6 +76,55 @@ export default function NewListingPage() {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    if (images.length + files.length > 5) {
+      toast.error('Maximum 5 images allowed')
+      return
+    }
+
+    setUploading(true)
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`${file.name} is not an image`)
+        continue
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`${file.name} is too large (max 5MB)`)
+        continue
+      }
+
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'marketplace')
+      formData.append('entityId', 'listing')
+      formData.append('subfolder', 'images')
+
+      try {
+        const res = await fetch('/api/upload', { method: 'POST', body: formData })
+        if (res.ok) {
+          const data = await res.json()
+          setImages((prev) => [...prev, { url: data.fileUrl, preview: URL.createObjectURL(file) }])
+        } else {
+          const err = await res.json()
+          toast.error(err.error || 'Failed to upload image')
+        }
+      } catch {
+        toast.error(`Failed to upload ${file.name}`)
+      }
+    }
+    setUploading(false)
+    e.target.value = ''
+  }
+
+  const removeImage = (index: number) => {
+    setImages((prev) => {
+      URL.revokeObjectURL(prev[index].preview)
+      return prev.filter((_, i) => i !== index)
+    })
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.title || !form.description || !form.category || !form.condition || !form.price) {
@@ -89,7 +140,7 @@ export default function NewListingPage() {
         body: JSON.stringify({
           ...form,
           location: form.location || undefined,
-          images: [],
+          images: images.map((img) => img.url),
         }),
       })
 
@@ -279,20 +330,53 @@ export default function NewListingPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-dashed">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-full bg-muted">
-                <ImagePlus className="h-5 w-5 text-muted-foreground" />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Images</CardTitle>
+            <CardDescription>Add up to 5 photos of your item. The first image will be the cover.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {images.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                {images.map((img, i) => (
+                  <div key={i} className="relative group aspect-square rounded-lg overflow-hidden border">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={img.preview} alt={`Upload ${i + 1}`} className="h-full w-full object-cover" />
+                    {i === 0 && (
+                      <span className="absolute top-1 left-1 text-[10px] font-semibold bg-primary text-primary-foreground px-1.5 py-0.5 rounded">Cover</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      className="absolute top-1 right-1 p-0.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
               </div>
-              <div>
-                <p className="font-medium text-sm">Images</p>
-                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                  <Info className="h-3 w-3" />
-                  Image upload can be done from your profile settings. You can update your listing after creation.
-                </p>
-              </div>
-            </div>
+            )}
+            {images.length < 5 && (
+              <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg p-6 cursor-pointer hover:border-primary/40 hover:bg-muted/50 transition-colors">
+                {uploading ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                ) : (
+                  <ImagePlus className="h-8 w-8 text-muted-foreground" />
+                )}
+                <span className="text-sm text-muted-foreground">
+                  {uploading ? 'Uploading...' : 'Click to add photos'}
+                </span>
+                <span className="text-xs text-muted-foreground">JPEG, PNG, WebP — max 5MB each</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  onChange={handleImageUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
+            )}
           </CardContent>
         </Card>
 

@@ -14,7 +14,7 @@ import { realpath, lstat } from 'fs/promises'
 /**
  * Allowed upload types - whitelist approach
  */
-export const ALLOWED_UPLOAD_TYPES = ['projects', 'events', 'forum', 'opportunity', 'forms', 'general'] as const
+export const ALLOWED_UPLOAD_TYPES = ['projects', 'events', 'forum', 'opportunity', 'forms', 'marketplace', 'general'] as const
 export const ALLOWED_SUBFOLDERS = ['images', 'resources', 'files'] as const
 
 /**

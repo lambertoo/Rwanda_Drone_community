@@ -1,102 +1,36 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import {
-  X, ChevronDown, Menu, Search,
-  MessageSquare, Camera, Calendar, Trophy, Users, BookOpen,
-  Map, CloudSun, AlertTriangle, Plane, BookMarked, Award,
-  Briefcase, Wrench, ShoppingBag,
-  Bell, User, Settings, Shield, LogOut, ClipboardList,
-  Compass, GraduationCap, Newspaper,
+  X, Menu, Search,
+  MessageSquare, Award,
+  User, Settings, LogOut, ClipboardList,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { NotificationBell } from "@/components/notification-bell"
 import { MessageBadge } from "@/components/messages/message-badge"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 
 /* ── Nav data ────────────────────────────────────────────── */
-interface NavItem {
-  label: string
-  desc: string
-  href: string
-  icon: any
-  authOnly?: boolean
-}
-
-interface NavSection {
-  label: string
-  href?: string
-  items: NavItem[]
-}
-
-const NAV: NavSection[] = [
-  {
-    label: "Community",
-    href: "/community",
-    items: [
-      { label: "Forum", desc: "Discussions & knowledge sharing.", href: "/community?tab=forum", icon: MessageSquare },
-      { label: "Projects", desc: "Explore drone projects.", href: "/community?tab=projects", icon: Camera },
-      { label: "Events", desc: "Workshops, meetups & conferences.", href: "/community?tab=events", icon: Calendar },
-      { label: "News", desc: "Latest drone industry news.", href: "/community?tab=news", icon: Newspaper },
-      { label: "Opportunities", desc: "Jobs, grants & programmes.", href: "/community?tab=opportunities", icon: Briefcase },
-      { label: "Directory", desc: "Find pilots, clubs & providers.", href: "/community?tab=directory", icon: Users },
-    ],
-  },
-  {
-    label: "Know-How",
-    href: "/know-how",
-    items: [
-      { label: "Courses", desc: "Training and certification pathways.", href: "/know-how?tab=courses", icon: GraduationCap },
-      { label: "My Courses", desc: "Continue your learning.", href: "/know-how?tab=my-courses", icon: BookOpen, authOnly: true },
-      { label: "Mentorship", desc: "Connect with industry mentors.", href: "/know-how?tab=mentorship", icon: Users },
-      { label: "Resources", desc: "Guides, reports & reference docs.", href: "/know-how?tab=resources", icon: BookOpen },
-    ],
-  },
-  {
-    label: "Drone Tools",
-    href: "/drone-tools",
-    items: [
-      { label: "My Fleet", desc: "Manage your drone equipment.", href: "/drone-tools?tab=fleet", icon: Plane, authOnly: true },
-      { label: "Flight Logbook", desc: "Record and track your flights.", href: "/drone-tools?tab=logbook", icon: BookMarked, authOnly: true },
-      { label: "Airspace Map", desc: "Rwanda airspace zones & restrictions.", href: "/drone-tools?tab=airspace", icon: Map },
-      { label: "Weather", desc: "Live METARs and flight-safety weather.", href: "/drone-tools?tab=weather", icon: CloudSun },
-      { label: "Safety Center", desc: "Incident reports & safety guidelines.", href: "/drone-tools?tab=safety", icon: AlertTriangle },
-      { label: "Compliance", desc: "Permits and regulatory compliance.", href: "/drone-tools?tab=compliance", icon: Award, authOnly: true },
-    ],
-  },
-  {
-    label: "Marketplace",
-    href: "/marketplace",
-    items: [],
-  },
+const NAV = [
+  { label: "Community", href: "/community" },
+  { label: "Know-How", href: "/know-how" },
+  { label: "Drone Tools", href: "/drone-tools" },
+  { label: "Marketplace", href: "/marketplace" },
 ]
 
 export function MarketingHeader() {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
-  const [mobileExpanded, setMobileExpanded] = useState<string | null>(null)
   const [pendingCount, setPendingCount] = useState(0)
   const [profileOpen, setProfileOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
-  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
   const { user, logout } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
-
-  const handleDropdownEnter = (label: string) => {
-    if (leaveTimer.current) clearTimeout(leaveTimer.current)
-    setOpenDropdown(label)
-    setProfileOpen(false)
-  }
-  const handleDropdownLeave = () => {
-    leaveTimer.current = setTimeout(() => setOpenDropdown(null), 150)
-  }
 
   const isActive = (href?: string) =>
     !!href && (pathname === href || (href !== "/" && pathname.startsWith(href.split("?")[0])))
@@ -126,10 +60,6 @@ export function MarketingHeader() {
     ? user.fullName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : ""
 
-  // Filter nav items by auth
-  const getVisibleItems = (items: NavItem[]) =>
-    items.filter(item => !item.authOnly || user)
-
   return (
     <header className="mk-site-header" style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
       <div className="mk-header-inner">
@@ -140,72 +70,15 @@ export function MarketingHeader() {
 
         {/* Desktop nav */}
         <nav className="mk-nav" aria-label="Main navigation">
-          {NAV.map(section => {
-            const visibleItems = getVisibleItems(section.items)
-            // Direct link (no dropdown) for items with no sub-items
-            if (visibleItems.length === 0) {
-              return (
-                <Link
-                  key={section.label}
-                  href={section.href || "/"}
-                  className={`mk-nav__link${isActive(section.href) ? " is-active" : ""}`}
-                >
-                  {section.label}
-                </Link>
-              )
-            }
-
-            return (
-              <div
-                key={section.label}
-                style={{ position: "relative" }}
-                onMouseEnter={() => handleDropdownEnter(section.label)}
-                onMouseLeave={handleDropdownLeave}
-              >
-                <Link
-                  href={section.href || "/"}
-                  className={`mk-nav__link${isActive(section.href) ? " is-active" : ""}`}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
-                >
-                  {section.label} <ChevronDown size={12} style={{ opacity: 0.5 }} />
-                </Link>
-
-                {openDropdown === section.label && (
-                  <div style={{
-                    position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)",
-                    paddingTop: 8, zIndex: 60,
-                  }}>
-                    <div style={{
-                      background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)",
-                      borderRadius: 16, padding: 8,
-                      boxShadow: "0 12px 40px rgba(0,34,68,0.12), 0 2px 8px rgba(0,0,0,0.06)",
-                      border: "1px solid rgba(0,51,102,0.08)",
-                      display: "grid",
-                      gridTemplateColumns: visibleItems.length > 3 ? "1fr 1fr" : "1fr",
-                      gap: 2,
-                      minWidth: visibleItems.length > 3 ? 480 : 280,
-                    }}>
-                      {visibleItems.map(item => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setOpenDropdown(null)}
-                          className="hover:bg-[#f4f6fb] transition-colors"
-                          style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", borderRadius: 10, textDecoration: "none" }}
-                        >
-                          <item.icon size={15} color="#0066B3" style={{ marginTop: 3, flexShrink: 0 }} />
-                          <div>
-                            <div style={{ fontWeight: 600, fontSize: 13, color: "#003366", lineHeight: 1.2 }}>{item.label}</div>
-                            <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2, lineHeight: 1.3 }}>{item.desc}</div>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
+          {NAV.map(section => (
+            <Link
+              key={section.label}
+              href={section.href}
+              className={`mk-nav__link${isActive(section.href) ? " is-active" : ""}`}
+            >
+              {section.label}
+            </Link>
+          ))}
         </nav>
 
         {/* Right actions */}
@@ -304,12 +177,11 @@ export function MarketingHeader() {
                         )}
                       </div>
 
-                      {/* Main menu — clean, 5 items max */}
+                      {/* Main menu */}
                       {[
-                        { href: "/account?tab=profile", icon: User, label: "My Profile", desc: "Edit profile, privacy & security" },
-                        { href: "/messages", icon: MessageSquare, label: "Messaging Center", desc: "Conversations & direct messages" },
-                        { href: "/account?tab=content", icon: ClipboardList, label: "My Content", desc: "Forms, posts, projects & events" },
-                        { href: "/drone-tools", icon: Plane, label: "Drone Tools", desc: "Fleet, logbook & compliance" },
+                        { href: "/account?tab=profile", icon: User, label: "My Profile", desc: "Personal details & account settings" },
+                        { href: "/messages", icon: MessageSquare, label: "Messaging", desc: "Conversations & direct messages" },
+                        { href: "/account?tab=content", icon: ClipboardList, label: "My Content", desc: "Posts, projects & events" },
                       ].map(({ href, icon: Icon, label, desc }: any) => (
                         <Link key={href} href={href} onClick={() => setProfileOpen(false)}
                           style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 10px", borderRadius: 8, textDecoration: "none" }}
@@ -402,57 +274,20 @@ export function MarketingHeader() {
               </button>
             </div>
 
-            {NAV.map(section => {
-              const visibleItems = getVisibleItems(section.items)
-              if (visibleItems.length === 0) {
-                return (
-                  <Link
-                    key={section.label}
-                    href={section.href || "/"}
-                    onClick={() => setMobileOpen(false)}
-                    style={{
-                      display: "block", padding: "11px 16px",
-                      fontSize: 14, fontWeight: 600, color: "#0f172a", textDecoration: "none",
-                      borderBottom: "1px solid rgba(0,51,102,0.06)",
-                    }}
-                  >
-                    {section.label}
-                  </Link>
-                )
-              }
-              return (
-                <div key={section.label}>
-                  <button
-                    onClick={() => setMobileExpanded(mobileExpanded === section.label ? null : section.label)}
-                    style={{
-                      width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-                      padding: "11px 16px", background: "none", border: "none", cursor: "pointer",
-                      fontSize: 14, fontWeight: 600, color: "#0f172a", textAlign: "left",
-                      borderBottom: "1px solid rgba(0,51,102,0.06)",
-                    }}
-                  >
-                    {section.label}
-                    <ChevronDown size={14} style={{ opacity: 0.5, transform: mobileExpanded === section.label ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
-                  </button>
-                  {mobileExpanded === section.label && visibleItems.map(item => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 10,
-                        padding: "9px 16px 9px 32px",
-                        fontSize: 13, color: "#374151", textDecoration: "none",
-                        borderBottom: "1px solid rgba(0,51,102,0.04)",
-                      }}
-                    >
-                      <item.icon size={14} color="#0066B3" />
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              )
-            })}
+            {NAV.map(section => (
+              <Link
+                key={section.label}
+                href={section.href}
+                onClick={() => setMobileOpen(false)}
+                style={{
+                  display: "block", padding: "11px 16px",
+                  fontSize: 14, fontWeight: 600, color: "#0f172a", textDecoration: "none",
+                  borderBottom: "1px solid rgba(0,51,102,0.06)",
+                }}
+              >
+                {section.label}
+              </Link>
+            ))}
 
             {user ? (
               <div style={{ padding: "12px 16px" }}>
