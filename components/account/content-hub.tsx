@@ -21,7 +21,7 @@ interface MyProject {
 interface MyEvent {
   id: string; title: string; description: string; startDate: string; endDate: string
   location: string; isPublic: boolean; createdAt: string
-  _count: { participants: number }
+  _count: { rsvps: number }
 }
 
 const SUB_TABS = [
@@ -209,7 +209,7 @@ export default function ContentHub() {
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                         <span>{formatDate(e.startDate)}</span>
                         <span>{e.location}</span>
-                        <span className="flex items-center gap-0.5"><Users className="h-3 w-3" />{e._count.participants}</span>
+                        <span className="flex items-center gap-0.5"><Users className="h-3 w-3" />{e._count.rsvps}</span>
                       </div>
                     </div>
                     <Badge variant={new Date(e.startDate) > new Date() ? "default" : "secondary"} className="shrink-0 text-[10px]">

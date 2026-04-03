@@ -43,15 +43,15 @@ export async function GET(request: NextRequest) {
         select: {
           id: true, title: true, description: true, startDate: true, endDate: true,
           location: true, isPublic: true, createdAt: true,
-          _count: { select: { participants: true } },
+          _count: { select: { rsvps: true } },
         },
         orderBy: { startDate: 'desc' },
       }),
     ])
 
     return NextResponse.json({ forms, posts, projects, events })
-  } catch (error) {
-    console.error('Error fetching my content:', error)
-    return NextResponse.json({ error: 'Failed to fetch content' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Error fetching my content:', error?.message || error)
+    return NextResponse.json({ error: error?.message || 'Failed to fetch content' }, { status: 500 })
   }
 }
