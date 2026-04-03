@@ -86,7 +86,7 @@ interface Form {
 }
 
 type SortDir = "asc" | "desc"
-type TabType = "table" | "summary" | "ai"
+type TabType = "analytics" | "table" | "ai"
 
 // ---------------------------------------------------------------------------
 // Constants — Google Forms color palette
@@ -1259,17 +1259,21 @@ export default function FormSubmissionsPage() {
   const [sortDir, setSortDir] = useState<SortDir>("desc")
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [detailId, setDetailId] = useState<string | null>(null)
-  const [tab, setTab] = useState<TabType>("summary")
+  const [tab, setTab] = useState<TabType>("analytics")
 
   // AI Analysis state
   const [aiPrompt, setAiPrompt] = useState("")
+  const [aiAssumption, setAiAssumption] = useState("")
   const [aiResponse, setAiResponse] = useState("")
   const [aiLoading, setAiLoading] = useState(false)
   const [aiHistory, setAiHistory] = useState<{ prompt: string; response: string }[]>([])
 
   const handleAiAnalyze = async (customPrompt?: string) => {
-    const prompt = customPrompt || aiPrompt.trim()
-    if (!prompt || aiLoading) return
+    const basePrompt = customPrompt || aiPrompt.trim()
+    if (!basePrompt || aiLoading) return
+    const prompt = aiAssumption.trim()
+      ? `Context/Assumptions: ${aiAssumption.trim()}\n\nQuestion: ${basePrompt}`
+      : basePrompt
     setAiLoading(true)
     setAiResponse("")
     setAiPrompt("")
@@ -1581,6 +1585,17 @@ export default function FormSubmissionsPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex gap-1 bg-muted rounded-lg p-1">
               <button
+                onClick={() => setTab("analytics")}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  tab === "analytics"
+                    ? "bg-background shadow-sm font-medium"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5 inline mr-1.5" />
+                Analytics
+              </button>
+              <button
                 onClick={() => setTab("table")}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                   tab === "table"
@@ -1589,18 +1604,7 @@ export default function FormSubmissionsPage() {
                 }`}
               >
                 <FileText className="w-3.5 h-3.5 inline mr-1.5" />
-                Responses
-              </button>
-              <button
-                onClick={() => setTab("summary")}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  tab === "summary"
-                    ? "bg-background shadow-sm font-medium"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <BarChart3 className="w-3.5 h-3.5 inline mr-1.5" />
-                Summary
+                Table
               </button>
               <button
                 onClick={() => setTab("ai")}
@@ -1611,7 +1615,7 @@ export default function FormSubmissionsPage() {
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5 inline mr-1.5" />
-                AI Analysis
+                AI Powered
               </button>
             </div>
             {tab === "table" && (
@@ -1628,7 +1632,7 @@ export default function FormSubmissionsPage() {
           </div>
 
           {/* ============================================================= */}
-          {/* RESPONSES TABLE TAB                                           */}
+          {/* TABLE TAB                                                     */}
           {/* ============================================================= */}
           {tab === "table" && (
             <>
@@ -1765,9 +1769,9 @@ export default function FormSubmissionsPage() {
           )}
 
           {/* ============================================================= */}
-          {/* SUMMARY TAB — Google Forms Style                              */}
+          {/* ANALYTICS TAB                                                 */}
           {/* ============================================================= */}
-          {tab === "summary" && (
+          {tab === "analytics" && (
             <div className="space-y-5">
               {/* Big response count header */}
               {submissions.length > 0 && (
@@ -1818,7 +1822,7 @@ export default function FormSubmissionsPage() {
           )}
 
           {/* ============================================================= */}
-          {/* AI ANALYSIS TAB                                               */}
+          {/* AI POWERED TAB                                                */}
           {/* ============================================================= */}
           {tab === "ai" && (
             <div className="space-y-5 max-w-4xl mx-auto">
@@ -1829,12 +1833,29 @@ export default function FormSubmissionsPage() {
                     <Sparkles className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">AI Analysis</h2>
+                    <h2 className="text-lg font-semibold text-gray-900">AI Powered Responses</h2>
                     <p className="text-[13px] text-gray-500">
-                      Ask questions about your {submissions.length} response{submissions.length !== 1 ? "s" : ""} — get tailored insights
+                      Analyze your {submissions.length} response{submissions.length !== 1 ? "s" : ""} with custom assumptions and questions
                     </p>
                   </div>
                 </div>
+              </div>
+
+              {/* Custom assumption / context */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Custom Assumption / Context
+                </label>
+                <textarea
+                  value={aiAssumption}
+                  onChange={(e) => setAiAssumption(e.target.value)}
+                  placeholder="e.g. Assume this survey targets UAS operators in East Africa. Focus on organizations with 10+ employees. Consider the regulatory environment of Rwanda..."
+                  rows={3}
+                  className="w-full resize-none border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                />
+                <p className="text-xs text-gray-400 mt-1.5">
+                  Set context or assumptions to tailor the AI analysis to your specific needs
+                </p>
               </div>
 
               {/* Quick prompts */}
@@ -1872,7 +1893,7 @@ export default function FormSubmissionsPage() {
                         handleAiAnalyze()
                       }
                     }}
-                    placeholder="Ask anything about your form responses..."
+                    placeholder="Ask a question about your responses..."
                     rows={2}
                     className="flex-1 resize-none border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
                     disabled={aiLoading}
