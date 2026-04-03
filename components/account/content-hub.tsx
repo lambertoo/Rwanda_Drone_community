@@ -11,9 +11,8 @@ interface MyForms {
   createdAt: string; updatedAt: string; _count: { entries: number }
 }
 interface MyPost {
-  id: string; title: string; content: string; status: string
-  createdAt: string; updatedAt: string; views: number
-  _count: { comments: number; likes: number }
+  id: string; title: string; content: string; isApproved: boolean
+  createdAt: string; updatedAt: string; viewsCount: number; repliesCount: number; likesCount: number
 }
 interface MyProject {
   id: string; title: string; description: string; status: string
@@ -21,7 +20,7 @@ interface MyProject {
 }
 interface MyEvent {
   id: string; title: string; description: string; startDate: string; endDate: string
-  location: string; status: string; createdAt: string
+  location: string; isPublic: boolean; createdAt: string
   _count: { participants: number }
 }
 
@@ -46,14 +45,17 @@ export default function ContentHub() {
 
   useEffect(() => {
     fetch("/api/my-content", { credentials: "include" })
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error("Failed to fetch")
+        return r.json()
+      })
       .then(data => {
         setForms(data.forms || [])
         setPosts(data.posts || [])
         setProjects(data.projects || [])
         setEvents(data.events || [])
       })
-      .catch(() => {})
+      .catch((err) => console.error("My content fetch error:", err))
       .finally(() => setLoading(false))
   }, [])
 
@@ -137,12 +139,12 @@ export default function ContentHub() {
                       <h3 className="font-medium text-sm truncate">{p.title}</h3>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                         <span>{formatDate(p.createdAt)}</span>
-                        <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" />{p.views}</span>
-                        <span className="flex items-center gap-0.5"><MessageSquare className="h-3 w-3" />{p._count.comments}</span>
+                        <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" />{p.viewsCount}</span>
+                        <span className="flex items-center gap-0.5"><MessageSquare className="h-3 w-3" />{p.repliesCount}</span>
                       </div>
                     </div>
-                    <Badge variant={p.status === "published" ? "default" : "secondary"} className="shrink-0 text-[10px]">
-                      {p.status}
+                    <Badge variant={p.isApproved ? "default" : "secondary"} className="shrink-0 text-[10px]">
+                      {p.isApproved ? "Published" : "Pending"}
                     </Badge>
                   </div>
                 </Link>
@@ -195,8 +197,8 @@ export default function ContentHub() {
                         <span className="flex items-center gap-0.5"><Users className="h-3 w-3" />{e._count.participants}</span>
                       </div>
                     </div>
-                    <Badge variant={e.status === "published" ? "default" : "secondary"} className="shrink-0 text-[10px]">
-                      {e.status}
+                    <Badge variant={new Date(e.startDate) > new Date() ? "default" : "secondary"} className="shrink-0 text-[10px]">
+                      {new Date(e.startDate) > new Date() ? "Upcoming" : "Past"}
                     </Badge>
                   </div>
                 </Link>

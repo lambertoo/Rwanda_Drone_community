@@ -22,12 +22,11 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { updatedAt: 'desc' },
       }),
-      prisma.post.findMany({
+      prisma.forumPost.findMany({
         where: { authorId: userId },
         select: {
-          id: true, title: true, content: true, status: true,
-          createdAt: true, updatedAt: true, views: true,
-          _count: { select: { comments: true, likes: true } },
+          id: true, title: true, content: true, isApproved: true,
+          createdAt: true, updatedAt: true, viewsCount: true, repliesCount: true, likesCount: true,
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -43,7 +42,7 @@ export async function GET(request: NextRequest) {
         where: { organizerId: userId },
         select: {
           id: true, title: true, description: true, startDate: true, endDate: true,
-          location: true, status: true, createdAt: true,
+          location: true, isPublic: true, createdAt: true,
           _count: { select: { participants: true } },
         },
         orderBy: { startDate: 'desc' },
