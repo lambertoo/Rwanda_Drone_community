@@ -170,15 +170,34 @@ export default function ListingDetailPage() {
     }
   }
 
-  const handleContact = () => {
+  const [contacting, setContacting] = useState(false)
+
+  const handleContact = async () => {
     if (!isAuthenticated) {
       toast.error('Please log in to contact sellers')
       return
     }
-    toast.info(
-      `Contact ${listing?.seller.fullName} (@${listing?.seller.username}) — Direct messaging coming soon!`,
-      { duration: 5000 }
-    )
+    if (!listing) return
+    setContacting(true)
+    try {
+      const res = await fetch('/api/messages/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ recipientId: listing.seller.id }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        router.push(`/messages?conversation=${data.conversationId}`)
+      } else {
+        const err = await res.json()
+        toast.error(err.error || 'Failed to start conversation')
+      }
+    } catch {
+      toast.error('Failed to contact seller')
+    } finally {
+      setContacting(false)
+    }
   }
 
   const handleDelete = async () => {
@@ -431,9 +450,9 @@ export default function ListingDetailPage() {
                 )}
               </div>
 
-              <Button onClick={handleContact} className="w-full" size="sm">
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Contact Seller
+              <Button onClick={handleContact} className="w-full" size="sm" disabled={contacting || isOwner}>
+                {contacting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />}
+                {isOwner ? 'Your Listing' : contacting ? 'Opening...' : 'Contact Seller'}
               </Button>
 
               <Link href={`/profile/${listing.seller.username}`} className="block">

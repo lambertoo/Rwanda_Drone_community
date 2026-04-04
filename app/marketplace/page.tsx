@@ -27,6 +27,8 @@ import {
   Wrench,
   Loader2,
   ShoppingBag,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -114,6 +116,7 @@ export default function MarketplacePage() {
 
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
+  const [viewMode, setViewMode] = useState<'general' | 'mine'>('general')
   const [activeTab, setActiveTab] = useState('all')
   const [search, setSearch] = useState('')
   const [condition, setCondition] = useState('all')
@@ -122,15 +125,13 @@ export default function MarketplacePage() {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [savingId, setSavingId] = useState<string | null>(null)
 
-  const fetchListings = async (tab: string) => {
+  const fetchListings = async (tab: string, mode?: string) => {
     setLoading(true)
+    const currentMode = mode ?? viewMode
     try {
       const params = new URLSearchParams()
-      if (tab === 'mine') {
-        params.set('my', 'true')
-      } else if (tab !== 'all') {
-        params.set('category', tab)
-      }
+      if (currentMode === 'mine') params.set('my', 'true')
+      if (tab !== 'all') params.set('category', tab)
       if (search) params.set('search', search)
       if (condition && condition !== 'all') params.set('condition', condition)
       if (minPrice) params.set('minPrice', minPrice)
@@ -149,11 +150,16 @@ export default function MarketplacePage() {
   }
 
   useEffect(() => {
-    fetchListings(activeTab)
-  }, [activeTab])
+    fetchListings(activeTab, viewMode)
+  }, [activeTab, viewMode])
 
   const handleSearch = () => {
-    fetchListings(activeTab)
+    fetchListings(activeTab, viewMode)
+  }
+
+  const switchView = (mode: 'general' | 'mine') => {
+    setViewMode(mode)
+    setActiveTab('all')
   }
 
   const handleSave = async (listingId: string, e: React.MouseEvent) => {
@@ -179,6 +185,22 @@ export default function MarketplacePage() {
       toast.error('Failed to save listing')
     } finally {
       setSavingId(null)
+    }
+  }
+
+  const handleDeleteListing = async (listingId: string, title: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return
+    try {
+      const res = await fetch(`/api/marketplace/${listingId}`, { method: 'DELETE', credentials: 'include' })
+      if (res.ok) {
+        toast.success('Listing deleted')
+        setListings((prev) => prev.filter((l) => l.id !== listingId))
+      } else {
+        toast.error('Failed to delete listing')
+      }
+    } catch {
+      toast.error('Failed to delete listing')
     }
   }
 
@@ -212,6 +234,34 @@ export default function MarketplacePage() {
           Sell Something
         </Button>
       </div>
+
+      {/* View toggle: General / My Listings */}
+      {isAuthenticated && (
+        <div className="flex gap-1 bg-muted rounded-lg p-1 w-fit">
+          <button
+            onClick={() => switchView('general')}
+            className={`px-4 py-2 text-sm rounded-md transition-colors ${
+              viewMode === 'general'
+                ? 'bg-background shadow-sm font-medium'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <ShoppingBag className="h-3.5 w-3.5 inline mr-1.5" />
+            All Listings
+          </button>
+          <button
+            onClick={() => switchView('mine')}
+            className={`px-4 py-2 text-sm rounded-md transition-colors ${
+              viewMode === 'mine'
+                ? 'bg-background shadow-sm font-medium'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Package className="h-3.5 w-3.5 inline mr-1.5" />
+            My Listings
+          </button>
+        </div>
+      )}
 
       {/* Search & Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
@@ -265,14 +315,9 @@ export default function MarketplacePage() {
               {cat.label}
             </TabsTrigger>
           ))}
-          {isAuthenticated && (
-            <TabsTrigger value="mine" className="text-xs sm:text-sm">
-              My Listings
-            </TabsTrigger>
-          )}
         </TabsList>
 
-        {[...CATEGORIES.map((c) => c.value), 'mine'].map((tab) => (
+        {CATEGORIES.map((c) => c.value).map((tab) => (
           <TabsContent key={tab} value={tab} className="mt-6">
             {loading ? (
               <div className="flex items-center justify-center py-20">
@@ -283,7 +328,7 @@ export default function MarketplacePage() {
                 <ShoppingBag className="h-16 w-16 text-muted-foreground/30 mx-auto" />
                 <h3 className="text-xl font-semibold">No listings found</h3>
                 <p className="text-muted-foreground">
-                  {tab === 'mine' ? 'You have no listings yet.' : 'Be the first to list something!'}
+                  {viewMode === 'mine' ? 'You have no listings yet.' : 'Be the first to list something!'}
                 </p>
                 <Button onClick={() => router.push('/marketplace/new')} variant="outline">
                   <Plus className="h-4 w-4 mr-2" />
@@ -373,11 +418,27 @@ export default function MarketplacePage() {
                           <Eye className="h-3 w-3" />
                           {listing.views} views
                         </div>
-                        <Link href={`/marketplace/${listing.id}`}>
-                          <Button size="sm" variant="default" className="h-7 text-xs">
-                            View Details
-                          </Button>
-                        </Link>
+                        <div className="flex items-center gap-1">
+                          {user && listing.seller.id === user.id && (
+                            <>
+                              <Link href={`/marketplace/${listing.id}`}>
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                              </Link>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={(e) => handleDeleteListing(listing.id, listing.title, e)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
+                          <Link href={`/marketplace/${listing.id}`}>
+                            <Button size="sm" variant="default" className="h-7 text-xs">
+                              View Details
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

@@ -197,13 +197,12 @@ export default function ResourcesPage() {
           <p className="text-sm text-muted-foreground">Essential documents, guides, and tutorials for drone operators in Rwanda</p>
         </div>
         {currentUser && (
-          <button
-            type="button"
-            onClick={() => setShowAddForm(v => !v)}
-            className="h-9 px-4 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700"
+          <a
+            href="/my-content?tab=resources"
+            className="h-9 px-4 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700 inline-flex items-center"
           >
-            {showAddForm ? "Cancel" : "Share Resource"}
-          </button>
+            Share Resource
+          </a>
         )}
       </div>
 

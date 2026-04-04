@@ -83,7 +83,17 @@ interface Form {
   id: string
   title: string
   description?: string
+  isActive?: boolean
+  isPublic?: boolean
+  settings?: any
   sections: FormSection[]
+}
+
+interface SheetStatus {
+  googleConnected: boolean
+  sheetLinked: boolean
+  spreadsheetId: string | null
+  spreadsheetUrl: string | null
 }
 
 type SortDir = "asc" | "desc"
@@ -1262,6 +1272,78 @@ export default function FormSubmissionsPage() {
   const [detailId, setDetailId] = useState<string | null>(null)
   const [tab, setTab] = useState<TabType>("analytics")
 
+  // Toolbar state (mirrors edit page)
+  const [emailEnabled, setEmailEnabled] = useState(false)
+  const [sheetStatus, setSheetStatus] = useState<SheetStatus | null>(null)
+  const [sheetLoading, setSheetLoading] = useState(false)
+
+  // Sync email toggle from form settings
+  useEffect(() => {
+    if (form?.settings?.notifyEmails && form.settings.notifyEmails.length > 0) {
+      setEmailEnabled(true)
+    } else {
+      setEmailEnabled(false)
+    }
+  }, [form?.settings?.notifyEmails])
+
+  // Fetch sheet status
+  useEffect(() => {
+    if (!formId) return
+    fetch(`/api/forms/${formId}/google-sheets`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setSheetStatus(d) })
+      .catch(() => {})
+  }, [formId])
+
+  const toggleAcceptResponses = async () => {
+    if (!form) return
+    try {
+      const newActive = !form.isActive
+      const res = await fetch(`/api/forms/${formId}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ isActive: newActive, isPublic: newActive }),
+      })
+      if (res.ok) setForm({ ...form, isActive: newActive, isPublic: newActive })
+    } catch {}
+  }
+
+  const toggleEmailNotifications = async () => {
+    if (!form) return
+    const newEnabled = !emailEnabled
+    try {
+      const updatedSettings = { ...(form.settings || {}) }
+      if (newEnabled) {
+        updatedSettings.notifyEmails = updatedSettings.notifyEmails?.length ? updatedSettings.notifyEmails : ['default']
+      } else {
+        delete updatedSettings.notifyEmails
+      }
+      const res = await fetch(`/api/forms/${formId}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ settings: updatedSettings }),
+      })
+      if (res.ok) { const updated = await res.json(); setForm(updated); setEmailEnabled(newEnabled) }
+    } catch {}
+  }
+
+  const connectGoogleAccount = () => { window.location.href = `/api/auth/google-sheets?formId=${formId}` }
+
+  const connectSheet = async () => {
+    setSheetLoading(true)
+    try {
+      const res = await fetch(`/api/forms/${formId}/google-sheets`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({}) })
+      if (res.ok) { const data = await res.json(); setSheetStatus({ googleConnected: true, sheetLinked: true, spreadsheetId: data.spreadsheetId, spreadsheetUrl: data.spreadsheetUrl }) }
+    } catch {} finally { setSheetLoading(false) }
+  }
+
+  const disconnectSheet = async () => {
+    if (!confirm('Disconnect Google Sheet?')) return
+    setSheetLoading(true)
+    try {
+      const res = await fetch(`/api/forms/${formId}/google-sheets`, { method: 'DELETE', credentials: 'include' })
+      if (res.ok) setSheetStatus(prev => prev ? { ...prev, sheetLinked: false, spreadsheetId: null, spreadsheetUrl: null } : null)
+    } catch {} finally { setSheetLoading(false) }
+  }
+
   // AI Analysis state
   const [aiPrompt, setAiPrompt] = useState("")
   const [aiAssumption, setAiAssumption] = useState("")
@@ -1340,6 +1422,9 @@ export default function FormSubmissionsPage() {
         id: formData.id,
         title: formData.title,
         description: formData.description,
+        isActive: formData.isActive,
+        isPublic: formData.isPublic,
+        settings: formData.settings,
         sections:
           formData.sections?.map((s: any) => ({
             id: s.id,
@@ -1535,57 +1620,144 @@ export default function FormSubmissionsPage() {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-white">
-        {/* Sticky toolbar — matches form edit page */}
+        {/* Sticky toolbar — same as form edit page */}
         <div className="sticky top-[57px] z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
           <div className="max-w-7xl mx-auto px-4 h-12 flex items-center justify-between gap-3">
-            {/* Left: Back + Title + Status */}
+
+            {/* ── Left: Back + Title + Status ── */}
             <div className="flex items-center gap-2.5 min-w-0">
               <button
                 onClick={() => router.push("/my-content")}
                 className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                aria-label="Back to forms"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
               </button>
+
               <span className="text-border/60 select-none">|</span>
+
               <h2 className="text-sm font-medium truncate max-w-[180px] sm:max-w-[280px]" title={form?.title}>
                 {form?.title || "Submissions"}
               </h2>
-              <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                {submissions.length} response{submissions.length !== 1 ? "s" : ""}
+
+              <span
+                className={`inline-flex items-center shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase ${
+                  form?.isActive
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                    : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                }`}
+              >
+                {form?.isActive ? 'Accepting responses' : 'Closed'}
               </span>
             </div>
-            {/* Right: Actions */}
+
+            {/* ── Right: Controls ── */}
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              {selected.size > 0 && (
-                <Button size="sm" variant="destructive" onClick={() => handleDelete(Array.from(selected))}>
-                  <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete ({selected.size})
-                </Button>
-              )}
-              <Button size="sm" variant="outline" onClick={exportCSV} disabled={processed.length === 0}>
-                <Download className="w-3.5 h-3.5 mr-1.5" /> Export CSV
-              </Button>
+
+              {/* Accept Responses toggle */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={toggleAcceptResponses}
+                  role="switch"
+                  aria-checked={form?.isActive}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                    form?.isActive ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                >
+                  <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${form?.isActive ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                </button>
+                <span className="text-[11px] text-muted-foreground hidden sm:inline whitespace-nowrap">
+                  {form?.isActive ? 'Active' : 'Closed'}
+                </span>
+              </div>
+
               <span className="w-px h-4 bg-border/60 hidden sm:block" />
-              <button
-                onClick={() => router.push(`/forms/${formId}/edit`)}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md hover:bg-muted transition-colors"
+
+              {/* Email Notifications toggle */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={toggleEmailNotifications}
+                  role="switch"
+                  aria-checked={emailEnabled}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                    emailEnabled ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                >
+                  <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${emailEnabled ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                </button>
+                <span className="text-[11px] text-muted-foreground hidden sm:inline whitespace-nowrap">
+                  Email alerts
+                </span>
+              </div>
+
+              <span className="w-px h-4 bg-border/60 hidden sm:block" />
+
+              {/* Google Sheets */}
+              {sheetStatus?.sheetLinked ? (
+                <div className="flex items-center gap-0.5">
+                  <a href={sheetStatus.spreadsheetUrl!} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30 transition-colors"
+                    title="Open linked Google Sheet"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M3 15h18M9 3v18" /></svg>
+                    Sheet
+                  </a>
+                  <button onClick={disconnectSheet} disabled={sheetLoading}
+                    className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50" title="Disconnect Google Sheet"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              ) : sheetStatus?.googleConnected ? (
+                <button onClick={connectSheet} disabled={sheetLoading}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border border-border hover:bg-muted transition-colors disabled:opacity-50"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M3 15h18M9 3v18" /></svg>
+                  {sheetLoading ? 'Creating...' : 'Create Sheet'}
+                </button>
+              ) : sheetStatus ? (
+                <button onClick={connectGoogleAccount}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border border-border hover:bg-muted transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                  Connect Google
+                </button>
+              ) : null}
+
+              {sheetStatus && <span className="w-px h-4 bg-border/60 hidden sm:block" />}
+
+              {/* Responses — current page, highlighted */}
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-muted">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <span className="hidden sm:inline">Responses</span>
+                <span className="tabular-nums">({submissions.length})</span>
+              </span>
+
+              {/* Preview */}
+              <button onClick={() => window.open(`/forms/public/${formId}`, '_blank')}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md hover:bg-muted transition-colors" title="Preview public form"
               >
-                <FileText className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Edit Form</span>
-              </button>
-              <button
-                onClick={() => window.open(`/forms/public/${formId}`, '_blank')}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md hover:bg-muted transition-colors"
-              >
-                <Eye className="w-3.5 h-3.5" />
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6m0 0v6m0-6L10 14" />
+                </svg>
                 <span className="hidden sm:inline">Preview</span>
               </button>
             </div>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          {/* Tabs + Search */}
-          <div className="flex items-center justify-between mb-4">
+        {/* Tabs bar — sticky below toolbar (57px header + 48px toolbar = 105px) */}
+        <div className="sticky top-[105px] z-30 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 border-b shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between">
             <div className="flex gap-1 bg-muted rounded-lg p-1">
               <button
                 onClick={() => setTab("analytics")}
@@ -1621,19 +1793,27 @@ export default function FormSubmissionsPage() {
                 AI Powered
               </button>
             </div>
-            {tab === "table" && (
-              <div className="relative w-64">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search responses..."
-                  className="pl-9 h-9"
-                />
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-gray-700 tabular-nums">
+                {submissions.length} response{submissions.length !== 1 ? "s" : ""}
+              </span>
+              {tab === "table" && (
+                <div className="relative w-56">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search responses..."
+                    className="pl-9 h-8 text-sm"
+                  />
+                </div>
+              )}
+            </div>
           </div>
+        </div>
 
+        <div className="h-8" />
+        <div className="max-w-7xl mx-auto px-4 py-4">
           {/* ============================================================= */}
           {/* TABLE TAB                                                     */}
           {/* ============================================================= */}
@@ -1776,16 +1956,6 @@ export default function FormSubmissionsPage() {
           {/* ============================================================= */}
           {tab === "analytics" && (
             <div className="space-y-5">
-              {/* Big response count header */}
-              {submissions.length > 0 && (
-                <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                  <h2 className="text-3xl font-bold text-gray-900">
-                    {submissions.length} response
-                    {submissions.length !== 1 ? "s" : ""}
-                  </h2>
-                </div>
-              )}
-
               {/* Response Timeline */}
               <ResponseTimeline submissions={submissions} />
 

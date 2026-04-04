@@ -147,3 +147,28 @@ export async function PUT(
     )
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const user = await getAuthenticatedUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const post = await prisma.forumPost.findUnique({ where: { id }, select: { authorId: true } })
+    if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+    if (post.authorId !== user.id && user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    await prisma.forumPost.delete({ where: { id } })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting forum post:', error)
+    return NextResponse.json({ error: 'Failed to delete post' }, { status: 500 })
+  }
+}

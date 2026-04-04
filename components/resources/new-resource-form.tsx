@@ -18,6 +18,7 @@ interface NewResourceFormProps {
 }
 
 export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
+  const [resourceType, setResourceType] = useState<'upload' | 'link'>('upload')
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -254,105 +255,127 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
           />
         </div>
 
-        {/* File Upload Section */}
+        {/* Resource Type Toggle */}
         <div className="space-y-4">
           <label className="block text-sm font-medium mb-2">
-            File *
+            Resource Source *
           </label>
-          
-          {/* File Upload Area */}
-          <div
-            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-              isDragOver 
-                ? "border-blue-500 bg-blue-50" 
-                : "border-border hover:border-gray-400"
-            }`}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-          >
-            {uploadedFile ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-center gap-2 text-green-600">
-                  <FileText className="h-8 w-8" />
-                  <span className="font-medium">{uploadedFile.name}</span>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {formatFileSize(uploadedFile.size)} • {detectFileType(uploadedFile.name)}
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={removeFile}
-                  className="text-red-600 hover:text-red-700"
-                  disabled={isUploading || isSubmitting}
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Remove File
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <CloudUpload className="h-12 w-12 mx-auto text-muted-foreground/70" />
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-medium text-blue-600">Click to upload</span> or drag and drop
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    PDF, Word, Excel, Video, Audio, Images (Max 100MB)
-                  </p>
-                </div>
-                <Input
-                  type="file"
-                  onChange={handleFileInput}
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mp4,.avi,.mov,.wmv,.mp3,.wav,.jpg,.jpeg,.png,.gif,.txt,.zip,.rar"
-                  className="hidden"
-                  id="file-upload"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => document.getElementById("file-upload")?.click()}
-                  disabled={isUploading || isSubmitting}
-                >
-                  {isUploading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Choose File
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
+          <div className="flex gap-1 bg-muted rounded-lg p-1 w-fit">
+            <button
+              type="button"
+              onClick={() => { setResourceType('upload'); removeFile(); handleInputChange('fileUrl', '') }}
+              className={`px-4 py-2 text-sm rounded-md transition-colors ${
+                resourceType === 'upload' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Upload className="h-3.5 w-3.5 inline mr-1.5" />
+              Upload File
+            </button>
+            <button
+              type="button"
+              onClick={() => { setResourceType('link'); removeFile() }}
+              className={`px-4 py-2 text-sm rounded-md transition-colors ${
+                resourceType === 'link' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <FileText className="h-3.5 w-3.5 inline mr-1.5" />
+              Add Link / URL
+            </button>
           </div>
 
-          {/* Or use URL */}
-          <div className="text-center">
-            <span className="text-sm text-muted-foreground">— or —</span>
-          </div>
-          
-          <div>
-            <label htmlFor="fileUrl" className="block text-sm font-medium mb-2">
-              File URL
-            </label>
-            <Input
-              id="fileUrl"
-              type="url"
-              value={formData.fileUrl}
-              onChange={(e) => handleInputChange("fileUrl", e.target.value)}
-              placeholder="https://example.com/file.pdf"
-              disabled={!!uploadedFile || isUploading}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Use this if you have a file hosted elsewhere
-            </p>
-          </div>
+          {resourceType === 'upload' ? (
+            /* File Upload Area */
+            <div
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                isDragOver
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-border hover:border-gray-400"
+              }`}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+            >
+              {uploadedFile ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center gap-2 text-green-600">
+                    <FileText className="h-8 w-8" />
+                    <span className="font-medium">{uploadedFile.name}</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {formatFileSize(uploadedFile.size)} • {detectFileType(uploadedFile.name)}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={removeFile}
+                    className="text-red-600 hover:text-red-700"
+                    disabled={isUploading || isSubmitting}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Remove File
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <CloudUpload className="h-12 w-12 mx-auto text-muted-foreground/70" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-medium text-blue-600">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      PDF, Word, Excel, Video, Audio, Images (Max 100MB)
+                    </p>
+                  </div>
+                  <Input
+                    type="file"
+                    onChange={handleFileInput}
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mp4,.avi,.mov,.wmv,.mp3,.wav,.jpg,.jpeg,.png,.gif,.txt,.zip,.rar"
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById("file-upload")?.click()}
+                    disabled={isUploading || isSubmitting}
+                  >
+                    {isUploading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Choose File
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Link / URL Input */
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="fileUrl" className="block text-sm font-medium mb-2">
+                  Resource URL *
+                </label>
+                <Input
+                  id="fileUrl"
+                  type="url"
+                  value={formData.fileUrl}
+                  onChange={(e) => handleInputChange("fileUrl", e.target.value)}
+                  placeholder="https://example.com/resource.pdf or https://example.com/article"
+                  required={resourceType === 'link'}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Paste a link to a downloadable file, article, guide, or any external resource
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -378,6 +401,8 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
                 <SelectItem value="Image">Image</SelectItem>
                 <SelectItem value="Text">Text</SelectItem>
                 <SelectItem value="Archive">Archive</SelectItem>
+                <SelectItem value="Article">Article / Blog</SelectItem>
+                <SelectItem value="Link">External Link</SelectItem>
                 <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
@@ -391,7 +416,7 @@ export function NewResourceForm({ onSuccess, onCancel }: NewResourceFormProps) {
               id="fileSize"
               value={formData.fileSize}
               onChange={(e) => handleInputChange("fileSize", e.target.value)}
-              placeholder="Auto-calculated"
+              placeholder={resourceType === 'link' ? "N/A for links" : "Auto-calculated"}
               disabled={!!uploadedFile}
             />
           </div>

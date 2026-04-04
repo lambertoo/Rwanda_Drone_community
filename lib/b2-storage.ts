@@ -9,6 +9,7 @@ import path from 'path'
 
 // B2 client - initialized lazily
 let b2Instance: B2 | null = null
+let b2DownloadUrl: string | null = null
 
 function getB2Config() {
   const keyId = process.env.B2_APPLICATION_KEY_ID || process.env.keyID
@@ -37,7 +38,8 @@ async function getB2Client(): Promise<B2> {
     applicationKey: appKey,
   })
 
-  await b2Instance.authorize()
+  const authResponse = await b2Instance.authorize()
+  b2DownloadUrl = authResponse.data.downloadUrl
   return b2Instance
 }
 
@@ -71,8 +73,8 @@ function getPublicUrl(storageKey: string): string {
     throw new Error('B2_BUCKET_NAME is required for public URLs')
   }
 
-  // B2 public URL format: https://f004.backblazeb2.com/file/{bucketName}/{fileName}
-  const endpoint = process.env.B2_PUBLIC_URL || 'https://f004.backblazeb2.com'
+  // B2 public URL format: https://f00X.backblazeb2.com/file/{bucketName}/{fileName}
+  const endpoint = process.env.B2_PUBLIC_URL || b2DownloadUrl || 'https://f003.backblazeb2.com'
   const baseUrl = endpoint.replace(/\/$/, '')
   return `${baseUrl}/file/${bucketName}/${storageKey}`
 }
