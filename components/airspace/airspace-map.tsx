@@ -23,7 +23,7 @@ const SEVERITY_COLOR: Record<string, string> = {
   blue: "#3b82f6",
 }
 
-const STATIC_ZONES: MapZone[] = [
+export const STATIC_ZONES: MapZone[] = [
   { name: "Kigali Intl Airport (HRYR)", lat: -1.9686, lon: 30.1395, radius: 5, color: "#ef4444", fillColor: "#ef4444", description: "5km full ban. CAA authorization required.", type: "airport", source: "static" },
   { name: "Kigali Airport 10km advisory", lat: -1.9686, lon: 30.1395, radius: 10, color: "#f97316", fillColor: "#f97316", description: "10km advisory zone. Prior notification required.", type: "advisory", source: "static" },
   { name: "Kamembe Airport (HRZA)", lat: -2.4620, lon: 28.9077, radius: 3, color: "#ef4444", fillColor: "#ef4444", description: "3km full ban.", type: "airport", source: "static" },
