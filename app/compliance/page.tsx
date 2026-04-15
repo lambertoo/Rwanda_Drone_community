@@ -179,16 +179,16 @@ export default function CompliancePage() {
           <CardHeader className="pb-3"><CardTitle className="text-base">Rwanda CAA Resources</CardTitle></CardHeader>
           <CardContent className="space-y-2">
             {[
-              { label: "Register Your Drone", href: "#" },
-              { label: "Apply for Pilot License", href: "#" },
-              { label: "Flight Authorization Application", href: "#" },
-              { label: "Regulations (PDF)", href: "#" },
+              { label: "Drone & Unmanned Aircraft portal", href: "https://caa.gov.rw/unmanned-aircraft" },
+              { label: "Register Your Drone", href: "https://caa.gov.rw/unmanned-aircraft" },
+              { label: "Apply for Pilot License", href: "https://caa.gov.rw/unmanned-aircraft" },
+              { label: "Flight Authorization Application", href: "https://caa.gov.rw/unmanned-aircraft" },
             ].map((r, i) => (
-              <a key={i} href={r.href} className="flex items-center gap-2 text-sm text-primary hover:underline">
+              <a key={i} href={r.href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
                 <ExternalLink className="h-3 w-3" />{r.label}
               </a>
             ))}
-            <p className="text-xs text-muted-foreground pt-1">Links will connect to official Rwanda CAA portal when integration is enabled</p>
+            <p className="text-xs text-muted-foreground pt-1">Official Rwanda CAA Unmanned Aircraft portal — registration, licensing, permits.</p>
           </CardContent>
         </Card>
       </div>

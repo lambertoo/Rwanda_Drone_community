@@ -60,7 +60,7 @@ export function HubLayout({ title, tabs, defaultTab, children }: HubLayoutProps)
       </div>
 
       {/* Content */}
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-8 sm:pt-12 pb-8 sm:pb-12">
         {children(activeTab)}
       </div>
     </div>

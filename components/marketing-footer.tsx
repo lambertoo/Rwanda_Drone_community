@@ -6,7 +6,7 @@ import Link from "next/link"
 const quickLinks = [
   { label: "RISA", href: "https://www.risa.gov.rw/" },
   { label: "RISA Drone Centre", href: "https://www.risa.gov.rw/projects/drone-operation-center-doc" },
-  { label: "CAA Rwanda", href: "https://www.caa.gov.rw/" },
+  { label: "CAA Rwanda — Unmanned Aircraft", href: "https://caa.gov.rw/unmanned-aircraft" },
   { label: "RURA", href: "https://www.rura.rw/" },
   { label: "MINICT", href: "https://www.minict.gov.rw/" },
   { label: "Rwanda National Police", href: "https://www.police.gov.rw/" },

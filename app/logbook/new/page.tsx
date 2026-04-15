@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
-import { ArrowLeft, BookOpen } from "lucide-react"
+import { ArrowLeft, BookOpen, Plane } from "lucide-react"
 
 interface Drone { id: string; name: string; model: string }
 
@@ -33,6 +33,7 @@ export default function NewFlightLogPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [drones, setDrones] = useState<Drone[]>([])
+  const [dronesLoaded, setDronesLoaded] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     droneId: "",
@@ -57,7 +58,9 @@ export default function NewFlightLogPage() {
   useEffect(() => {
     if (!user) return
     fetch("/api/drones", { credentials: "include" })
-      .then(r => r.json()).then(d => setDrones(d.drones || []))
+      .then(r => r.json())
+      .then(d => setDrones(d.drones || []))
+      .finally(() => setDronesLoaded(true))
   }, [user])
 
   const set = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }))
@@ -91,11 +94,11 @@ export default function NewFlightLogPage() {
           duration: duration ? Number(duration) : undefined,
           location: form.location,
           maxAltitude: form.maxAltitude ? Number(form.maxAltitude) : undefined,
-          distance: form.distance ? Number(form.distance) : undefined,
+          distanceTraveled: form.distance ? Number(form.distance) : undefined,
           purpose: form.purpose,
           weather: form.weather,
           notes: form.notes || undefined,
-          hasIncident: form.hasIncident,
+          incidentOccurred: form.hasIncident,
           incidentDescription: form.hasIncident ? form.incidentDescription : undefined,
         })
       })
@@ -126,6 +129,20 @@ export default function NewFlightLogPage() {
         </div>
       </div>
 
+      {dronesLoaded && drones.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 flex flex-col items-center text-center gap-3">
+            <Plane className="h-12 w-12 text-muted-foreground" />
+            <h3 className="text-lg font-semibold">Add a drone first</h3>
+            <p className="text-sm text-muted-foreground max-w-md">
+              Flight logs are tied to a drone. Register at least one drone in your fleet, then come back to log a flight.
+            </p>
+            <Link href="/equipment">
+              <Button>Go to Fleet</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      ) : (
       <Card>
         <CardHeader><CardTitle className="text-lg">Flight Details</CardTitle></CardHeader>
         <CardContent className="space-y-5">
@@ -231,6 +248,7 @@ export default function NewFlightLogPage() {
           </div>
         </CardContent>
       </Card>
+      )}
     </div>
   )
 }

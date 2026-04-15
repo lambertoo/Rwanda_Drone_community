@@ -296,6 +296,8 @@ export default function WeatherPage() {
   const [metarLoading, setMetarLoading] = useState(false)
   const [error, setError] = useState("")
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [gpsPermission, setGpsPermission] = useState<"unknown" | "granted" | "denied" | "prompt" | "unsupported">("unknown")
+  const [gpsBannerDismissed, setGpsBannerDismissed] = useState(false)
 
   const filteredDistricts = districtSearch
     ? RWANDA_DISTRICTS.filter(d => d.name.toLowerCase().includes(districtSearch.toLowerCase()))
@@ -367,6 +369,28 @@ export default function WeatherPage() {
   useEffect(() => { fetchWeather() }, [fetchWeather])
   useEffect(() => { fetchMetar() }, [fetchMetar])
 
+  // Probe geolocation permission on mount; auto-detect if already granted.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGpsPermission("unsupported")
+      return
+    }
+    const perms = (navigator as any).permissions
+    if (!perms?.query) {
+      setGpsPermission("prompt")
+      return
+    }
+    perms
+      .query({ name: "geolocation" as PermissionName })
+      .then((status: PermissionStatus) => {
+        setGpsPermission(status.state as any)
+        if (status.state === "granted") detectGPS()
+        status.onchange = () => setGpsPermission(status.state as any)
+      })
+      .catch(() => setGpsPermission("prompt"))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const getSafetyChecks = (w: WeatherData) => [
     { label: "Wind speed", pass: w.windSpeed < 40, value: `${w.windSpeed.toFixed(0)} km/h`, limit: "< 40 km/h" },
     { label: "Visibility (est.)", pass: w.visibilityKm >= 5, value: `${w.visibilityKm.toFixed(0)} km`, limit: "≥ 5 km" },
@@ -410,6 +434,35 @@ export default function WeatherPage() {
           </Button>
         </div>
       </div>
+
+      {/* GPS prompt banner */}
+      {!gpsBannerDismissed && (gpsPermission === "prompt" || gpsPermission === "unknown") && mode !== "gps" && (
+        <div className="rounded-lg border border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-start gap-2 text-sm">
+            <LocateFixed className="h-4 w-4 mt-0.5 text-blue-600 dark:text-blue-400 shrink-0" />
+            <p className="text-blue-900 dark:text-blue-200">
+              <strong>Enable GPS</strong> for weather at your exact flight location instead of the nearest district centroid.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setGpsBannerDismissed(true)}>
+              Not now
+            </Button>
+            <Button size="sm" onClick={detectGPS} disabled={gpsLoading}>
+              {gpsLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <LocateFixed className="h-3.5 w-3.5 mr-1.5" />}
+              Use my location
+            </Button>
+          </div>
+        </div>
+      )}
+      {gpsPermission === "denied" && !gpsBannerDismissed && (
+        <div className="rounded-lg border border-orange-300 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30 p-3 flex items-start justify-between gap-3 text-sm">
+          <p className="text-orange-900 dark:text-orange-200">
+            <strong>Location is blocked.</strong> To get weather at your exact flight site, allow location access in your browser settings, then reload.
+          </p>
+          <Button size="sm" variant="ghost" onClick={() => setGpsBannerDismissed(true)}>Dismiss</Button>
+        </div>
+      )}
 
       {/* Location selector */}
       <Card>

@@ -370,7 +370,7 @@ export default function AirspacePage() {
               <CardHeader><CardTitle className="text-base flex items-center gap-2"><Phone className="h-4 w-4" />Rwanda CAA</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <p className="text-muted-foreground">Civil Aviation Authority of Rwanda — drone registration, licensing, permits</p>
-                <p><strong>Website:</strong> caa.gov.rw</p>
+                <p><strong>Drone portal:</strong> <a href="https://caa.gov.rw/unmanned-aircraft" target="_blank" rel="noopener noreferrer" className="text-primary underline">caa.gov.rw/unmanned-aircraft</a></p>
                 <p><strong>Email:</strong> info@caa.gov.rw</p>
                 <p><strong>Phone:</strong> +250 788 177 000</p>
                 <p><strong>Location:</strong> Kigali International Airport</p>
@@ -453,10 +453,13 @@ export default function AirspacePage() {
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor="z-province">Province (optional)</Label>
-                      <Select value={form.province} onValueChange={v => setForm(f => ({ ...f, province: v }))}>
+                      <Select
+                        value={form.province || "__none"}
+                        onValueChange={v => setForm(f => ({ ...f, province: v === "__none" ? "" : v }))}
+                      >
                         <SelectTrigger id="z-province"><SelectValue placeholder="Select province" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">— Not specified —</SelectItem>
+                          <SelectItem value="__none">— Not specified —</SelectItem>
                           {PROVINCES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                         </SelectContent>
                       </Select>
@@ -506,6 +509,14 @@ export default function AirspacePage() {
                   </Button>
                 )}
               </div>
+              {user?.role === 'admin' && zones.length === 0 && (
+                <Alert className="mb-4">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    <strong>No zones in DB yet.</strong> The map is currently using built-in fallback zones (read-only). Click <em>Seed Rwanda default zones</em> above to copy all official airports, parks, and security zones into the database — then you'll be able to edit, deactivate, or delete each one from this tab.
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {zonesLoading ? (
                 <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}</div>

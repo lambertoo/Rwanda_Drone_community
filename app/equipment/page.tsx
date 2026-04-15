@@ -445,7 +445,7 @@ export default function EquipmentPage() {
                           <p className="text-xs text-yellow-800 dark:text-yellow-300">
                             This drone weighs {drone.weight}g and requires CAA registration.{' '}
                             <a
-                              href="https://www.caa.gov.rw"
+                              href="https://caa.gov.rw/unmanned-aircraft"
                               target="_blank"
                               rel="noopener noreferrer"
                               className="underline font-medium"
