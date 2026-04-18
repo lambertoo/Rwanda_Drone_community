@@ -257,6 +257,76 @@ function ThemeTab({ settings, update }: any) {
           </FieldRow>
         </div>
       </section>
+
+      <section>
+        <h3 className="text-sm font-semibold mb-2">Branch colours</h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Match keywords in a branching answer to a colour. The first rule whose keyword appears in the condition value wins.
+          Works in both the flow preview and the edit-mode accent stripes.
+        </p>
+        <BranchColorsEditor
+          value={Array.isArray(settings.branchColors) ? settings.branchColors : []}
+          onChange={(next) => update({ branchColors: next })}
+        />
+      </section>
+    </div>
+  )
+}
+
+function BranchColorsEditor({ value, onChange }: { value: any[]; onChange: (next: any[]) => void }) {
+  const palette = ['indigo', 'emerald', 'amber', 'rose', 'violet', 'slate', 'blue', 'purple', 'teal', 'cyan', 'pink', 'orange', 'lime']
+  const paletteBg: Record<string, string> = {
+    indigo: 'bg-indigo-500', emerald: 'bg-emerald-500', amber: 'bg-amber-500',
+    rose: 'bg-rose-500', violet: 'bg-violet-500', slate: 'bg-slate-500',
+    blue: 'bg-blue-500', purple: 'bg-purple-500', teal: 'bg-teal-500',
+    cyan: 'bg-cyan-500', pink: 'bg-pink-500', orange: 'bg-orange-500', lime: 'bg-lime-500',
+  }
+  const setAt = (i: number, patch: any) => {
+    const next = [...value]
+    next[i] = { ...next[i], ...patch }
+    onChange(next)
+  }
+  const removeAt = (i: number) => onChange(value.filter((_, j) => j !== i))
+  const addOne = () => onChange([...value, { match: '', label: '', color: 'indigo' }])
+  return (
+    <div className="space-y-2">
+      {value.length === 0 && (
+        <p className="text-xs italic text-muted-foreground">
+          No custom rules. Defaults (Upstream / Midstream / Downstream / Investor / End-user / Advocacy) apply automatically.
+        </p>
+      )}
+      {value.map((rule, i) => (
+        <div key={i} className="grid grid-cols-[1fr_1fr_auto_auto] gap-2 items-center">
+          <Input
+            value={rule.match || ''}
+            onChange={(e) => setAt(i, { match: e.target.value })}
+            placeholder="keyword to match (case-insensitive)"
+            className="text-xs"
+          />
+          <Input
+            value={rule.label || ''}
+            onChange={(e) => setAt(i, { label: e.target.value })}
+            placeholder="Display label (optional)"
+            className="text-xs"
+          />
+          <select
+            value={rule.color || 'indigo'}
+            onChange={(e) => setAt(i, { color: e.target.value })}
+            className="rounded-md border bg-background px-2 py-1 text-xs"
+          >
+            {palette.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <div className="flex items-center gap-2">
+            <span className={`h-5 w-5 rounded-full ${paletteBg[rule.color || 'indigo']}`} />
+            <Button type="button" size="icon" variant="ghost" onClick={() => removeAt(i)} aria-label="Remove">
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      ))}
+      <Button type="button" size="sm" variant="outline" onClick={addOne}>
+        <Plus className="h-3.5 w-3.5 mr-1.5" /> Add branch colour
+      </Button>
     </div>
   )
 }

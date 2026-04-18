@@ -1,10 +1,11 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowDown, ChevronDown, GitBranch, Layers, Lock, CornerDownRight } from 'lucide-react'
 import type { ActionRule, ConditionClause, ConditionGroup } from '@/lib/form-actions'
+import { pickBranchTheme, type BranchColorRule } from '@/lib/form-theme'
 
 interface FlowField {
   name: string
@@ -28,6 +29,7 @@ interface FormFlowViewProps {
     title: string
     description?: string | null
     sections: FlowSection[]
+    settings?: { branchColors?: BranchColorRule[] | null } | null
   }
 }
 
@@ -104,14 +106,9 @@ function buildFieldLabelMap(sections: FlowSection[]): Map<string, string> {
   return m
 }
 
-function branchTheme(clause: ConditionClause): { ring: string; bg: string; text: string; dot: string } {
-  const s = Array.isArray(clause.value) ? (clause.value as string[]).join(' ') : String(clause.value ?? '')
-  const key = s.toLowerCase()
-  if (key.includes('upstream')) return { ring: 'border-indigo-300', bg: 'bg-indigo-50 dark:bg-indigo-950/40', text: 'text-indigo-900 dark:text-indigo-200', dot: 'bg-indigo-500' }
-  if (key.includes('midstream')) return { ring: 'border-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/40', text: 'text-emerald-900 dark:text-emerald-200', dot: 'bg-emerald-500' }
-  if (key.includes('investor')) return { ring: 'border-amber-300', bg: 'bg-amber-50 dark:bg-amber-950/40', text: 'text-amber-900 dark:text-amber-200', dot: 'bg-amber-500' }
-  if (key.includes('downstream') || key.includes('end-user') || key.includes('advocacy')) return { ring: 'border-rose-300', bg: 'bg-rose-50 dark:bg-rose-950/40', text: 'text-rose-900 dark:text-rose-200', dot: 'bg-rose-500' }
-  return { ring: 'border-slate-300', bg: 'bg-slate-50 dark:bg-slate-900/40', text: 'text-slate-900 dark:text-slate-200', dot: 'bg-slate-500' }
+function branchTheme(clause: ConditionClause, rules?: BranchColorRule[] | null) {
+  const picked = pickBranchTheme(clause.value, rules)
+  return { ring: picked.theme.ring, bg: picked.theme.bg, text: picked.theme.text, dot: picked.theme.dot, label: picked.label }
 }
 
 function SectionNode({
@@ -125,39 +122,77 @@ function SectionNode({
   accentDot: string
   depth?: number
 }) {
+  const [expanded, setExpanded] = useState(false)
   const isNested = depth > 0
   const gate = primaryGate(section.actions)
   return (
     <div
-      className={`relative rounded-md border bg-background p-3 ${isNested ? 'border-dashed' : ''}`}
+      className={`relative rounded-md border bg-background ${isNested ? 'border-dashed' : ''}`}
       style={{ marginLeft: depth * 16 }}
     >
-      <div className="flex items-start gap-2">
-        <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${accentDot}`} />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium leading-tight">
-            {section.order}. {section.title}
-          </p>
-          {section.description && (
-            <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{section.description}</p>
-          )}
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            {section.fields.length} field{section.fields.length === 1 ? '' : 's'}
-          </p>
-          {isNested && gate && (
-            <div className="mt-1.5 flex items-start gap-1 rounded bg-muted/60 px-2 py-1 text-[11px] text-muted-foreground">
-              <CornerDownRight className="h-3 w-3 shrink-0 mt-0.5" />
-              <span>Only {describeClause(gate, fieldLabels)}</span>
+      <button
+        type="button"
+        onClick={() => setExpanded(v => !v)}
+        className="w-full text-left p-3 hover:bg-muted/30 rounded-md transition-colors"
+        aria-expanded={expanded}
+      >
+        <div className="flex items-start gap-2">
+          <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${accentDot}`} />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1">
+              <p className="text-sm font-medium leading-tight flex-1">
+                {section.order}. {section.title}
+              </p>
+              <span className="text-[11px] text-muted-foreground">
+                {expanded ? '▾' : '▸'}
+              </span>
             </div>
-          )}
+            {section.description && (
+              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{section.description}</p>
+            )}
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {section.fields.length} field{section.fields.length === 1 ? '' : 's'}
+            </p>
+            {isNested && gate && (
+              <div className="mt-1.5 flex items-start gap-1 rounded bg-muted/60 px-2 py-1 text-[11px] text-muted-foreground">
+                <CornerDownRight className="h-3 w-3 shrink-0 mt-0.5" />
+                <span>Only {describeClause(gate, fieldLabels)}</span>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </button>
+      {expanded && section.fields.length > 0 && (
+        <div className="border-t bg-muted/20 px-3 py-2 space-y-1 rounded-b-md">
+          {section.fields.map((f) => {
+            const fieldGate = primaryGate(f.actions)
+            return (
+              <div key={f.name} className="flex items-start gap-2 text-xs">
+                <span className="text-muted-foreground mt-0.5">·</span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium truncate">{f.label}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    <span className="font-mono">{f.type.toLowerCase().replace(/_/g, ' ')}</span>
+                    {f.validation?.required && <span className="text-red-500 ml-1">required</span>}
+                  </p>
+                  {fieldGate && (
+                    <p className="mt-0.5 text-[10px] italic text-muted-foreground">
+                      Only {describeClause(fieldGate, fieldLabels)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
 
 export default function FormFlowView({ form }: FormFlowViewProps) {
   const sections = form.sections || []
+  const branchColors = (form.settings?.branchColors as BranchColorRule[] | undefined) || null
   const fieldLabels = useMemo(() => buildFieldLabelMap(sections), [sections])
   const { entry, closing, groups } = useMemo(() => groupSections(sections), [sections])
 
@@ -216,17 +251,9 @@ export default function FormFlowView({ form }: FormFlowViewProps) {
       {groups.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {groups.map((group, gi) => {
-            const theme = branchTheme(group.clause)
+            const theme = branchTheme(group.clause, branchColors)
             const condText = describeClause(group.clause, fieldLabels)
-            const branchLabel = (() => {
-              const v = Array.isArray(group.clause.value) ? (group.clause.value as string[])[0] : group.clause.value
-              const s = String(v ?? '')
-              if (/upstream/i.test(s)) return 'Upstream'
-              if (/midstream/i.test(s)) return 'Midstream'
-              if (/investor/i.test(s)) return 'Downstream — Investor / Funder'
-              if (/end-user|advocacy|downstream/i.test(s)) return 'Downstream — End-user / Advocacy'
-              return 'Branch ' + (gi + 1)
-            })()
+            const branchLabel = theme.label || `Branch ${gi + 1}`
             return (
               <Card key={gi} className={`${theme.ring} ${theme.bg}`}>
                 <CardHeader className="pb-3">

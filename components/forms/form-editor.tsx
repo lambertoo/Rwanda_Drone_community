@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react"
 import ActionsBuilder from "@/components/forms/actions-builder"
 import FormSettingsPanel from "@/components/forms/form-settings-panel"
 import type { ActionRule } from "@/lib/form-actions"
+import { pickBranchTheme, PALETTE_KEYS, type PaletteKey, type BranchColorRule } from "@/lib/form-theme"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -213,9 +214,10 @@ const AutoTextarea = React.forwardRef<
   )
 })
 
-// Path colour themes so sections gated by CS4 are visually distinct in the editor.
-// Matches the palette used by FormFlowView.
-function getSectionPathTheme(section: any): {
+// Path colour themes so sections gated by logic are visually distinct in the
+// editor. Matches the palette used by FormFlowView and respects per-form
+// branchColors overrides declared in settings.
+function getSectionPathTheme(section: any, branchColors?: any[] | null): {
   border: string
   bg: string
   label: string | null
@@ -226,17 +228,28 @@ function getSectionPathTheme(section: any): {
   if (actions.length === 0) {
     return { border: 'border-l-slate-300', bg: '', label: 'Always shown', dot: 'bg-slate-400', badgeClass: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' }
   }
-  // Inspect any clause values and dependent field names across all rules
-  const blob = JSON.stringify(actions).toLowerCase()
-  const dependsOnCs4 = blob.includes('"field":"cs4_value_chain"')
-  if (blob.includes('upstream')) return { border: 'border-l-indigo-400', bg: 'bg-indigo-50/30 dark:bg-indigo-950/10', label: 'Upstream path', dot: 'bg-indigo-500', badgeClass: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200' }
-  if (blob.includes('midstream')) return { border: 'border-l-emerald-400', bg: 'bg-emerald-50/30 dark:bg-emerald-950/10', label: 'Midstream path', dot: 'bg-emerald-500', badgeClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200' }
-  if (blob.includes('investor')) return { border: 'border-l-amber-400', bg: 'bg-amber-50/30 dark:bg-amber-950/10', label: 'Downstream · Investor', dot: 'bg-amber-500', badgeClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200' }
-  if (blob.includes('end-user') || blob.includes('advocacy') || blob.includes('downstream')) return { border: 'border-l-rose-400', bg: 'bg-rose-50/30 dark:bg-rose-950/10', label: 'Downstream · End-user / Advocacy', dot: 'bg-rose-500', badgeClass: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200' }
-  if (!dependsOnCs4) {
-    return { border: 'border-l-violet-400', bg: 'bg-violet-50/30 dark:bg-violet-950/10', label: 'Nested branch', dot: 'bg-violet-500', badgeClass: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200' }
+  // Concatenate every clause value across every rule so the keyword matcher
+  // can find the best branch label to use.
+  const values: string[] = []
+  const walk = (n: any) => {
+    if (!n) return
+    if (Array.isArray(n.clauses)) for (const c of n.clauses) walk(c)
+    else if (n.value !== undefined) values.push(Array.isArray(n.value) ? n.value.join(' ') : String(n.value))
   }
-  return { border: 'border-l-slate-300', bg: '', label: 'Conditional', dot: 'bg-slate-400', badgeClass: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' }
+  for (const rule of actions) walk(rule.when)
+  const concat = values.join(' ')
+  const picked = pickBranchTheme(concat, branchColors as any)
+  if (picked.label) {
+    return {
+      border: picked.theme.border,
+      bg: picked.theme.accentBg,
+      label: picked.label,
+      dot: picked.theme.dot,
+      badgeClass: picked.theme.badgeClass,
+    }
+  }
+  // No keyword match: generic conditional
+  return { border: 'border-l-violet-400', bg: 'bg-violet-50/30 dark:bg-violet-950/10', label: 'Conditional', dot: 'bg-violet-500', badgeClass: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200' }
 }
 
 // Walk a condition group tree and collect every field name it references.
@@ -537,6 +550,7 @@ function FieldBlock({
   allSections,
   currentSectionIndex,
   referencedBy,
+  onJumpToRule,
 }: {
   field: FormField
   isSelected: boolean
@@ -2052,6 +2066,8 @@ export default function FormEditor({
     applicantEmailField: initialData?.settings?.applicantEmailField ?? "",
     // Webhooks
     webhooks: initialData?.settings?.webhooks ?? [],
+    // Branch colours for the flow preview + section accent stripes
+    branchColors: initialData?.settings?.branchColors ?? [],
     // Quiz
     quizMode: initialData?.settings?.quizMode ?? false,
     // Access control
@@ -2734,8 +2750,9 @@ export default function FormEditor({
             whether its answer drives logic elsewhere (e.g. CS4 → paths). */}
         {(() => {
           const referenceMap = buildReferenceMap(sections as any[])
+          const branchColors = (settings as any)?.branchColors as BranchColorRule[] | undefined
           return sections.map((section, sectionIndex) => {
-          const pathTheme = getSectionPathTheme(section)
+          const pathTheme = getSectionPathTheme(section, branchColors)
           return (
           <div
             key={section.id}
