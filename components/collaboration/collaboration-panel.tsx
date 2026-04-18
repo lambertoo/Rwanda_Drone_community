@@ -10,7 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog'
-import { UserPlus, Mail, X, Check, Clock, Loader2 } from 'lucide-react'
+import { UserPlus, Mail, X, Check, Clock, Loader2, UserCircle2 } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 type CollaboratorRow = {
   id: string
@@ -41,6 +42,14 @@ export default function CollaborationPanel({ contentType, contentId, canManage, 
   const [inviting, setInviting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  // Preview of the invitee: if they already have an account we show their
+  // name and avatar so the owner can confirm they're inviting the right person.
+  const [lookup, setLookup] = useState<
+    | { state: 'idle' }
+    | { state: 'checking' }
+    | { state: 'found'; user: { id: string; username: string; fullName: string; avatar?: string | null; isVerified: boolean } }
+    | { state: 'not-found' }
+  >({ state: 'idle' })
 
   const load = async () => {
     if (!canManage) {
@@ -60,6 +69,29 @@ export default function CollaborationPanel({ contentType, contentId, canManage, 
   }
 
   useEffect(() => { load() }, [contentType, contentId, canManage])
+
+  // Debounced lookup: whenever the email input is a valid email, check whether
+  // that person already has an account so we can preview their profile.
+  useEffect(() => {
+    const e = email.trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
+      setLookup({ state: 'idle' })
+      return
+    }
+    setLookup({ state: 'checking' })
+    const t = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/users/lookup?email=${encodeURIComponent(e)}`)
+        if (!r.ok) { setLookup({ state: 'not-found' }); return }
+        const data = await r.json()
+        if (data.user) setLookup({ state: 'found', user: data.user })
+        else setLookup({ state: 'not-found' })
+      } catch {
+        setLookup({ state: 'not-found' })
+      }
+    }, 350)
+    return () => clearTimeout(t)
+  }, [email])
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -130,6 +162,35 @@ export default function CollaborationPanel({ contentType, contentId, canManage, 
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
               />
+              {/* Live lookup: preview the account if one exists for this email. */}
+              {lookup.state === 'checking' && (
+                <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Checking…
+                </p>
+              )}
+              {lookup.state === 'found' && (
+                <div className="mt-2 flex items-center gap-2 rounded-md border bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900 p-2">
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarImage src={lookup.user.avatar || undefined} alt={lookup.user.fullName} />
+                    <AvatarFallback className="text-[10px]">
+                      {lookup.user.fullName?.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{lookup.user.fullName}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">@{lookup.user.username} · already has an account</p>
+                  </div>
+                  <Check className="h-4 w-4 text-green-600 shrink-0" />
+                </div>
+              )}
+              {lookup.state === 'not-found' && (
+                <div className="mt-2 flex items-start gap-2 rounded-md border bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 p-2">
+                  <UserCircle2 className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-900 dark:text-amber-200">
+                    No account yet. They will be asked to create one before they can collaborate.
+                  </p>
+                </div>
+              )}
             </div>
             <div>
               <Label htmlFor="collab-message">Personal message (optional)</Label>

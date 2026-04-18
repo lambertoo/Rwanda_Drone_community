@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { extractTokenFromRequest, verifyToken } from '@/lib/jwt-utils'
 import { canEdit } from '@/lib/collaboration'
+import { sanitizeFormStructure } from '@/lib/form-sanitize'
 
 export async function GET(
   request: NextRequest,
@@ -64,7 +65,10 @@ export async function PUT(
     }
 
     const formId = id
-    const body = await request.json()
+    const rawBody = await request.json()
+    // Strip HTML / clamp lengths on every author-editable string so a
+    // malicious or buggy form definition can't inject into the renderer.
+    const body = sanitizeFormStructure(rawBody)
     const { title, description, settings, allowSubmissions, sections, isActive, isPublic } = body
 
     // Verify access: owner OR accepted collaborator

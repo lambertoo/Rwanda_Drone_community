@@ -20,17 +20,23 @@ export async function PUT(
     }
 
     const fieldId = id
-    const body = await request.json()
-    const { 
-      type, 
-      label, 
-      name, 
-      placeholder, 
-      options, 
-      validation, 
-      order, 
-      actions, 
-      isActive 
+    const rawBody = await request.json()
+    const { sanitizeFormStructure } = await import('@/lib/form-sanitize')
+    // Wrap the field patch in a pseudo-form shape so the shared sanitiser
+    // can clean label / placeholder / options / matrixRows / matrixColumns
+    // / actions — everything that might carry HTML-injected strings.
+    const sanitised = sanitizeFormStructure({ sections: [{ fields: [rawBody] }] }).sections[0].fields[0]
+    const body = { ...rawBody, ...sanitised }
+    const {
+      type,
+      label,
+      name,
+      placeholder,
+      options,
+      validation,
+      order,
+      actions,
+      isActive,
     } = body
 
     // Check if field exists and belongs to user's form

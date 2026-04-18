@@ -20,8 +20,11 @@ export async function PUT(
     }
 
     const sectionId = id
-    const body = await request.json()
-    const { title, description, order, actions, isActive } = body
+    const rawBody = await request.json()
+    // Sanitise via the shared helper by wrapping in a pseudo-form shape
+    const { sanitizeFormStructure } = await import('@/lib/form-sanitize')
+    const sanitised = sanitizeFormStructure({ sections: [{ ...rawBody, fields: [] }] }).sections[0]
+    const { title, description, order, actions, isActive } = { ...rawBody, ...sanitised }
 
     // Check if section exists and belongs to user's form
     const existingSection = await prisma.formSection.findFirst({

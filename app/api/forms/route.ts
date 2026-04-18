@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { extractTokenFromRequest, verifyToken } from '@/lib/jwt-utils'
+import { sanitizeFormStructure } from '@/lib/form-sanitize'
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +19,8 @@ export async function POST(request: NextRequest) {
     console.log('JWT Payload:', payload)
     console.log('User ID from payload:', payload.userId)
 
-    const body = await request.json()
+    const rawBody = await request.json()
+    const body = sanitizeFormStructure(rawBody)
     const { title, description, settings, sections } = body
 
     if (!title) {
