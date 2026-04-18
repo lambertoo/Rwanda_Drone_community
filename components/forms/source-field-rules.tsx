@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ACTION_LABELS, type ActionRule, type ActionType, type ConditionClause, type ConditionGroup } from '@/lib/form-actions'
-import { Plus, Trash2, ArrowRight } from 'lucide-react'
+import { Plus, Trash2, ArrowRight, ChevronDown, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 
 type Owner =
@@ -164,32 +164,42 @@ export default function SourceFieldRules({ sourceField, allSections, updateSecti
 
   const options = Array.isArray(sourceField.options) ? sourceField.options : []
 
+  const [panelExpanded, setPanelExpanded] = useState(consumers.length <= 3)
   return (
     <div className="rounded-md border border-blue-200 bg-blue-50/80 dark:bg-blue-950/30 dark:border-blue-900 p-3">
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setPanelExpanded(v => !v)}
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          aria-expanded={panelExpanded}
+        >
+          {panelExpanded ? <ChevronDown className="h-3.5 w-3.5 text-blue-700" /> : <ChevronRight className="h-3.5 w-3.5 text-blue-700" />}
           <span className="text-xs font-semibold uppercase tracking-wide text-blue-900 dark:text-blue-200">
             Rules driven by this answer
           </span>
           <Badge className="text-[10px] bg-blue-600 hover:bg-blue-600">
             {consumers.length}
           </Badge>
-        </div>
-        <button
-          type="button"
-          onClick={() => setAdding(a => !a)}
-          className="text-[11px] text-blue-700 hover:underline inline-flex items-center gap-1"
-        >
-          <Plus className="h-3 w-3" /> Add rule
         </button>
+        {panelExpanded && (
+          <button
+            type="button"
+            onClick={() => setAdding(a => !a)}
+            className="text-[11px] text-blue-700 hover:underline inline-flex items-center gap-1"
+          >
+            <Plus className="h-3 w-3" /> Add rule
+          </button>
+        )}
       </div>
 
-      {consumers.length === 0 && !adding && (
+      {panelExpanded && consumers.length === 0 && !adding && (
         <p className="text-[11px] text-blue-900/70 italic">
           No other sections or fields depend on this answer yet.
         </p>
       )}
 
+      {panelExpanded && (
       <div className="space-y-2">
         {consumers.map((c, i) => {
           const { verb } = prettifyVerb(c.rule.action, c.clause.operator)
@@ -225,8 +235,9 @@ export default function SourceFieldRules({ sourceField, allSections, updateSecti
           )
         })}
       </div>
+      )}
 
-      {adding && (
+      {panelExpanded && adding && (
         <AddRuleForm
           sourceField={sourceField}
           allSections={allSections}
@@ -265,62 +276,92 @@ function ConsumerCard({
   onValuesChange: (next: string[]) => void
   onRemove: () => void
 }) {
+  const [expanded, setExpanded] = useState(false)
   const whenLabel = negated ? 'is NOT' : 'is'
   const hasOptions = sourceOptions.length > 0
+  // Build the collapsed summary: e.g. "Upstream: Training... + 2 more"
+  const summary = (() => {
+    if (values.length === 0) return <span className="italic text-muted-foreground">No values</span>
+    if (values.length === 1) return <span className="truncate">{values[0]}</span>
+    return (
+      <span className="truncate">
+        {values[0]} <span className="text-muted-foreground">+ {values.length - 1} more</span>
+      </span>
+    )
+  })()
+
   return (
-    <div className="rounded-md border bg-background p-2.5 space-y-2">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-1.5 flex-wrap text-xs">
-          <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">{verb}</Badge>
-          <ArrowRight className="h-3 w-3 text-muted-foreground" />
-          <span className="font-medium">{targetLabel}</span>
-        </div>
-        <button type="button" onClick={onRemove} className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600" aria-label="Remove rule">
+    <div className="rounded-md border bg-background">
+      {/* Collapsed / always-visible header — clicking toggles expand */}
+      <div className="flex items-start gap-2 p-2.5">
+        <button
+          type="button"
+          onClick={() => setExpanded(v => !v)}
+          aria-expanded={expanded}
+          className="flex-1 min-w-0 text-left hover:bg-muted/30 -m-1 p-1 rounded transition-colors"
+        >
+          <div className="flex items-center gap-1.5 flex-wrap text-xs">
+            {expanded ? <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />}
+            <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">{verb}</Badge>
+            <ArrowRight className="h-3 w-3 text-muted-foreground" />
+            <span className="font-medium truncate">{targetLabel}</span>
+          </div>
+          <div className="mt-1 pl-5 text-[11px] text-muted-foreground truncate">
+            When answer {whenLabel}: {summary}
+          </div>
+        </button>
+        <button type="button" onClick={onRemove} className="shrink-0 p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600" aria-label="Remove rule">
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
-      <div className="text-[11px] text-muted-foreground">
-        When the answer {whenLabel} one of:
-      </div>
-      {hasOptions ? (
-        <div className="space-y-1">
-          <div className="flex flex-wrap gap-1 min-h-[28px] rounded border bg-background p-1">
-            {values.length === 0 && (
-              <span className="px-1.5 py-0.5 text-[11px] text-muted-foreground italic">Pick at least one value</span>
-            )}
-            {values.map(v => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => onValuesChange(values.filter(x => x !== v))}
-                className="inline-flex items-center gap-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 px-1.5 py-0.5 text-[11px] hover:bg-blue-200"
-                title="Remove"
-              >
-                {v}
-                <span>×</span>
-              </button>
-            ))}
+
+      {/* Expanded editor */}
+      {expanded && (
+        <div className="border-t px-2.5 py-2 bg-muted/20 space-y-1">
+          <div className="text-[11px] text-muted-foreground pb-1">
+            Pick the answer values that trigger this rule:
           </div>
-          <div className="flex flex-wrap gap-1">
-            {sourceOptions.filter(o => !values.includes(o)).map(o => (
-              <button
-                key={o}
-                type="button"
-                onClick={() => onValuesChange([...values, o])}
-                className="inline-flex items-center gap-1 rounded border bg-background px-1.5 py-0.5 text-[11px] hover:bg-muted"
-              >
-                <Plus className="h-2.5 w-2.5" /> <span className="truncate max-w-[260px]">{o}</span>
-              </button>
-            ))}
-          </div>
+          {hasOptions ? (
+            <div className="space-y-1">
+              <div className="flex flex-wrap gap-1 min-h-[28px] rounded border bg-background p-1">
+                {values.length === 0 && (
+                  <span className="px-1.5 py-0.5 text-[11px] text-muted-foreground italic">Pick at least one value</span>
+                )}
+                {values.map(v => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => onValuesChange(values.filter(x => x !== v))}
+                    className="inline-flex items-center gap-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 px-1.5 py-0.5 text-[11px] hover:bg-blue-200"
+                    title="Remove"
+                  >
+                    {v}
+                    <span>×</span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {sourceOptions.filter(o => !values.includes(o)).map(o => (
+                  <button
+                    key={o}
+                    type="button"
+                    onClick={() => onValuesChange([...values, o])}
+                    className="inline-flex items-center gap-1 rounded border bg-background px-1.5 py-0.5 text-[11px] hover:bg-muted"
+                  >
+                    <Plus className="h-2.5 w-2.5" /> <span className="truncate max-w-[260px]">{o}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <Input
+              value={values.join(', ')}
+              onChange={(e) => onValuesChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+              placeholder="Comma-separated values"
+              className="h-7 text-xs"
+            />
+          )}
         </div>
-      ) : (
-        <Input
-          value={values.join(', ')}
-          onChange={(e) => onValuesChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-          placeholder="Comma-separated values"
-          className="h-7 text-xs"
-        />
       )}
     </div>
   )
