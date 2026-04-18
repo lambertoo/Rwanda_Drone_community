@@ -33,23 +33,29 @@ export interface CollaborationPanelProps {
   bare?: boolean
 }
 
+type SearchedUser = {
+  id: string
+  username: string
+  fullName: string
+  email: string
+  avatar?: string | null
+  isVerified: boolean
+  relationship: 'mutual' | 'iFollow' | 'followsMe' | 'none'
+}
+
 export default function CollaborationPanel({ contentType, contentId, canManage, bare }: CollaborationPanelProps) {
   const [collaborators, setCollaborators] = useState<CollaboratorRow[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
   const [email, setEmail] = useState('')
+  const [pickedUser, setPickedUser] = useState<SearchedUser | null>(null)
+  const [results, setResults] = useState<SearchedUser[]>([])
+  const [searching, setSearching] = useState(false)
   const [message, setMessage] = useState('')
   const [inviting, setInviting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  // Preview of the invitee: if they already have an account we show their
-  // name and avatar so the owner can confirm they're inviting the right person.
-  const [lookup, setLookup] = useState<
-    | { state: 'idle' }
-    | { state: 'checking' }
-    | { state: 'found'; user: { id: string; username: string; fullName: string; avatar?: string | null; isVerified: boolean } }
-    | { state: 'not-found' }
-  >({ state: 'idle' })
 
   const load = async () => {
     if (!canManage) {
@@ -70,31 +76,43 @@ export default function CollaborationPanel({ contentType, contentId, canManage, 
 
   useEffect(() => { load() }, [contentType, contentId, canManage])
 
-  // Debounced lookup: whenever the email input is a valid email, check whether
-  // that person already has an account so we can preview their profile.
+  // Combined search: the same box lets the owner search by name / username /
+  // email and also accepts a raw external email to invite someone without an
+  // account. Debounced 300ms. Mutual follows are surfaced first by the API.
   useEffect(() => {
-    const e = email.trim().toLowerCase()
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
-      setLookup({ state: 'idle' })
-      return
-    }
-    setLookup({ state: 'checking' })
+    const q = query.trim()
+    if (q.length < 2) { setResults([]); return }
+    setSearching(true)
     const t = setTimeout(async () => {
       try {
-        const r = await fetch(`/api/users/lookup?email=${encodeURIComponent(e)}`)
-        if (!r.ok) { setLookup({ state: 'not-found' }); return }
-        const data = await r.json()
-        if (data.user) setLookup({ state: 'found', user: data.user })
-        else setLookup({ state: 'not-found' })
+        const r = await fetch(`/api/collaborators/search?q=${encodeURIComponent(q)}&limit=8`)
+        if (r.ok) {
+          const data = await r.json()
+          setResults(data.users || [])
+        } else {
+          setResults([])
+        }
       } catch {
-        setLookup({ state: 'not-found' })
+        setResults([])
+      } finally {
+        setSearching(false)
       }
-    }, 350)
+    }, 300)
     return () => clearTimeout(t)
-  }, [email])
+  }, [query])
+
+  const queryLooksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query.trim())
+  const externalEmail = queryLooksLikeEmail && !results.some(u => u.email.toLowerCase() === query.trim().toLowerCase())
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault()
+    // Resolve the email to invite: picked user wins, otherwise the typed
+    // external email if it looks like one.
+    const inviteEmail = pickedUser?.email || (queryLooksLikeEmail ? query.trim().toLowerCase() : email.trim().toLowerCase())
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)) {
+      setError('Pick a person or enter a valid email address')
+      return
+    }
     setInviting(true)
     setError(null)
     setSuccess(null)
@@ -102,16 +120,19 @@ export default function CollaborationPanel({ contentType, contentId, canManage, 
       const r = await fetch('/api/collaborators/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType, contentId, email, message: message || undefined }),
+        body: JSON.stringify({ contentType, contentId, email: inviteEmail, message: message || undefined }),
       })
       const data = await r.json()
       if (!r.ok) throw new Error(data.error || 'Invite failed')
       setSuccess(
         data.alreadyAccepted
-          ? `${email} is already a collaborator`
-          : `Invitation sent to ${email}`,
+          ? `${inviteEmail} is already a collaborator`
+          : `Invitation sent to ${inviteEmail}`,
       )
+      setQuery('')
       setEmail('')
+      setPickedUser(null)
+      setResults([])
       setMessage('')
       await load()
       setTimeout(() => { setOpen(false); setSuccess(null) }, 1500)
@@ -153,43 +174,111 @@ export default function CollaborationPanel({ contentType, contentId, canManage, 
           </DialogHeader>
           <div className="space-y-3 py-4">
             <div>
-              <Label htmlFor="collab-email">Email address</Label>
-              <Input
-                id="collab-email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
-              />
-              {/* Live lookup: preview the account if one exists for this email. */}
-              {lookup.state === 'checking' && (
-                <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Checking…
-                </p>
-              )}
-              {lookup.state === 'found' && (
-                <div className="mt-2 flex items-center gap-2 rounded-md border bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900 p-2">
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarImage src={lookup.user.avatar || undefined} alt={lookup.user.fullName} />
-                    <AvatarFallback className="text-[10px]">
-                      {lookup.user.fullName?.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || '?'}
+              <Label htmlFor="collab-search">Find someone by name, username or email</Label>
+              {pickedUser ? (
+                // Chosen user: show their profile card with a change button
+                <div className="mt-1 flex items-center gap-2 rounded-md border bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900 p-2">
+                  <Avatar className="h-9 w-9 shrink-0">
+                    <AvatarImage src={pickedUser.avatar || undefined} alt={pickedUser.fullName} />
+                    <AvatarFallback className="text-[11px]">
+                      {pickedUser.fullName?.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || '?'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{lookup.user.fullName}</p>
-                    <p className="text-[11px] text-muted-foreground truncate">@{lookup.user.username} · already has an account</p>
+                    <p className="text-sm font-medium truncate">{pickedUser.fullName}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      @{pickedUser.username} · {pickedUser.email}
+                    </p>
                   </div>
-                  <Check className="h-4 w-4 text-green-600 shrink-0" />
+                  <button
+                    type="button"
+                    onClick={() => { setPickedUser(null); setQuery('') }}
+                    className="text-[11px] text-muted-foreground hover:underline"
+                  >
+                    Change
+                  </button>
                 </div>
-              )}
-              {lookup.state === 'not-found' && (
-                <div className="mt-2 flex items-start gap-2 rounded-md border bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 p-2">
-                  <UserCircle2 className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-900 dark:text-amber-200">
-                    No account yet. They will be asked to create one before they can collaborate.
-                  </p>
-                </div>
+              ) : (
+                <>
+                  <Input
+                    id="collab-search"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Start typing a name, username or email…"
+                    autoComplete="off"
+                  />
+                  {/* Results dropdown */}
+                  {query.trim().length >= 2 && (
+                    <div className="mt-2 rounded-md border bg-background max-h-60 overflow-auto">
+                      {searching && (
+                        <div className="flex items-center gap-2 p-3 text-xs text-muted-foreground">
+                          <Loader2 className="h-3 w-3 animate-spin" /> Searching…
+                        </div>
+                      )}
+                      {!searching && results.length === 0 && !externalEmail && (
+                        <p className="p-3 text-xs italic text-muted-foreground">
+                          No matches. Type a full email to invite someone who does not have an account yet.
+                        </p>
+                      )}
+                      {results.map(u => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => setPickedUser(u)}
+                          className="w-full flex items-center gap-2 p-2 hover:bg-muted/50 border-b last:border-b-0 text-left"
+                        >
+                          <Avatar className="h-7 w-7 shrink-0">
+                            <AvatarImage src={u.avatar || undefined} alt={u.fullName} />
+                            <AvatarFallback className="text-[10px]">
+                              {u.fullName?.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">{u.fullName}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">@{u.username} · {u.email}</p>
+                          </div>
+                          {u.relationship === 'mutual' && (
+                            <Badge className="text-[9px] bg-green-600 hover:bg-green-600">Mutual</Badge>
+                          )}
+                          {u.relationship === 'iFollow' && (
+                            <Badge variant="secondary" className="text-[9px]">Following</Badge>
+                          )}
+                          {u.relationship === 'followsMe' && (
+                            <Badge variant="secondary" className="text-[9px]">Follower</Badge>
+                          )}
+                        </button>
+                      ))}
+                      {/* External-email fallback when the query is an email that
+                          doesn't match any existing account. */}
+                      {!searching && externalEmail && (
+                        <button
+                          type="button"
+                          onClick={() => setPickedUser({
+                            id: '',
+                            username: '',
+                            fullName: query.trim(),
+                            email: query.trim().toLowerCase(),
+                            avatar: null,
+                            isVerified: false,
+                            relationship: 'none',
+                          } as SearchedUser)}
+                          className="w-full flex items-center gap-2 p-2 hover:bg-muted/50 text-left border-t"
+                        >
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                            <UserCircle2 className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">Invite {query.trim()}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              No account yet — they'll be asked to sign up
+                            </p>
+                          </div>
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
             <div>
@@ -208,7 +297,7 @@ export default function CollaborationPanel({ contentType, contentId, canManage, 
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={inviting}>Cancel</Button>
-            <Button type="submit" disabled={inviting || !email}>
+            <Button type="submit" disabled={inviting || (!pickedUser && !queryLooksLikeEmail)}>
               {inviting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</>) : 'Send invite'}
             </Button>
           </DialogFooter>
