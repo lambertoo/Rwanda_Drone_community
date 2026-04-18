@@ -9,6 +9,8 @@ import {
 } from '@/lib/collaboration'
 import { sendEmail } from '@/lib/email'
 import { collaborationInviteEmail } from '@/lib/email-templates'
+import { createNotification } from '@/lib/notifications'
+import { CONTENT_URL_PATH } from '@/lib/collaboration'
 
 const prisma = new PrismaClient()
 
@@ -79,11 +81,13 @@ export async function POST(req: NextRequest) {
     })
   }
 
+  // Resolve content title + URL once for both email and in-app notification.
+  const contentTitle = await getContentTitle(contentType, contentId)
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://uav.rw'
+  const acceptUrl = `${appUrl}/collaborate/accept?token=${invite.invitationToken}`
+
   // Fire-and-forget email
   try {
-    const contentTitle = await getContentTitle(contentType, contentId)
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://uav.rw'
-    const acceptUrl = `${appUrl}/collaborate/accept?token=${invite.invitationToken}`
     const template = collaborationInviteEmail({
       inviterName: inviter?.fullName || inviter?.username || 'A colleague',
       contentLabel: CONTENT_LABEL[contentType],
@@ -94,7 +98,19 @@ export async function POST(req: NextRequest) {
     await sendEmail({ to: email, subject: template.subject, html: template.html })
   } catch (err) {
     console.error('[collaborate/invite] email failed', err)
-    // Do not fail the invite if email fails; owner can resend
+  }
+
+  // In-app notification if the invitee already has an account, so they see it
+  // the moment they log in regardless of whether they opened the email.
+  if (invite.collaboratorUserId) {
+    await createNotification({
+      userId: invite.collaboratorUserId,
+      type: 'collaboration_invite',
+      title: `Invitation to collaborate`,
+      body: `${inviter?.fullName || inviter?.username || 'Someone'} invited you to collaborate on "${contentTitle}".`,
+      link: `/collaborate/accept?token=${invite.invitationToken}`,
+      data: { contentType, contentId, inviteId: invite.id },
+    })
   }
 
   return NextResponse.json({ ok: true, invite })

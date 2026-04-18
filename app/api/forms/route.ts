@@ -116,8 +116,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
+    // Include forms the user has accepted collaboration on, not just ones
+    // they own. This is what makes invited edits actually discoverable from
+    // the "My forms" listing.
+    const collabRows = await prisma.contentCollaborator.findMany({
+      where: {
+        contentType: 'FORM',
+        collaboratorUserId: payload.userId,
+        status: 'ACCEPTED',
+      },
+      select: { contentId: true },
+    })
+    const collabFormIds = collabRows.map(r => r.contentId)
+
     const forms = await prisma.universalForm.findMany({
-      where: { userId: payload.userId },
+      where: {
+        OR: [
+          { userId: payload.userId },
+          ...(collabFormIds.length > 0 ? [{ id: { in: collabFormIds } }] : []),
+        ],
+      },
       include: {
         sections: {
           include: {
@@ -127,6 +145,7 @@ export async function GET(request: NextRequest) {
           },
           orderBy: { order: 'asc' }
         },
+        user: { select: { id: true, username: true, fullName: true, avatar: true } },
         _count: {
           select: { entries: true }
         }
@@ -134,7 +153,14 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' }
     })
 
-    return NextResponse.json(forms)
+    // Tag each form with whether the caller owns it or is a collaborator,
+    // so the UI can distinguish them in the list.
+    const withRole = forms.map(f => ({
+      ...f,
+      _role: f.userId === payload.userId ? 'owner' : 'collaborator',
+    }))
+
+    return NextResponse.json(withRole)
   } catch (error) {
     console.error('Error fetching forms:', error)
     return NextResponse.json({ error: 'Failed to fetch forms' }, { status: 500 })
