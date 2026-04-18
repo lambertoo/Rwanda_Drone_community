@@ -170,6 +170,47 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Advanced blocks": "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400",
 }
 
+// Auto-resizing textarea: wraps long text and grows vertically as the user types,
+// so form / section / field descriptions never require horizontal scrolling.
+const AutoTextarea = React.forwardRef<
+  HTMLTextAreaElement,
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>
+>(function AutoTextarea({ onInput, onChange, value, className, ...rest }, forwardedRef) {
+  const innerRef = useRef<HTMLTextAreaElement | null>(null)
+  const setRefs = (el: HTMLTextAreaElement | null) => {
+    innerRef.current = el
+    if (typeof forwardedRef === 'function') forwardedRef(el)
+    else if (forwardedRef) (forwardedRef as any).current = el
+  }
+  const resize = () => {
+    const el = innerRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }
+  useEffect(() => {
+    resize()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
+  return (
+    <textarea
+      ref={setRefs}
+      rows={1}
+      value={value as string | number | readonly string[] | undefined}
+      onChange={(e) => {
+        onChange?.(e)
+        resize()
+      }}
+      onInput={(e) => {
+        onInput?.(e)
+        resize()
+      }}
+      className={`resize-none overflow-hidden ${className ?? ''}`}
+      {...rest}
+    />
+  )
+})
+
 // Path colour themes so sections gated by CS4 are visually distinct in the editor.
 // Matches the palette used by FormFlowView.
 function getSectionPathTheme(section: any): {
@@ -442,8 +483,8 @@ function FieldBlock({
 }) {
   const [editingLabel, setEditingLabel] = useState(false)
   const [hovered, setHovered] = useState(false)
-  const labelRef = useRef<HTMLInputElement>(null)
-  const headingRef = useRef<HTMLInputElement>(null)
+  const labelRef = useRef<HTMLTextAreaElement>(null)
+  const headingRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     if (editingLabel && labelRef.current) {
@@ -720,13 +761,12 @@ function FieldBlock({
               </button>
             </div>
           </div>
-          <input
-            ref={headingRef}
-            type="text"
+          <AutoTextarea
+            ref={headingRef as any}
             value={field.label}
-            onChange={(e) => onUpdate({ label: e.target.value })}
+            onChange={(e) => onUpdate({ label: (e.target as HTMLTextAreaElement).value })}
             placeholder="Heading text..."
-            className={`w-full bg-transparent border-none outline-none placeholder:text-muted-foreground/40 ${headingClass}`}
+            className={`w-full bg-transparent border-none outline-none placeholder:text-muted-foreground/40 leading-tight ${headingClass}`}
           />
         </div>
       </div>
@@ -1055,16 +1095,19 @@ function FieldBlock({
 
         {/* Inline label editing */}
         {editingLabel ? (
-          <input
-            ref={labelRef}
-            type="text"
+          <AutoTextarea
+            ref={labelRef as any}
             value={field.label}
-            onChange={(e) => onUpdate({ label: e.target.value })}
+            onChange={(e) => onUpdate({ label: (e.target as HTMLTextAreaElement).value })}
             onBlur={() => setEditingLabel(false)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") setEditingLabel(false)
+              // Blur on Enter without Shift (Shift+Enter inserts a newline)
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault()
+                setEditingLabel(false)
+              }
             }}
-            className="text-base font-medium bg-transparent border-none outline-none w-full p-0 focus:ring-0"
+            className="text-base font-medium bg-transparent border-none outline-none w-full p-0 focus:ring-0 leading-snug"
           />
         ) : (
           <h3
@@ -1820,7 +1863,7 @@ export default function FormEditor({
     notifyEmails: initialData?.settings?.notifyEmails ?? "",
   })
 
-  const titleRef = useRef<HTMLInputElement>(null)
+  const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorRef = useRef<HTMLDivElement>(null)
 
   // Focus title on mount if empty
@@ -2637,20 +2680,18 @@ export default function FormEditor({
       >
         {/* Form Title & Description */}
         <div className="mb-8">
-          <input
-            ref={titleRef}
-            type="text"
+          <AutoTextarea
+            ref={titleRef as any}
             value={formTitle}
-            onChange={(e) => setFormTitle(e.target.value)}
+            onChange={(e) => setFormTitle((e.target as HTMLTextAreaElement).value)}
             placeholder="Untitled form"
-            className="w-full text-3xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/40"
+            className="w-full text-3xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/40 leading-tight"
           />
-          <textarea
+          <AutoTextarea
             value={formDescription}
-            onChange={(e) => setFormDescription(e.target.value)}
+            onChange={(e) => setFormDescription((e.target as HTMLTextAreaElement).value)}
             placeholder="Add a description..."
-            rows={1}
-            className="w-full mt-2 text-base text-muted-foreground bg-transparent border-none outline-none resize-none placeholder:text-muted-foreground/30"
+            className="w-full mt-2 text-base text-muted-foreground bg-transparent border-none outline-none placeholder:text-muted-foreground/30 leading-relaxed"
           />
         </div>
 
@@ -2675,24 +2716,22 @@ export default function FormEditor({
                     )}
                     <span className="text-xs text-muted-foreground">Section {sectionIndex + 1}</span>
                   </div>
-                  <input
-                    type="text"
+                  <AutoTextarea
                     value={section.title}
                     onChange={(e) =>
-                      updateSection(section.id, { title: e.target.value })
+                      updateSection(section.id, { title: (e.target as HTMLTextAreaElement).value })
                     }
-                    className="text-lg font-semibold bg-transparent border-none outline-none w-full"
+                    className="text-lg font-semibold bg-transparent border-none outline-none w-full leading-tight"
                   />
-                  <input
-                    type="text"
+                  <AutoTextarea
                     value={section.description || ""}
                     onChange={(e) =>
                       updateSection(section.id, {
-                        description: e.target.value,
+                        description: (e.target as HTMLTextAreaElement).value,
                       })
                     }
                     placeholder="Section description..."
-                    className="text-sm text-muted-foreground bg-transparent border-none outline-none w-full"
+                    className="text-sm text-muted-foreground bg-transparent border-none outline-none w-full leading-relaxed"
                   />
                 </div>
                 {sections.length > 1 && (
