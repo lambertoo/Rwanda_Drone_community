@@ -249,10 +249,20 @@ function collectReferencedFields(node: any, acc: Set<string>) {
   }
 }
 
-// Build a map of fieldName -> { sections: number, fields: Array<{ label, sectionTitle }> }
-// describing who references that field in their action logic.
+// Build a map of fieldName -> list of consumers (section or field) with IDs
+// so clicking a reference can jump-and-scroll to that rule for editing.
 function buildReferenceMap(sections: any[]) {
-  type Ref = { label: string; sectionTitle: string; kind: 'section' | 'field' }
+  type Ref = {
+    label: string
+    sectionTitle: string
+    kind: 'section' | 'field'
+    /** Target id used for scroll-to + highlight */
+    targetId: string
+    /** The field id when kind === 'field'; used to auto-select it */
+    fieldId?: string
+    /** The section id when kind === 'section'; used to highlight the section */
+    sectionId: string
+  }
   const refs = new Map<string, Ref[]>()
 
   const add = (name: string, ref: Ref) => {
@@ -266,14 +276,29 @@ function buildReferenceMap(sections: any[]) {
     for (const rule of sectionActions) {
       const set = new Set<string>()
       collectReferencedFields(rule.when, set)
-      for (const name of set) add(name, { label: sectionTitle, sectionTitle, kind: 'section' })
+      for (const name of set)
+        add(name, {
+          label: sectionTitle,
+          sectionTitle,
+          kind: 'section',
+          targetId: `section-${s.id}`,
+          sectionId: s.id,
+        })
     }
     for (const f of s.fields || []) {
       const fieldActions: any[] = Array.isArray(f.actions) ? f.actions : []
       for (const rule of fieldActions) {
         const set = new Set<string>()
         collectReferencedFields(rule.when, set)
-        for (const name of set) add(name, { label: f.label || f.name, sectionTitle, kind: 'field' })
+        for (const name of set)
+          add(name, {
+            label: f.label || f.name,
+            sectionTitle,
+            kind: 'field',
+            targetId: `field-${f.id}`,
+            sectionId: s.id,
+            fieldId: f.id,
+          })
       }
     }
   }
@@ -524,7 +549,15 @@ function FieldBlock({
   canMoveDown: boolean
   allSections: FormSection[]
   currentSectionIndex: number
-  referencedBy: Array<{ label: string; sectionTitle: string; kind: 'section' | 'field' }>
+  onJumpToRule?: (ref: { targetId: string; sectionId: string; fieldId?: string }) => void
+  referencedBy: Array<{
+    label: string
+    sectionTitle: string
+    kind: 'section' | 'field'
+    targetId: string
+    sectionId: string
+    fieldId?: string
+  }>
 }) {
   const [editingLabel, setEditingLabel] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -1844,22 +1877,28 @@ function FieldBlock({
               The answer to this field decides visibility or behaviour for:
             </p>
             <ul className="text-[11px] space-y-0.5">
-              {referencedBy.slice(0, 8).map((r, i) => (
-                <li key={i} className="flex items-start gap-1 text-blue-900 dark:text-blue-200">
-                  <span className="text-blue-600 dark:text-blue-400 font-mono">
-                    {r.kind === 'section' ? '▶' : '·'}
-                  </span>
-                  <span className="truncate">
-                    {r.kind === 'section' ? 'Section ' : 'Field '}<strong>{r.label}</strong>
-                    {r.kind === 'field' && <span className="text-blue-700/70 dark:text-blue-300/70"> in {r.sectionTitle}</span>}
-                  </span>
+              {referencedBy.map((r, i) => (
+                <li key={i}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onJumpToRule?.(r)
+                    }}
+                    className="w-full flex items-start gap-1 text-left text-blue-900 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded px-1 py-0.5 transition-colors"
+                    title="Open this rule for editing"
+                  >
+                    <span className="text-blue-600 dark:text-blue-400 font-mono">
+                      {r.kind === 'section' ? '▶' : '·'}
+                    </span>
+                    <span className="truncate flex-1">
+                      {r.kind === 'section' ? 'Section ' : 'Field '}<strong>{r.label}</strong>
+                      {r.kind === 'field' && <span className="text-blue-700/70 dark:text-blue-300/70"> in {r.sectionTitle}</span>}
+                    </span>
+                    <span className="text-blue-600/60 dark:text-blue-400/60">→</span>
+                  </button>
                 </li>
               ))}
-              {referencedBy.length > 8 && (
-                <li className="text-blue-700/70 dark:text-blue-300/70 italic">
-                  + {referencedBy.length - 8} more
-                </li>
-              )}
             </ul>
           </div>
         )}
@@ -2700,6 +2739,7 @@ export default function FormEditor({
           return (
           <div
             key={section.id}
+            id={`section-${section.id}`}
             className={`mb-10 border-l-4 ${pathTheme.border} ${pathTheme.bg} pl-4 rounded-sm transition-colors`}
           >
             {/* Section Header */}
@@ -2804,7 +2844,7 @@ export default function FormEditor({
             {/* Fields */}
             {section.fields.map((field, fieldIndex) => (
               <React.Fragment key={field.id}>
-                <div className="relative">
+                <div id={`field-${field.id}`} className="relative">
                   <FieldBlock
                     field={field}
                     isSelected={selectedField === field.id}
@@ -2818,6 +2858,20 @@ export default function FormEditor({
                     allSections={sections}
                     currentSectionIndex={sectionIndex}
                     referencedBy={referenceMap.get(field.name) || []}
+                    onJumpToRule={(ref) => {
+                      // Select the target field so its logic panel is visible,
+                      // then scroll the target (field or section) into view and
+                      // flash it briefly.
+                      if (ref.fieldId) setSelectedField(ref.fieldId)
+                      setTimeout(() => {
+                        const el = document.getElementById(ref.targetId)
+                        if (el) {
+                          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                          el.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2', 'transition')
+                          setTimeout(() => el.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2', 'transition'), 1800)
+                        }
+                      }, 50)
+                    }}
                   />
                   {/* Delete confirmation badge */}
                   {deleteConfirm === field.id && (
