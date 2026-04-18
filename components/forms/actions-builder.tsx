@@ -121,119 +121,140 @@ function ClauseRow({
       : []
 
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-start">
-      {/* Field picker */}
-      <select
-        value={clause.field || ''}
-        onChange={(e) => {
-          const nf = sourceFields.find(x => x.name === e.target.value)
-          const nextOp = nf ? opsFor(nf.type)[0] : 'equals'
-          const nextNeeds = OP_NEEDS_VALUE[nextOp] ?? 'single'
-          onChange({
-            field: e.target.value,
-            operator: nextOp,
-            value: nextNeeds === 'multi' ? [] : '',
-          })
-        }}
-        className="rounded-md border bg-background px-2 py-1 text-xs"
+    <div className="relative rounded-md border bg-background/60 p-2.5 space-y-2">
+      <button
+        type="button"
+        onClick={onRemove}
+        className="absolute top-1.5 right-1.5 p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600"
+        aria-label="Remove clause"
       >
-        <option value="">Pick a question…</option>
-        {(() => {
-          const grouped = new Map<string, FieldDescriptor[]>()
-          sourceFields.forEach(f => {
-            if (!grouped.has(f.sectionTitle)) grouped.set(f.sectionTitle, [])
-            grouped.get(f.sectionTitle)!.push(f)
-          })
-          return Array.from(grouped.entries()).map(([sectionTitle, fields]) => (
-            <optgroup key={sectionTitle} label={sectionTitle}>
-              {fields.map(f => (
-                <option key={f.name} value={f.name}>
-                  {f.label}
-                </option>
-              ))}
-            </optgroup>
-          ))
-        })()}
-      </select>
-
-      {/* Operator */}
-      <select
-        value={clause.operator}
-        onChange={(e) => {
-          const nextOp = e.target.value as ClauseOperator
-          const nextNeeds = OP_NEEDS_VALUE[nextOp] ?? 'single'
-          let nextValue: any = clause.value
-          if (nextNeeds === 'multi' && !Array.isArray(nextValue)) nextValue = nextValue ? [String(nextValue)] : []
-          else if (nextNeeds !== 'multi' && Array.isArray(nextValue)) nextValue = nextValue[0] ?? ''
-          else if (nextNeeds === 'none') nextValue = ''
-          onChange({ ...clause, operator: nextOp, value: nextValue })
-        }}
-        className="rounded-md border bg-background px-2 py-1 text-xs"
-      >
-        {ops.map(op => (
-          <option key={op} value={op}>{OPERATOR_LABELS[op]}</option>
-        ))}
-      </select>
-
-      {/* Value input (adapts to source + operator) */}
-      {needs === 'none' ? (
-        <span className="text-[11px] text-muted-foreground italic py-1.5">no value needed</span>
-      ) : source?.options && source.options.length > 0 ? (
-        needs === 'multi' ? (
-          <div className="space-y-1">
-            <div className="flex flex-wrap gap-1 min-h-[28px] rounded-md border bg-background p-1">
-              {selectedValues.length === 0 && (
-                <span className="px-1.5 py-0.5 text-[11px] text-muted-foreground italic">No values picked</span>
-              )}
-              {selectedValues.map(v => (
-                <span key={v} className="inline-flex items-center gap-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 px-1.5 py-0.5 text-[11px]">
-                  {v}
-                  <button type="button" onClick={() => onChange({ ...clause, value: selectedValues.filter(x => x !== v) })} className="hover:text-red-600">
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {source.options.filter(o => !selectedValues.includes(o)).map(o => (
-                <button
-                  key={o}
-                  type="button"
-                  onClick={() => onChange({ ...clause, value: [...selectedValues, o] })}
-                  className="inline-flex items-center gap-1 rounded border bg-background px-1.5 py-0.5 text-[11px] hover:bg-muted"
-                >
-                  <Plus className="h-2.5 w-2.5" />
-                  <span className="truncate max-w-[180px]">{o}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <select
-            value={typeof clause.value === 'string' ? clause.value : (selectedValues[0] || '')}
-            onChange={(e) => onChange({ ...clause, value: e.target.value })}
-            className="rounded-md border bg-background px-2 py-1 text-xs"
-          >
-            <option value="">Pick a value…</option>
-            {source.options.map(o => (
-              <option key={o} value={o}>{o}</option>
-            ))}
-          </select>
-        )
-      ) : (
-        <Input
-          value={typeof clause.value === 'string' || typeof clause.value === 'number' ? String(clause.value) : ''}
-          onChange={(e) => onChange({ ...clause, value: e.target.value })}
-          placeholder="Type a value"
-          className="h-7 text-xs"
-          type={source?.type === 'NUMBER' ? 'number' : 'text'}
-        />
-      )}
-
-      {/* Remove */}
-      <button type="button" onClick={onRemove} className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600">
         <X className="h-3.5 w-3.5" />
       </button>
+
+      {/* Field picker */}
+      <div>
+        <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Question</Label>
+        <select
+          value={clause.field || ''}
+          onChange={(e) => {
+            const nf = sourceFields.find(x => x.name === e.target.value)
+            const nextOp = nf ? opsFor(nf.type)[0] : 'equals'
+            const nextNeeds = OP_NEEDS_VALUE[nextOp] ?? 'single'
+            onChange({
+              field: e.target.value,
+              operator: nextOp,
+              value: nextNeeds === 'multi' ? [] : '',
+            })
+          }}
+          className="mt-0.5 w-full rounded-md border bg-background px-2 py-1.5 text-xs"
+        >
+          <option value="">Pick a question…</option>
+          {(() => {
+            const grouped = new Map<string, FieldDescriptor[]>()
+            sourceFields.forEach(f => {
+              if (!grouped.has(f.sectionTitle)) grouped.set(f.sectionTitle, [])
+              grouped.get(f.sectionTitle)!.push(f)
+            })
+            return Array.from(grouped.entries()).map(([sectionTitle, fields]) => (
+              <optgroup key={sectionTitle} label={sectionTitle}>
+                {fields.map(f => (
+                  <option key={f.name} value={f.name}>
+                    {f.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))
+          })()}
+        </select>
+      </div>
+
+      {/* Operator */}
+      <div>
+        <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Condition</Label>
+        <select
+          value={clause.operator}
+          onChange={(e) => {
+            const nextOp = e.target.value as ClauseOperator
+            const nextNeeds = OP_NEEDS_VALUE[nextOp] ?? 'single'
+            let nextValue: any = clause.value
+            if (nextNeeds === 'multi' && !Array.isArray(nextValue)) nextValue = nextValue ? [String(nextValue)] : []
+            else if (nextNeeds !== 'multi' && Array.isArray(nextValue)) nextValue = nextValue[0] ?? ''
+            else if (nextNeeds === 'none') nextValue = ''
+            onChange({ ...clause, operator: nextOp, value: nextValue })
+          }}
+          className="mt-0.5 w-full rounded-md border bg-background px-2 py-1.5 text-xs"
+        >
+          {ops.map(op => (
+            <option key={op} value={op}>{OPERATOR_LABELS[op]}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Value input */}
+      {needs !== 'none' && (
+        <div>
+          <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
+            {needs === 'multi' ? 'Values' : 'Value'}
+          </Label>
+          <div className="mt-0.5">
+            {source?.options && source.options.length > 0 ? (
+              needs === 'multi' ? (
+                <div className="space-y-1">
+                  <div className="flex flex-wrap gap-1 min-h-[32px] rounded-md border bg-background p-1.5">
+                    {selectedValues.length === 0 && (
+                      <span className="px-1.5 py-0.5 text-[11px] text-muted-foreground italic">No values picked</span>
+                    )}
+                    {selectedValues.map(v => (
+                      <span key={v} className="inline-flex items-center gap-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 px-1.5 py-0.5 text-[11px]">
+                        {v}
+                        <button type="button" onClick={() => onChange({ ...clause, value: selectedValues.filter(x => x !== v) })} className="hover:text-red-600">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {source.options.filter(o => !selectedValues.includes(o)).map(o => (
+                      <button
+                        key={o}
+                        type="button"
+                        onClick={() => onChange({ ...clause, value: [...selectedValues, o] })}
+                        className="inline-flex items-center gap-1 rounded border bg-background px-1.5 py-0.5 text-[11px] hover:bg-muted"
+                      >
+                        <Plus className="h-2.5 w-2.5" />
+                        <span className="truncate max-w-[240px]">{o}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <select
+                  value={typeof clause.value === 'string' ? clause.value : (selectedValues[0] || '')}
+                  onChange={(e) => onChange({ ...clause, value: e.target.value })}
+                  className="w-full rounded-md border bg-background px-2 py-1.5 text-xs"
+                >
+                  <option value="">Pick a value…</option>
+                  {source.options.map(o => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              )
+            ) : (
+              <Input
+                value={typeof clause.value === 'string' || typeof clause.value === 'number' ? String(clause.value) : ''}
+                onChange={(e) => onChange({ ...clause, value: e.target.value })}
+                placeholder="Type a value"
+                className="h-8 text-xs"
+                type={source?.type === 'NUMBER' ? 'number' : 'text'}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {needs === 'none' && (
+        <p className="text-[11px] text-muted-foreground italic">no value needed for this condition</p>
+      )}
     </div>
   )
 }
