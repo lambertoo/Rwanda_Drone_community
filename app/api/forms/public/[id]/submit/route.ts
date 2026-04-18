@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/email'
 import { appendSubmissionToSheet, hasGoogleSheetsAuth, UserGoogleTokens } from '@/lib/google-sheets'
+import { sanitizeSubmission, MAX_BODY_BYTES } from '@/lib/form-sanitize'
 import crypto from 'crypto'
 
 export async function POST(
@@ -10,6 +11,14 @@ export async function POST(
 ) {
   try {
     const { id: formId } = await params
+
+    // Reject oversized payloads before parsing — shields us from memory DOS
+    // attempts and from outsized file-URL lists.
+    const contentLength = Number(request.headers.get('content-length') || 0)
+    if (contentLength > MAX_BODY_BYTES) {
+      return NextResponse.json({ error: 'Submission is too large' }, { status: 413 })
+    }
+
     const body = await request.json()
 
     // Check if form exists and is active
@@ -83,21 +92,20 @@ export async function POST(
       return NextResponse.json({ error: 'Form not found' }, { status: 404 })
     }
 
-    // Build field values — store null for unanswered fields
-    const allFieldValues: { fieldId: string; value: string | null }[] = []
-
-    formWithFields.sections.forEach((section) => {
-      section.fields.forEach((field) => {
-        const submittedValue = body[field.name]
-        let stored: string | null = null
-
-        if (submittedValue !== undefined && submittedValue !== null && submittedValue !== '') {
-          stored = typeof submittedValue === 'string' ? submittedValue : JSON.stringify(submittedValue)
-        }
-
-        allFieldValues.push({ fieldId: field.id, value: stored })
-      })
-    })
+    // Flatten fields for sanitisation and build values. sanitizeSubmission
+    // strips HTML from every text input, clamps length limits, enforces
+    // option-set membership on choice fields, and validates numeric / email
+    // / URL / phone types. Anything that fails returns a 400 with a friendly
+    // message so the respondent can fix it.
+    const flatFields = formWithFields.sections.flatMap((s) => s.fields)
+    const sanitisation = sanitizeSubmission(flatFields, body)
+    if (sanitisation.error) {
+      return NextResponse.json(
+        { error: sanitisation.error, field: sanitisation.field },
+        { status: 400 },
+      )
+    }
+    const allFieldValues = sanitisation.values!
 
     const ip =
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||

@@ -1,25 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-middleware'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const anthropicApiKey = process.env.ANTHROPIC_API_KEY
+const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
 
 /**
  * POST /api/forms/ai-draft
  *
- * Body: { brief: string; existingFormTitle?: string }
+ * Body: { brief: string }
  *
- * Uses Claude to propose a fully-structured form (sections + fields with
- * labels, types, options). The admin can then import the draft into the
- * form editor as a starting point.
+ * Uses Google Gemini to propose a fully-structured form (sections + fields
+ * with labels, types, options). The admin can then import the draft into
+ * the form editor as a starting point.
  */
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req)
   if (auth instanceof NextResponse) return auth
 
-  if (!anthropicApiKey) {
+  if (!apiKey) {
     return NextResponse.json(
-      { error: 'AI features are not configured. Set ANTHROPIC_API_KEY to enable.' },
+      { error: 'AI features are not configured. Set GOOGLE_GENERATIVE_AI_API_KEY to enable.' },
       { status: 503 },
     )
   }
@@ -40,10 +40,10 @@ export async function POST(req: NextRequest) {
     "description"?: string,
     "fields": Array<{
       "label": string,
-      "name": string,  // snake_case machine key unique across the form
+      "name": string,
       "type": "SHORT_TEXT" | "LONG_TEXT" | "EMAIL" | "PHONE" | "URL" | "NUMBER" | "MULTIPLE_CHOICE" | "CHECKBOXES" | "DROPDOWN" | "DATE" | "LINEAR_SCALE" | "RATING" | "FILE_UPLOAD" | "HEADING" | "PARAGRAPH",
       "placeholder"?: string,
-      "options"?: string[],  // required for MULTIPLE_CHOICE/CHECKBOXES/DROPDOWN
+      "options"?: string[],
       "required"?: boolean
     }>
   }>
@@ -53,35 +53,29 @@ Rules:
 - Group related questions into sections with clear titles.
 - Keep questions concise and respondent-friendly, in first-person voice.
 - Use MULTIPLE_CHOICE for single-pick, CHECKBOXES for multi-pick, DROPDOWN for long single-pick lists.
-- Always include 1 sensible "Other" option on open-ended choice questions.
-- Give every field a unique snake_case name.
-- Do not emit markdown or commentary — JSON only.`
-
-  const client = new Anthropic({ apiKey: anthropicApiKey })
+- Always include a sensible "Other" option on open-ended choice questions.
+- Give every field a unique snake_case machine name.
+- Do not emit markdown fences or commentary. JSON only.`
 
   try {
-    const resp = await client.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 4096,
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: `Draft a form for: ${brief}\n\nReturn JSON only.`,
-        },
-      ],
+    const client = new GoogleGenerativeAI(apiKey)
+    const model = client.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      systemInstruction: systemPrompt,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 4096,
+        responseMimeType: 'application/json',
+      },
     })
-    // Concatenate text blocks
-    const text = resp.content
-      .filter(b => b.type === 'text')
-      .map(b => (b as any).text)
-      .join('')
-    // Extract JSON object from response
-    const start = text.indexOf('{')
-    const end = text.lastIndexOf('}')
+    const result = await model.generateContent(`Draft a form for: ${brief}\n\nReturn JSON only.`)
+    const text = result.response.text()
+    // responseMimeType=application/json should return pure JSON, but trim any fence just in case
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()
+    const start = cleaned.indexOf('{')
+    const end = cleaned.lastIndexOf('}')
     if (start < 0 || end < 0) return NextResponse.json({ error: 'AI returned no JSON' }, { status: 502 })
-    const json = text.slice(start, end + 1)
-    const parsed = JSON.parse(json)
+    const parsed = JSON.parse(cleaned.slice(start, end + 1))
     return NextResponse.json({ draft: parsed })
   } catch (err: any) {
     console.error('[AI draft] error:', err)
