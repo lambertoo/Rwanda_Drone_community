@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
+import ConditionalBuilder from "@/components/forms/conditional-builder"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -424,6 +425,8 @@ function FieldBlock({
   onMoveDown,
   canMoveUp,
   canMoveDown,
+  allSections,
+  currentSectionIndex,
 }: {
   field: FormField
   isSelected: boolean
@@ -434,6 +437,8 @@ function FieldBlock({
   onMoveDown: () => void
   canMoveUp: boolean
   canMoveDown: boolean
+  allSections: FormSection[]
+  currentSectionIndex: number
 }) {
   const [editingLabel, setEditingLabel] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -1698,92 +1703,29 @@ function FieldBlock({
         {/* Conditional logic editor (all fields) */}
         {isSelected && !isLayout && (
           <div className="mt-4 pointer-events-auto">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                if (field.conditional) {
-                  onUpdate({ conditional: undefined })
-                } else {
+            {!field.conditional ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
                   onUpdate({
-                    conditional: {
-                      dependsOn: "",
-                      operator: "equals",
-                      value: "",
-                    },
+                    conditional: { dependsOn: "", operator: "equals", value: "" },
                   })
-                }
-              }}
-              className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1.5 transition-colors"
-            >
-              <Settings className="w-3 h-3" />
-              {field.conditional
-                ? "Remove conditional logic"
-                : "Add conditional logic"}
-            </button>
-            {field.conditional && (
-              <div className="mt-2 p-3 rounded-lg bg-muted/30 space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Show this field when...
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <Label className="text-[10px]">Field name</Label>
-                    <Input
-                      value={field.conditional.dependsOn || ""}
-                      onChange={(e) =>
-                        onUpdate({
-                          conditional: {
-                            ...field.conditional,
-                            dependsOn: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="field_name"
-                      className="h-7 text-xs mt-0.5"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[10px]">Operator</Label>
-                    <select
-                      value={field.conditional.operator || "equals"}
-                      onChange={(e) =>
-                        onUpdate({
-                          conditional: {
-                            ...field.conditional,
-                            operator: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full h-7 rounded-md border bg-background px-2 text-xs mt-0.5"
-                    >
-                      <option value="equals">Equals</option>
-                      <option value="not_equals">Not equals</option>
-                      <option value="contains">Contains</option>
-                      <option value="not_empty">Not empty</option>
-                      <option value="is_empty">Is empty</option>
-                      <option value="greater_than">Greater than</option>
-                      <option value="less_than">Less than</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label className="text-[10px]">Value</Label>
-                    <Input
-                      value={field.conditional.value || ""}
-                      onChange={(e) =>
-                        onUpdate({
-                          conditional: {
-                            ...field.conditional,
-                            value: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="value"
-                      className="h-7 text-xs mt-0.5"
-                    />
-                  </div>
-                </div>
-              </div>
+                }}
+                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1.5 transition-colors"
+              >
+                <Settings className="w-3 h-3" />
+                Add conditional logic
+              </button>
+            ) : (
+              <ConditionalBuilder
+                allSections={allSections}
+                currentSectionIndex={currentSectionIndex}
+                currentFieldName={field.name}
+                value={field.conditional}
+                onChange={(next) => onUpdate({ conditional: (next ?? undefined) as any })}
+                target="field"
+              />
             )}
           </div>
         )}
@@ -2038,9 +1980,12 @@ export default function FormEditor({
         title: formTitle,
         description: formDescription,
         settings,
-        sections: sections.map((s) => ({
+        sections: sections.map((s, si) => ({
           title: s.title,
           description: s.description,
+          order: s.order ?? si + 1,
+          conditional: s.conditional ?? null,
+          isActive: s.isActive ?? true,
           fields: s.fields.map((f) => ({
             type: f.type,
             label: f.label,
@@ -2051,6 +1996,15 @@ export default function FormEditor({
             validation: { ...f.validation, required: f.required },
             conditional: f.conditional,
             order: f.order,
+            matrixRows: (f as any).matrixRows,
+            matrixColumns: (f as any).matrixColumns,
+            matrixType: (f as any).matrixType,
+            scaleStart: (f as any).scaleStart,
+            scaleEnd: (f as any).scaleEnd,
+            scaleStep: (f as any).scaleStep,
+            leftLabel: (f as any).leftLabel,
+            centerLabel: (f as any).centerLabel,
+            rightLabel: (f as any).rightLabel,
           })),
         })),
       }
@@ -2753,6 +2707,34 @@ export default function FormEditor({
               </div>
             )}
 
+            {/* Section-level conditional logic */}
+            <div className="mb-4">
+              {!section.conditional ? (
+                sectionIndex > 0 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateSection(section.id, {
+                        conditional: { dependsOn: '', operator: 'equals', value: '' },
+                      } as any)
+                    }
+                    className="text-xs text-muted-foreground hover:text-primary inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    <Settings className="w-3 h-3" />
+                    Only show this section when…
+                  </button>
+                )
+              ) : (
+                <ConditionalBuilder
+                  allSections={sections}
+                  currentSectionIndex={sectionIndex}
+                  value={section.conditional as any}
+                  onChange={(next) => updateSection(section.id, { conditional: (next ?? null) as any })}
+                  target="section"
+                />
+              )}
+            </div>
+
             {/* Add block at top of section */}
             <AddBlockButton
               onClick={(e?: any) =>
@@ -2774,6 +2756,8 @@ export default function FormEditor({
                     onMoveDown={() => moveField(field.id, "down")}
                     canMoveUp={fieldIndex > 0}
                     canMoveDown={fieldIndex < section.fields.length - 1}
+                    allSections={sections}
+                    currentSectionIndex={sectionIndex}
                   />
                   {/* Delete confirmation badge */}
                   {deleteConfirm === field.id && (
