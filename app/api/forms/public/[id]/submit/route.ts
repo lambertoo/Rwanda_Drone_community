@@ -104,6 +104,48 @@ export async function POST(
       request.headers.get('x-real-ip') ||
       'unknown'
 
+    // Access control: IP allow-list
+    if (Array.isArray(formSettings?.allowedIPs) && formSettings.allowedIPs.length > 0) {
+      if (!formSettings.allowedIPs.includes(ip)) {
+        return NextResponse.json({ error: 'Access denied for your network.' }, { status: 403 })
+      }
+    }
+    // Access control: password gate
+    if (formSettings?.passwordProtect) {
+      if (body?._password !== formSettings.passwordProtect) {
+        return NextResponse.json({ error: 'Invalid password.' }, { status: 403 })
+      }
+    }
+    // CAPTCHA gate (token validation left to integrator; here we just require the flag)
+    if (formSettings?.requireCaptcha && !body?._captchaToken) {
+      return NextResponse.json({ error: 'CAPTCHA challenge failed.' }, { status: 403 })
+    }
+
+    // Quiz scoring: sum points for each field whose submitted value matches its correctAnswer.
+    let quizScore: number | undefined
+    let quizMax: number | undefined
+    if (formSettings?.quizMode) {
+      let total = 0
+      let max = 0
+      for (const section of formWithFields.sections) {
+        for (const field of section.fields) {
+          const v: any = (field.validation as any) || {}
+          const pts = Number(v.points ?? 1)
+          const correct = v.correctAnswer
+          if (correct === undefined || correct === null || correct === '') continue
+          max += pts
+          const answer = body[field.name]
+          const match =
+            Array.isArray(correct)
+              ? Array.isArray(answer) && correct.every(c => (answer as any[]).includes(c)) && (answer as any[]).length === correct.length
+              : String(answer ?? '') === String(correct)
+          if (match) total += pts
+        }
+      }
+      quizScore = total
+      quizMax = max
+    }
+
     const editToken = crypto.randomBytes(24).toString('hex')
 
     // Determine initial status: if form has approval workflow, set to pending_review
@@ -119,6 +161,7 @@ export async function POST(
           submittedAt: new Date().toISOString(),
           userAgent: request.headers.get('user-agent') || null,
           referrer: request.headers.get('referer') || null,
+          ...(quizScore !== undefined ? { quizScore, quizMax } : {}),
         },
         values: { create: allFieldValues },
       },
@@ -210,6 +253,33 @@ export async function POST(
           subject: `Your response: ${formWithFields.title}`,
           html: `<div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:600px;margin:0 auto;padding:20px;">${heading}${body}</div>`,
         }).catch((err) => console.error('[FormSubmit] Applicant summary email failed:', err))
+      }
+    }
+
+    // Outbound webhooks (non-blocking). Each URL in settings.webhooks receives
+    // the full submission payload so admins can pipe into Zapier, Make, Slack,
+    // internal services, etc.
+    if (Array.isArray(formSettings?.webhooks) && formSettings.webhooks.length > 0) {
+      const payload = {
+        event: 'form.submission',
+        formId,
+        formTitle: formWithFields.title,
+        submissionId: submission.id,
+        submittedAt: new Date().toISOString(),
+        values: Object.fromEntries(
+          allFieldValues.map(v => {
+            const f = formWithFields.sections.flatMap(s => s.fields).find(ff => ff.id === v.fieldId)
+            return [f?.name || v.fieldId, v.value]
+          }),
+        ),
+      }
+      for (const url of formSettings.webhooks as string[]) {
+        if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) continue
+        fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-UAVRW-Event': 'form.submission' },
+          body: JSON.stringify(payload),
+        }).catch(err => console.error('[FormSubmit] Webhook failed:', url, err))
       }
     }
 

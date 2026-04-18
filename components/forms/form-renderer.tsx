@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { evaluateActions, reduceEffects } from "@/lib/form-actions"
+import { evaluateActions, reduceEffects, pipeValues } from "@/lib/form-actions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -77,6 +77,23 @@ export interface FormSettings {
   submitButtonText?: string
   closedMessage?: string
   primaryColor?: string
+  fontFamily?: string
+  coverImage?: string
+  logo?: string
+  backgroundImage?: string
+  backgroundGradient?: string
+  thankYouHeading?: string
+  reviewStep?: boolean
+  emailSummaryToApplicant?: boolean
+  applicantEmailField?: string
+  webhooks?: string[]
+  requireLogin?: boolean
+  passwordProtect?: string
+  allowedIPs?: string[]
+  quizMode?: boolean
+  languages?: string[]
+  defaultLanguage?: string
+  translations?: Record<string, any>
   coverImage?: string
   closeDate?: string
   maxResponses?: number | null
@@ -115,18 +132,30 @@ const FIELD_ICONS = {
 
 export default function FormRenderer({ formData, onSubmit }: FormRendererProps) {
   const [currentStep, setCurrentStep] = useState(0)
+  const [stepHistory, setStepHistory] = useState<number[]>([]) // for back button after JUMP_TO
   const [formValues, setFormValues] = useState<Record<string, any>>(() => {
-    // Prefill from URL params
+    const prefilled: Record<string, any> = {}
+    // 1. Hidden-field default values from the form definition come first
+    try {
+      for (const section of formData?.sections || []) {
+        for (const field of section.fields || []) {
+          const def = (field as any).validation?.defaultValue
+          if (def !== undefined && def !== null && def !== '') {
+            prefilled[field.name] = def
+          }
+        }
+      }
+    } catch {}
+    // 2. URL params override defaults (so admins can prefill via ?utm_source=xxx)
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
-      const prefilled: Record<string, any> = {}
       params.forEach((value, key) => { prefilled[key] = value })
-      return prefilled
     }
-    return {}
+    return prefilled
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [submittedRedirect, setSubmittedRedirect] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set())
 
@@ -143,6 +172,26 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
   }
 
   const { title, description, sections, settings = {} } = formData
+
+  // Multi-language: respondent language picked from ?lang= URL param (or default).
+  // translations shape: { [langCode]: { form: { title, description, submitButtonText, confirmationMessage, thankYouHeading },
+  //                                      sections: { [sectionId]: { title, description } },
+  //                                      fields: { [fieldId]: { label, placeholder, options: [string] } } } }
+  const currentLang = (typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('lang')
+    : null) || settings?.defaultLanguage || null
+  const tr = currentLang && settings?.translations ? (settings.translations as any)[currentLang] : null
+  const tSection = (s: any) => ({
+    ...s,
+    title: tr?.sections?.[s.id]?.title ?? s.title,
+    description: tr?.sections?.[s.id]?.description ?? s.description,
+  })
+  const tField = (f: any) => ({
+    ...f,
+    label: tr?.fields?.[f.id]?.label ?? f.label,
+    placeholder: tr?.fields?.[f.id]?.placeholder ?? f.placeholder,
+    options: tr?.fields?.[f.id]?.options ?? f.options,
+  })
   
   // Add null checks for sections
   if (!sections || !Array.isArray(sections)) {
@@ -183,7 +232,10 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
   const fieldEffects = (field: FormField) => computeEffects(field.actions)
 
   const isSectionVisible = (section: FormSection): boolean => sectionEffects(section).visible
-  const isFieldVisible = (field: FormField): boolean => fieldEffects(field).visible
+  const isFieldVisible = (field: FormField): boolean => {
+    if (field.type === 'HIDDEN_FIELD') return false
+    return fieldEffects(field).visible
+  }
 
   const sortedSections = [...sections].sort((a, b) => (a.order || 0) - (b.order || 0))
   const visibleSections = sortedSections.filter(isSectionVisible)
@@ -322,12 +374,39 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
 
   const handleNext = () => {
     // No validation needed when leaving the review step
-    if (isReviewStep || validateCurrentStep()) {
-      setCurrentStep(prev => Math.min(prev + 1, totalSteps - 1))
+    if (!isReviewStep && !validateCurrentStep()) return
+
+    // Inspect active section-level actions for JUMP_TO / END_FORM
+    const sectionActions = currentSection?.actions as any[] | undefined
+    const active = evaluateActions(sectionActions, formValues)
+    const effects = reduceEffects(active)
+
+    if (effects.endForm) {
+      // Skip straight to review/submit step
+      setStepHistory(h => [...h, currentStep])
+      setCurrentStep(totalSteps - 1)
+      return
     }
+    if (effects.jumpTo) {
+      const targetIdx = visibleSections.findIndex(s => s.id === effects.jumpTo || s.title === effects.jumpTo)
+      if (targetIdx >= 0 && targetIdx !== currentStep) {
+        setStepHistory(h => [...h, currentStep])
+        setCurrentStep(targetIdx)
+        return
+      }
+    }
+    setStepHistory(h => [...h, currentStep])
+    setCurrentStep(prev => Math.min(prev + 1, totalSteps - 1))
   }
 
   const handlePrevious = () => {
+    // If we jumped (history), pop back to the previous step we were on
+    if (stepHistory.length > 0) {
+      const prev = stepHistory[stepHistory.length - 1]
+      setStepHistory(h => h.slice(0, -1))
+      setCurrentStep(prev)
+      return
+    }
     setCurrentStep(prev => Math.max(prev - 1, 0))
   }
 
@@ -337,11 +416,23 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
     if (!ok) return
     setIsSubmitting(true)
     try {
-      // Include a flag if the form wants the applicant to receive a summary email.
       const payload: any = { ...formValues }
       if (settings?.emailSummaryToApplicant) payload._emailSummary = true
       await onSubmit(payload)
+
+      // Compute any form-level REDIRECT effect across all sections
+      let redirectUrl: string | undefined = settings?.redirectUrl
+      for (const s of sortedSections) {
+        const active = evaluateActions((s as any).actions, formValues)
+        const red = active.find(a => a.action === 'REDIRECT' && a.target)
+        if (red?.target) { redirectUrl = red.target; break }
+      }
       setIsSubmitted(true)
+      if (redirectUrl) {
+        setSubmittedRedirect(redirectUrl)
+        // Small delay so the thank-you flash is visible
+        setTimeout(() => { if (typeof window !== 'undefined') window.location.href = redirectUrl! }, 1200)
+      }
     } catch (error) {
       console.error('Submission error:', error)
     } finally {
@@ -973,17 +1064,19 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
   }
 
   if (isSubmitted) {
+    const pipedMessage = pipeValues(settings?.confirmationMessage || 'Your response has been recorded.', formValues)
+    const pipedHeading = pipeValues((settings as any)?.thankYouHeading || 'Thank you!', formValues)
     return (
       <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-background rounded-2xl border shadow-sm p-8 text-center animate-in fade-in-0 zoom-in-95 duration-300">
           <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: accentColor + '15' }}>
             <CheckCircle className="w-8 h-8" style={{ color: accentColor }} />
           </div>
-          <h2 className="text-2xl font-semibold mb-2">Thank you!</h2>
-          <p className="text-muted-foreground mb-6">{settings?.confirmationMessage || 'Your response has been recorded.'}</p>
-          {settings?.redirectUrl && (
+          <h2 className="text-2xl font-semibold mb-2">{pipedHeading}</h2>
+          <p className="text-muted-foreground mb-6 whitespace-pre-wrap">{pipedMessage}</p>
+          {(submittedRedirect || settings?.redirectUrl) && (
             <Button asChild className="w-full" style={{ backgroundColor: accentColor }}>
-              <a href={settings.redirectUrl}>Continue</a>
+              <a href={submittedRedirect || settings!.redirectUrl!}>Continue</a>
             </Button>
           )}
         </div>
@@ -991,8 +1084,24 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
     )
   }
 
+  // Build theme styles from form settings
+  const themeStyle: React.CSSProperties = {
+    fontFamily: settings?.fontFamily || undefined,
+    backgroundImage: settings?.backgroundImage
+      ? `url("${settings.backgroundImage}")`
+      : settings?.backgroundGradient || undefined,
+    backgroundSize: settings?.backgroundImage ? 'cover' : undefined,
+    backgroundPosition: settings?.backgroundImage ? 'center' : undefined,
+  }
+
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-muted/30" style={themeStyle}>
+      {/* Logo */}
+      {settings?.logo && (
+        <div className="flex justify-center pt-6">
+          <img src={settings.logo} alt="Logo" className="h-10 w-auto" />
+        </div>
+      )}
       {/* Cover Image */}
       {settings?.coverImage && (
         <div className="h-48 w-full overflow-hidden">
@@ -1067,8 +1176,8 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
           <div className="bg-background rounded-2xl border shadow-sm p-6 md:p-8 animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
             {totalSteps > 1 && currentSection && (
               <div className="mb-6">
-                <h2 className="text-lg font-semibold">{currentSection.title}</h2>
-                {currentSection.description && <p className="text-sm text-muted-foreground mt-1">{currentSection.description}</p>}
+                <h2 className="text-lg font-semibold">{pipeValues(currentSection.title, formValues)}</h2>
+                {currentSection.description && <p className="text-sm text-muted-foreground mt-1">{pipeValues(currentSection.description, formValues)}</p>}
               </div>
             )}
 

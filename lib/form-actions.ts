@@ -191,3 +191,19 @@ export function emptyClause(field = ''): ConditionClause {
 export function newAction(action: ActionType = 'HIDE'): ActionRule {
   return { action, when: emptyGroup() }
 }
+
+// ─── Value piping ────────────────────────────────────────────
+// Replaces {{field_name}} tokens in arbitrary text with the current answer
+// for that field. Missing answers become an empty string.
+const TOKEN = /\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g
+
+export function pipeValues(text: string | undefined | null, answers: Record<string, any>): string {
+  if (!text) return ''
+  return String(text).replace(TOKEN, (_m, key) => {
+    const v = answers[key]
+    if (v === undefined || v === null) return ''
+    if (Array.isArray(v)) return v.map(String).join(', ')
+    if (typeof v === 'object') return JSON.stringify(v)
+    return String(v)
+  })
+}
