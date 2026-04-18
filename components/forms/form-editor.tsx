@@ -26,6 +26,7 @@ import {
   CheckSquare,
   Circle,
   ChevronDown,
+  ChevronRight,
   Settings,
   ArrowUp,
   ArrowDown,
@@ -580,6 +581,7 @@ function FieldBlock({
 }) {
   const [editingLabel, setEditingLabel] = useState(false)
   const [hovered, setHovered] = useState(false)
+  const [fieldLogicOpen, setFieldLogicOpen] = useState(false)
   const labelRef = useRef<HTMLTextAreaElement>(null)
   const headingRef = useRef<HTMLTextAreaElement>(null)
 
@@ -1897,15 +1899,21 @@ function FieldBlock({
           </div>
         )}
 
-        {/* Field logic: always visible when actions exist, or on selection for a quick "Add rule" affordance */}
+        {/* Field logic — collapsible card. Hidden for unselected empty fields. */}
         {!isLayout && (() => {
           const fieldActions = Array.isArray((field as any).actions) ? (field as any).actions as ActionRule[] : []
           const hasActions = fieldActions.length > 0
-          if (!hasActions && !isSelected) return null // keep unselected empty fields clean
+          if (!hasActions && !isSelected) return null
           return (
-            <div className="mt-4 pointer-events-auto rounded-md border border-border bg-muted/20 p-3">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-2">
+            <div className="mt-4 pointer-events-auto rounded-md border border-border bg-muted/20">
+              <div className="flex items-center justify-between gap-2 p-3">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setFieldLogicOpen(v => !v) }}
+                  className="flex items-center gap-2 flex-1 text-left"
+                  aria-expanded={fieldLogicOpen}
+                >
+                  {fieldLogicOpen ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
                   <Settings className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Field logic
@@ -1915,8 +1923,11 @@ function FieldBlock({
                       {fieldActions.length} rule{fieldActions.length === 1 ? '' : 's'}
                     </Badge>
                   )}
-                </div>
-                {!hasActions && (
+                  {!hasActions && (
+                    <span className="text-[11px] text-muted-foreground italic">No rules yet</span>
+                  )}
+                </button>
+                {fieldLogicOpen && !hasActions && (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -1929,19 +1940,23 @@ function FieldBlock({
                   </button>
                 )}
               </div>
-              {hasActions ? (
-                <ActionsBuilder
-                  allSections={allSections}
-                  currentSectionIndex={currentSectionIndex}
-                  currentFieldName={field.name}
-                  target="field"
-                  value={fieldActions}
-                  onChange={(next) => onUpdate({ actions: next } as any)}
-                />
-              ) : (
-                <p className="text-[11px] text-muted-foreground italic">
-                  No logic yet. Add a rule to show / hide / require / enable this field based on earlier answers.
-                </p>
+              {fieldLogicOpen && (
+                <div className="border-t px-3 pb-3 pt-2">
+                  {hasActions ? (
+                    <ActionsBuilder
+                      allSections={allSections}
+                      currentSectionIndex={currentSectionIndex}
+                      currentFieldName={field.name}
+                      target="field"
+                      value={fieldActions}
+                      onChange={(next) => onUpdate({ actions: next } as any)}
+                    />
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground italic">
+                      No logic yet. Add a rule to show / hide / require / enable this field based on earlier answers.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           )
@@ -2009,6 +2024,8 @@ export default function FormEditor({
   const [previewMode, setPreviewMode] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  // Per-key collapse state for section + field logic panels
+  const [logicOpen, setLogicOpen] = useState<Record<string, boolean>>({})
   const [slashCommand, setSlashCommand] = useState<{
     sectionId: string
     insertIndex: number
@@ -2782,14 +2799,18 @@ export default function FormEditor({
               </div>
             )}
 
-            {/* Section-level logic: always visible so authors can see and edit the rules */}
+            {/* Section-level logic — collapsible. Always rendered for visibility. */}
             {(() => {
               const actions = Array.isArray((section as any).actions) ? (section as any).actions as ActionRule[] : []
               const hasActions = actions.length > 0
+              const key = `section-logic-${section.id}`
+              const open = logicOpen[key] ?? false
+              const toggle = () => setLogicOpen(prev => ({ ...prev, [key]: !open }))
               return (
-                <div className="mb-4 rounded-md border border-border bg-muted/20 p-3">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
+                <div className="mb-4 rounded-md border border-border bg-muted/20">
+                  <div className="flex items-center justify-between gap-2 p-3">
+                    <button type="button" onClick={toggle} className="flex items-center gap-2 flex-1 text-left">
+                      {open ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
                       <Settings className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         Section logic
@@ -2797,8 +2818,11 @@ export default function FormEditor({
                       {hasActions && (
                         <Badge variant="secondary" className="text-[10px]">{actions.length} rule{actions.length === 1 ? '' : 's'}</Badge>
                       )}
-                    </div>
-                    {!hasActions && sectionIndex > 0 && (
+                      {!hasActions && (
+                        <span className="text-[11px] text-muted-foreground italic">Always shown</span>
+                      )}
+                    </button>
+                    {open && !hasActions && sectionIndex > 0 && (
                       <button
                         type="button"
                         onClick={() =>
@@ -2812,6 +2836,8 @@ export default function FormEditor({
                       </button>
                     )}
                   </div>
+                  {open && (
+                  <div className="border-t px-3 pb-3 pt-2">
                   {hasActions ? (
                     <ActionsBuilder
                       allSections={sections}
@@ -2826,6 +2852,8 @@ export default function FormEditor({
                         ? 'The first section is always shown to everyone.'
                         : 'No logic yet. This section is always shown. Add a rule to show / hide / jump based on earlier answers.'}
                     </p>
+                  )}
+                  </div>
                   )}
                 </div>
               )
