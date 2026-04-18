@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, Check, AlertTriangle, Mail } from 'lucide-react'
+
+export const dynamic = 'force-dynamic'
 
 type InviteInfo = {
   id: string
@@ -32,6 +34,18 @@ const CONTENT_LABEL: Record<string, string> = {
 }
 
 export default function AcceptCollaborationPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    }>
+      <AcceptCollaborationInner />
+    </Suspense>
+  )
+}
+
+function AcceptCollaborationInner() {
   const params = useSearchParams()
   const router = useRouter()
   const token = params.get('token') || ''
