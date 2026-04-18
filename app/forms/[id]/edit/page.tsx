@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import FormEditor from "@/components/forms/form-editor"
+import FormFlowView from "@/components/forms/form-flow-view"
 import { AuthGuard } from "@/components/auth-guard"
 import CollaborationPanel from "@/components/collaboration/collaboration-panel"
 import { useAuth } from "@/lib/auth-context"
@@ -11,7 +12,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Users, MoreHorizontal, FileSpreadsheet, Bell, ChevronDown, ClipboardList, Eye } from "lucide-react"
+import { Users, MoreHorizontal, FileSpreadsheet, ClipboardList, GitBranch, Pencil } from "lucide-react"
 
 interface Form {
   id: string
@@ -43,6 +44,7 @@ export default function EditFormPage({ params: paramsPromise }: { params: Promis
   const [sheetStatus, setSheetStatus] = useState<SheetStatus | null>(null)
   const [sheetLoading, setSheetLoading] = useState(false)
   const [emailEnabled, setEmailEnabled] = useState(false)
+  const [viewMode, setViewMode] = useState<'edit' | 'flow'>('edit')
 
   useEffect(() => {
     fetchForm()
@@ -266,6 +268,30 @@ export default function EditFormPage({ params: paramsPromise }: { params: Promis
           {/* ── Right: Controls (desktop inline, mobile overflow menu) ── */}
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
 
+            {/* View mode toggle (always visible, both desktop and mobile) */}
+            <div className="inline-flex items-center rounded-md border border-border p-0.5 text-[11px] font-medium">
+              <button
+                onClick={() => setViewMode('edit')}
+                className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 transition-colors ${
+                  viewMode === 'edit' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
+                aria-pressed={viewMode === 'edit'}
+              >
+                <Pencil className="h-3 w-3" />
+                <span className="hidden sm:inline">Edit</span>
+              </button>
+              <button
+                onClick={() => setViewMode('flow')}
+                className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 transition-colors ${
+                  viewMode === 'flow' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
+                aria-pressed={viewMode === 'flow'}
+              >
+                <GitBranch className="h-3 w-3" />
+                <span className="hidden sm:inline">Flow</span>
+              </button>
+            </div>
+
             {/* ── Desktop: full inline controls (hidden on mobile) ── */}
             <div className="hidden sm:flex items-center gap-2">
 
@@ -488,12 +514,16 @@ export default function EditFormPage({ params: paramsPromise }: { params: Promis
         </div>
       </div>
 
-      {/* Form Editor */}
-      <FormEditor
-        initialData={form}
-        onSave={handleSave}
-        onCancel={handleCancel}
-      />
+      {/* Main content: Edit or Flow view */}
+      {viewMode === 'flow' ? (
+        <FormFlowView form={form} />
+      ) : (
+        <FormEditor
+          initialData={form}
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
+      )}
     </AuthGuard>
   )
 }

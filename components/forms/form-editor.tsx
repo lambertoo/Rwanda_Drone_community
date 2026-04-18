@@ -167,6 +167,32 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Advanced blocks": "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400",
 }
 
+// Path colour themes so sections gated by CS4 are visually distinct in the editor.
+// Matches the palette used by FormFlowView.
+function getSectionPathTheme(section: any): {
+  border: string
+  bg: string
+  label: string | null
+  dot: string
+  badgeClass: string
+} {
+  const cond = section?.conditional
+  if (!cond) {
+    return { border: 'border-l-slate-300', bg: '', label: 'Always shown', dot: 'bg-slate-400', badgeClass: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' }
+  }
+  const v = Array.isArray(cond.value) ? cond.value.join(' ') : String(cond.value ?? '')
+  const key = v.toLowerCase()
+  if (key.includes('upstream')) return { border: 'border-l-indigo-400', bg: 'bg-indigo-50/30 dark:bg-indigo-950/10', label: 'Upstream path', dot: 'bg-indigo-500', badgeClass: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200' }
+  if (key.includes('midstream')) return { border: 'border-l-emerald-400', bg: 'bg-emerald-50/30 dark:bg-emerald-950/10', label: 'Midstream path', dot: 'bg-emerald-500', badgeClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200' }
+  if (key.includes('investor')) return { border: 'border-l-amber-400', bg: 'bg-amber-50/30 dark:bg-amber-950/10', label: 'Downstream · Investor', dot: 'bg-amber-500', badgeClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200' }
+  if (key.includes('end-user') || key.includes('advocacy') || key.includes('downstream')) return { border: 'border-l-rose-400', bg: 'bg-rose-50/30 dark:bg-rose-950/10', label: 'Downstream · End-user / Advocacy', dot: 'bg-rose-500', badgeClass: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200' }
+  // Nested (field-level condition on a section, e.g. UP-3 depending on UP-1.1)
+  if (cond.dependsOn && cond.dependsOn !== 'cs4_value_chain') {
+    return { border: 'border-l-violet-400', bg: 'bg-violet-50/30 dark:bg-violet-950/10', label: 'Nested branch', dot: 'bg-violet-500', badgeClass: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200' }
+  }
+  return { border: 'border-l-slate-300', bg: '', label: 'Conditional', dot: 'bg-slate-400', badgeClass: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' }
+}
+
 function getFieldIcon(type: string) {
   const Icon = FIELD_ICON_MAP[type] || Type
   return <Icon className="w-4 h-4" />
@@ -2662,12 +2688,26 @@ export default function FormEditor({
         </div>
 
         {/* Sections */}
-        {sections.map((section, sectionIndex) => (
-          <div key={section.id} className="mb-10">
+        {sections.map((section, sectionIndex) => {
+          const pathTheme = getSectionPathTheme(section)
+          return (
+          <div
+            key={section.id}
+            className={`mb-10 border-l-4 ${pathTheme.border} ${pathTheme.bg} pl-4 rounded-sm transition-colors`}
+          >
             {/* Section Header */}
             {sections.length > 1 && (
               <div className="flex items-center gap-2 mb-4 group">
                 <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    {pathTheme.label && (
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase ${pathTheme.badgeClass}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${pathTheme.dot}`} />
+                        {pathTheme.label}
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground">Section {sectionIndex + 1}</span>
+                  </div>
                   <input
                     type="text"
                     value={section.title}
@@ -2786,7 +2826,8 @@ export default function FormEditor({
               </div>
             )}
           </div>
-        ))}
+          )
+        })}
 
         {/* Add Section */}
         <div className="flex justify-center mt-4">
