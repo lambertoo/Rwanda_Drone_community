@@ -55,8 +55,8 @@ export interface FormField {
   }
   conditional?: {
     dependsOn: string
-    operator: 'equals' | 'not_equals' | 'contains' | 'not_contains'
-    value: string
+    operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'in' | 'not_in' | 'is_empty' | 'is_not_empty'
+    value: string | string[]
   }
   order: number
 }
@@ -70,7 +70,7 @@ export interface FormSection {
   conditional?: {
     dependsOn: string
     operator: string
-    value: string
+    value: string | string[]
   }
 }
 
@@ -164,13 +164,18 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
   }
 
   // Conditional logic helpers
-  const evaluateCondition = (fieldValue: any, operator: string, condValue: string): boolean => {
-    const v = Array.isArray(fieldValue) ? fieldValue.join(', ') : String(fieldValue ?? '')
+  const evaluateCondition = (fieldValue: any, operator: string, condValue: string | string[]): boolean => {
+    const fieldValues = Array.isArray(fieldValue) ? fieldValue.map(x => String(x)) : [String(fieldValue ?? '')]
+    const v = fieldValues.join(', ')
+    const single = Array.isArray(condValue) ? (condValue[0] ?? '') : condValue
+    const list = Array.isArray(condValue) ? condValue : [condValue]
     switch (operator) {
-      case 'equals': return v === condValue
-      case 'not_equals': return v !== condValue
-      case 'contains': return v.toLowerCase().includes(condValue.toLowerCase())
-      case 'not_contains': return !v.toLowerCase().includes(condValue.toLowerCase())
+      case 'equals': return v === single
+      case 'not_equals': return v !== single
+      case 'contains': return v.toLowerCase().includes(single.toLowerCase())
+      case 'not_contains': return !v.toLowerCase().includes(single.toLowerCase())
+      case 'in': return fieldValues.some(fv => list.includes(fv))
+      case 'not_in': return fieldValues.length > 0 && fieldValues.some(fv => fv !== '') && !fieldValues.some(fv => list.includes(fv))
       case 'is_empty': return !fieldValue || v === ''
       case 'is_not_empty': return !!(fieldValue && v !== '')
       default: return true

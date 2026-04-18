@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { PrismaClient } from "@prisma/client"
 import { requireAuth } from "@/lib/auth-middleware"
+import { canEdit } from "@/lib/collaboration"
 
 const prisma = new PrismaClient()
 
@@ -118,10 +119,18 @@ export async function PUT(
 ) {
   try {
     // Check authentication
-    const user = await requireAuth()
+    const authResult = await requireAuth(request)
+    if (authResult instanceof NextResponse) return authResult
+    const { userId, email } = authResult.user
 
     const { id } = params
     const body = await request.json()
+
+    // Access control: owner or accepted collaborator
+    const allowed = await canEdit(userId, email, 'PROJECT', id)
+    if (!allowed) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
 
     // Update the project
     const updatedProject = await prisma.project.update({

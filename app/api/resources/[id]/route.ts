@@ -78,12 +78,14 @@ export async function PUT(
       select: { role: true }
     })
 
-    const canEdit = 
-      resource.userId === decoded.userId || 
-      user?.role === "admin" || 
-      (user?.role === "regulator" && resource.isRegulation)
+    const { canEdit: canEditContent } = await import('@/lib/collaboration')
+    const canEditResource =
+      resource.userId === decoded.userId ||
+      user?.role === "admin" ||
+      (user?.role === "regulator" && resource.isRegulation) ||
+      (await canEditContent(decoded.userId, decoded.email, 'RESOURCE', id))
 
-    if (!canEdit) {
+    if (!canEditResource) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 

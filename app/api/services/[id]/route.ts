@@ -79,7 +79,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       )
     }
 
-    if (existingService.providerId !== user.id && user.role !== "admin") {
+    const { canEdit: canEditContent } = await import('@/lib/collaboration')
+    const isOwnerOrAdmin = existingService.providerId === user.id || user.role === "admin"
+    const isCollab = !isOwnerOrAdmin && (await canEditContent(user.id, user.email, 'SERVICE', id))
+    if (!isOwnerOrAdmin && !isCollab) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }

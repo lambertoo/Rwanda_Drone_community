@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import EventEditForm from "@/components/events/event-edit-form"
+import OwnerOnlyCollaborationPanel from "@/components/collaboration/owner-only-panel"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
@@ -41,7 +42,7 @@ export default async function EditEventPage({ params }: PageProps) {
             </Link>
           </div>
           
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-4">
                 {event.category && (
@@ -50,15 +51,21 @@ export default async function EditEventPage({ params }: PageProps) {
                   </span>
                 )}
               </div>
-              
+
               <h1 className="text-4xl font-bold text-foreground mb-4">
                 Edit: {event.title}
               </h1>
-              
+
               <p className="text-lg text-muted-foreground max-w-3xl">
                 Update your event details, speakers, agenda, and settings
               </p>
             </div>
+
+            <OwnerOnlyCollaborationPanel
+              ownerId={event.organizerId}
+              contentType="EVENT"
+              contentId={event.id}
+            />
           </div>
         </div>
       </div>

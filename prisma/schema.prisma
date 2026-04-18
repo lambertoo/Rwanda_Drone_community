@@ -104,6 +104,9 @@ model User {
   mutedConversations   ConversationMute[]
   reportsFiled         UserReport[]   @relation("ReportFiler")
   reportsReceived      UserReport[]   @relation("ReportTarget")
+  // Content collaboration
+  collaborationsInvited   ContentCollaborator[] @relation("CollabInviter")
+  collaborationsAccepted  ContentCollaborator[] @relation("CollabCollaborator")
 
   @@map("users")
 }
@@ -1425,4 +1428,46 @@ model UserReport {
   target     User     @relation("ReportTarget", fields: [targetId], references: [id], onDelete: Cascade)
 
   @@map("user_reports")
+}
+
+enum ContentType {
+  FORM
+  PROJECT
+  EVENT
+  OPPORTUNITY
+  SERVICE
+  RESOURCE
+  MARKETPLACE
+  NEWS
+  CLUB
+}
+
+enum CollaborationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  REVOKED
+}
+
+model ContentCollaborator {
+  id                  String              @id @default(cuid())
+  contentType         ContentType
+  contentId           String
+  invitedByUserId     String
+  collaboratorEmail   String
+  collaboratorUserId  String?
+  status              CollaborationStatus @default(PENDING)
+  invitationToken     String              @unique
+  message             String?
+  createdAt           DateTime            @default(now())
+  acceptedAt          DateTime?
+  revokedAt           DateTime?
+  invitedBy           User                @relation("CollabInviter", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  collaborator        User?               @relation("CollabCollaborator", fields: [collaboratorUserId], references: [id], onDelete: SetNull)
+
+  @@unique([contentType, contentId, collaboratorEmail])
+  @@index([contentType, contentId])
+  @@index([collaboratorEmail])
+  @@index([collaboratorUserId])
+  @@map("content_collaborators")
 }

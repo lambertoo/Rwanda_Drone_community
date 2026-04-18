@@ -55,10 +55,16 @@ export async function PUT(
   try {
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.role !== 'admin') return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
 
     const article = await prisma.newsArticle.findUnique({ where: { slug: params.slug } })
     if (!article) return NextResponse.json({ error: 'Article not found' }, { status: 404 })
+
+    const { canEdit: canEditContent } = await import('@/lib/collaboration')
+    const isOwnerOrAdmin = article.authorId === user.id || user.role === 'admin'
+    const isCollab = !isOwnerOrAdmin && (await canEditContent(user.id, user.email, 'NEWS', article.id))
+    if (!isOwnerOrAdmin && !isCollab) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     const body = await request.json()
     const { title, summary, content, thumbnail, category, tags, isPublished, isFeatured } = body

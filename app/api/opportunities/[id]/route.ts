@@ -118,7 +118,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       select: { role: true }
     })
 
-    if (existingOpportunity.posterId !== user.id && dbUser?.role !== 'admin') {
+    const { canEdit: canEditContent } = await import('@/lib/collaboration')
+    const isOwnerOrAdmin = existingOpportunity.posterId === user.id || dbUser?.role === 'admin'
+    const isCollab = !isOwnerOrAdmin && (await canEditContent(user.id, user.email, 'OPPORTUNITY', id))
+    if (!isOwnerOrAdmin && !isCollab) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
@@ -233,7 +236,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       select: { role: true }
     })
 
-    if (existingOpportunity.posterId !== user.id && dbUser?.role !== 'admin') {
+    const { canEdit: canEditContent } = await import('@/lib/collaboration')
+    const isOwnerOrAdmin = existingOpportunity.posterId === user.id || dbUser?.role === 'admin'
+    const isCollab = !isOwnerOrAdmin && (await canEditContent(user.id, user.email, 'OPPORTUNITY', id))
+    if (!isOwnerOrAdmin && !isCollab) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
@@ -317,6 +323,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       select: { role: true }
     })
 
+    // Delete is owner-only (plus admin override); collaborators cannot delete.
     if (existingOpportunity.posterId !== user.id && dbUser?.role !== 'admin') {
       return NextResponse.json(
         { error: 'Unauthorized' },

@@ -129,3 +129,37 @@ export function subscriptionConfirmEmail(name: string | null, topics: string[], 
     `),
   }
 }
+
+export function collaborationInviteEmail(params: {
+  inviterName: string
+  contentLabel: string
+  contentTitle: string
+  acceptUrl: string
+  personalMessage?: string
+}) {
+  const { inviterName, contentLabel, contentTitle, acceptUrl, personalMessage } = params
+  return {
+    subject: `${inviterName} invited you to collaborate on a ${contentLabel}`,
+    html: layout(`
+      <h2 style="margin:0 0 16px;color:#0f172a;font-size:22px;">You have been invited to collaborate</h2>
+      <p style="color:#475569;font-size:15px;line-height:1.6;margin:0 0 8px;">
+        <strong>${inviterName}</strong> would like you to help edit the ${contentLabel} <strong>${contentTitle}</strong> on ${APP_NAME}.
+      </p>
+      <p style="color:#475569;font-size:15px;line-height:1.6;margin:0 0 8px;">
+        As a collaborator you will be able to view and edit the content. Only the owner can delete it.
+      </p>
+      ${personalMessage ? `
+      <div style="background:#f1f5f9;border-left:3px solid #2563eb;padding:12px 16px;margin:16px 0;border-radius:4px;">
+        <p style="margin:0 0 4px;color:#0f172a;font-size:13px;font-weight:600;">Personal message from ${inviterName}:</p>
+        <p style="margin:0;color:#334155;font-size:14px;line-height:1.6;font-style:italic;">${personalMessage}</p>
+      </div>` : ''}
+      ${button('Accept invitation', acceptUrl)}
+      <p style="color:#94a3b8;font-size:13px;margin:0 0 4px;">
+        If you do not have an account yet, you will be asked to register with the email this invitation was sent to.
+      </p>
+      <p style="color:#94a3b8;font-size:13px;margin:0;">
+        Or copy this link: <a href="${acceptUrl}" style="color:#64748b;word-break:break-all;">${acceptUrl}</a>
+      </p>
+    `),
+  }
+}

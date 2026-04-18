@@ -86,7 +86,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Event not found" }, { status: 404 })
     }
 
-    if (existingEvent.organizerId !== currentUser.id && currentUser.role !== "admin") {
+    const { canEdit } = await import("@/lib/collaboration")
+    const allowed =
+      existingEvent.organizerId === currentUser.id ||
+      currentUser.role === "admin" ||
+      (await canEdit(currentUser.id, currentUser.email, 'EVENT', id))
+    if (!allowed) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 

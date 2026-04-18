@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
+import CollaborationPanel from '@/components/collaboration/collaboration-panel'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet'
+import { Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -87,6 +90,7 @@ export default function EditListingPage() {
   const [submitting, setSubmitting] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [notOwner, setNotOwner] = useState(false)
+  const [isOwner, setIsOwner] = useState(false)
   const [images, setImages] = useState<string[]>([])
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
 
@@ -107,9 +111,23 @@ export default function EditListingPage() {
         }
         const data = await res.json()
         const l = data.listing
-        if (l.seller.id !== user?.id && user?.role !== 'admin') {
-          setNotOwner(true)
-          return
+        const isOwnerOrAdmin = l.seller.id === user?.id || user?.role === 'admin'
+        if (!isOwnerOrAdmin) {
+          // Fall back to collaboration check
+          try {
+            const r = await fetch(`/api/collaborators/can-edit?contentType=MARKETPLACE&contentId=${id}`)
+            const data = await r.json()
+            if (!data.canEdit) {
+              setNotOwner(true)
+              return
+            }
+            setIsOwner(false)
+          } catch {
+            setNotOwner(true)
+            return
+          }
+        } else {
+          setIsOwner(true)
         }
         setForm({
           title: l.title || '',
@@ -262,10 +280,35 @@ export default function EditListingPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold">Edit Listing</h1>
           <p className="text-muted-foreground text-sm">Update details, photos, or status of your item</p>
+          {!isOwner && (
+            <p className="mt-1 text-sm text-amber-700">
+              You are editing as a collaborator. Only the seller can delete this listing.
+            </p>
+          )}
         </div>
+        {isOwner && (
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="shrink-0">
+                <Users className="mr-2 h-4 w-4" /> Collaborators
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:max-w-md">
+              <SheetHeader>
+                <SheetTitle>Collaborators</SheetTitle>
+                <SheetDescription>
+                  Invite people to help edit this listing. They can view and edit everything except delete.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-6">
+                <CollaborationPanel contentType="MARKETPLACE" contentId={id} canManage bare />
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">

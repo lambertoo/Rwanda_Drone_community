@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { extractTokenFromRequest, verifyToken } from '@/lib/jwt-utils'
+import { canEdit } from '@/lib/collaboration'
 
 export async function GET(
   request: NextRequest,
@@ -66,13 +67,14 @@ export async function PUT(
     const body = await request.json()
     const { title, description, settings, allowSubmissions, sections, isActive, isPublic } = body
 
-    // Check if form exists and belongs to user
-    const existingForm = await prisma.universalForm.findFirst({
-      where: { id: formId, userId: payload.userId }
-    })
-
+    // Verify access: owner OR accepted collaborator
+    const existingForm = await prisma.universalForm.findUnique({ where: { id: formId } })
     if (!existingForm) {
-      return NextResponse.json({ error: 'Form not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: 'Form not found' }, { status: 404 })
+    }
+    const allowed = await canEdit(payload.userId, payload.email, 'FORM', formId)
+    if (!allowed) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
     // Merge allowSubmissions into settings

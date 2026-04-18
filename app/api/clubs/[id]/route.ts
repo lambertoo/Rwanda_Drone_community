@@ -43,7 +43,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const isClubAdmin = await prisma.clubMembership.findUnique({
       where: { clubId_userId: { clubId: id, userId: user.id } },
     })
-    if (club.createdById !== user.id && user.role !== 'admin' && isClubAdmin?.role !== 'admin') {
+    const { canEdit: canEditContent } = await import('@/lib/collaboration')
+    const allowed =
+      club.createdById === user.id ||
+      user.role === 'admin' ||
+      isClubAdmin?.role === 'admin' ||
+      (await canEditContent(user.id, user.email, 'CLUB', id))
+    if (!allowed) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

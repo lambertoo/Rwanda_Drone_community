@@ -7,6 +7,10 @@ export const dynamic = 'force-dynamic'
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import EditProjectForm from "@/components/projects/edit-project-form"
+import CollaborationPanel from "@/components/collaboration/collaboration-panel"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet"
+import { Button } from "@/components/ui/button"
+import { Users } from "lucide-react"
 
 interface Project {
   id: string
@@ -51,6 +55,7 @@ export default function EditProjectPage({ params: paramsPromise }: { params: Pro
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [access, setAccess] = useState<{ canEdit: boolean; role: 'owner' | 'collaborator' | 'none' } | null>(null)
 
   // Fetch project data
   useEffect(() => {
@@ -78,14 +83,28 @@ export default function EditProjectPage({ params: paramsPromise }: { params: Pro
     }
   }, [params.id])
 
-  // Check if user can edit this project
+  // Check if user can edit this project (owner, admin, or accepted collaborator)
   useEffect(() => {
-    if (project && isAuthenticated && user && !authLoading) {
-      const canEdit = user.role === 'admin' || user.id === project.author.id
-      if (!canEdit) {
+    const run = async () => {
+      if (!project || !isAuthenticated || !user || authLoading) return
+      if (user.role === 'admin' || user.id === project.author.id) {
+        setAccess({ canEdit: true, role: 'owner' })
+        return
+      }
+      try {
+        const r = await fetch(`/api/collaborators/can-edit?contentType=PROJECT&contentId=${params.id}`)
+        if (r.ok) {
+          const data = await r.json()
+          setAccess({ canEdit: !!data.canEdit, role: data.role })
+          if (!data.canEdit) router.push(`/projects/${params.id}`)
+        } else {
+          router.push(`/projects/${params.id}`)
+        }
+      } catch {
         router.push(`/projects/${params.id}`)
       }
     }
+    run()
   }, [project, isAuthenticated, user, authLoading, router, params.id])
 
   // Show loading state while authentication is being checked or project is being fetched
@@ -126,27 +145,61 @@ export default function EditProjectPage({ params: paramsPromise }: { params: Pro
     return null
   }
 
-  const canEdit = user.role === 'admin' || user.id === project.author.id
-  if (!canEdit) {
-    router.push(`/projects/${params.id}`)
-    return null
+  const isOwner = user.role === 'admin' || user.id === project.author.id
+  // Let the async effect settle before rendering
+  if (!isOwner && access === null) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[300px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    )
   }
+  if (!isOwner && !access?.canEdit) return null
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Edit Project</h1>
-          <p className="text-muted-foreground">
-            Update your drone project information and share the latest developments with the community.
-          </p>
+        <div className="mb-8 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Edit Project</h1>
+            <p className="text-muted-foreground">
+              Update your drone project information and share the latest developments with the community.
+            </p>
+            {access?.role === 'collaborator' && (
+              <p className="mt-2 text-sm text-amber-700">
+                You are editing as a collaborator. Only the owner can delete this project.
+              </p>
+            )}
+          </div>
+          {isOwner && (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="shrink-0">
+                  <Users className="mr-2 h-4 w-4" /> Collaborators
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:max-w-md">
+                <SheetHeader>
+                  <SheetTitle>Collaborators</SheetTitle>
+                  <SheetDescription>
+                    Invite people to help edit this project. They can view and edit everything except delete.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="mt-6">
+                  <CollaborationPanel contentType="PROJECT" contentId={params.id} canManage bare />
+                </div>
+              </SheetContent>
+            </Sheet>
+          )}
         </div>
 
-        <EditProjectForm 
+        <EditProjectForm
           projectId={params.id}
           initialData={project}
         />
       </div>
     </div>
   )
-} 
+}

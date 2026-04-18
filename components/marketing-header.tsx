@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
@@ -61,6 +62,7 @@ export function MarketingHeader() {
     : ""
 
   return (
+    <>
     <header className="mk-site-header" style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
       <div className="mk-header-inner">
         {/* Logo */}
@@ -260,82 +262,86 @@ export function MarketingHeader() {
         </button>
       </div>
 
-      {/* ── Mobile menu drawer ──────────────────────────────── */}
-      {mobileOpen && (
-        <>
-          <div className="mk-mobile-overlay" onClick={() => setMobileOpen(false)} />
-          <div className="mk-mobile-drawer">
-            <div className="mk-mobile-drawer__head">
-              <Link href="/" className="mk-logo" onClick={() => setMobileOpen(false)}>
-                <img src="/logo.svg" alt="Rwanda UAS Community" style={{ height: '32px', width: 'auto' }} />
-              </Link>
-              <button className="mk-mobile-drawer__close" onClick={() => setMobileOpen(false)}>
-                <X size={20} />
-              </button>
-            </div>
+    </header>
 
-            {NAV.map(section => (
-              <Link
-                key={section.label}
-                href={section.href}
-                onClick={() => setMobileOpen(false)}
-                style={{
-                  display: "block", padding: "11px 16px",
-                  fontSize: 14, fontWeight: 600, color: "#0f172a", textDecoration: "none",
-                  borderBottom: "1px solid rgba(0,51,102,0.06)",
-                }}
-              >
-                {section.label}
-              </Link>
-            ))}
-
-            {user ? (
-              <div style={{ padding: "12px 16px" }}>
-                <Link
-                  href="/account"
-                  onClick={() => setMobileOpen(false)}
-                  style={{ display: "block", padding: 11, borderRadius: 8, border: "1px solid rgba(0,51,102,0.15)", color: "#003366", fontWeight: 600, fontSize: 14, textDecoration: "none", textAlign: "center", marginBottom: 8 }}
-                >
-                  My Account
-                </Link>
-              </div>
-            ) : (
-              <div className="mk-mobile-drawer__actions">
-                <Link href="/login" onClick={() => setMobileOpen(false)} style={{ textAlign: "center", display: "block", padding: 11, borderRadius: 8, border: "1px solid rgba(0,51,102,0.15)", color: "#003366", fontWeight: 600, fontSize: 14, textDecoration: "none" }}>
-                  Sign In
-                </Link>
-                <Link href="/register" className="mk-btn--join" style={{ textAlign: "center" }} onClick={() => setMobileOpen(false)}>
-                  Join Free
-                </Link>
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* ── Mobile search overlay ──────────────────────────── */}
-      {mobileSearchOpen && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(255,255,255,0.95)", backdropFilter: "blur(10px)", display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 16, borderBottom: "1px solid rgba(0,51,102,0.08)" }}>
-            <form onSubmit={handleSearch} style={{ flex: 1 }}>
-              <div style={{ position: "relative" }}>
-                <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-                <input
-                  type="search"
-                  placeholder="Search..."
-                  autoFocus
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  style={{ width: "100%", height: 44, paddingLeft: 40, borderRadius: 999, border: "1px solid rgba(0,51,102,0.15)", fontSize: 15, outline: "none" }}
-                />
-              </div>
-            </form>
-            <button onClick={() => setMobileSearchOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#64748b", display: "flex" }}>
+    {/* ── Mobile menu drawer (portal to body so it escapes the header's stacking context) ── */}
+    {mobileOpen && typeof window !== "undefined" && createPortal(
+      <>
+        <div className="mk-mobile-overlay" onClick={() => setMobileOpen(false)} />
+        <div className="mk-mobile-drawer">
+          <div className="mk-mobile-drawer__head">
+            <Link href="/" className="mk-logo" onClick={() => setMobileOpen(false)}>
+              <img src="/logo.svg" alt="Rwanda UAS Community" style={{ height: '32px', width: 'auto' }} />
+            </Link>
+            <button className="mk-mobile-drawer__close" onClick={() => setMobileOpen(false)}>
               <X size={20} />
             </button>
           </div>
+
+          {NAV.map(section => (
+            <Link
+              key={section.label}
+              href={section.href}
+              onClick={() => setMobileOpen(false)}
+              style={{
+                display: "block", padding: "11px 16px",
+                fontSize: 14, fontWeight: 600, color: "#0f172a", textDecoration: "none",
+                borderBottom: "1px solid rgba(0,51,102,0.06)",
+              }}
+            >
+              {section.label}
+            </Link>
+          ))}
+
+          {user ? (
+            <div style={{ padding: "12px 16px" }}>
+              <Link
+                href="/account"
+                onClick={() => setMobileOpen(false)}
+                style={{ display: "block", padding: 11, borderRadius: 8, border: "1px solid rgba(0,51,102,0.15)", color: "#003366", fontWeight: 600, fontSize: 14, textDecoration: "none", textAlign: "center", marginBottom: 8 }}
+              >
+                My Account
+              </Link>
+            </div>
+          ) : (
+            <div className="mk-mobile-drawer__actions">
+              <Link href="/login" onClick={() => setMobileOpen(false)} style={{ textAlign: "center", display: "block", padding: 11, borderRadius: 8, border: "1px solid rgba(0,51,102,0.15)", color: "#003366", fontWeight: 600, fontSize: 14, textDecoration: "none" }}>
+                Sign In
+              </Link>
+              <Link href="/register" className="mk-btn--join" style={{ textAlign: "center" }} onClick={() => setMobileOpen(false)}>
+                Join Free
+              </Link>
+            </div>
+          )}
         </div>
-      )}
-    </header>
+      </>,
+      document.body,
+    )}
+
+    {/* ── Mobile search overlay (portal to body) ── */}
+    {mobileSearchOpen && typeof window !== "undefined" && createPortal(
+      <div style={{ position: "fixed", inset: 0, zIndex: 9995, background: "rgba(255,255,255,0.95)", backdropFilter: "blur(10px)", display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 16, borderBottom: "1px solid rgba(0,51,102,0.08)" }}>
+          <form onSubmit={handleSearch} style={{ flex: 1 }}>
+            <div style={{ position: "relative" }}>
+              <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+              <input
+                type="search"
+                placeholder="Search..."
+                autoFocus
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ width: "100%", height: 44, paddingLeft: 40, borderRadius: 999, border: "1px solid rgba(0,51,102,0.15)", fontSize: 15, outline: "none" }}
+              />
+            </div>
+          </form>
+          <button onClick={() => setMobileSearchOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#64748b", display: "flex" }}>
+            <X size={20} />
+          </button>
+        </div>
+      </div>,
+      document.body,
+    )}
+  </>
   )
 }

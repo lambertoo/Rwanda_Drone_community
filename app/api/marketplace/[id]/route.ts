@@ -61,8 +61,11 @@ export async function PUT(
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
     }
 
-    if (listing.sellerId !== user.id) {
-      return NextResponse.json({ error: 'Forbidden: not the owner' }, { status: 403 })
+    const { canEdit: canEditContent } = await import('@/lib/collaboration')
+    const isOwnerOrAdmin = listing.sellerId === user.id || user.role === 'admin'
+    const isCollab = !isOwnerOrAdmin && (await canEditContent(user.id, user.email, 'MARKETPLACE', id))
+    if (!isOwnerOrAdmin && !isCollab) {
+      return NextResponse.json({ error: 'Forbidden: not the owner or a collaborator' }, { status: 403 })
     }
 
     const body = await request.json()
