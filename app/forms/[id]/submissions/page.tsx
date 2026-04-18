@@ -1566,6 +1566,36 @@ export default function FormSubmissionsPage() {
     }
   }
 
+  // Clear all submissions — destructive, requires typed confirmation modal.
+  const [clearOpen, setClearOpen] = useState(false)
+  const [clearInput, setClearInput] = useState('')
+  const [clearSubmitting, setClearSubmitting] = useState(false)
+  const [clearError, setClearError] = useState<string | null>(null)
+  const clearAll = async () => {
+    if (!form) return
+    setClearSubmitting(true)
+    setClearError(null)
+    try {
+      const res = await fetch(`/api/forms/${form.id}/submissions/clear`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ confirm: clearInput }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to clear')
+      setSubmissions([])
+      setSelected(new Set())
+      setDetailId(null)
+      setClearOpen(false)
+      setClearInput('')
+    } catch (e: any) {
+      setClearError(e.message)
+    } finally {
+      setClearSubmitting(false)
+    }
+  }
+
   // Export CSV
   const exportCSV = () => {
     if (!form || processed.length === 0) return
@@ -1742,6 +1772,26 @@ export default function FormSubmissionsPage() {
                 <span className="tabular-nums">({submissions.length})</span>
               </span>
 
+              {/* Export CSV */}
+              <button onClick={exportCSV} disabled={submissions.length === 0}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Download all submissions as CSV"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Export CSV</span>
+              </button>
+
+              {/* Clear all responses — opens typed-confirmation modal */}
+              <button
+                onClick={() => { setClearOpen(true); setClearInput(''); setClearError(null) }}
+                disabled={submissions.length === 0}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Delete every submission on this form"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Clear responses</span>
+              </button>
+
               {/* Preview */}
               <button onClick={() => window.open(`/forms/public/${formId}`, '_blank')}
                 className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md hover:bg-muted transition-colors" title="Preview public form"
@@ -1754,6 +1804,54 @@ export default function FormSubmissionsPage() {
             </div>
           </div>
         </div>
+
+        {/* Clear-responses confirmation modal */}
+        {clearOpen && form && (
+          <div className="fixed inset-0 z-[250] bg-black/60 flex items-center justify-center p-4" onClick={() => !clearSubmitting && setClearOpen(false)}>
+            <div className="bg-background rounded-lg border shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-2 text-red-600 mb-2">
+                <Trash2 className="h-5 w-5" />
+                <h2 className="text-lg font-semibold">Clear all responses</h2>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                This will permanently delete <strong>{submissions.length}</strong> submission{submissions.length === 1 ? '' : 's'} on
+                <span className="font-medium text-foreground"> {form.title}</span>. This cannot be undone.
+              </p>
+              <p className="text-sm mb-2">
+                To confirm, type the form name exactly:
+                <span className="block mt-1 rounded bg-muted px-2 py-1 text-xs font-mono">{form.title}</span>
+              </p>
+              <input
+                type="text"
+                value={clearInput}
+                onChange={(e) => setClearInput(e.target.value)}
+                placeholder="Type form name to confirm"
+                className="mt-2 w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                autoFocus
+              />
+              {clearError && <p className="mt-2 text-xs text-red-600">{clearError}</p>}
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button
+                  onClick={() => setClearOpen(false)}
+                  disabled={clearSubmitting}
+                  className="px-3 py-1.5 text-xs font-medium rounded-md hover:bg-muted transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={clearAll}
+                  disabled={
+                    clearSubmitting ||
+                    clearInput.trim().toLowerCase() !== form.title.trim().toLowerCase()
+                  }
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {clearSubmitting ? 'Clearing…' : `Delete ${submissions.length} submission${submissions.length === 1 ? '' : 's'}`}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tabs bar — sticky below toolbar (57px header + 48px toolbar = 105px) */}
         <div className="sticky top-[105px] z-30 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 border-b shadow-sm">

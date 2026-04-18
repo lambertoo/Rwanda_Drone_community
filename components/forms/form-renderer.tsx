@@ -1210,31 +1210,12 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
         )}
 
         {/* Navigation */}
-        <div className="flex items-center justify-between mt-6 gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            {currentStep > 0 ? (
-              <Button variant="ghost" onClick={handlePrevious} className="flex items-center gap-1.5">
-                <ChevronLeft className="h-4 w-4" /> Back
-              </Button>
-            ) : <div />}
-            {Object.keys(formValues).length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  if (confirm('Clear all answers and start over?')) {
-                    setFormValues({})
-                    setErrors({})
-                    setStepHistory([])
-                    setCurrentStep(0)
-                  }
-                }}
-                className="text-xs text-muted-foreground hover:text-destructive"
-              >
-                Clear answers
-              </Button>
-            )}
-          </div>
+        <div className="flex items-center justify-between mt-6">
+          {currentStep > 0 ? (
+            <Button variant="ghost" onClick={handlePrevious} className="flex items-center gap-1.5">
+              <ChevronLeft className="h-4 w-4" /> Back
+            </Button>
+          ) : <div />}
 
           {currentStep === totalSteps - 1 ? (
             <Button
