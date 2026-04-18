@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
 import ActionsBuilder from "@/components/forms/actions-builder"
+import SourceFieldRules from "@/components/forms/source-field-rules"
 import FormSettingsPanel from "@/components/forms/form-settings-panel"
 import type { ActionRule } from "@/lib/form-actions"
 import { pickBranchTheme, PALETTE_KEYS, type PaletteKey, type BranchColorRule } from "@/lib/form-theme"
@@ -551,6 +552,8 @@ function FieldBlock({
   currentSectionIndex,
   referencedBy,
   onJumpToRule,
+  updateSection,
+  updateFieldById,
 }: {
   field: FormField
   isSelected: boolean
@@ -572,6 +575,8 @@ function FieldBlock({
     sectionId: string
     fieldId?: string
   }>
+  updateSection: (id: string, updates: any) => void
+  updateFieldById: (id: string, updates: any) => void
 }) {
   const [editingLabel, setEditingLabel] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -1874,46 +1879,21 @@ function FieldBlock({
           </details>
         )}
 
-        {/* Show "referenced by N rules" when this field is a logic source — helps
-            authors spot anchor fields like CS4 that drive branching elsewhere. */}
+        {/* Inline editor for every rule that depends on this field's answer. */}
         {!isLayout && referencedBy.length > 0 && (
-          <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-900 p-3">
-            <div className="flex items-center gap-2 mb-1.5">
-              <Settings className="h-3.5 w-3.5 text-blue-600 dark:text-blue-300" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-blue-900 dark:text-blue-200">
-                Drives logic elsewhere
-              </span>
-              <Badge className="text-[10px] bg-blue-600 hover:bg-blue-600">
-                {referencedBy.length} rule{referencedBy.length === 1 ? '' : 's'}
-              </Badge>
-            </div>
-            <p className="text-[11px] text-blue-900/80 dark:text-blue-200/80 mb-2">
-              The answer to this field decides visibility or behaviour for:
-            </p>
-            <ul className="text-[11px] space-y-0.5">
-              {referencedBy.map((r, i) => (
-                <li key={i}>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onJumpToRule?.(r)
-                    }}
-                    className="w-full flex items-start gap-1 text-left text-blue-900 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded px-1 py-0.5 transition-colors"
-                    title="Open this rule for editing"
-                  >
-                    <span className="text-blue-600 dark:text-blue-400 font-mono">
-                      {r.kind === 'section' ? '▶' : '·'}
-                    </span>
-                    <span className="truncate flex-1">
-                      {r.kind === 'section' ? 'Section ' : 'Field '}<strong>{r.label}</strong>
-                      {r.kind === 'field' && <span className="text-blue-700/70 dark:text-blue-300/70"> in {r.sectionTitle}</span>}
-                    </span>
-                    <span className="text-blue-600/60 dark:text-blue-400/60">→</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+          <div className="mt-3">
+            <SourceFieldRules
+              sourceField={{
+                id: field.id,
+                name: field.name,
+                label: field.label,
+                type: field.type,
+                options: Array.isArray(field.options) ? (field.options as string[]) : undefined,
+              }}
+              allSections={allSections as any}
+              updateSection={updateSection}
+              updateField={updateFieldById}
+            />
           </div>
         )}
 
@@ -2875,6 +2855,8 @@ export default function FormEditor({
                     allSections={sections}
                     currentSectionIndex={sectionIndex}
                     referencedBy={referenceMap.get(field.name) || []}
+                    updateSection={updateSection}
+                    updateFieldById={updateField}
                     onJumpToRule={(ref) => {
                       // Select the target field so its logic panel is visible,
                       // then scroll the target (field or section) into view and
