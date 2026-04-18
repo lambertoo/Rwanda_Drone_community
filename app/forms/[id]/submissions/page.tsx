@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from "react"
+import { createPortal } from "react-dom"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -1805,9 +1806,10 @@ export default function FormSubmissionsPage() {
           </div>
         </div>
 
-        {/* Clear-responses confirmation modal */}
-        {clearOpen && form && (
-          <div className="fixed inset-0 z-[250] bg-black/60 flex items-center justify-center p-4" onClick={() => !clearSubmitting && setClearOpen(false)}>
+        {/* Clear-responses confirmation modal — portaled to body so the header
+            stacking context can't overlap it. */}
+        {clearOpen && form && typeof window !== 'undefined' && createPortal(
+          <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4" onClick={() => !clearSubmitting && setClearOpen(false)}>
             <div className="bg-background rounded-lg border shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center gap-2 text-red-600 mb-2">
                 <Trash2 className="h-5 w-5" />
@@ -1850,7 +1852,8 @@ export default function FormSubmissionsPage() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body,
         )}
 
         {/* Tabs bar — sticky below toolbar (57px header + 48px toolbar = 105px) */}
