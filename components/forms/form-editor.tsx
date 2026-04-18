@@ -71,6 +71,8 @@ interface FormSection {
   description?: string
   fields: FormField[]
   order: number
+  conditional?: { dependsOn: string; operator: string; value: string | string[] } | null
+  isActive?: boolean
 }
 
 interface FormSettings {
@@ -1807,6 +1809,8 @@ export default function FormEditor({
         title: s.title,
         description: s.description || "",
         order: s.order || 1,
+        conditional: s.conditional || null,
+        isActive: s.isActive !== undefined ? s.isActive : true,
         fields:
           s.fields?.map((f: any) => ({
             id: f.id,
@@ -1818,6 +1822,15 @@ export default function FormEditor({
             options: f.options || getDefaultOptions(f.type),
             validation: f.validation || {},
             conditional: f.conditional || undefined,
+            matrixRows: f.matrixRows || undefined,
+            matrixColumns: f.matrixColumns || undefined,
+            matrixType: f.matrixType || undefined,
+            scaleStart: f.scaleStart,
+            scaleEnd: f.scaleEnd,
+            scaleStep: f.scaleStep,
+            leftLabel: f.leftLabel,
+            centerLabel: f.centerLabel,
+            rightLabel: f.rightLabel,
             order: f.order || 1,
           })) || [],
       }))
