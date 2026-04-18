@@ -118,12 +118,23 @@ export async function GET(req: NextRequest) {
     let isNewUser = false
 
     if (user) {
-      // Link Google ID if not already linked
-      if (!user.googleId) {
+      // Link Google ID if not already linked, and trust Google's own email
+      // verification to mark the account verified if the user registered with
+      // email/password but never confirmed.
+      const needsLink = !user.googleId
+      const needsVerify = !user.isVerified
+      if (needsLink || needsVerify) {
         await prisma.user.update({
           where: { id: user.id },
-          data: { googleId: googleUser.sub, avatar: googleUser.picture || user.avatar },
+          data: {
+            ...(needsLink ? { googleId: googleUser.sub, avatar: googleUser.picture || user.avatar } : {}),
+            ...(needsVerify ? { isVerified: true, emailVerifiedAt: new Date() } : {}),
+          },
         })
+        if (needsVerify) {
+          await prisma.emailVerificationToken.deleteMany({ where: { userId: user.id } }).catch(() => null)
+          user.isVerified = true
+        }
       }
     } else {
       // Create new user
@@ -139,6 +150,7 @@ export async function GET(req: NextRequest) {
           avatar: googleUser.picture || `/placeholder.svg?height=40&width=40&text=${(googleUser.name || "U").charAt(0)}`,
           password: null,
           isVerified: true,
+          emailVerifiedAt: new Date(),
           isActive: true,
           reputation: 0,
           postsCount: 0,
