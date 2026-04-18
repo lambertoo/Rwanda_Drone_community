@@ -239,6 +239,47 @@ function getSectionPathTheme(section: any): {
   return { border: 'border-l-slate-300', bg: '', label: 'Conditional', dot: 'bg-slate-400', badgeClass: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' }
 }
 
+// Walk a condition group tree and collect every field name it references.
+function collectReferencedFields(node: any, acc: Set<string>) {
+  if (!node) return
+  if (Array.isArray(node.clauses)) {
+    for (const c of node.clauses) collectReferencedFields(c, acc)
+  } else if (typeof node.field === 'string') {
+    acc.add(node.field)
+  }
+}
+
+// Build a map of fieldName -> { sections: number, fields: Array<{ label, sectionTitle }> }
+// describing who references that field in their action logic.
+function buildReferenceMap(sections: any[]) {
+  type Ref = { label: string; sectionTitle: string; kind: 'section' | 'field' }
+  const refs = new Map<string, Ref[]>()
+
+  const add = (name: string, ref: Ref) => {
+    if (!refs.has(name)) refs.set(name, [])
+    refs.get(name)!.push(ref)
+  }
+
+  for (const s of sections) {
+    const sectionTitle = s.title || 'Untitled section'
+    const sectionActions: any[] = Array.isArray(s.actions) ? s.actions : []
+    for (const rule of sectionActions) {
+      const set = new Set<string>()
+      collectReferencedFields(rule.when, set)
+      for (const name of set) add(name, { label: sectionTitle, sectionTitle, kind: 'section' })
+    }
+    for (const f of s.fields || []) {
+      const fieldActions: any[] = Array.isArray(f.actions) ? f.actions : []
+      for (const rule of fieldActions) {
+        const set = new Set<string>()
+        collectReferencedFields(rule.when, set)
+        for (const name of set) add(name, { label: f.label || f.name, sectionTitle, kind: 'field' })
+      }
+    }
+  }
+  return refs
+}
+
 function getFieldIcon(type: string) {
   const Icon = FIELD_ICON_MAP[type] || Type
   return <Icon className="w-4 h-4" />
@@ -470,6 +511,7 @@ function FieldBlock({
   canMoveDown,
   allSections,
   currentSectionIndex,
+  referencedBy,
 }: {
   field: FormField
   isSelected: boolean
@@ -482,6 +524,7 @@ function FieldBlock({
   canMoveDown: boolean
   allSections: FormSection[]
   currentSectionIndex: number
+  referencedBy: Array<{ label: string; sectionTitle: string; kind: 'section' | 'field' }>
 }) {
   const [editingLabel, setEditingLabel] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -1784,6 +1827,43 @@ function FieldBlock({
           </details>
         )}
 
+        {/* Show "referenced by N rules" when this field is a logic source — helps
+            authors spot anchor fields like CS4 that drive branching elsewhere. */}
+        {!isLayout && referencedBy.length > 0 && (
+          <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-900 p-3">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Settings className="h-3.5 w-3.5 text-blue-600 dark:text-blue-300" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-blue-900 dark:text-blue-200">
+                Drives logic elsewhere
+              </span>
+              <Badge className="text-[10px] bg-blue-600 hover:bg-blue-600">
+                {referencedBy.length} rule{referencedBy.length === 1 ? '' : 's'}
+              </Badge>
+            </div>
+            <p className="text-[11px] text-blue-900/80 dark:text-blue-200/80 mb-2">
+              The answer to this field decides visibility or behaviour for:
+            </p>
+            <ul className="text-[11px] space-y-0.5">
+              {referencedBy.slice(0, 8).map((r, i) => (
+                <li key={i} className="flex items-start gap-1 text-blue-900 dark:text-blue-200">
+                  <span className="text-blue-600 dark:text-blue-400 font-mono">
+                    {r.kind === 'section' ? '▶' : '·'}
+                  </span>
+                  <span className="truncate">
+                    {r.kind === 'section' ? 'Section ' : 'Field '}<strong>{r.label}</strong>
+                    {r.kind === 'field' && <span className="text-blue-700/70 dark:text-blue-300/70"> in {r.sectionTitle}</span>}
+                  </span>
+                </li>
+              ))}
+              {referencedBy.length > 8 && (
+                <li className="text-blue-700/70 dark:text-blue-300/70 italic">
+                  + {referencedBy.length - 8} more
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
+
         {/* Field logic: always visible when actions exist, or on selection for a quick "Add rule" affordance */}
         {!isLayout && (() => {
           const fieldActions = Array.isArray((field as any).actions) ? (field as any).actions as ActionRule[] : []
@@ -2611,8 +2691,11 @@ export default function FormEditor({
           />
         </div>
 
-        {/* Sections */}
-        {sections.map((section, sectionIndex) => {
+        {/* Sections — reference map computed once so each field can flag
+            whether its answer drives logic elsewhere (e.g. CS4 → paths). */}
+        {(() => {
+          const referenceMap = buildReferenceMap(sections as any[])
+          return sections.map((section, sectionIndex) => {
           const pathTheme = getSectionPathTheme(section)
           return (
           <div
@@ -2734,6 +2817,7 @@ export default function FormEditor({
                     canMoveDown={fieldIndex < section.fields.length - 1}
                     allSections={sections}
                     currentSectionIndex={sectionIndex}
+                    referencedBy={referenceMap.get(field.name) || []}
                   />
                   {/* Delete confirmation badge */}
                   {deleteConfirm === field.id && (
@@ -2800,7 +2884,8 @@ export default function FormEditor({
             )}
           </div>
           )
-        })}
+        })
+        })()}
 
         {/* Add Section */}
         <div className="flex justify-center mt-4">
