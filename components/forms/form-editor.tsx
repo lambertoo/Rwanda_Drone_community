@@ -1784,33 +1784,55 @@ function FieldBlock({
           </details>
         )}
 
-        {/* Conditional logic editor (all fields) */}
-        {isSelected && !isLayout && (
-          <div className="mt-4 pointer-events-auto">
-            {!(Array.isArray((field as any).actions) && (field as any).actions.length > 0) ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onUpdate({ actions: [{ action: 'HIDE', when: { type: 'all', clauses: [] } }] } as any)
-                }}
-                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1.5 transition-colors"
-              >
-                <Settings className="w-3 h-3" />
-                Add logic
-              </button>
-            ) : (
-              <ActionsBuilder
-                allSections={allSections}
-                currentSectionIndex={currentSectionIndex}
-                currentFieldName={field.name}
-                target="field"
-                value={(field as any).actions as ActionRule[]}
-                onChange={(next) => onUpdate({ actions: next } as any)}
-              />
-            )}
-          </div>
-        )}
+        {/* Field logic: always visible when actions exist, or on selection for a quick "Add rule" affordance */}
+        {!isLayout && (() => {
+          const fieldActions = Array.isArray((field as any).actions) ? (field as any).actions as ActionRule[] : []
+          const hasActions = fieldActions.length > 0
+          if (!hasActions && !isSelected) return null // keep unselected empty fields clean
+          return (
+            <div className="mt-4 pointer-events-auto rounded-md border border-border bg-muted/20 p-3">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Field logic
+                  </span>
+                  {hasActions && (
+                    <Badge variant="secondary" className="text-[10px]">
+                      {fieldActions.length} rule{fieldActions.length === 1 ? '' : 's'}
+                    </Badge>
+                  )}
+                </div>
+                {!hasActions && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onUpdate({ actions: [{ action: 'HIDE', when: { type: 'all', clauses: [] } }] } as any)
+                    }}
+                    className="text-[11px] text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    <Plus className="h-3 w-3" /> Add rule
+                  </button>
+                )}
+              </div>
+              {hasActions ? (
+                <ActionsBuilder
+                  allSections={allSections}
+                  currentSectionIndex={currentSectionIndex}
+                  currentFieldName={field.name}
+                  target="field"
+                  value={fieldActions}
+                  onChange={(next) => onUpdate({ actions: next } as any)}
+                />
+              ) : (
+                <p className="text-[11px] text-muted-foreground italic">
+                  No logic yet. Add a rule to show / hide / require / enable this field based on earlier answers.
+                </p>
+              )}
+            </div>
+          )
+        })()}
       </div>
     </div>
   )
