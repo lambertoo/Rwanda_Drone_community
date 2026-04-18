@@ -170,7 +170,7 @@ async function main() {
                   type: 'SHORT_TEXT',
                   order: 8,
                   validation: { required: false },
-                  conditional: { dependsOn: 'cs4_value_chain', operator: 'equals', value: 'Other (please specify)' },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cs4_value_chain', operator: 'not_equals', value: 'Other (please specify)' }] } }],
                 },
               ],
             },
@@ -184,7 +184,7 @@ async function main() {
             description:
               'We would like to understand exactly where your organisation sits in the upstream of the sector, whether you are training people, running research, supplying hardware or software, or shaping policy. Your answers here help us build a clearer picture of who is doing what.',
             order: 2,
-            conditional: { dependsOn: 'cs4_value_chain', operator: 'contains', value: 'Upstream' },
+            actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cs4_value_chain', operator: 'not_contains', value: 'Upstream' }] } }],
             fields: {
               create: [
                 {
@@ -209,7 +209,7 @@ async function main() {
                   type: 'SHORT_TEXT',
                   order: 2,
                   validation: { required: false },
-                  conditional: { dependsOn: 'up11_primary_role', operator: 'equals', value: 'Other' },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'up11_primary_role', operator: 'not_equals', value: 'Other' }] } }],
                 },
                 {
                   label: 'Do you also operate in a secondary segment? If yes, which one?',
@@ -285,7 +285,7 @@ async function main() {
             description:
               'We want to hear your honest read on how well Rwanda\'s training institutions, research bodies, and knowledge-sharing platforms are serving the sector. There are no right or wrong answers, just tell us what you see from where you sit.',
             order: 3,
-            conditional: { dependsOn: 'cs4_value_chain', operator: 'contains', value: 'Upstream' },
+            actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cs4_value_chain', operator: 'not_contains', value: 'Upstream' }] } }],
             fields: {
               create: [
                 {
@@ -389,14 +389,10 @@ async function main() {
             description:
               'You told us earlier that you are a hardware or software supplier, so we would like to ask you a few extra questions about the supply chain and physical infrastructure you rely on. Please answer based on your day-to-day experience working in Rwanda.',
             order: 4,
-            conditional: {
-              dependsOn: 'up11_primary_role',
-              operator: 'in',
-              value: [
+            actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'up11_primary_role', operator: 'not_in', value: [
                 'Hardware supplier (components, airframes, batteries, sensors)',
                 'Software supplier (flight planning, analytics, AI platforms)',
-              ],
-            },
+              ], }] } }],
             fields: {
               create: [
                 {
@@ -448,7 +444,7 @@ async function main() {
             description:
               'Now we would like to hear your view of the regulatory system. If you work inside a regulator or policy body, please answer from that perspective. If you engage with the system from the outside, as a supplier, trainer, or researcher, please tell us what the system feels like from your side.',
             order: 5,
-            conditional: { dependsOn: 'cs4_value_chain', operator: 'contains', value: 'Upstream' },
+            actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cs4_value_chain', operator: 'not_contains', value: 'Upstream' }] } }],
             fields: {
               create: [
                 {
@@ -487,7 +483,7 @@ async function main() {
             description:
               'We would like to understand how you actually operate in the sector, what you do, who you serve, and at what scale. Please answer based on what your organisation does today, even if your plans for the year ahead look different.',
             order: 6,
-            conditional: { dependsOn: 'cs4_value_chain', operator: 'contains', value: 'Midstream' },
+            actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cs4_value_chain', operator: 'not_contains', value: 'Midstream' }] } }],
             fields: {
               create: [
                 {
@@ -510,7 +506,7 @@ async function main() {
                   type: 'SHORT_TEXT',
                   order: 2,
                   validation: { required: false },
-                  conditional: { dependsOn: 'mid11_primary_activity', operator: 'equals', value: 'Other' },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'mid11_primary_activity', operator: 'not_equals', value: 'Other' }] } }],
                 },
                 {
                   label: 'Do you also operate in a secondary segment? If yes, which one?',
@@ -614,7 +610,7 @@ async function main() {
             description:
               'Next, we would like to know about the aircraft, sensors, and software you use day-to-day. If you do not own or operate any aircraft yourself (for example, if you outsource all flights to a contractor) select "None, we subcontract all flight operations" in the first question and we will skip the rest for you.',
             order: 7,
-            conditional: { dependsOn: 'cs4_value_chain', operator: 'contains', value: 'Midstream' },
+            actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cs4_value_chain', operator: 'not_contains', value: 'Midstream' }] } }],
             fields: {
               create: [
                 {
@@ -648,11 +644,7 @@ async function main() {
                     'Heavy UAVs (over 50 kg MTOW)',
                     'Other',
                   ],
-                  conditional: {
-                    dependsOn: 'mid21_fleet_size',
-                    operator: 'not_equals',
-                    value: 'None, we subcontract all flight operations',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'mid21_fleet_size', operator: 'equals', value: 'None, we subcontract all flight operations', }] } }],
                 },
                 {
                   label: 'If you selected "Other", which platform?',
@@ -660,11 +652,7 @@ async function main() {
                   type: 'SHORT_TEXT',
                   order: 3,
                   validation: { required: false },
-                  conditional: {
-                    dependsOn: 'mid21_fleet_size',
-                    operator: 'not_equals',
-                    value: 'None, we subcontract all flight operations',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'mid21_fleet_size', operator: 'equals', value: 'None, we subcontract all flight operations', }] } }],
                 },
                 ...[1, 2, 3, 4, 5].map((i) => ({
                   label: `Primary UAS brand or model in your fleet #${i}`,
@@ -673,11 +661,7 @@ async function main() {
                   placeholder: i === 1 ? 'e.g. DJI Matrice 300 RTK' : i === 2 ? 'e.g. senseFly eBee X' : undefined,
                   order: 3 + i,
                   validation: { required: false },
-                  conditional: {
-                    dependsOn: 'mid21_fleet_size',
-                    operator: 'not_equals',
-                    value: 'None, we subcontract all flight operations',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'mid21_fleet_size', operator: 'equals', value: 'None, we subcontract all flight operations', }] } }],
                 })),
                 {
                   label: 'Which sensors and payloads do you use? Select all that apply.',
@@ -695,11 +679,7 @@ async function main() {
                     'Spraying system (agricultural)',
                     'Other',
                   ],
-                  conditional: {
-                    dependsOn: 'mid21_fleet_size',
-                    operator: 'not_equals',
-                    value: 'None, we subcontract all flight operations',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'mid21_fleet_size', operator: 'equals', value: 'None, we subcontract all flight operations', }] } }],
                 },
                 {
                   label: 'If you selected "Other", which sensor or payload?',
@@ -707,11 +687,7 @@ async function main() {
                   type: 'SHORT_TEXT',
                   order: 10,
                   validation: { required: false },
-                  conditional: {
-                    dependsOn: 'mid21_fleet_size',
-                    operator: 'not_equals',
-                    value: 'None, we subcontract all flight operations',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'mid21_fleet_size', operator: 'equals', value: 'None, we subcontract all flight operations', }] } }],
                 },
                 ...[1, 2, 3, 4, 5].map((i) => ({
                   label: `Primary software tool #${i}`,
@@ -720,11 +696,7 @@ async function main() {
                   placeholder: i === 1 ? 'e.g. Pix4D' : i === 2 ? 'e.g. DroneDeploy' : i === 3 ? 'e.g. QGIS' : undefined,
                   order: 10 + i,
                   validation: { required: false },
-                  conditional: {
-                    dependsOn: 'mid21_fleet_size',
-                    operator: 'not_equals',
-                    value: 'None, we subcontract all flight operations',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'mid21_fleet_size', operator: 'equals', value: 'None, we subcontract all flight operations', }] } }],
                 })),
                 {
                   label: 'On average, how many UAS missions do you complete per month?',
@@ -733,11 +705,7 @@ async function main() {
                   order: 16,
                   validation: { required: false },
                   options: ['Fewer than 5', '5 to 15', '16 to 30', '31 to 60', 'More than 60'],
-                  conditional: {
-                    dependsOn: 'mid21_fleet_size',
-                    operator: 'not_equals',
-                    value: 'None, we subcontract all flight operations',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'mid21_fleet_size', operator: 'equals', value: 'None, we subcontract all flight operations', }] } }],
                 },
                 {
                   label:
@@ -747,11 +715,7 @@ async function main() {
                   order: 17,
                   validation: { required: false },
                   options: ['Under 20%', '20 to 40%', '41 to 60%', '61 to 80%', 'Over 80%', 'Not tracked'],
-                  conditional: {
-                    dependsOn: 'mid21_fleet_size',
-                    operator: 'not_equals',
-                    value: 'None, we subcontract all flight operations',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'mid21_fleet_size', operator: 'equals', value: 'None, we subcontract all flight operations', }] } }],
                 },
               ],
             },
@@ -761,7 +725,7 @@ async function main() {
             description:
               'We would like to know how well the local supply chain, connectivity, and physical infrastructure actually support the work you do. Please answer based on your real experience, where things work, and where they hold you back.',
             order: 8,
-            conditional: { dependsOn: 'cs4_value_chain', operator: 'contains', value: 'Midstream' },
+            actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cs4_value_chain', operator: 'not_contains', value: 'Midstream' }] } }],
             fields: {
               create: [
                 {
@@ -826,7 +790,7 @@ async function main() {
                   type: 'SHORT_TEXT',
                   order: 6,
                   validation: { required: false },
-                  conditional: { dependsOn: 'mid310_repair_location', operator: 'equals', value: 'Other' },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'mid310_repair_location', operator: 'not_equals', value: 'Other' }] } }],
                 },
                 {
                   label: 'What is the single biggest supply chain or infrastructure bottleneck you face?',
@@ -843,7 +807,7 @@ async function main() {
             description:
               'Now we would like to hear about your real experience of getting licensed, approved, and staying compliant. We also ask for some costs and timings. Share whatever you are comfortable disclosing, and leave blank anything you are not.',
             order: 9,
-            conditional: { dependsOn: 'cs4_value_chain', operator: 'contains', value: 'Midstream' },
+            actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cs4_value_chain', operator: 'not_contains', value: 'Midstream' }] } }],
             fields: {
               create: [
                 {
@@ -896,7 +860,7 @@ async function main() {
             description:
               'We would like to hear your view of the people side of the sector, the pilots, analysts, engineers, and support roles you rely on. In particular, we want to know where you struggle to find the right people, because that tells us where the training system needs to do more.',
             order: 10,
-            conditional: { dependsOn: 'cs4_value_chain', operator: 'contains', value: 'Midstream' },
+            actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cs4_value_chain', operator: 'not_contains', value: 'Midstream' }] } }],
             fields: {
               create: [
                 {
@@ -955,7 +919,7 @@ async function main() {
             description:
               'This is often the toughest conversation in the sector, so we would really value your honesty here. Tell us how your business is really doing, and how well the banks, investors, grant funders, and insurers around you are actually serving UAS companies like yours.',
             order: 11,
-            conditional: { dependsOn: 'cs4_value_chain', operator: 'contains', value: 'Midstream' },
+            actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cs4_value_chain', operator: 'not_contains', value: 'Midstream' }] } }],
             fields: {
               create: [
                 {
@@ -998,7 +962,7 @@ async function main() {
                   type: 'SHORT_TEXT',
                   order: 3,
                   validation: { required: false },
-                  conditional: { dependsOn: 'mid67_revenue_model', operator: 'equals', value: 'Other' },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'mid67_revenue_model', operator: 'not_equals', value: 'Other' }] } }],
                 },
                 {
                   label: 'Which types of financing have you accessed for your UAS activities? Select all that apply.',
@@ -1046,11 +1010,7 @@ async function main() {
             description:
               'We would like to learn a little about your organisation and, if you have used UAS services before, what that experience has been like. Please answer from your own point of view as a user of the technology, not from the view of the sector as a whole.',
             order: 12,
-            conditional: {
-              dependsOn: 'cs4_value_chain',
-              operator: 'in',
-              value: DOWNSTREAM_END_USER_OR_ADVOCACY,
-            },
+            actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cs4_value_chain', operator: 'not_in', value: DOWNSTREAM_END_USER_OR_ADVOCACY, }] } }],
             fields: {
               create: [
                 {
@@ -1082,7 +1042,7 @@ async function main() {
                   type: 'SHORT_TEXT',
                   order: 2,
                   validation: { required: false },
-                  conditional: { dependsOn: 'dsa1_sector', operator: 'equals', value: 'Other' },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'dsa1_sector', operator: 'not_equals', value: 'Other' }] } }],
                 },
                 {
                   label: 'Number of full-time employees',
@@ -1122,11 +1082,7 @@ async function main() {
                     'Data analytics from UAS imagery',
                     'Other',
                   ],
-                  conditional: {
-                    dependsOn: 'dsa3_used_uas',
-                    operator: 'not_equals',
-                    value: 'No, we have not yet explored UAS services',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'dsa3_used_uas', operator: 'equals', value: 'No, we have not yet explored UAS services', }] } }],
                 },
                 {
                   label: 'If you selected "Other", which service?',
@@ -1134,11 +1090,7 @@ async function main() {
                   type: 'SHORT_TEXT',
                   order: 6,
                   validation: { required: false },
-                  conditional: {
-                    dependsOn: 'dsa3_used_uas',
-                    operator: 'not_equals',
-                    value: 'No, we have not yet explored UAS services',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'dsa3_used_uas', operator: 'equals', value: 'No, we have not yet explored UAS services', }] } }],
                 },
                 {
                   label: 'Who provides the UAS services you use?',
@@ -1153,11 +1105,7 @@ async function main() {
                     'Government agency providing UAS services',
                     'A mix of in-house and contracted',
                   ],
-                  conditional: {
-                    dependsOn: 'dsa3_used_uas',
-                    operator: 'not_equals',
-                    value: 'No, we have not yet explored UAS services',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'dsa3_used_uas', operator: 'equals', value: 'No, we have not yet explored UAS services', }] } }],
                 },
                 {
                   label: 'Approximately how much do you pay per UAS mission or service engagement (RWF)?',
@@ -1166,11 +1114,7 @@ async function main() {
                   placeholder: 'e.g. 500000',
                   order: 8,
                   validation: { required: false, min: 0 },
-                  conditional: {
-                    dependsOn: 'dsa3_used_uas',
-                    operator: 'not_equals',
-                    value: 'No, we have not yet explored UAS services',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'dsa3_used_uas', operator: 'equals', value: 'No, we have not yet explored UAS services', }] } }],
                 },
                 {
                   label: 'Overall, how satisfied are you with the UAS services you have received?',
@@ -1179,11 +1123,7 @@ async function main() {
                   order: 9,
                   validation: { required: false },
                   options: ['Very satisfied', 'Satisfied', 'Neutral', 'Dissatisfied', 'Very dissatisfied'],
-                  conditional: {
-                    dependsOn: 'dsa3_used_uas',
-                    operator: 'not_equals',
-                    value: 'No, we have not yet explored UAS services',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'dsa3_used_uas', operator: 'equals', value: 'No, we have not yet explored UAS services', }] } }],
                 },
               ],
             },
@@ -1193,11 +1133,7 @@ async function main() {
             description:
               'We want to know what you honestly think about UAS services right now: whether they fit your work, whether you trust the data they produce, and what it would take for you to use them more in the future.',
             order: 13,
-            conditional: {
-              dependsOn: 'cs4_value_chain',
-              operator: 'in',
-              value: DOWNSTREAM_END_USER_OR_ADVOCACY,
-            },
+            actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cs4_value_chain', operator: 'not_in', value: DOWNSTREAM_END_USER_OR_ADVOCACY, }] } }],
             fields: {
               create: [
                 {
@@ -1242,7 +1178,7 @@ async function main() {
                   type: 'SHORT_TEXT',
                   order: 3,
                   validation: { required: false },
-                  conditional: { dependsOn: 'dsb8_non_adoption_reason', operator: 'equals', value: 'Other' },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'dsb8_non_adoption_reason', operator: 'not_equals', value: 'Other' }] } }],
                 },
                 {
                   label: 'What UAS capability or service, if it were available or affordable, would most benefit your organisation?',
@@ -1270,11 +1206,7 @@ async function main() {
             description:
               'We would like to understand how your organisation actually engages with the UAS sector as a funder. That might be equity, debt, grants, challenge prizes, or a government fund. Please answer based on the activity you have had in Rwanda specifically over the last three years.',
             order: 14,
-            conditional: {
-              dependsOn: 'cs4_value_chain',
-              operator: 'equals',
-              value: DOWNSTREAM_INVESTOR,
-            },
+            actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cs4_value_chain', operator: 'not_equals', value: DOWNSTREAM_INVESTOR, }] } }],
             fields: {
               create: [
                 {
@@ -1298,7 +1230,7 @@ async function main() {
                   type: 'SHORT_TEXT',
                   order: 2,
                   validation: { required: false },
-                  conditional: { dependsOn: 'dsc1_engagement', operator: 'equals', value: 'Other' },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'dsc1_engagement', operator: 'not_equals', value: 'Other' }] } }],
                 },
                 {
                   label:
@@ -1328,11 +1260,7 @@ async function main() {
                     'Over $5M',
                     'Prefer not to disclose',
                   ],
-                  conditional: {
-                    dependsOn: 'dsc2_past_investment',
-                    operator: 'not_equals',
-                    value: 'No, UAS is not currently a focus area for us',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'dsc2_past_investment', operator: 'equals', value: 'No, UAS is not currently a focus area for us', }] } }],
                 },
                 {
                   label: 'Which UAS sub-sectors do your investments or grants target? Select all that apply.',
@@ -1351,11 +1279,7 @@ async function main() {
                     'Data and AI',
                     'Other',
                   ],
-                  conditional: {
-                    dependsOn: 'dsc2_past_investment',
-                    operator: 'not_equals',
-                    value: 'No, UAS is not currently a focus area for us',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'dsc2_past_investment', operator: 'equals', value: 'No, UAS is not currently a focus area for us', }] } }],
                 },
                 {
                   label: 'If you selected "Other", which sub-sector?',
@@ -1363,11 +1287,7 @@ async function main() {
                   type: 'SHORT_TEXT',
                   order: 6,
                   validation: { required: false },
-                  conditional: {
-                    dependsOn: 'dsc2_past_investment',
-                    operator: 'not_equals',
-                    value: 'No, UAS is not currently a focus area for us',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'dsc2_past_investment', operator: 'equals', value: 'No, UAS is not currently a focus area for us', }] } }],
                 },
                 {
                   label: 'What is the primary challenge you face when investing in or funding UAS entities in Rwanda?',
@@ -1375,11 +1295,7 @@ async function main() {
                   type: 'LONG_TEXT',
                   order: 7,
                   validation: { required: false },
-                  conditional: {
-                    dependsOn: 'dsc2_past_investment',
-                    operator: 'not_equals',
-                    value: 'No, UAS is not currently a focus area for us',
-                  },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'dsc2_past_investment', operator: 'equals', value: 'No, UAS is not currently a focus area for us', }] } }],
                 },
               ],
             },
@@ -1389,11 +1305,7 @@ async function main() {
             description:
               'We would like to hear your assessment of how ready Rwanda really is for UAS investment: deal pipeline, policy stability, the behaviour of financial institutions, donor coordination, and government procurement. Please be candid with us.',
             order: 15,
-            conditional: {
-              dependsOn: 'cs4_value_chain',
-              operator: 'equals',
-              value: DOWNSTREAM_INVESTOR,
-            },
+            actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cs4_value_chain', operator: 'not_equals', value: DOWNSTREAM_INVESTOR, }] } }],
             fields: {
               create: [
                 {
@@ -1504,7 +1416,7 @@ async function main() {
                   type: 'SHORT_TEXT',
                   order: 19,
                   validation: { required: false },
-                  conditional: { dependsOn: 'cc4_association_member', operator: 'equals', value: 'Yes' },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cc4_association_member', operator: 'not_equals', value: 'Yes' }] } }],
                 },
                 {
                   label: 'What type of ecosystem platform would be most valuable to you?',
@@ -1527,7 +1439,7 @@ async function main() {
                   type: 'SHORT_TEXT',
                   order: 21,
                   validation: { required: false },
-                  conditional: { dependsOn: 'cc5_platform_preference', operator: 'equals', value: 'Other' },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cc5_platform_preference', operator: 'not_equals', value: 'Other' }] } }],
                 },
               ],
             },
@@ -1588,7 +1500,7 @@ async function main() {
                   type: 'SHORT_TEXT',
                   order: 5,
                   validation: { required: false },
-                  conditional: { dependsOn: 'cc7_untapped_potential', operator: 'equals', value: 'Other' },
+                  actions: [{ action: 'HIDE', when: { type: 'all', clauses: [{ field: 'cc7_untapped_potential', operator: 'not_equals', value: 'Other' }] } }],
                 },
                 {
                   label: 'What single action by the Government of Rwanda would most accelerate the UAS sector?',

@@ -168,6 +168,51 @@ export async function POST(
       }
     }
 
+    // Optional summary email to the applicant themselves. Triggered when either
+    // the form settings have emailSummaryToApplicant on, or the payload carries
+    // the _emailSummary flag from the renderer's opt-in.
+    if (formSettings?.emailSummaryToApplicant || body?._emailSummary) {
+      // Find the applicant's email: prefer a configured emailField in settings,
+      // otherwise the first EMAIL-typed field with a non-empty value.
+      const allFields = formWithFields.sections.flatMap(s => s.fields)
+      let applicantEmail: string | null = null
+      const configuredFieldName = formSettings?.applicantEmailField
+      if (configuredFieldName) {
+        const v = allFieldValues.find(x => {
+          const f = allFields.find(ff => ff.id === x.fieldId)
+          return f?.name === configuredFieldName
+        })
+        if (v?.value) applicantEmail = String(v.value)
+      }
+      if (!applicantEmail) {
+        for (const f of allFields) {
+          if (f.type !== 'EMAIL') continue
+          const v = allFieldValues.find(x => x.fieldId === f.id)
+          if (v?.value) { applicantEmail = String(v.value); break }
+        }
+      }
+
+      if (applicantEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(applicantEmail)) {
+        const applicantSummaryHtml = allFieldValues
+          .map((v) => {
+            const field = allFields.find(f => f.id === v.fieldId)
+            return `<tr><td style="padding:4px 8px;font-weight:600;vertical-align:top;background:#f8fafc;border:1px solid #e2e8f0;">${field?.label || ''}</td><td style="padding:4px 8px;border:1px solid #e2e8f0;">${v.value || '—'}</td></tr>`
+          })
+          .join('')
+        const heading = `<h2 style="margin:0 0 8px;font-size:20px;color:#0f172a;">${formWithFields.title}</h2>`
+        const body = `
+          <p style="color:#475569;font-size:15px;line-height:1.6;">Thank you — here is a copy of the answers you just submitted.</p>
+          <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;">${applicantSummaryHtml}</table>
+          <p style="color:#94a3b8;font-size:13px;margin-top:16px;">Keep this email for your records.</p>
+        `
+        sendEmail({
+          to: applicantEmail,
+          subject: `Your response: ${formWithFields.title}`,
+          html: `<div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:600px;margin:0 auto;padding:20px;">${heading}${body}</div>`,
+        }).catch((err) => console.error('[FormSubmit] Applicant summary email failed:', err))
+      }
+    }
+
     return NextResponse.json({
       success: true,
       submissionId: submission.id,

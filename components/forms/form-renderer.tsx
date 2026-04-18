@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { evaluateActions, reduceEffects } from "@/lib/form-actions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -53,11 +54,7 @@ export interface FormField {
     allowedFileTypes?: string[]
     maxFileSize?: number
   }
-  conditional?: {
-    dependsOn: string
-    operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'in' | 'not_in' | 'is_empty' | 'is_not_empty'
-    value: string | string[]
-  }
+  actions?: any[]
   order: number
 }
 
@@ -67,11 +64,7 @@ export interface FormSection {
   description?: string
   order: number
   fields: FormField[]
-  conditional?: {
-    dependsOn: string
-    operator: string
-    value: string | string[]
-  }
+  actions?: any[]
 }
 
 export interface FormSettings {
@@ -164,43 +157,44 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
   }
 
   // Conditional logic helpers
-  const evaluateCondition = (fieldValue: any, operator: string, condValue: string | string[]): boolean => {
-    const fieldValues = Array.isArray(fieldValue) ? fieldValue.map(x => String(x)) : [String(fieldValue ?? '')]
-    const v = fieldValues.join(', ')
-    const single = Array.isArray(condValue) ? (condValue[0] ?? '') : condValue
-    const list = Array.isArray(condValue) ? condValue : [condValue]
-    switch (operator) {
-      case 'equals': return v === single
-      case 'not_equals': return v !== single
-      case 'contains': return v.toLowerCase().includes(single.toLowerCase())
-      case 'not_contains': return !v.toLowerCase().includes(single.toLowerCase())
-      case 'in': return fieldValues.some(fv => list.includes(fv))
-      case 'not_in': return fieldValues.length > 0 && fieldValues.some(fv => fv !== '') && !fieldValues.some(fv => list.includes(fv))
-      case 'is_empty': return !fieldValue || v === ''
-      case 'is_not_empty': return !!(fieldValue && v !== '')
-      default: return true
+  // Evaluate the modern action engine. Returns { visible, required, enabled, jumpTo, endForm, redirect }.
+  const computeEffects = (actions: any[] | undefined | null) => {
+    if (!Array.isArray(actions) || actions.length === 0) return { visible: true, required: undefined, enabled: true } as {
+      visible: boolean
+      required: boolean | undefined
+      enabled: boolean
+      jumpTo?: string
+      endForm?: boolean
+      redirect?: string
+    }
+    const active = evaluateActions(actions, formValues)
+    const reduced = reduceEffects(active)
+    return {
+      visible: reduced.visible !== false,
+      required: reduced.required,
+      enabled: reduced.enabled !== false,
+      jumpTo: reduced.jumpTo,
+      endForm: reduced.endForm,
+      redirect: reduced.redirect,
     }
   }
 
-  const isFieldVisible = (field: FormField): boolean => {
-    if (!field.conditional?.dependsOn) return true
-    const { dependsOn, operator, value } = field.conditional
-    return evaluateCondition(formValues[dependsOn], operator, value)
-  }
+  const sectionEffects = (section: FormSection) => computeEffects(section.actions)
+  const fieldEffects = (field: FormField) => computeEffects(field.actions)
 
-  const isSectionVisible = (section: FormSection): boolean => {
-    if (!section.conditional?.dependsOn) return true
-    const { dependsOn, operator, value } = section.conditional
-    return evaluateCondition(formValues[dependsOn], operator, value)
-  }
+  const isSectionVisible = (section: FormSection): boolean => sectionEffects(section).visible
+  const isFieldVisible = (field: FormField): boolean => fieldEffects(field).visible
 
   const sortedSections = [...sections].sort((a, b) => (a.order || 0) - (b.order || 0))
   const visibleSections = sortedSections.filter(isSectionVisible)
-  const currentSection = visibleSections[Math.min(currentStep, visibleSections.length - 1)]
-  const totalSteps = visibleSections.length
+  const reviewEnabled = settings?.reviewStep !== false  // on by default
+  // Steps = sections + an optional review step at the end.
+  const totalSteps = visibleSections.length + (reviewEnabled ? 1 : 0)
+  const isReviewStep = reviewEnabled && currentStep === visibleSections.length
+  const currentSection = isReviewStep ? null : visibleSections[Math.min(currentStep, visibleSections.length - 1)]
 
   // Add error handling for currentSection
-  if (!currentSection) {
+  if (!isReviewStep && !currentSection) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
@@ -211,7 +205,7 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
     )
   }
 
-  const progress = ((currentStep + 1) / totalSteps) * 100
+  const progress = totalSteps > 0 ? ((currentStep + 1) / totalSteps) * 100 : 100
 
   const handleInputChange = (fieldName: string, value: any) => {
     setFormValues(prev => ({
@@ -220,7 +214,7 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
     }))
     
     // Real-time validation
-    const field = currentSection.fields?.find((f: FormField) => f.name === fieldName)
+    const field = currentSection?.fields?.find((f: FormField) => f.name === fieldName)
     if (field) {
       const error = validateField(field)
       setErrors(prev => {
@@ -327,7 +321,8 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
   }
 
   const handleNext = () => {
-    if (validateCurrentStep()) {
+    // No validation needed when leaving the review step
+    if (isReviewStep || validateCurrentStep()) {
       setCurrentStep(prev => Math.min(prev + 1, totalSteps - 1))
     }
   }
@@ -337,16 +332,20 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
   }
 
   const handleSubmit = async () => {
-    if (validateCurrentStep()) {
-      setIsSubmitting(true)
-      try {
-        await onSubmit(formValues)
-        setIsSubmitted(true)
-      } catch (error) {
-        console.error('Submission error:', error)
-      } finally {
-        setIsSubmitting(false)
-      }
+    // On the review step there is nothing to validate — all prior sections passed.
+    const ok = isReviewStep ? true : validateCurrentStep()
+    if (!ok) return
+    setIsSubmitting(true)
+    try {
+      // Include a flag if the form wants the applicant to receive a summary email.
+      const payload: any = { ...formValues }
+      if (settings?.emailSummaryToApplicant) payload._emailSummary = true
+      await onSubmit(payload)
+      setIsSubmitted(true)
+    } catch (error) {
+      console.error('Submission error:', error)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -1024,29 +1023,70 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
           {description && <p className="text-muted-foreground">{description}</p>}
         </div>
 
-        {/* Section */}
-        <div className="bg-background rounded-2xl border shadow-sm p-6 md:p-8 animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
-          {totalSteps > 1 && (
+        {/* Section (or Review step) */}
+        {isReviewStep ? (
+          <div className="bg-background rounded-2xl border shadow-sm p-6 md:p-8 animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
             <div className="mb-6">
-              <h2 className="text-lg font-semibold">{currentSection.title}</h2>
-              {currentSection.description && <p className="text-sm text-muted-foreground mt-1">{currentSection.description}</p>}
+              <h2 className="text-lg font-semibold">Review your answers</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Please check everything looks right before submitting. Use the back button to change any answer.
+              </p>
             </div>
-          )}
-
-          <div className="space-y-6">
-            {currentSection.fields && Array.isArray(currentSection.fields)
-              ? currentSection.fields
-                  .sort((a, b) => (a.order || 0) - (b.order || 0))
-                  .filter(isFieldVisible)
-                  .map((field) => (
-                    <div key={field.id} className="animate-in fade-in-0 duration-200">
-                      {renderField(field)}
-                    </div>
-                  ))
-              : <div className="text-center text-muted-foreground py-4">No fields in this section</div>
-            }
+            <div className="space-y-6">
+              {visibleSections.map((s) => (
+                <div key={s.id} className="rounded-lg border bg-muted/30 p-4">
+                  <h3 className="text-sm font-semibold mb-2">{s.title}</h3>
+                  <dl className="space-y-2.5">
+                    {(s.fields || [])
+                      .sort((a, b) => (a.order || 0) - (b.order || 0))
+                      .filter(isFieldVisible)
+                      .map((f) => {
+                        const v = formValues[f.name]
+                        const empty = v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)
+                        const display =
+                          empty
+                            ? <span className="text-muted-foreground italic">Not answered</span>
+                            : Array.isArray(v)
+                              ? <span>{v.map(x => String(x)).join(', ')}</span>
+                              : typeof v === 'object'
+                                ? <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(v, null, 2)}</pre>
+                                : <span>{String(v)}</span>
+                        return (
+                          <div key={f.id} className="grid grid-cols-1 sm:grid-cols-[1fr_1.5fr] gap-1 sm:gap-4">
+                            <dt className="text-xs text-muted-foreground">{f.label}</dt>
+                            <dd className="text-sm break-words">{display}</dd>
+                          </div>
+                        )
+                      })}
+                  </dl>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-background rounded-2xl border shadow-sm p-6 md:p-8 animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+            {totalSteps > 1 && currentSection && (
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold">{currentSection.title}</h2>
+                {currentSection.description && <p className="text-sm text-muted-foreground mt-1">{currentSection.description}</p>}
+              </div>
+            )}
+
+            <div className="space-y-6">
+              {currentSection && currentSection.fields && Array.isArray(currentSection.fields)
+                ? currentSection.fields
+                    .sort((a, b) => (a.order || 0) - (b.order || 0))
+                    .filter(isFieldVisible)
+                    .map((field) => (
+                      <div key={field.id} className="animate-in fade-in-0 duration-200">
+                        {renderField(field)}
+                      </div>
+                    ))
+                : <div className="text-center text-muted-foreground py-4">No fields in this section</div>
+              }
+            </div>
+          </div>
+        )}
 
         {/* Validation Errors */}
         {Object.keys(errors).length > 0 && (

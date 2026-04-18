@@ -21,7 +21,7 @@ export async function PUT(
 
     const sectionId = id
     const body = await request.json()
-    const { title, description, order, conditional, isActive } = body
+    const { title, description, order, actions, isActive } = body
 
     // Check if section exists and belongs to user's form
     const existingSection = await prisma.formSection.findFirst({
@@ -41,7 +41,7 @@ export async function PUT(
         title: title || existingSection.title,
         description: description !== undefined ? description : existingSection.description,
         order: order !== undefined ? order : existingSection.order,
-        conditional: conditional !== undefined ? conditional : existingSection.conditional,
+        actions: actions !== undefined ? actions : (existingSection as any).actions,
         isActive: isActive !== undefined ? isActive : existingSection.isActive,
       },
       include: {

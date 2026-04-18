@@ -735,7 +735,7 @@ model FormSection {
   title       String
   description String?
   order       Int           // Section order within form
-  conditional Json?         // Conditional logic for showing/hiding section
+  actions     Json?         // Array of ActionRule: {action, when:{type,clauses}, target?}
   isActive    Boolean       @default(true)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -755,7 +755,7 @@ model FormField {
   options     Json?        // For select, radio, checkbox fields
   validation  Json?        // Validation rules (required, regex, min/max, etc.)
   order       Int          // Field order within section
-  conditional Json?        // Conditional logic for showing/hiding field
+  actions     Json?        // Array of ActionRule: {action, when:{type,clauses}, target?}
   isActive    Boolean      @default(true)
   // Matrix field properties
   matrixRows    Json?      // Array of row labels

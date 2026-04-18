@@ -1,7 +1,8 @@
 "use client"
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
-import ConditionalBuilder from "@/components/forms/conditional-builder"
+import ActionsBuilder from "@/components/forms/actions-builder"
+import type { ActionRule } from "@/lib/form-actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -62,7 +63,7 @@ interface FormField {
   required: boolean
   options?: string[]
   validation?: any
-  conditional?: any
+  actions?: any
   order: number
 }
 
@@ -72,7 +73,7 @@ interface FormSection {
   description?: string
   fields: FormField[]
   order: number
-  conditional?: { dependsOn: string; operator: string; value: string | string[] } | null
+  actions?: ActionRule[] | null
   isActive?: boolean
 }
 
@@ -220,18 +221,18 @@ function getSectionPathTheme(section: any): {
   dot: string
   badgeClass: string
 } {
-  const cond = section?.conditional
-  if (!cond) {
+  const actions = Array.isArray(section?.actions) ? (section.actions as any[]) : []
+  if (actions.length === 0) {
     return { border: 'border-l-slate-300', bg: '', label: 'Always shown', dot: 'bg-slate-400', badgeClass: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' }
   }
-  const v = Array.isArray(cond.value) ? cond.value.join(' ') : String(cond.value ?? '')
-  const key = v.toLowerCase()
-  if (key.includes('upstream')) return { border: 'border-l-indigo-400', bg: 'bg-indigo-50/30 dark:bg-indigo-950/10', label: 'Upstream path', dot: 'bg-indigo-500', badgeClass: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200' }
-  if (key.includes('midstream')) return { border: 'border-l-emerald-400', bg: 'bg-emerald-50/30 dark:bg-emerald-950/10', label: 'Midstream path', dot: 'bg-emerald-500', badgeClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200' }
-  if (key.includes('investor')) return { border: 'border-l-amber-400', bg: 'bg-amber-50/30 dark:bg-amber-950/10', label: 'Downstream · Investor', dot: 'bg-amber-500', badgeClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200' }
-  if (key.includes('end-user') || key.includes('advocacy') || key.includes('downstream')) return { border: 'border-l-rose-400', bg: 'bg-rose-50/30 dark:bg-rose-950/10', label: 'Downstream · End-user / Advocacy', dot: 'bg-rose-500', badgeClass: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200' }
-  // Nested (field-level condition on a section, e.g. UP-3 depending on UP-1.1)
-  if (cond.dependsOn && cond.dependsOn !== 'cs4_value_chain') {
+  // Inspect any clause values and dependent field names across all rules
+  const blob = JSON.stringify(actions).toLowerCase()
+  const dependsOnCs4 = blob.includes('"field":"cs4_value_chain"')
+  if (blob.includes('upstream')) return { border: 'border-l-indigo-400', bg: 'bg-indigo-50/30 dark:bg-indigo-950/10', label: 'Upstream path', dot: 'bg-indigo-500', badgeClass: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200' }
+  if (blob.includes('midstream')) return { border: 'border-l-emerald-400', bg: 'bg-emerald-50/30 dark:bg-emerald-950/10', label: 'Midstream path', dot: 'bg-emerald-500', badgeClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200' }
+  if (blob.includes('investor')) return { border: 'border-l-amber-400', bg: 'bg-amber-50/30 dark:bg-amber-950/10', label: 'Downstream · Investor', dot: 'bg-amber-500', badgeClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200' }
+  if (blob.includes('end-user') || blob.includes('advocacy') || blob.includes('downstream')) return { border: 'border-l-rose-400', bg: 'bg-rose-50/30 dark:bg-rose-950/10', label: 'Downstream · End-user / Advocacy', dot: 'bg-rose-500', badgeClass: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200' }
+  if (!dependsOnCs4) {
     return { border: 'border-l-violet-400', bg: 'bg-violet-50/30 dark:bg-violet-950/10', label: 'Nested branch', dot: 'bg-violet-500', badgeClass: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200' }
   }
   return { border: 'border-l-slate-300', bg: '', label: 'Conditional', dot: 'bg-slate-400', badgeClass: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' }
@@ -1746,28 +1747,26 @@ function FieldBlock({
         {/* Conditional logic editor (all fields) */}
         {isSelected && !isLayout && (
           <div className="mt-4 pointer-events-auto">
-            {!field.conditional ? (
+            {!(Array.isArray((field as any).actions) && (field as any).actions.length > 0) ? (
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation()
-                  onUpdate({
-                    conditional: { dependsOn: "", operator: "equals", value: "" },
-                  })
+                  onUpdate({ actions: [{ action: 'HIDE', when: { type: 'all', clauses: [] } }] } as any)
                 }}
                 className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1.5 transition-colors"
               >
                 <Settings className="w-3 h-3" />
-                Add conditional logic
+                Add logic
               </button>
             ) : (
-              <ConditionalBuilder
+              <ActionsBuilder
                 allSections={allSections}
                 currentSectionIndex={currentSectionIndex}
                 currentFieldName={field.name}
-                value={field.conditional}
-                onChange={(next) => onUpdate({ conditional: (next ?? undefined) as any })}
                 target="field"
+                value={(field as any).actions as ActionRule[]}
+                onChange={(next) => onUpdate({ actions: next } as any)}
               />
             )}
           </div>
@@ -1794,7 +1793,7 @@ export default function FormEditor({
         title: s.title,
         description: s.description || "",
         order: s.order || 1,
-        conditional: s.conditional || null,
+        actions: s.actions || null,
         isActive: s.isActive !== undefined ? s.isActive : true,
         fields:
           s.fields?.map((f: any) => ({
@@ -1806,7 +1805,7 @@ export default function FormEditor({
             required: f.validation?.required || f.required || false,
             options: f.options || getDefaultOptions(f.type),
             validation: f.validation || {},
-            conditional: f.conditional || undefined,
+            actions: f.actions || undefined,
             matrixRows: f.matrixRows || undefined,
             matrixColumns: f.matrixColumns || undefined,
             matrixType: f.matrixType || undefined,
@@ -2027,7 +2026,7 @@ export default function FormEditor({
           title: s.title,
           description: s.description,
           order: s.order ?? si + 1,
-          conditional: s.conditional ?? null,
+          actions: (s as any).actions ?? null,
           isActive: s.isActive ?? true,
           fields: s.fields.map((f) => ({
             type: f.type,
@@ -2037,7 +2036,7 @@ export default function FormEditor({
             required: f.required,
             options: f.options,
             validation: { ...f.validation, required: f.required },
-            conditional: f.conditional,
+            actions: (f as any).actions ?? null,
             order: f.order,
             matrixRows: (f as any).matrixRows,
             matrixColumns: (f as any).matrixColumns,
@@ -2746,30 +2745,30 @@ export default function FormEditor({
               </div>
             )}
 
-            {/* Section-level conditional logic */}
+            {/* Section-level logic */}
             <div className="mb-4">
-              {!section.conditional ? (
+              {!(Array.isArray((section as any).actions) && (section as any).actions.length > 0) ? (
                 sectionIndex > 0 && (
                   <button
                     type="button"
                     onClick={() =>
                       updateSection(section.id, {
-                        conditional: { dependsOn: '', operator: 'equals', value: '' },
+                        actions: [{ action: 'HIDE', when: { type: 'all', clauses: [] } }],
                       } as any)
                     }
                     className="text-xs text-muted-foreground hover:text-primary inline-flex items-center gap-1.5 transition-colors"
                   >
                     <Settings className="w-3 h-3" />
-                    Only show this section when…
+                    Add logic to this section
                   </button>
                 )
               ) : (
-                <ConditionalBuilder
+                <ActionsBuilder
                   allSections={sections}
                   currentSectionIndex={sectionIndex}
-                  value={section.conditional as any}
-                  onChange={(next) => updateSection(section.id, { conditional: (next ?? null) as any })}
                   target="section"
+                  value={(section as any).actions as ActionRule[]}
+                  onChange={(next) => updateSection(section.id, { actions: next } as any)}
                 />
               )}
             </div>

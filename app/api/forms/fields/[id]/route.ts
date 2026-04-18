@@ -29,7 +29,7 @@ export async function PUT(
       options, 
       validation, 
       order, 
-      conditional, 
+      actions, 
       isActive 
     } = body
 
@@ -72,7 +72,7 @@ export async function PUT(
         options: options !== undefined ? options : existingField.options,
         validation: validation !== undefined ? validation : existingField.validation,
         order: order !== undefined ? order : existingField.order,
-        conditional: conditional !== undefined ? conditional : existingField.conditional,
+        actions: actions !== undefined ? actions : (existingField as any).actions,
         isActive: isActive !== undefined ? isActive : existingField.isActive,
       }
     })

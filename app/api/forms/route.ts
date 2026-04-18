@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
             title: section.title,
             description: section.description || null,
             order: sectionIndex + 1,
-            conditional: section.conditional || null,
+            actions: section.actions || null,
             fields: {
               create: (section.fields || []).map((field: any, fieldIndex: number) => ({
                 label: field.label,
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
                   required: field.required || false,
                   ...(field.validation || {})
                 },
-                conditional: field.conditional || null,
+                actions: field.actions || null,
                 order: fieldIndex + 1,
                 // Matrix field properties
                 matrixRows: field.matrixRows || null,

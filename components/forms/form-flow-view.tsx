@@ -4,15 +4,14 @@ import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowDown, ChevronDown, GitBranch, Layers, Lock, CornerDownRight } from 'lucide-react'
-
-type Conditional = { dependsOn: string; operator: string; value: string | string[] } | null
+import type { ActionRule, ConditionClause, ConditionGroup } from '@/lib/form-actions'
 
 interface FlowField {
   name: string
   label: string
   type: string
   options?: any
-  conditional?: Conditional
+  actions?: ActionRule[]
   validation?: { required?: boolean }
 }
 
@@ -20,7 +19,7 @@ interface FlowSection {
   title: string
   description?: string | null
   order: number
-  conditional?: Conditional
+  actions?: ActionRule[]
   fields: FlowField[]
 }
 
@@ -32,11 +31,28 @@ interface FormFlowViewProps {
   }
 }
 
-// Humanise a conditional into plain English
-function describeCondition(c: Conditional, fieldLabels: Map<string, string>): string {
+// Extract the primary gating clause from a section's actions. We look for the
+// first SHOW/HIDE rule whose `when` group has at least one leaf clause — that's
+// usually the path-branching decision. Returns null if the section is always shown.
+function primaryGate(actions?: ActionRule[]): ConditionClause | null {
+  if (!Array.isArray(actions) || actions.length === 0) return null
+  const first = actions.find(a => a.action === 'HIDE' || a.action === 'SHOW') ?? actions[0]
+  const walk = (g: ConditionGroup | undefined | null): ConditionClause | null => {
+    if (!g || !Array.isArray(g.clauses)) return null
+    for (const c of g.clauses) {
+      if ('field' in c && 'operator' in c) return c as ConditionClause
+      const nested = walk(c as ConditionGroup)
+      if (nested) return nested
+    }
+    return null
+  }
+  return walk(first.when)
+}
+
+function describeClause(c: ConditionClause | null, fieldLabels: Map<string, string>): string {
   if (!c) return 'always shown'
-  const label = fieldLabels.get(c.dependsOn) || c.dependsOn
-  const values = Array.isArray(c.value) ? c.value : [c.value]
+  const label = fieldLabels.get(c.field) || c.field
+  const values = Array.isArray(c.value) ? c.value : c.value !== undefined && c.value !== '' ? [c.value] : []
   const niceValues = values.map(v => `"${v}"`).join(' or ')
   switch (c.operator) {
     case 'equals': return `when "${label}" is ${niceValues}`
@@ -51,55 +67,49 @@ function describeCondition(c: Conditional, fieldLabels: Map<string, string>): st
   }
 }
 
-// Group sections by their top-level branching rule.
-// Our form convention: conditionals depend on a single field (CS4 for the main
-// branch). Sections with no conditional are common (entry/closing). We split
-// entry vs closing by section order: entries come before the first branched
-// section, closers come after the last.
 function groupSections(sections: FlowSection[]) {
   const sorted = [...sections].sort((a, b) => a.order - b.order)
-  const firstBranchedIdx = sorted.findIndex(s => !!s.conditional)
-  const lastBranchedIdx = (() => {
-    for (let i = sorted.length - 1; i >= 0; i--) if (sorted[i].conditional) return i
+  const withGate = sorted.map(s => ({ s, gate: primaryGate(s.actions) }))
+
+  const firstGatedIdx = withGate.findIndex(x => x.gate)
+  const lastGatedIdx = (() => {
+    for (let i = withGate.length - 1; i >= 0; i--) if (withGate[i].gate) return i
     return -1
   })()
 
   const entry: FlowSection[] = []
   const closing: FlowSection[] = []
-  const branched: FlowSection[] = []
+  const gated: Array<{ s: FlowSection; gate: ConditionClause }> = []
 
-  sorted.forEach((s, idx) => {
-    if (!s.conditional && (firstBranchedIdx === -1 || idx < firstBranchedIdx)) entry.push(s)
-    else if (!s.conditional && idx > lastBranchedIdx) closing.push(s)
-    else branched.push(s)
+  withGate.forEach(({ s, gate }, idx) => {
+    if (!gate && (firstGatedIdx === -1 || idx < firstGatedIdx)) entry.push(s)
+    else if (!gate && idx > lastGatedIdx) closing.push(s)
+    else if (gate) gated.push({ s, gate })
   })
 
-  // Group branched sections by their top-level conditional signature
-  const groups = new Map<string, { label: string; condition: Conditional; sections: FlowSection[] }>()
-  branched.forEach(s => {
-    const c = s.conditional!
-    const key = `${c.dependsOn}::${c.operator}::${Array.isArray(c.value) ? c.value.join('|') : c.value}`
-    if (!groups.has(key)) groups.set(key, { label: key, condition: c, sections: [] })
+  // Group gated sections by their primary clause signature
+  const groups = new Map<string, { clause: ConditionClause; sections: FlowSection[] }>()
+  gated.forEach(({ s, gate }) => {
+    const key = `${gate.field}::${gate.operator}::${Array.isArray(gate.value) ? (gate.value as string[]).join('|') : String(gate.value ?? '')}`
+    if (!groups.has(key)) groups.set(key, { clause: gate, sections: [] })
     groups.get(key)!.sections.push(s)
   })
 
   return { entry, closing, groups: [...groups.values()] }
 }
 
-// Build a map of field name → human label across all sections
 function buildFieldLabelMap(sections: FlowSection[]): Map<string, string> {
   const m = new Map<string, string>()
   sections.forEach(s => s.fields.forEach(f => m.set(f.name, f.label)))
   return m
 }
 
-// Pick a colour theme per branch based on its condition value
-function branchTheme(condition: Conditional): { ring: string; bg: string; text: string; dot: string } {
-  const s = condition ? (Array.isArray(condition.value) ? condition.value.join(' ') : String(condition.value)) : ''
+function branchTheme(clause: ConditionClause): { ring: string; bg: string; text: string; dot: string } {
+  const s = Array.isArray(clause.value) ? (clause.value as string[]).join(' ') : String(clause.value ?? '')
   const key = s.toLowerCase()
   if (key.includes('upstream')) return { ring: 'border-indigo-300', bg: 'bg-indigo-50 dark:bg-indigo-950/40', text: 'text-indigo-900 dark:text-indigo-200', dot: 'bg-indigo-500' }
   if (key.includes('midstream')) return { ring: 'border-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/40', text: 'text-emerald-900 dark:text-emerald-200', dot: 'bg-emerald-500' }
-  if (key.includes('downstream') && key.includes('investor')) return { ring: 'border-amber-300', bg: 'bg-amber-50 dark:bg-amber-950/40', text: 'text-amber-900 dark:text-amber-200', dot: 'bg-amber-500' }
+  if (key.includes('investor')) return { ring: 'border-amber-300', bg: 'bg-amber-50 dark:bg-amber-950/40', text: 'text-amber-900 dark:text-amber-200', dot: 'bg-amber-500' }
   if (key.includes('downstream') || key.includes('end-user') || key.includes('advocacy')) return { ring: 'border-rose-300', bg: 'bg-rose-50 dark:bg-rose-950/40', text: 'text-rose-900 dark:text-rose-200', dot: 'bg-rose-500' }
   return { ring: 'border-slate-300', bg: 'bg-slate-50 dark:bg-slate-900/40', text: 'text-slate-900 dark:text-slate-200', dot: 'bg-slate-500' }
 }
@@ -115,10 +125,11 @@ function SectionNode({
   accentDot: string
   depth?: number
 }) {
-  const hasNestedCondition = depth > 0
+  const isNested = depth > 0
+  const gate = primaryGate(section.actions)
   return (
     <div
-      className={`relative rounded-md border bg-background p-3 ${hasNestedCondition ? 'border-dashed' : ''}`}
+      className={`relative rounded-md border bg-background p-3 ${isNested ? 'border-dashed' : ''}`}
       style={{ marginLeft: depth * 16 }}
     >
       <div className="flex items-start gap-2">
@@ -133,10 +144,10 @@ function SectionNode({
           <p className="mt-1 text-[11px] text-muted-foreground">
             {section.fields.length} field{section.fields.length === 1 ? '' : 's'}
           </p>
-          {hasNestedCondition && section.conditional && (
+          {isNested && gate && (
             <div className="mt-1.5 flex items-start gap-1 rounded bg-muted/60 px-2 py-1 text-[11px] text-muted-foreground">
               <CornerDownRight className="h-3 w-3 shrink-0 mt-0.5" />
-              <span>Only {describeCondition(section.conditional, fieldLabels)}</span>
+              <span>Only {describeClause(gate, fieldLabels)}</span>
             </div>
           )}
         </div>
@@ -150,8 +161,7 @@ export default function FormFlowView({ form }: FormFlowViewProps) {
   const fieldLabels = useMemo(() => buildFieldLabelMap(sections), [sections])
   const { entry, closing, groups } = useMemo(() => groupSections(sections), [sections])
 
-  // Identify the branching field (usually CS4)
-  const branchField = groups[0]?.condition?.dependsOn
+  const branchField = groups[0]?.clause.field
   const branchFieldLabel = branchField ? fieldLabels.get(branchField) || branchField : null
 
   return (
@@ -167,7 +177,6 @@ export default function FormFlowView({ form }: FormFlowViewProps) {
         )}
       </div>
 
-      {/* Entry block */}
       {entry.length > 0 && (
         <>
           <Card className="border-slate-300">
@@ -194,7 +203,6 @@ export default function FormFlowView({ form }: FormFlowViewProps) {
         </>
       )}
 
-      {/* Branching decision */}
       {groups.length > 0 && branchFieldLabel && (
         <div className="mx-auto mb-2 max-w-xl rounded-lg border border-dashed bg-muted/40 px-4 py-3 text-center">
           <div className="flex items-center justify-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -205,16 +213,14 @@ export default function FormFlowView({ form }: FormFlowViewProps) {
         </div>
       )}
 
-      {/* Branch groups: grid of path columns */}
       {groups.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {groups.map((group, gi) => {
-            const theme = branchTheme(group.condition)
-            const condText = describeCondition(group.condition, fieldLabels)
-            // Find a short branch label from the condition value
+            const theme = branchTheme(group.clause)
+            const condText = describeClause(group.clause, fieldLabels)
             const branchLabel = (() => {
-              const v = group.condition ? (Array.isArray(group.condition.value) ? group.condition.value[0] : group.condition.value) : ''
-              const s = String(v)
+              const v = Array.isArray(group.clause.value) ? (group.clause.value as string[])[0] : group.clause.value
+              const s = String(v ?? '')
               if (/upstream/i.test(s)) return 'Upstream'
               if (/midstream/i.test(s)) return 'Midstream'
               if (/investor/i.test(s)) return 'Downstream — Investor / Funder'
@@ -234,18 +240,19 @@ export default function FormFlowView({ form }: FormFlowViewProps) {
                   <p className="mt-1.5 text-[11px] text-muted-foreground">Shown {condText}</p>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {group.sections.map(s => (
-                    <SectionNode
-                      key={s.order}
-                      section={s}
-                      fieldLabels={fieldLabels}
-                      accentDot={theme.dot}
-                      // Treat nested conditions (conditional field that is NOT the top-level branch
-                      // field itself) as "nested" visually. This catches e.g. UP-3 which branches
-                      // on up11_primary_role rather than cs4_value_chain.
-                      depth={s.conditional && s.conditional.dependsOn !== branchField ? 1 : 0}
-                    />
-                  ))}
+                  {group.sections.map(s => {
+                    const gate = primaryGate(s.actions)
+                    const nested = gate && gate.field !== branchField
+                    return (
+                      <SectionNode
+                        key={s.order}
+                        section={s}
+                        fieldLabels={fieldLabels}
+                        accentDot={theme.dot}
+                        depth={nested ? 1 : 0}
+                      />
+                    )
+                  })}
                 </CardContent>
               </Card>
             )
@@ -253,7 +260,6 @@ export default function FormFlowView({ form }: FormFlowViewProps) {
         </div>
       )}
 
-      {/* Closing block */}
       {closing.length > 0 && (
         <>
           <div className="flex justify-center py-2 text-muted-foreground">
@@ -280,7 +286,6 @@ export default function FormFlowView({ form }: FormFlowViewProps) {
         </>
       )}
 
-      {/* Stats footer */}
       <div className="mt-8 grid gap-3 text-center text-xs text-muted-foreground sm:grid-cols-4">
         <div className="rounded border bg-muted/40 px-3 py-2">
           <div className="font-semibold text-foreground">{sections.length}</div>

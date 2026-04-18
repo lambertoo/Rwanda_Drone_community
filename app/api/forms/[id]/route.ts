@@ -114,7 +114,7 @@ export async function PUT(
               title: section.title,
               description: section.description || null,
               order: section.order || sectionIndex + 1,
-              conditional: section.conditional || null,
+              actions: section.actions || null,
               isActive: section.isActive !== undefined ? section.isActive : true,
               fields: {
                 create: (section.fields || []).map((field: any, fieldIndex: number) => ({
@@ -124,7 +124,7 @@ export async function PUT(
                   placeholder: field.placeholder || null,
                   options: field.options || null,
                   validation: field.validation || { required: field.required || false },
-                  conditional: field.conditional || null,
+                  actions: field.actions || null,
                   order: fieldIndex + 1,
                   isActive: field.isActive !== undefined ? field.isActive : true,
                   matrixRows: field.matrixRows || null,
