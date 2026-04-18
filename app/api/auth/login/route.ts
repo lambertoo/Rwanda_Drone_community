@@ -79,6 +79,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Account is blocked. Please contact an administrator." }, { status: 403 })
     }
 
+    // Reject unverified email/password accounts. OAuth users skip this because
+    // Google's email is already verified on their side.
+    if (!user.isVerified && !user.googleId) {
+      return NextResponse.json(
+        {
+          error: "Please verify your email address before signing in. Check your inbox for the verification link.",
+          requiresVerification: true,
+          email: user.email,
+        },
+        { status: 403 },
+      )
+    }
+
     // Generate JWT tokens (role must be string for JWT; use empty string if null)
     const tokens = generateTokens({
       userId: user.id,

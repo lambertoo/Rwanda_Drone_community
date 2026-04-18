@@ -130,6 +130,28 @@ export function subscriptionConfirmEmail(name: string | null, topics: string[], 
   }
 }
 
+export function emailVerificationEmail(params: { name: string; verifyUrl: string; expiryHours: number }) {
+  const { name, verifyUrl, expiryHours } = params
+  return {
+    subject: `Verify your ${APP_NAME} account`,
+    html: layout(`
+      <h2 style="margin:0 0 16px;color:#0f172a;font-size:22px;">Welcome, ${name}</h2>
+      <p style="color:#475569;font-size:15px;line-height:1.6;margin:0 0 8px;">
+        Thanks for signing up. Please confirm this is your email address by clicking the button below.
+        This link will expire in <strong>${expiryHours} hour${expiryHours === 1 ? '' : 's'}</strong>.
+        After that, the unverified account will be removed and you will need to register again.
+      </p>
+      ${button('Verify my email', verifyUrl)}
+      <p style="color:#94a3b8;font-size:13px;margin:0 0 4px;">
+        If you did not create this account, you can safely ignore this email.
+      </p>
+      <p style="color:#94a3b8;font-size:13px;margin:0;">
+        Or copy this link: <a href="${verifyUrl}" style="color:#64748b;word-break:break-all;">${verifyUrl}</a>
+      </p>
+    `),
+  }
+}
+
 export function collaborationInviteEmail(params: {
   inviterName: string
   contentLabel: string

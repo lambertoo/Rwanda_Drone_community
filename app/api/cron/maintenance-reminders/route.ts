@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createNotification } from '@/lib/notifications'
+import { deleteExpiredUnverifiedUsers, sweepStrandedUnverifiedUsers } from '@/lib/email-verification'
 
 /**
  * GET /api/cron/maintenance-reminders
@@ -78,10 +79,19 @@ export async function GET(request: NextRequest) {
       sent++
     }
 
+    // Piggyback: sweep unverified accounts whose 4-hour verification window
+    // has lapsed. Kept in the same daily cron so we stay on Vercel's free tier.
+    const deletedByExpiredToken = await deleteExpiredUnverifiedUsers().catch(() => 0)
+    const deletedStranded = await sweepStrandedUnverifiedUsers().catch(() => 0)
+
     return NextResponse.json({
       success: true,
       processed: dueLogs.length,
       notificationsSent: sent,
+      unverifiedCleanup: {
+        deletedByExpiredToken,
+        deletedStranded,
+      },
     })
   } catch (error) {
     console.error('[Cron] Maintenance reminders error:', error)

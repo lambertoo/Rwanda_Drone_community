@@ -1,64 +1,74 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { validatePassword, hashPassword } from "@/lib/auth"
+import { hashPassword } from "@/lib/auth"
 import { userRegistrationSchema } from "@/lib/validation"
 import { authRateLimit } from "@/lib/rate-limit"
-import { generateTokens } from "@/lib/jwt-utils"
-import { sendEmail } from "@/lib/email"
-import { welcomeEmail } from "@/lib/email-templates"
+import {
+  sendVerificationEmail,
+  deleteExpiredUnverifiedUsers,
+  VERIFICATION_EXPIRY_HOURS,
+} from "@/lib/email-verification"
 
 export async function POST(request: NextRequest) {
   try {
-    // Apply rate limiting
     const rateLimitResult = authRateLimit(request)
-    if (rateLimitResult) {
-      return rateLimitResult
-    }
+    if (rateLimitResult) return rateLimitResult
 
     const body = await request.json()
 
-    // Validate input using Zod schema
     const validationResult = userRegistrationSchema.safeParse(body)
     if (!validationResult.success) {
       return NextResponse.json(
-        { 
-          error: "Validation failed", 
-          details: validationResult.error.errors 
-        },
-        { status: 400 }
+        { error: "Validation failed", details: validationResult.error.errors },
+        { status: 400 },
       )
     }
 
-    const {
-      fullName,
-      email,
-      password,
-    } = validationResult.data
+    const { fullName, email, password } = validationResult.data
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    })
+    // Opportunistically sweep any expired unverified accounts first. This lets
+    // someone re-register with the same email after their prior unverified
+    // account has expired without waiting for the scheduled cron run.
+    await deleteExpiredUnverifiedUsers().catch(() => null)
+
+    // Reject duplicate emails — but if the existing account is still
+    // unverified (and has not yet expired) we simply re-send the verification
+    // email so the user doesn't get stuck.
+    const existingUser = await prisma.user.findUnique({ where: { email } })
     if (existingUser) {
-      return NextResponse.json(
-        { error: "User with this email already exists" },
-        { status: 409 }
-      )
+      if (existingUser.isVerified) {
+        return NextResponse.json(
+          { error: "An account with this email already exists. Please sign in instead." },
+          { status: 409 },
+        )
+      }
+      // Unverified: re-issue the verification token and email.
+      await sendVerificationEmail({
+        id: existingUser.id,
+        email: existingUser.email,
+        fullName: existingUser.fullName,
+      }).catch((err) => console.error("[Register] Re-send verification failed:", err))
+      return NextResponse.json({
+        message: "Verification email sent again. Please check your inbox.",
+        email,
+        expiresInHours: VERIFICATION_EXPIRY_HOURS,
+        requiresVerification: true,
+      })
     }
 
-    // Hash the password
     const hashedPassword = await hashPassword(password)
 
-    // Create new user with simplified data (no role - user will set it later)
     const newUser = await prisma.user.create({
       data: {
-        username: `${email.split('@')[0]}_${Math.random().toString(36).substring(2, 8)}`, // Generate unique username from email
+        username: `${email.split('@')[0]}_${Math.random().toString(36).substring(2, 8)}`,
         email,
         fullName,
         password: hashedPassword,
         avatar: `/placeholder.svg?height=40&width=40&text=${fullName.split(" ").map(n => n[0]).join("")}`,
         reputation: 0,
-        isVerified: true,
+        // Unverified until the user clicks the emailed link. OAuth sign-ups
+        // hit a separate endpoint and are marked verified there.
+        isVerified: false,
         isActive: true,
         postsCount: 0,
         commentsCount: 0,
@@ -68,60 +78,31 @@ export async function POST(request: NextRequest) {
         opportunitiesCount: 0,
         specializations: JSON.stringify([]),
         certifications: JSON.stringify([]),
-      }
-    })
-
-    // Generate JWT tokens for the new user
-    const { accessToken, refreshToken } = generateTokens({
-      userId: newUser.id,
-      email: newUser.email,
-      username: newUser.username,
-      role: newUser.role
-    })
-
-    // Create response with tokens
-    const response = NextResponse.json({
-      message: "Registration successful",
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        username: newUser.username,
-        fullName: newUser.fullName,
-        isVerified: newUser.isVerified,
-        role: newUser.role,
       },
-      redirectTo: "/complete-profile"
     })
 
-    // Send welcome email (non-blocking)
-    const welcome = welcomeEmail(fullName)
-    sendEmail({ to: email, subject: welcome.subject, html: welcome.html }).catch((err) =>
-      console.error("[Register] Welcome email failed:", err)
-    )
+    // Send verification email (blocking so we can surface a real error if the
+    // transport fails — otherwise the user would just see a confusing flow).
+    try {
+      await sendVerificationEmail({ id: newUser.id, email: newUser.email, fullName: newUser.fullName })
+    } catch (err) {
+      console.error("[Register] Could not send verification email:", err)
+      // Roll back the unverified row so the user can try again cleanly.
+      await prisma.user.delete({ where: { id: newUser.id } }).catch(() => null)
+      return NextResponse.json(
+        { error: "We couldn't send your verification email. Please try again." },
+        { status: 500 },
+      )
+    }
 
-    // Set HTTP-only cookies for tokens
-    response.cookies.set("accessToken", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60, // 1 hour
-      path: "/"
+    return NextResponse.json({
+      message: "Check your email to verify your account.",
+      email,
+      expiresInHours: VERIFICATION_EXPIRY_HOURS,
+      requiresVerification: true,
     })
-
-    response.cookies.set("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: "/"
-    })
-
-    return response
   } catch (error) {
     console.error("Registration error:", error)
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

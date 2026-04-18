@@ -2640,33 +2640,54 @@ export default function FormEditor({
               </div>
             )}
 
-            {/* Section-level logic */}
-            <div className="mb-4">
-              {!(Array.isArray((section as any).actions) && (section as any).actions.length > 0) ? (
-                sectionIndex > 0 && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      updateSection(section.id, {
-                        actions: [{ action: 'HIDE', when: { type: 'all', clauses: [] } }],
-                      } as any)
-                    }
-                    className="text-xs text-muted-foreground hover:text-primary inline-flex items-center gap-1.5 transition-colors"
-                  >
-                    <Settings className="w-3 h-3" />
-                    Add logic to this section
-                  </button>
-                )
-              ) : (
-                <ActionsBuilder
-                  allSections={sections}
-                  currentSectionIndex={sectionIndex}
-                  target="section"
-                  value={(section as any).actions as ActionRule[]}
-                  onChange={(next) => updateSection(section.id, { actions: next } as any)}
-                />
-              )}
-            </div>
+            {/* Section-level logic: always visible so authors can see and edit the rules */}
+            {(() => {
+              const actions = Array.isArray((section as any).actions) ? (section as any).actions as ActionRule[] : []
+              const hasActions = actions.length > 0
+              return (
+                <div className="mb-4 rounded-md border border-border bg-muted/20 p-3">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Section logic
+                      </span>
+                      {hasActions && (
+                        <Badge variant="secondary" className="text-[10px]">{actions.length} rule{actions.length === 1 ? '' : 's'}</Badge>
+                      )}
+                    </div>
+                    {!hasActions && sectionIndex > 0 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateSection(section.id, {
+                            actions: [{ action: 'HIDE', when: { type: 'all', clauses: [] } }],
+                          } as any)
+                        }
+                        className="text-[11px] text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        <Plus className="h-3 w-3" /> Add rule
+                      </button>
+                    )}
+                  </div>
+                  {hasActions ? (
+                    <ActionsBuilder
+                      allSections={sections}
+                      currentSectionIndex={sectionIndex}
+                      target="section"
+                      value={actions}
+                      onChange={(next) => updateSection(section.id, { actions: next } as any)}
+                    />
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground italic">
+                      {sectionIndex === 0
+                        ? 'The first section is always shown to everyone.'
+                        : 'No logic yet. This section is always shown. Add a rule to show / hide / jump based on earlier answers.'}
+                    </p>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* Add block at top of section */}
             <AddBlockButton

@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader, Eye, EyeOff } from "lucide-react"
+import { Loader, Eye, EyeOff, Mail } from "lucide-react"
 import Link from "next/link"
 
 export default function RegisterPage() {
@@ -27,6 +27,7 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [verificationSent, setVerificationSent] = useState<{ email: string; expiresInHours: number } | null>(null)
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -81,14 +82,18 @@ export default function RegisterPage() {
       const data = await response.json()
 
       if (response.ok) {
-        console.log('Registration successful, refreshing user and redirecting...')
-        console.log('Registration response data:', data)
-        // Refresh user context to pick up the new authentication
-        await refreshUser()
-        // Redirect to complete profile page
-        router.push("/complete-profile")
+        if (data.requiresVerification) {
+          // New flow: user must click the emailed link before sign-in works
+          setVerificationSent({
+            email: data.email || formData.email,
+            expiresInHours: data.expiresInHours ?? 4,
+          })
+        } else {
+          // Legacy path: account issued immediately (Google sign-in etc.)
+          await refreshUser()
+          router.push(data.redirectTo || "/complete-profile")
+        }
       } else {
-        console.log('Registration failed:', data.error)
         setError(data.error || "Registration failed")
       }
     } catch (err) {
@@ -97,6 +102,46 @@ export default function RegisterPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (verificationSent) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+              <Mail className="h-6 w-6 text-blue-600" />
+            </div>
+            <CardTitle>Check your email</CardTitle>
+            <CardDescription>
+              We sent a verification link to <strong>{verificationSent.email}</strong>.
+              Click it within {verificationSent.expiresInHours} hour{verificationSent.expiresInHours === 1 ? '' : 's'} to activate your account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              If you do not verify in time, the account will be removed automatically and you can register again.
+            </p>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={async () => {
+                await fetch('/api/auth/resend-verification', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email: verificationSent.email }),
+                })
+              }}
+            >
+              Resend verification email
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={() => setVerificationSent(null)}>
+              Use a different email
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
