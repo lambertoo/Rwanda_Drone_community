@@ -28,3 +28,12 @@ next-env.d.ts
 
 /lib/generated/prisma
 .env*.local
+
+# Reference-only assets — not committed
+UAS_Ecosystem_Survey_v3.docx
+form.docx
+.~S_*.docx
+docs/*.kml
+package-lock.json
+.DS_Store
+.claude/

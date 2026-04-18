@@ -121,9 +121,10 @@ export function sanitizeFieldValue(field: { type: string; options?: any; validat
     case 'LINEAR_SCALE':
     case 'RATING': {
       const n = Number(str)
-      if (!Number.isFinite(n)) return { value: null, error: 'Enter a number' }
-      if (typeof v.min === 'number' && n < v.min) return { value: null, error: `Value must be at least ${v.min}` }
-      if (typeof v.max === 'number' && n > v.max) return { value: null, error: `Value must be at most ${v.max}` }
+      if (!Number.isFinite(n)) return { value: null, error: v.message || 'Enter a number' }
+      if (v.integer && !Number.isInteger(n)) return { value: null, error: v.message || 'Enter a whole number' }
+      if (typeof v.min === 'number' && n < v.min) return { value: null, error: v.message || `Value must be at least ${v.min}` }
+      if (typeof v.max === 'number' && n > v.max) return { value: null, error: v.message || `Value must be at most ${v.max}` }
       return { value: String(n) }
     }
     case 'DATE':

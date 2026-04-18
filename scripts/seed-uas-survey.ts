@@ -154,7 +154,14 @@ async function main() {
                   type: 'NUMBER',
                   placeholder: 'e.g. 2018',
                   order: 6,
-                  validation: { required: true },
+                  // Keep it a plausible 4-digit year — no negatives, no 20-year futures.
+                  validation: {
+                    required: true,
+                    min: 1800,
+                    max: new Date().getFullYear(),
+                    integer: true,
+                    message: 'Enter a 4-digit year between 1800 and this year',
+                  },
                 },
                 {
                   label: 'Which segment of the UAS value chain does your organisation primarily operate in?',

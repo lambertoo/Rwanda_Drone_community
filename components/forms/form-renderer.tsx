@@ -541,31 +541,51 @@ export default function FormRenderer({ formData, onSubmit }: FormRendererProps) 
           />
         )}
 
-        {field.type === 'NUMBER' && (
-          <Input
-            id={field.name}
-            type="number"
-            value={value}
-            onChange={(e) => {
-              // Only allow numbers and decimal point
-              const numericValue = e.target.value.replace(/[^0-9.-]/g, '')
-              // Prevent multiple decimal points
-              const parts = numericValue.split('.')
-              const cleanValue = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : numericValue
-              handleInputChange(field.name, cleanValue)
-            }}
-            onKeyDown={(e) => {
-              // Prevent non-numeric characters except backspace, delete, arrow keys, etc.
-              if (!/[0-9.-]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key)) {
-                e.preventDefault()
-              }
-            }}
-            placeholder={field.placeholder}
-            min={field.validation?.min}
-            max={field.validation?.max}
-            className={error ? 'border-red-500' : ''}
-          />
-        )}
+        {field.type === 'NUMBER' && (() => {
+          const v: any = field.validation || {}
+          const integer = !!v.integer
+          const allowNegative = typeof v.min !== 'number' || v.min < 0
+          // Chars permitted in typing — digits always, decimal only when not integer, minus only when negatives allowed.
+          const typingPattern = integer
+            ? (allowNegative ? /[0-9-]/ : /[0-9]/)
+            : (allowNegative ? /[0-9.-]/ : /[0-9.]/)
+          return (
+            <Input
+              id={field.name}
+              type="number"
+              inputMode={integer ? 'numeric' : 'decimal'}
+              value={value}
+              onChange={(e) => {
+                let s = e.target.value
+                // Strip characters not permitted by this field's constraints.
+                s = s.replace(integer ? (allowNegative ? /[^0-9-]/g : /[^0-9]/g) : (allowNegative ? /[^0-9.-]/g : /[^0-9.]/g), '')
+                // Collapse multiple decimal points when decimals are allowed.
+                if (!integer) {
+                  const parts = s.split('.')
+                  if (parts.length > 2) s = parts[0] + '.' + parts.slice(1).join('')
+                }
+                // Only one leading minus, and only at the start.
+                if (allowNegative) {
+                  const neg = s.startsWith('-')
+                  s = (neg ? '-' : '') + s.replace(/-/g, '')
+                }
+                handleInputChange(field.name, s)
+              }}
+              onKeyDown={(e) => {
+                if (['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter', 'Home', 'End'].includes(e.key)) return
+                if (e.key === '-' && !allowNegative) { e.preventDefault(); return }
+                if (e.key === '.' && integer) { e.preventDefault(); return }
+                if (!typingPattern.test(e.key)) e.preventDefault()
+              }}
+              onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()} // prevent accidental value change on scroll
+              placeholder={field.placeholder}
+              min={field.validation?.min}
+              max={field.validation?.max}
+              step={integer ? 1 : (field.validation as any)?.step}
+              className={error ? 'border-red-500' : ''}
+            />
+          )
+        })()}
 
         {field.type === 'DATE' && (
           <Input
