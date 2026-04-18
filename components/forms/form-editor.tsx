@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
 import ActionsBuilder from "@/components/forms/actions-builder"
+import FormSettingsPanel from "@/components/forms/form-settings-panel"
 import type { ActionRule } from "@/lib/form-actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -1744,6 +1745,45 @@ function FieldBlock({
           </div>
         )}
 
+        {/* Quiz mode: correct answer + points (only surfaces when the form is in quiz mode) */}
+        {isSelected && !isLayout && field.type !== 'HIDDEN_FIELD' && (
+          <details className="mt-3 pointer-events-auto group/quiz">
+            <summary className="text-xs text-muted-foreground hover:text-primary cursor-pointer inline-flex items-center gap-1.5">
+              <Award className="w-3 h-3" /> Quiz scoring (optional)
+            </summary>
+            <div className="mt-2 rounded-md border bg-muted/30 p-3 grid grid-cols-[1fr_auto] gap-2">
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Correct answer</Label>
+                <Input
+                  value={(field.validation as any)?.correctAnswer ?? ''}
+                  onChange={(e) =>
+                    onUpdate({
+                      validation: { ...(field.validation || {}), correctAnswer: e.target.value },
+                    })
+                  }
+                  placeholder="Expected value"
+                  className="h-7 text-xs mt-0.5"
+                />
+              </div>
+              <div className="w-24">
+                <Label className="text-[10px] text-muted-foreground">Points</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={(field.validation as any)?.points ?? ''}
+                  onChange={(e) =>
+                    onUpdate({
+                      validation: { ...(field.validation || {}), points: e.target.value ? Number(e.target.value) : 1 },
+                    })
+                  }
+                  placeholder="1"
+                  className="h-7 text-xs mt-0.5"
+                />
+              </div>
+            </div>
+          </details>
+        )}
+
         {/* Conditional logic editor (all fields) */}
         {isSelected && !isLayout && (
           <div className="mt-4 pointer-events-auto">
@@ -1842,7 +1882,7 @@ export default function FormEditor({
   } | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
-  const [settings, setSettings] = useState<FormSettings>({
+  const [settings, setSettings] = useState<any>({
     allowMultipleSubmissions:
       initialData?.settings?.allowMultipleSubmissions ?? true,
     collectEmail: initialData?.settings?.collectEmail ?? false,
@@ -1850,6 +1890,7 @@ export default function FormEditor({
     confirmationMessage:
       initialData?.settings?.confirmationMessage ??
       "Thank you for your submission!",
+    thankYouHeading: initialData?.settings?.thankYouHeading ?? "Thank you!",
     redirectUrl: initialData?.settings?.redirectUrl ?? "",
     submitButtonText: initialData?.settings?.submitButtonText ?? "Submit",
     closedMessage:
@@ -1858,8 +1899,29 @@ export default function FormEditor({
     closeDate: initialData?.settings?.closeDate ?? "",
     maxResponses: initialData?.settings?.maxResponses ?? null,
     coverImage: initialData?.settings?.coverImage ?? "",
+    logo: initialData?.settings?.logo ?? "",
     primaryColor: initialData?.settings?.primaryColor ?? "#2563eb",
+    fontFamily: initialData?.settings?.fontFamily ?? "",
+    backgroundImage: initialData?.settings?.backgroundImage ?? "",
+    backgroundGradient: initialData?.settings?.backgroundGradient ?? "",
     notifyEmails: initialData?.settings?.notifyEmails ?? "",
+    // Review / summary
+    reviewStep: initialData?.settings?.reviewStep ?? true,
+    emailSummaryToApplicant: initialData?.settings?.emailSummaryToApplicant ?? false,
+    applicantEmailField: initialData?.settings?.applicantEmailField ?? "",
+    // Webhooks
+    webhooks: initialData?.settings?.webhooks ?? [],
+    // Quiz
+    quizMode: initialData?.settings?.quizMode ?? false,
+    // Access control
+    requireLogin: initialData?.settings?.requireLogin ?? false,
+    passwordProtect: initialData?.settings?.passwordProtect ?? "",
+    allowedIPs: initialData?.settings?.allowedIPs ?? [],
+    requireCaptcha: initialData?.settings?.requireCaptcha ?? false,
+    // Languages
+    languages: initialData?.settings?.languages ?? [],
+    defaultLanguage: initialData?.settings?.defaultLanguage ?? "",
+    translations: initialData?.settings?.translations ?? {},
   })
 
   const titleRef = useRef<HTMLTextAreaElement>(null)
@@ -2411,224 +2473,57 @@ export default function FormEditor({
 
   // ── Settings Panel ─────────────────────────────────────
   if (showSettings) {
+    const allFieldsFlat = sections.flatMap((s) =>
+      s.fields.map((f) => ({ id: f.id, name: f.name, label: f.label, type: f.type, options: Array.isArray(f.options) ? (f.options as string[]) : undefined, sectionTitle: s.title })),
+    )
     return (
       <div className="min-h-screen bg-muted/30">
         <div className="sticky top-0 z-10 bg-background border-b px-4 py-2 flex items-center justify-between">
-          <span className="text-sm font-medium">Form Settings</span>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowSettings(false)}
-          >
+          <span className="text-sm font-medium">Form settings</span>
+          <Button size="sm" variant="outline" onClick={() => setShowSettings(false)}>
             <X className="w-3.5 h-3.5 mr-1.5" /> Close
           </Button>
         </div>
-        <div className="max-w-xl mx-auto py-8 px-4 space-y-6">
-          {/* Submission */}
-          <div className="bg-background rounded-xl border p-6 space-y-4">
-            <h3 className="font-semibold flex items-center gap-2">
-              <FileText className="w-4 h-4" /> Submission
-            </h3>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">
-                  Allow multiple submissions
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Let the same person submit more than once
-                </p>
-              </div>
-              <Switch
-                checked={settings.allowMultipleSubmissions}
-                onCheckedChange={(v) =>
-                  setSettings({ ...settings, allowMultipleSubmissions: v })
+        <div className="max-w-5xl mx-auto py-6 px-4">
+          <FormSettingsPanel
+            formId={initialData?.id}
+            settings={settings}
+            setSettings={setSettings}
+            fields={allFieldsFlat}
+            onImportDraft={(draft) => {
+              // Replace current sections + title + description with the AI draft
+              try {
+                if (draft?.title) setFormTitle(draft.title)
+                if (draft?.description) setFormDescription(draft.description)
+                if (Array.isArray(draft?.sections)) {
+                  const newSections: any = draft.sections.map((s: any, si: number) => ({
+                    id: `section_${Date.now()}_${si}`,
+                    title: s.title || `Section ${si + 1}`,
+                    description: s.description || '',
+                    order: si + 1,
+                    fields: (s.fields || []).map((f: any, fi: number) => ({
+                      id: `field_${Date.now()}_${si}_${fi}`,
+                      type: f.type || 'SHORT_TEXT',
+                      label: f.label || '',
+                      name: f.name || `field_${Date.now()}_${si}_${fi}`,
+                      placeholder: f.placeholder || '',
+                      required: !!f.required,
+                      options: f.options || getDefaultOptions(f.type || 'SHORT_TEXT'),
+                      validation: { required: !!f.required },
+                      order: fi + 1,
+                    })),
+                  }))
+                  setSections(newSections)
                 }
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Collect email</p>
-                <p className="text-xs text-muted-foreground">
-                  Require respondent email
-                </p>
-              </div>
-              <Switch
-                checked={settings.collectEmail}
-                onCheckedChange={(v) =>
-                  setSettings({ ...settings, collectEmail: v })
-                }
-              />
-            </div>
-            <div>
-              <Label>Submit button text</Label>
-              <Input
-                value={settings.submitButtonText}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    submitButtonText: e.target.value,
-                  })
-                }
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Confirmation message</Label>
-              <Textarea
-                value={settings.confirmationMessage}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    confirmationMessage: e.target.value,
-                  })
-                }
-                rows={3}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Redirect URL (optional)</Label>
-              <Input
-                value={settings.redirectUrl}
-                onChange={(e) =>
-                  setSettings({ ...settings, redirectUrl: e.target.value })
-                }
-                placeholder="https://..."
-                className="mt-1"
-              />
-            </div>
-          </div>
-
-          {/* Limits */}
-          <div className="bg-background rounded-xl border p-6 space-y-4">
-            <h3 className="font-semibold flex items-center gap-2">
-              <Clock className="w-4 h-4" /> Limits
-            </h3>
-            <div>
-              <Label>Close date</Label>
-              <Input
-                type="datetime-local"
-                value={settings.closeDate}
-                onChange={(e) =>
-                  setSettings({ ...settings, closeDate: e.target.value })
-                }
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Max responses</Label>
-              <Input
-                type="number"
-                value={settings.maxResponses ?? ""}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    maxResponses: e.target.value
-                      ? parseInt(e.target.value)
-                      : null,
-                  })
-                }
-                placeholder="Unlimited"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Closed form message</Label>
-              <Input
-                value={settings.closedMessage}
-                onChange={(e) =>
-                  setSettings({ ...settings, closedMessage: e.target.value })
-                }
-                className="mt-1"
-              />
-            </div>
-          </div>
-
-          {/* Appearance */}
-          <div className="bg-background rounded-xl border p-6 space-y-4">
-            <h3 className="font-semibold flex items-center gap-2">
-              <Star className="w-4 h-4" /> Appearance
-            </h3>
-            <div>
-              <Label>Primary Color</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <input
-                  type="color"
-                  value={settings.primaryColor}
-                  onChange={(e) =>
-                    setSettings({ ...settings, primaryColor: e.target.value })
-                  }
-                  className="w-10 h-10 rounded border cursor-pointer"
-                />
-                <Input
-                  value={settings.primaryColor}
-                  onChange={(e) =>
-                    setSettings({ ...settings, primaryColor: e.target.value })
-                  }
-                  className="w-32"
-                />
-              </div>
-            </div>
-            <div>
-              <Label>Cover Image URL</Label>
-              <Input
-                value={settings.coverImage}
-                onChange={(e) =>
-                  setSettings({ ...settings, coverImage: e.target.value })
-                }
-                placeholder="https://..."
-                className="mt-1"
-              />
-              {settings.coverImage && (
-                <div className="mt-2 h-32 rounded-lg overflow-hidden border">
-                  <img
-                    src={settings.coverImage}
-                    alt="Cover preview"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Notifications */}
-          <div className="bg-background rounded-xl border p-6 space-y-4">
-            <h3 className="font-semibold flex items-center gap-2">
-              <AtSign className="w-4 h-4" /> Notifications
-            </h3>
-            <div>
-              <Label>Email on new submission</Label>
-              <Input
-                value={settings.notifyEmails}
-                onChange={(e) =>
-                  setSettings({ ...settings, notifyEmails: e.target.value })
-                }
-                placeholder="email@example.com, team@example.com"
-                className="mt-1"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Comma-separated email addresses
-              </p>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Show progress bar</p>
-                <p className="text-xs text-muted-foreground">
-                  Show completion progress for multi-section forms
-                </p>
-              </div>
-              <Switch
-                checked={settings.showProgressBar}
-                onCheckedChange={(v) =>
-                  setSettings({ ...settings, showProgressBar: v })
-                }
-              />
-            </div>
-          </div>
+                setShowSettings(false)
+              } catch (err) { console.error(err) }
+            }}
+          />
         </div>
       </div>
     )
   }
+
 
   // ── Editor Layout ──────────────────────────────────────
   return (
