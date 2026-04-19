@@ -52,6 +52,15 @@ function StaticPage({ slug }: { slug: string }) {
   )
 }
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;")
+}
+function safeHref(url: string): string {
+  const u = url.trim()
+  if (/^(https?:|mailto:|\/)/i.test(u)) return escapeHtml(u)
+  return "#"
+}
+
 function markdownToHtml(md: string): string {
   return md
     .split("\n\n")
@@ -59,14 +68,14 @@ function markdownToHtml(md: string): string {
       const lines = block.split("\n")
       if (/^#{1,3} /.test(lines[0])) {
         const level = lines[0].match(/^(#+)/)![1].length
-        const text = inlineFormat(lines[0].replace(/^#+\s*/, ""))
+        const text = inlineFormat(escapeHtml(lines[0].replace(/^#+\s*/, "")))
         return `<h${level} class="prose-h${level}">${text}</h${level}>`
       }
       if (lines.every(l => /^[-*] /.test(l.trim()))) {
-        const items = lines.map(l => `<li>${inlineFormat(l.replace(/^[-*]\s*/, ""))}</li>`).join("")
+        const items = lines.map(l => `<li>${inlineFormat(escapeHtml(l.replace(/^[-*]\s*/, "")))}</li>`).join("")
         return `<ul class="prose-ul">${items}</ul>`
       }
-      return `<p class="prose-p">${inlineFormat(lines.join("<br/>"))}</p>`
+      return `<p class="prose-p">${inlineFormat(escapeHtml(lines.join("\n"))).replace(/\n/g, "<br/>")}</p>`
     })
     .join("")
 }
@@ -76,5 +85,5 @@ function inlineFormat(s: string): string {
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
     .replace(/`(.+?)`/g, "<code>$1</code>")
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/\[(.+?)\]\((.+?)\)/g, (_m, label, url) => `<a href="${safeHref(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`)
 }

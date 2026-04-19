@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { PrismaClient } from "@prisma/client"
+import { requireAdmin } from "@/lib/auth-middleware"
 
 const prisma = new PrismaClient()
 
 // GET - Fetch all opportunity categories
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authResult = await requireAdmin(request)
+  if (authResult instanceof NextResponse) return authResult
+
   try {
     const categories = await prisma.opportunityCategory.findMany({
       orderBy: {
@@ -45,6 +49,9 @@ export async function GET() {
 
 // POST - Create new opportunity category
 export async function POST(request: NextRequest) {
+  const authResult = await requireAdmin(request)
+  if (authResult instanceof NextResponse) return authResult
+
   try {
     const body = await request.json()
     const { name, description, color, icon } = body

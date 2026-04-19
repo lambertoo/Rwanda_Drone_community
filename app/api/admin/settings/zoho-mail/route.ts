@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sendZohoEmail } from "@/lib/zoho-mail"
+import { requireAdmin } from "@/lib/auth-middleware"
 
 // ── GET — return current status ───────────────────────────────
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authResult = await requireAdmin(request)
+  if (authResult instanceof NextResponse) return authResult
+
   try {
     const isConnected = !!(
       process.env.ZOHO_CLIENT_ID &&
@@ -23,6 +27,9 @@ export async function GET() {
 
 // ── POST — send test email ────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const authResult = await requireAdmin(request)
+  if (authResult instanceof NextResponse) return authResult
+
   try {
     const body = await req.json()
     const { action } = body
