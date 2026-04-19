@@ -8,9 +8,11 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 
+type Role = 'owner' | 'collaborator'
 interface MyForms {
   id: string; title: string; slug: string; isActive: boolean; isPublic: boolean
   createdAt: string; updatedAt: string; _count: { entries: number }
+  _role?: Role
 }
 interface MyPost {
   id: string; title: string; content: string; isApproved: boolean
@@ -19,11 +21,13 @@ interface MyPost {
 interface MyProject {
   id: string; title: string; description: string; status: string
   thumbnail: string | null; createdAt: string; updatedAt: string
+  _role?: Role
 }
 interface MyEvent {
   id: string; title: string; description: string; startDate: string; endDate: string
   location: string; isPublic: boolean; createdAt: string
   _count: { rsvps: number }
+  _role?: Role
 }
 interface MyCourse {
   id: string; title: string; slug: string; category: string; level: string
@@ -43,6 +47,7 @@ interface MyResource {
   id: string; title: string; fileUrl: string; fileType: string; fileSize: string | null
   isRegulation: boolean; isApproved: boolean; downloads: number; views: number
   uploadedAt: string; updatedAt: string; category: { name: string }
+  _role?: Role
 }
 
 const SUB_TABS = [
@@ -190,20 +195,35 @@ export default function ContentHub() {
               </div>
               {forms.length === 0 ? (
                 <EmptyState icon={ClipboardList} label="No forms yet" actionHref="/forms/new" actionLabel="Create Form" />
-              ) : forms.map(f => (
-                <div key={f.id} className="flex items-center gap-2 p-4 rounded-lg border hover:bg-muted/50 transition-colors">
-                  <Link href={`/forms/${f.id}/edit`} className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm truncate">{f.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Updated {formatDate(f.updatedAt)} · {f._count.entries} response{f._count.entries !== 1 ? "s" : ""}
-                    </p>
-                  </Link>
-                  <Badge variant={f.isActive ? "default" : "secondary"} className="shrink-0 text-[10px]">
-                    {f.isActive ? "Active" : "Closed"}
-                  </Badge>
-                  <ItemActions editHref={`/forms/${f.id}/edit`} onDelete={() => handleDelete("forms", f.id, f.title)} deleting={deleting === f.id} />
-                </div>
-              ))}
+              ) : forms.map(f => {
+                const isCollab = f._role === 'collaborator'
+                return (
+                  <div key={f.id} className="flex items-center gap-2 p-4 rounded-lg border hover:bg-muted/50 transition-colors">
+                    <Link href={`/forms/${f.id}/edit`} className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm truncate">{f.title}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Updated {formatDate(f.updatedAt)} · {f._count.entries} response{f._count.entries !== 1 ? "s" : ""}
+                      </p>
+                    </Link>
+                    {isCollab && (
+                      <Badge variant="outline" className="shrink-0 text-[10px] border-blue-300 text-blue-700 dark:border-blue-800 dark:text-blue-300">
+                        Collaborator
+                      </Badge>
+                    )}
+                    <Badge variant={f.isActive ? "default" : "secondary"} className="shrink-0 text-[10px]">
+                      {f.isActive ? "Active" : "Closed"}
+                    </Badge>
+                    {/* Collaborators cannot delete — only edit */}
+                    {isCollab ? (
+                      <Link href={`/forms/${f.id}/edit`} className="p-1.5 rounded hover:bg-muted text-muted-foreground">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Link>
+                    ) : (
+                      <ItemActions editHref={`/forms/${f.id}/edit`} onDelete={() => handleDelete("forms", f.id, f.title)} deleting={deleting === f.id} />
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
 
@@ -246,16 +266,26 @@ export default function ContentHub() {
               </div>
               {projects.length === 0 ? (
                 <EmptyState icon={Camera} label="No projects yet" actionHref="/community?tab=projects" actionLabel="Create Project" />
-              ) : projects.map(p => (
-                <div key={p.id} className="flex items-center gap-2 p-4 rounded-lg border hover:bg-muted/50 transition-colors">
-                  <Link href={`/projects/${p.id}`} className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm truncate">{p.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{p.description}</p>
-                  </Link>
-                  <Badge variant="secondary" className="shrink-0 text-[10px]">{p.status}</Badge>
-                  <ItemActions editHref={`/projects/${p.id}/edit`} onDelete={() => handleDelete("projects", p.id, p.title)} deleting={deleting === p.id} />
-                </div>
-              ))}
+              ) : projects.map(p => {
+                const isCollab = p._role === 'collaborator'
+                return (
+                  <div key={p.id} className="flex items-center gap-2 p-4 rounded-lg border hover:bg-muted/50 transition-colors">
+                    <Link href={`/projects/${p.id}`} className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm truncate">{p.title}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{p.description}</p>
+                    </Link>
+                    {isCollab && <Badge variant="outline" className="shrink-0 text-[10px] border-blue-300 text-blue-700">Collaborator</Badge>}
+                    <Badge variant="secondary" className="shrink-0 text-[10px]">{p.status}</Badge>
+                    {isCollab ? (
+                      <Link href={`/projects/${p.id}/edit`} className="p-1.5 rounded hover:bg-muted text-muted-foreground">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Link>
+                    ) : (
+                      <ItemActions editHref={`/projects/${p.id}/edit`} onDelete={() => handleDelete("projects", p.id, p.title)} deleting={deleting === p.id} />
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
 
@@ -269,22 +299,32 @@ export default function ContentHub() {
               </div>
               {events.length === 0 ? (
                 <EmptyState icon={Calendar} label="No events yet" actionHref="/community?tab=events" actionLabel="Create Event" />
-              ) : events.map(e => (
-                <div key={e.id} className="flex items-center gap-2 p-4 rounded-lg border hover:bg-muted/50 transition-colors">
-                  <Link href={`/events/${e.id}`} className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm truncate">{e.title}</h3>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                      <span>{formatDate(e.startDate)}</span>
-                      <span>{e.location}</span>
-                      <span className="flex items-center gap-0.5"><Users className="h-3 w-3" />{e._count.rsvps}</span>
-                    </div>
-                  </Link>
-                  <Badge variant={new Date(e.startDate) > new Date() ? "default" : "secondary"} className="shrink-0 text-[10px]">
-                    {new Date(e.startDate) > new Date() ? "Upcoming" : "Past"}
-                  </Badge>
-                  <ItemActions editHref={`/events/${e.id}/edit`} onDelete={() => handleDelete("events", e.id, e.title)} deleting={deleting === e.id} />
-                </div>
-              ))}
+              ) : events.map(e => {
+                const isCollab = e._role === 'collaborator'
+                return (
+                  <div key={e.id} className="flex items-center gap-2 p-4 rounded-lg border hover:bg-muted/50 transition-colors">
+                    <Link href={`/events/${e.id}`} className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm truncate">{e.title}</h3>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                        <span>{formatDate(e.startDate)}</span>
+                        <span>{e.location}</span>
+                        <span className="flex items-center gap-0.5"><Users className="h-3 w-3" />{e._count.rsvps}</span>
+                      </div>
+                    </Link>
+                    {isCollab && <Badge variant="outline" className="shrink-0 text-[10px] border-blue-300 text-blue-700">Collaborator</Badge>}
+                    <Badge variant={new Date(e.startDate) > new Date() ? "default" : "secondary"} className="shrink-0 text-[10px]">
+                      {new Date(e.startDate) > new Date() ? "Upcoming" : "Past"}
+                    </Badge>
+                    {isCollab ? (
+                      <Link href={`/events/${e.id}/edit`} className="p-1.5 rounded hover:bg-muted text-muted-foreground">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Link>
+                    ) : (
+                      <ItemActions editHref={`/events/${e.id}/edit`} onDelete={() => handleDelete("events", e.id, e.title)} deleting={deleting === e.id} />
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
 
