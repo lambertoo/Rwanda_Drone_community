@@ -76,9 +76,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <div className="h-8 w-8 rounded-lg bg-brand-gradient flex items-center justify-center shadow-sm">
-              <span className="text-white font-bold text-xs">RDC</span>
-            </div>
+            <img src="/icon.svg" alt="" className="h-8 w-8" />
             <span className="hidden md:block font-bold text-sm text-gradient">Rwanda UAS Community</span>
           </Link>
 

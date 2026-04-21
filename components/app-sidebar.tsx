@@ -93,9 +93,7 @@ export function AppSidebar({ className, onItemClick }: SidebarProps) {
       {/* Logo */}
       <div className="px-4 py-5 border-b">
         <Link href="/" className="flex items-center gap-2" onClick={onItemClick}>
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">RDC</span>
-          </div>
+          <img src="/icon.svg" alt="" className="w-8 h-8" />
           <span className="font-semibold text-sm">Rwanda UAS Community</span>
         </Link>
       </div>

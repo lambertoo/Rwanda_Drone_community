@@ -146,19 +146,7 @@ export default function SubscribePage() {
               gap: "10px",
               marginBottom: "20px",
             }}>
-              <div style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "8px",
-                background: "linear-gradient(135deg,#003366,#0066B3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                fontWeight: 800,
-                fontSize: "12px",
-                letterSpacing: "-0.5px",
-              }}>RDC</div>
+              <img src="/icon.svg" alt="" style={{ height: "36px", width: "auto" }} />
               <span style={{ fontWeight: 700, fontSize: "15px", color: "#003366" }}>Rwanda UAS Community</span>
             </div>
           </Link>

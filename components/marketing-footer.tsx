@@ -120,7 +120,7 @@ export function MarketingFooter() {
           {/* Brand */}
           <div className="mk-footer-brand">
             <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
-              <div className="mk-logo__mark">RDC</div>
+              <img src="/icon.svg" alt="" style={{ height: "36px", width: "auto" }} />
               <span style={{ fontWeight: 700, fontSize: "14px", color: "#003366" }}>Rwanda UAS Community</span>
             </Link>
             <p>
