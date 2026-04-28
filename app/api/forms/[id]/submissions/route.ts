@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/jwt-utils'
+import { canEdit } from '@/lib/collaboration'
 
 export async function GET(
   request: NextRequest,
@@ -21,7 +22,6 @@ export async function GET(
 
     const formId = id
 
-    // Check if form exists and user owns it
     const form = await prisma.universalForm.findUnique({
       where: { id: formId },
       select: { id: true, userId: true }
@@ -31,7 +31,8 @@ export async function GET(
       return NextResponse.json({ error: 'Form not found' }, { status: 404 })
     }
 
-    if (form.userId !== payload.userId) {
+    const allowed = await canEdit(payload.userId, payload.email, 'FORM', formId)
+    if (!allowed) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 

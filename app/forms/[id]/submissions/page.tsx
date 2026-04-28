@@ -24,6 +24,7 @@ import {
   Eye,
 } from "lucide-react"
 import { AuthGuard } from "@/components/auth-guard"
+import { useAuth } from "@/lib/auth-context"
 import {
   ResponsiveContainer,
   BarChart,
@@ -88,6 +89,7 @@ interface Form {
   isPublic?: boolean
   settings?: any
   sections: FormSection[]
+  user?: { id: string }
 }
 
 interface SheetStatus {
@@ -1259,6 +1261,7 @@ export default function FormSubmissionsPage() {
   const params = useParams()
   const router = useRouter()
   const formId = params.id as string
+  const { user } = useAuth()
 
   const [form, setForm] = useState<Form | null>(null)
   const [submissions, setSubmissions] = useState<FormSubmission[]>([])
@@ -1426,6 +1429,7 @@ export default function FormSubmissionsPage() {
         isActive: formData.isActive,
         isPublic: formData.isPublic,
         settings: formData.settings,
+        user: formData.user,
         sections:
           formData.sections?.map((s: any) => ({
             id: s.id,
@@ -1624,6 +1628,8 @@ export default function FormSubmissionsPage() {
     URL.revokeObjectURL(url)
   }
 
+  const isOwner = !!user && !!form?.user && form.user.id === user.id
+
   // Detail submission
   const detailSubmission = submissions.find((s) => s.id === detailId)
 
@@ -1782,16 +1788,18 @@ export default function FormSubmissionsPage() {
                 <span className="hidden sm:inline">Export CSV</span>
               </button>
 
-              {/* Clear all responses — opens typed-confirmation modal */}
-              <button
-                onClick={() => { setClearOpen(true); setClearInput(''); setClearError(null) }}
-                disabled={submissions.length === 0}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Delete every submission on this form"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Clear responses</span>
-              </button>
+              {/* Clear all responses — owner only */}
+              {isOwner && (
+                <button
+                  onClick={() => { setClearOpen(true); setClearInput(''); setClearError(null) }}
+                  disabled={submissions.length === 0}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Delete every submission on this form"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Clear responses</span>
+                </button>
+              )}
 
               {/* Preview */}
               <button onClick={() => window.open(`/forms/public/${formId}`, '_blank')}
@@ -1940,17 +1948,19 @@ export default function FormSubmissionsPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b bg-muted/40">
-                          <th className="w-10 px-3 py-3">
-                            <input
-                              type="checkbox"
-                              checked={
-                                selected.size === processed.length &&
-                                processed.length > 0
-                              }
-                              onChange={toggleSelectAll}
-                              className="rounded"
-                            />
-                          </th>
+                          {isOwner && (
+                            <th className="w-10 px-3 py-3">
+                              <input
+                                type="checkbox"
+                                checked={
+                                  selected.size === processed.length &&
+                                  processed.length > 0
+                                }
+                                onChange={toggleSelectAll}
+                                className="rounded"
+                              />
+                            </th>
+                          )}
                           <th
                             className="px-3 py-3 text-left font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none whitespace-nowrap"
                             onClick={() => toggleSort("_date")}
@@ -1967,7 +1977,7 @@ export default function FormSubmissionsPage() {
                               <SortIcon field={field.name} />
                             </th>
                           ))}
-                          <th className="w-10 px-3 py-3" />
+                          {isOwner && <th className="w-10 px-3 py-3" />}
                         </tr>
                       </thead>
                       <tbody>
@@ -1981,19 +1991,19 @@ export default function FormSubmissionsPage() {
                             }`}
                             onClick={() => setDetailId(submission.id)}
                           >
-                            <td
-                              className="px-3 py-3"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={selected.has(submission.id)}
-                                onChange={() =>
-                                  toggleSelect(submission.id)
-                                }
-                                className="rounded"
-                              />
-                            </td>
+                            {isOwner && (
+                              <td
+                                className="px-3 py-3"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selected.has(submission.id)}
+                                  onChange={() => toggleSelect(submission.id)}
+                                  className="rounded"
+                                />
+                              </td>
+                            )}
                             <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
                               {new Date(
                                 submission.meta?.submittedAt ||
@@ -2029,19 +2039,19 @@ export default function FormSubmissionsPage() {
                                 </td>
                               )
                             })}
-                            <td
-                              className="px-3 py-3"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <button
-                                onClick={() =>
-                                  handleDelete([submission.id])
-                                }
-                                className="p-1 rounded hover:bg-red-50 text-muted-foreground/40 hover:text-red-600"
+                            {isOwner && (
+                              <td
+                                className="px-3 py-3"
+                                onClick={(e) => e.stopPropagation()}
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
+                                <button
+                                  onClick={() => handleDelete([submission.id])}
+                                  className="p-1 rounded hover:bg-red-50 text-muted-foreground/40 hover:text-red-600"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </tbody>
@@ -2236,12 +2246,14 @@ export default function FormSubmissionsPage() {
               <div className="sticky top-0 bg-background border-b px-4 py-3 flex items-center justify-between z-10">
                 <h3 className="font-semibold">Response Detail</h3>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleDelete([detailSubmission.id])}
-                    className="p-1.5 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {isOwner && (
+                    <button
+                      onClick={() => handleDelete([detailSubmission.id])}
+                      className="p-1.5 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                   <button
                     onClick={() => setDetailId(null)}
                     className="p-1.5 rounded hover:bg-muted"
