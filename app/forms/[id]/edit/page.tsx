@@ -12,7 +12,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Users, MoreHorizontal, FileSpreadsheet, ClipboardList, GitBranch, Pencil } from "lucide-react"
+import { Users, MoreHorizontal, FileSpreadsheet, ClipboardList, GitBranch, Pencil, Send, X } from "lucide-react"
+import { createPortal } from "react-dom"
 
 interface Form {
   id: string
@@ -45,6 +46,38 @@ export default function EditFormPage({ params: paramsPromise }: { params: Promis
   const [sheetLoading, setSheetLoading] = useState(false)
   const [emailEnabled, setEmailEnabled] = useState(false)
   const [viewMode, setViewMode] = useState<'edit' | 'flow'>('edit')
+
+  const [shareOpen, setShareOpen] = useState(false)
+  const [shareEmails, setShareEmails] = useState('')
+  const [shareMessage, setShareMessage] = useState('')
+  const [shareSending, setShareSending] = useState(false)
+  const [shareResult, setShareResult] = useState<{ sent: number; failed: number } | null>(null)
+
+  const handleShare = async () => {
+    if (!shareEmails.trim() || shareSending) return
+    setShareSending(true)
+    setShareResult(null)
+    try {
+      const res = await fetch(`/api/forms/${params.id}/share`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          emails: shareEmails.split(/[\n,;]+/).map(e => e.trim()).filter(Boolean),
+          message: shareMessage.trim(),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed to send')
+      setShareResult(data)
+      setShareEmails('')
+      setShareMessage('')
+    } catch (err: any) {
+      setShareResult({ sent: 0, failed: -1 })
+    } finally {
+      setShareSending(false)
+    }
+  }
 
   useEffect(() => {
     fetchForm()
@@ -442,6 +475,10 @@ export default function EditFormPage({ params: paramsPromise }: { params: Promis
                   <ClipboardList className="mr-2 h-4 w-4" />
                   Responses ({responseCount})
                 </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => { setShareOpen(true); setShareResult(null) }}>
+                  <Send className="mr-2 h-4 w-4" />
+                  Share with applicants
+                </DropdownMenuItem>
                 {sheetStatus?.sheetLinked ? (
                   <>
                     <DropdownMenuItem asChild>
@@ -499,6 +536,16 @@ export default function EditFormPage({ params: paramsPromise }: { params: Promis
               </Sheet>
             )}
 
+            {/* Share button */}
+            <button
+              onClick={() => { setShareOpen(true); setShareResult(null) }}
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-[#009FDA] text-white hover:bg-[#0089c0] transition-colors"
+              title="Send form link to applicants"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Share</span>
+            </button>
+
             {/* Preview button */}
             <button
               onClick={() => window.open(`/forms/public/${params.id}`, '_blank')}
@@ -523,6 +570,111 @@ export default function EditFormPage({ params: paramsPromise }: { params: Promis
           onSave={handleSave}
           onCancel={handleCancel}
         />
+      )}
+
+      {/* Share modal */}
+      {shareOpen && typeof window !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4"
+          onClick={() => !shareSending && setShareOpen(false)}
+        >
+          <div
+            className="bg-background rounded-xl border shadow-xl w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b">
+              <div className="flex items-center gap-2">
+                <Send className="w-4 h-4 text-[#009FDA]" />
+                <h2 className="font-semibold text-sm">Send form to applicants</h2>
+              </div>
+              <button
+                onClick={() => setShareOpen(false)}
+                disabled={shareSending}
+                className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-5 py-4 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                  Email addresses <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={shareEmails}
+                  onChange={(e) => setShareEmails(e.target.value)}
+                  placeholder="applicant@example.com, another@example.com"
+                  rows={3}
+                  disabled={shareSending}
+                  className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#009FDA]/30 focus:border-[#009FDA] disabled:opacity-50"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Separate multiple addresses with commas, semicolons, or new lines. Max 50 recipients.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                  Message <span className="text-muted-foreground/60">(optional)</span>
+                </label>
+                <textarea
+                  value={shareMessage}
+                  onChange={(e) => setShareMessage(e.target.value)}
+                  placeholder="Add a personal note to include in the invitation email..."
+                  rows={3}
+                  maxLength={500}
+                  disabled={shareSending}
+                  className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#009FDA]/30 focus:border-[#009FDA] disabled:opacity-50"
+                />
+              </div>
+
+              {/* Result banner */}
+              {shareResult && (
+                shareResult.failed === -1 ? (
+                  <p className="text-xs text-red-600 bg-red-50 rounded-md px-3 py-2">
+                    Failed to send. Please check your email configuration.
+                  </p>
+                ) : (
+                  <p className="text-xs text-green-700 bg-green-50 rounded-md px-3 py-2">
+                    ✓ Sent to {shareResult.sent} recipient{shareResult.sent !== 1 ? 's' : ''}
+                    {shareResult.failed > 0 && ` · ${shareResult.failed} failed`}
+                  </p>
+                )
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between px-5 py-3 border-t bg-muted/30 rounded-b-xl">
+              <p className="text-xs text-muted-foreground truncate max-w-[220px]">
+                Link: /forms/public/{params.id}
+              </p>
+              <button
+                onClick={handleShare}
+                disabled={shareSending || !shareEmails.trim()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-[#009FDA] text-white hover:bg-[#0089c0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {shareSending ? (
+                  <>
+                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                    Sending…
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    Send invitations
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </AuthGuard>
   )
