@@ -3,6 +3,7 @@ import { streamText } from 'ai'
 import { google } from '@ai-sdk/google'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/jwt-utils'
+import { canEdit } from '@/lib/collaboration'
 
 export async function POST(
   request: NextRequest,
@@ -28,7 +29,8 @@ export async function POST(
   })
 
   if (!form) return new Response('Form not found', { status: 404 })
-  if (form.userId !== payload.userId) return new Response('Forbidden', { status: 403 })
+  const hasAccess = await canEdit(payload.userId, payload.email, 'FORM', formId)
+  if (!hasAccess) return new Response('Forbidden', { status: 403 })
 
   // Load submissions with values
   const submissions = await prisma.formEntry.findMany({
