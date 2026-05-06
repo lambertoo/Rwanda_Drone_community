@@ -12,8 +12,9 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Users, MoreHorizontal, FileSpreadsheet, ClipboardList, GitBranch, Pencil, Send, X } from "lucide-react"
+import { Users, MoreHorizontal, FileSpreadsheet, ClipboardList, GitBranch, Pencil, Send, X, Link2, Check } from "lucide-react"
 import { createPortal } from "react-dom"
+import QRCode from 'qrcode'
 
 interface Form {
   id: string
@@ -52,6 +53,21 @@ export default function EditFormPage({ params: paramsPromise }: { params: Promis
   const [shareMessage, setShareMessage] = useState('')
   const [shareSending, setShareSending] = useState(false)
   const [shareResult, setShareResult] = useState<{ sent: number; failed: number } | null>(null)
+  const [qrDataUrl, setQrDataUrl] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!shareOpen) return
+    const publicUrl = `${window.location.origin}/forms/public/${params.id}`
+    QRCode.toDataURL(publicUrl, { width: 200, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } })
+      .then(setQrDataUrl)
+  }, [shareOpen, params.id])
+
+  const copyPublicLink = () => {
+    navigator.clipboard.writeText(`${window.location.origin}/forms/public/${params.id}`)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const handleShare = async () => {
     if (!shareEmails.trim() || shareSending) return
@@ -579,14 +595,14 @@ export default function EditFormPage({ params: paramsPromise }: { params: Promis
           onClick={() => !shareSending && setShareOpen(false)}
         >
           <div
-            className="bg-background rounded-xl border shadow-xl w-full max-w-md"
+            className="bg-background rounded-xl border shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b">
+            <div className="flex items-center justify-between px-5 py-4 border-b sticky top-0 bg-background z-10">
               <div className="flex items-center gap-2">
-                <Send className="w-4 h-4 text-[#009FDA]" />
-                <h2 className="font-semibold text-sm">Send form to applicants</h2>
+                <Link2 className="w-4 h-4 text-[#009FDA]" />
+                <h2 className="font-semibold text-sm">Share form</h2>
               </div>
               <button
                 onClick={() => setShareOpen(false)}
@@ -597,7 +613,46 @@ export default function EditFormPage({ params: paramsPromise }: { params: Promis
               </button>
             </div>
 
-            {/* Body */}
+            {/* Public link + QR section */}
+            <div className="px-5 py-4 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground">Public link</p>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0 rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground truncate font-mono">
+                  {typeof window !== 'undefined' ? `${window.location.origin}/forms/public/${params.id}` : `/forms/public/${params.id}`}
+                </div>
+                <button
+                  onClick={copyPublicLink}
+                  className="shrink-0 inline-flex items-center gap-1 px-3 py-2 text-xs font-medium rounded-md border hover:bg-muted transition-colors"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Link2 className="w-3.5 h-3.5" />}
+                  {copied ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+
+              {/* QR code */}
+              <div className="flex flex-col items-center py-3">
+                {qrDataUrl ? (
+                  <img src={qrDataUrl} alt="QR code for form link" className="w-40 h-40 rounded-lg border p-1" />
+                ) : (
+                  <div className="w-40 h-40 rounded-lg border flex items-center justify-center bg-muted/30">
+                    <svg className="w-5 h-5 animate-spin text-muted-foreground" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground mt-2">Scan to open the form</p>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 px-5">
+              <div className="flex-1 border-t" />
+              <span className="text-xs text-muted-foreground">or send via email</span>
+              <div className="flex-1 border-t" />
+            </div>
+
+            {/* Email body */}
             <div className="px-5 py-4 space-y-4">
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1.5">
@@ -631,7 +686,6 @@ export default function EditFormPage({ params: paramsPromise }: { params: Promis
                 />
               </div>
 
-              {/* Result banner */}
               {shareResult && (
                 shareResult.failed === -1 ? (
                   <p className="text-xs text-red-600 bg-red-50 rounded-md px-3 py-2">
@@ -647,10 +701,7 @@ export default function EditFormPage({ params: paramsPromise }: { params: Promis
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between px-5 py-3 border-t bg-muted/30 rounded-b-xl">
-              <p className="text-xs text-muted-foreground truncate max-w-[220px]">
-                Link: /forms/public/{params.id}
-              </p>
+            <div className="flex justify-end px-5 py-3 border-t bg-muted/30 rounded-b-xl">
               <button
                 onClick={handleShare}
                 disabled={shareSending || !shareEmails.trim()}
