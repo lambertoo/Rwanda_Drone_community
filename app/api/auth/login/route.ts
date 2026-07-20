@@ -15,7 +15,7 @@ function sleep(ms: number): Promise<void> {
 export async function POST(request: NextRequest) {
   try {
     // Apply rate limiting
-    const rateLimitResult = authRateLimit(request)
+    const rateLimitResult = await authRateLimit(request)
     if (rateLimitResult) {
       return rateLimitResult
     }
@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       email: user.email,
       role: user.role ?? '',
+      tokenVersion: user.tokenVersion ?? 0,
     })
 
     // Update last active

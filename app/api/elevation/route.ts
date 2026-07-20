@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { requireAuth } from "@/lib/auth-middleware"
 
 interface ElevationPoint {
   latitude: number
@@ -7,6 +8,9 @@ interface ElevationPoint {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAuth(request)
+    if (auth instanceof NextResponse) return auth
+
     const body = await request.json()
     const points: ElevationPoint[] = body?.points
     if (!Array.isArray(points) || points.length === 0) {

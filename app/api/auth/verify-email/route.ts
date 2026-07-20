@@ -47,8 +47,8 @@ export async function GET(req: NextRequest) {
   const { accessToken, refreshToken } = generateTokens({
     userId: updatedUser.id,
     email: updatedUser.email,
-    username: updatedUser.username,
-    role: updatedUser.role,
+    role: updatedUser.role ?? '',
+    tokenVersion: updatedUser.tokenVersion ?? 0,
   })
 
   const response = NextResponse.json({

@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getSession } from "@/lib/auth"
-import { cookies } from "next/headers"
+import { getCurrentUser } from "@/lib/auth"
 
 // READ - Get a single service
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -51,14 +50,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
-
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
-    }
+    const user = await getCurrentUser()
 
     if (!user) {
       return NextResponse.json(
@@ -150,14 +142,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
-
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
-    }
+    const user = await getCurrentUser()
 
     if (!user) {
       return NextResponse.json(

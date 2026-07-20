@@ -13,6 +13,7 @@ export async function GET() {
       include: {
         author: true,
         category: true,
+        _count: { select: { comments: true } },
       },
       orderBy: {
         createdAt: 'desc'
@@ -82,7 +83,7 @@ export async function GET() {
         stats: {
           views: project.viewsCount,
           likes: project.likesCount,
-          comments: 0, // Comments not implemented yet
+          comments: project._count.comments,
         },
         technologies: technologies,
         featured: project.isFeatured,

@@ -119,8 +119,8 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       return null
     }
     
-    // Verify JWT token
-    const payload = verifyToken(token)
+    // Verify JWT token — must be an access token
+    const payload = verifyToken(token, 'access')
     if (!payload) {
       return null
     }

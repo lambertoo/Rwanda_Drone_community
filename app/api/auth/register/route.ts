@@ -11,7 +11,7 @@ import {
 
 export async function POST(request: NextRequest) {
   try {
-    const rateLimitResult = authRateLimit(request)
+    const rateLimitResult = await authRateLimit(request)
     if (rateLimitResult) return rateLimitResult
 
     const body = await request.json()

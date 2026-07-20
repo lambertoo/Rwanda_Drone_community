@@ -98,7 +98,7 @@ export default function SimpleProfilePage() {
             }}>
               Go to Profile Completion
             </a>
-            <a href="/debug-profile" style={{
+            <a href="/debug-auth" style={{
               display: 'block',
               background: 'white',
               border: '1px solid #d1d5db',

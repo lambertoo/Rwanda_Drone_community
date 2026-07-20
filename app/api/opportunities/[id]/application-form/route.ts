@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { cookies } from "next/headers"
-import { getSession } from "@/lib/auth"
+import { getCurrentUser } from "@/lib/auth"
 
 // GET - Get application form for an opportunity
 export async function GET(
@@ -48,8 +47,8 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const session = await getSession(cookies())
-    if (!session) {
+    const user = await getCurrentUser()
+    if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -73,7 +72,7 @@ export async function POST(
       )
     }
 
-    if (opportunity.posterId !== session.user.id) {
+    if (opportunity.posterId !== user.id) {
       return NextResponse.json(
         { error: 'Only the opportunity creator can manage the application form' },
         { status: 403 }
@@ -129,7 +128,7 @@ export async function POST(
       const newForm = await prisma.applicationForm.create({
         data: {
           opportunityId,
-          creatorId: session.user.id,
+          creatorId: user.id,
           title: title || 'Application Form',
           description: description || null,
           fields: {

@@ -41,7 +41,7 @@ export async function POST(
     const section = await prisma.formSection.findFirst({
       where: { 
         id: sectionId,
-        form: { userId: user.id }
+        form: { userId: user.userId }
       }
     })
 

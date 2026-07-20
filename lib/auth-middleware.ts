@@ -17,30 +17,37 @@ export async function requireAuth(req: NextRequest): Promise<{ user: JWTPayload 
       )
     }
     
-    // Verify token
-    const decoded = verifyToken(token)
+    // Verify token — must be an access token, not a refresh token
+    const decoded = verifyToken(token, 'access')
     if (!decoded) {
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
       )
     }
-    
+
     // Check if user still exists in database
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, email: true, role: true, isActive: true }
+      select: { id: true, email: true, role: true, isActive: true, tokenVersion: true }
     })
-    
+
     if (!user || !user.isActive) {
       return NextResponse.json(
         { error: 'User not found or inactive' },
         { status: 401 }
       )
     }
-    
-    // Return user data for the route handler
-    return { user: decoded }
+
+    if ((decoded.tokenVersion ?? 0) !== user.tokenVersion) {
+      return NextResponse.json(
+        { error: 'Session expired, please sign in again' },
+        { status: 401 }
+      )
+    }
+
+    // Return the fresh DB role, not the (possibly stale) role from the token
+    return { user: { ...decoded, role: user.role } }
     
   } catch (error) {
     console.error('Authentication middleware error:', error)
@@ -120,22 +127,26 @@ export async function optionalAuth(req: NextRequest): Promise<{ user: JWTPayload
       return { user: null }
     }
     
-    const decoded = verifyToken(token)
+    const decoded = verifyToken(token, 'access')
     if (!decoded) {
       return { user: null }
     }
-    
+
     // Check if user still exists
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, email: true, role: true, isActive: true }
+      select: { id: true, email: true, role: true, isActive: true, tokenVersion: true }
     })
-    
+
     if (!user || !user.isActive) {
       return { user: null }
     }
-    
-    return { user: decoded }
+
+    if ((decoded.tokenVersion ?? 0) !== user.tokenVersion) {
+      return { user: null }
+    }
+
+    return { user: { ...decoded, role: user.role } }
     
   } catch (error) {
     console.error('Optional auth middleware error:', error)
@@ -148,8 +159,8 @@ export async function getUserFromRequest(req: NextRequest): Promise<JWTPayload |
   try {
     const token = extractTokenFromRequest(req)
     if (!token) return null
-    
-    const decoded = verifyToken(token)
+
+    const decoded = verifyToken(token, 'access')
     return decoded
   } catch {
     return null
@@ -175,7 +186,7 @@ export async function getAuthenticatedUser(): Promise<any> {
     }
     
     // Verify the token
-    const decoded = verifyToken(token)
+    const decoded = verifyToken(token, 'access')
     if (!decoded) {
       throw new Error('Invalid or expired token')
     }

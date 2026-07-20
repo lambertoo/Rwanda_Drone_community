@@ -13,15 +13,25 @@ export async function POST(request: NextRequest) {
   try {
     // Verify admin authentication
     const adminUser = await verifyAdminToken(request)
-    if (!adminUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (adminUser instanceof NextResponse) return adminUser
+
+    // pg_dump/psql are not available on Vercel serverless, and the bundle FS is
+    // read-only outside /tmp — refuse rather than fail unpredictably mid-run.
+    if (process.env.VERCEL) {
+      return NextResponse.json(
+        { error: 'Backups are not available on serverless. Run this from a server/Docker deployment or use your DB provider\'s backup tooling.' },
+        { status: 501 }
+      )
     }
 
     const { name } = await request.json()
     const backupName = name || `backup-${new Date().toISOString().split('T')[0]}`
 
     // Get database connection details from environment
-    const databaseUrl = process.env.DATABASE_URL || 'postgresql://postgres:drone123456@db:5432/rwanda_drone_community'
+    const databaseUrl = process.env.DATABASE_URL
+    if (!databaseUrl) {
+      return NextResponse.json({ error: 'DATABASE_URL is not configured' }, { status: 500 })
+    }
     const url = new URL(databaseUrl)
     const dbHost = url.hostname
     const dbPort = url.port || '5432'

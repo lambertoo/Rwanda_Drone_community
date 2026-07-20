@@ -23,7 +23,7 @@ export async function GET(
 
     // Check if form exists and belongs to user
     const form = await prisma.universalForm.findFirst({
-      where: { id: formId, userId: user.id }
+      where: { id: formId, userId: user.userId }
     })
 
     if (!form) {

@@ -9,9 +9,13 @@ import {
   ALLOWED_UPLOAD_TYPES 
 } from '@/lib/path-security'
 import { uploadToB2, isB2Configured } from '@/lib/b2-storage'
+import { requireAuth } from '@/lib/auth-middleware'
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAuth(request)
+    if (auth instanceof NextResponse) return auth
+
     const formData = await request.formData()
     const file = formData.get('file') as File
     const type = formData.get('type') as string // 'image', 'resource', etc.

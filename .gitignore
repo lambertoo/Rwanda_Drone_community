@@ -37,3 +37,7 @@ docs/*.kml
 package-lock.json
 .DS_Store
 .claude/
+
+# Secret dumps — never commit
+cookies.txt
+*.cookies

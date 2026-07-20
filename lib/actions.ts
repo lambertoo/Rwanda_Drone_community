@@ -1,9 +1,8 @@
 "use server"
 
-import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { getAuthenticatedUser } from "@/lib/auth-middleware"
-import { canCreateProjects, canCreateServices, canPostOpportunities, canCreateEvents, canEditOwnContent, canDeleteAnyContent, getSession } from "@/lib/auth"
+import { canCreateProjects, canCreateServices, canPostOpportunities, canCreateEvents, canEditOwnContent, canDeleteAnyContent, getCurrentUser } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 import { organizeMultipleFiles, UploadedFile } from "@/lib/file-utils"
 
@@ -602,14 +601,7 @@ export async function createProjectAction(formData: FormData) {
 
 export async function updateProjectAction(projectId: string, formData: FormData) {
   try {
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
-
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
-    }
+    let user: any = await getCurrentUser()
 
     // If no session, try to get user from form data (fallback for demo)
     if (!user) {
@@ -729,14 +721,7 @@ export async function updateProjectAction(projectId: string, formData: FormData)
 
 export async function deleteProjectAction(projectId: string) {
   try {
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
-
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
-    }
+    let user: any = await getCurrentUser()
 
     if (!user) {
       throw new Error("Authentication required")
@@ -772,14 +757,7 @@ export async function deleteProjectAction(projectId: string) {
 // Event Actions
 export async function createEventAction(formData: FormData) {
   try {
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
-
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
-    }
+    let user: any = await getCurrentUser()
 
     // If no session, try to get user from form data (fallback for demo)
     if (!user) {
@@ -875,14 +853,7 @@ export async function createEventAction(formData: FormData) {
 
 export async function updateEventAction(eventId: string, formData: FormData) {
   try {
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
-
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
-    }
+    let user: any = await getCurrentUser()
 
     // If no session, try to get user from form data (fallback for demo)
     if (!user) {
@@ -979,14 +950,7 @@ export async function updateEventAction(eventId: string, formData: FormData) {
 
 export async function deleteEventAction(eventId: string) {
   try {
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
-
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
-    }
+    let user: any = await getCurrentUser()
 
     if (!user) {
       throw new Error("Authentication required")
@@ -1022,14 +986,7 @@ export async function deleteEventAction(eventId: string) {
 // Service Actions
 export async function createServiceAction(formData: FormData) {
   try {
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
-
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
-    }
+    let user: any = await getCurrentUser()
 
     // If no session, try to get user from form data (fallback for demo)
     if (!user) {
@@ -1109,14 +1066,7 @@ export async function createServiceAction(formData: FormData) {
 
 export async function updateServiceAction(serviceId: string, formData: FormData) {
   try {
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
-
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
-    }
+    let user: any = await getCurrentUser()
 
     // If no session, try to get user from form data (fallback for demo)
     if (!user) {
@@ -1197,14 +1147,7 @@ export async function updateServiceAction(serviceId: string, formData: FormData)
 
 export async function deleteServiceAction(serviceId: string) {
   try {
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
-
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
-    }
+    let user: any = await getCurrentUser()
 
     if (!user) {
       throw new Error("Authentication required")
@@ -1338,14 +1281,7 @@ export async function createOpportunityAction(formData: FormData) {
 
 export async function updateOpportunityAction(opportunityId: string, formData: FormData) {
   try {
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
-
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
-    }
+    let user: any = await getCurrentUser()
 
     // If no session, try to get user from form data (fallback for demo)
     if (!user) {
@@ -1428,14 +1364,7 @@ export async function updateOpportunityAction(opportunityId: string, formData: F
 
 export async function deleteOpportunityAction(opportunityId: string) {
   try {
-    const cookieStore = await cookies()
-    const sessionId = cookieStore.get("session-id")?.value
-
-    let user = null
-
-    if (sessionId) {
-      user = getSession(sessionId)
-    }
+    let user: any = await getCurrentUser()
 
     if (!user) {
       throw new Error("Authentication required")

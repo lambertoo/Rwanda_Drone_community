@@ -12,8 +12,15 @@ export async function POST(request: NextRequest) {
   try {
     // Verify admin authentication
     const adminUser = await verifyAdminToken(request)
-    if (!adminUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (adminUser instanceof NextResponse) return adminUser
+
+    // dropdb/createdb/psql are not available on Vercel serverless — refuse
+    // rather than partially execute a destructive restore.
+    if (process.env.VERCEL) {
+      return NextResponse.json(
+        { error: 'Restore is not available on serverless. Run this from a server/Docker deployment or use your DB provider\'s restore tooling.' },
+        { status: 501 }
+      )
     }
 
     const formData = await request.formData()
@@ -95,7 +102,10 @@ export async function POST(request: NextRequest) {
         }
 
         // Get database connection details from environment
-        const databaseUrl = process.env.DATABASE_URL || 'postgresql://postgres:drone123456@db:5432/rwanda_drone_community'
+        const databaseUrl = process.env.DATABASE_URL
+        if (!databaseUrl) {
+          throw new Error('DATABASE_URL is not configured')
+        }
         const url = new URL(databaseUrl)
         const dbHost = url.hostname
         const dbPort = url.port || '5432'

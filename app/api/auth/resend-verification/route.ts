@@ -4,7 +4,7 @@ import { authRateLimit } from '@/lib/rate-limit'
 import { sendVerificationEmail, VERIFICATION_EXPIRY_HOURS } from '@/lib/email-verification'
 
 export async function POST(request: NextRequest) {
-  const rateLimitResult = authRateLimit(request)
+  const rateLimitResult = await authRateLimit(request)
   if (rateLimitResult) return rateLimitResult
 
   const body = await request.json().catch(() => ({}))

@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getSession, getCurrentUser } from "@/lib/auth"
-import { cookies } from "next/headers"
+import { getCurrentUser } from "@/lib/auth"
 import { verifyToken, extractTokenFromRequest } from "@/lib/jwt-utils"
 
 // READ - Get a single opportunity
@@ -297,8 +296,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const session = await getSession(cookies())
-    if (!session) {
+    const user = await getCurrentUser()
+    if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }

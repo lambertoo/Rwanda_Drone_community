@@ -26,6 +26,7 @@ model User {
   reputation        Int                @default(0)
   isVerified        Boolean            @default(true)
   isActive          Boolean            @default(true)
+  tokenVersion      Int                @default(0)  // Bumped on password change/reset/logout to invalidate existing JWTs
   role              UserRole?
   lastActive        DateTime           @default(now())
   postsCount        Int                @default(0)
@@ -1486,4 +1487,13 @@ model ContentCollaborator {
   @@index([collaboratorEmail])
   @@index([collaboratorUserId])
   @@map("content_collaborators")
+}
+
+model RateLimitHit {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
+  @@map("rate_limit_hits")
 }

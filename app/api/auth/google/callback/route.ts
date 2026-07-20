@@ -175,8 +175,8 @@ export async function GET(req: NextRequest) {
     const { accessToken, refreshToken } = generateTokens({
       userId: user.id,
       email: user.email,
-      username: user.username,
       role: user.role || "",
+      tokenVersion: user.tokenVersion ?? 0,
     })
 
     // 5. Redirect with cookies set

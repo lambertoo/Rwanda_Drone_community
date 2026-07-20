@@ -24,7 +24,7 @@ import {
   Loader2,
 } from "lucide-react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 
 interface UserProfile {
@@ -64,6 +64,7 @@ interface FollowStats {
 
 function UserProfilePage() {
   const params = useParams()
+  const router = useRouter()
   const username = params.username as string
   const { user: currentUser } = useAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -124,9 +125,20 @@ function UserProfilePage() {
     }
   }
 
-  const handleMessage = () => {
-    // TODO: Implement messaging functionality
-    console.log("Open message dialog")
+  const handleMessage = async () => {
+    if (!profile) return
+    try {
+      const res = await fetch("/api/messages/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientId: profile.id }),
+      })
+      if (!res.ok) return
+      const { conversationId } = await res.json()
+      router.push(`/messages/conversations/${conversationId}`)
+    } catch (error) {
+      console.error("Failed to open conversation:", error)
+    }
   }
 
   const isOwnProfile = currentUser?.username === username

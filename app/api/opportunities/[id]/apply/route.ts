@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { cookies } from "next/headers"
-import { getSession } from "@/lib/auth"
+import { getCurrentUser } from "@/lib/auth"
 
 // POST - Submit an application for an opportunity
 export async function POST(
@@ -10,8 +9,8 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const session = await getSession(cookies())
-    if (!session) {
+    const user = await getCurrentUser()
+    if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -56,7 +55,7 @@ export async function POST(
     const existingApplication = await prisma.applicationSubmission.findFirst({
       where: {
         formId: opportunity.registrationForm.id,
-        applicantId: session.user.id
+        applicantId: user.id
       }
     })
 
@@ -71,7 +70,7 @@ export async function POST(
     const submission = await prisma.applicationSubmission.create({
       data: {
         formId: opportunity.registrationForm.id,
-        applicantId: session.user.id,
+        applicantId: user.id,
         fieldSubmissions: {
           create: fieldSubmissions.map((fieldSub: any) => ({
             fieldId: fieldSub.fieldId,
@@ -109,8 +108,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const session = await getSession(cookies())
-    if (!session) {
+    const user = await getCurrentUser()
+    if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -146,7 +145,7 @@ export async function GET(
     const application = await prisma.applicationSubmission.findFirst({
       where: {
         formId: opportunity.registrationForm.id,
-        applicantId: session.user.id
+        applicantId: user.id
       },
       include: {
         fieldSubmissions: {

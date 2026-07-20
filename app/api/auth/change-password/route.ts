@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth-middleware"
 import { verifyPassword, hashPassword, validatePassword } from "@/lib/auth"
+import { generateTokens, setSecureCookies } from "@/lib/jwt-utils"
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,9 +53,22 @@ export async function POST(request: NextRequest) {
     }
 
     const hashed = await hashPassword(newPassword)
-    await prisma.user.update({ where: { id: existing.id }, data: { password: hashed } })
+    // Bump tokenVersion to invalidate all existing sessions, then re-issue a
+    // fresh token for THIS device so the current session stays logged in.
+    const updated = await prisma.user.update({
+      where: { id: existing.id },
+      data: { password: hashed, tokenVersion: { increment: 1 } },
+      select: { id: true, email: true, role: true, tokenVersion: true },
+    })
 
-    return NextResponse.json({ message: "Password updated successfully" })
+    const tokens = generateTokens({
+      userId: updated.id,
+      email: updated.email,
+      role: updated.role ?? '',
+      tokenVersion: updated.tokenVersion,
+    })
+    const response = NextResponse.json({ message: "Password updated successfully" })
+    return setSecureCookies(response, tokens)
   } catch (error) {
     console.error("Change password error:", error)
     return NextResponse.json(

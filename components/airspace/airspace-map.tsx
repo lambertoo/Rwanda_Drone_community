@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import "leaflet/dist/leaflet.css"
 
 export interface MapZone {
   id?: string
@@ -444,7 +445,6 @@ export default function AirspaceMap() {
 
   return (
     <div className="relative rounded-lg overflow-hidden border">
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
       <div ref={mapRef} style={{ height: "480px", width: "100%" }} />
 
       {/* Legend */}

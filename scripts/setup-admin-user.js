@@ -30,9 +30,12 @@ async function setupAdminUser() {
   try {
     console.log('🔧 Setting up admin user for production...');
     
-    // Desired admin credentials
-    const targetEmail = 'admin@uav.rw'
-    const targetPassword = 'PassAdmin@123!'
+    // Desired admin credentials — provided out-of-band, never hardcoded
+    const targetEmail = process.env.ADMIN_EMAIL
+    const targetPassword = process.env.ADMIN_PASSWORD
+    if (!targetEmail || !targetPassword) {
+      throw new Error('Set ADMIN_EMAIL and ADMIN_PASSWORD in the environment before running this script.')
+    }
 
     // Check if an admin user exists (by role or email)
     const existingAdmin = await prisma.user.findFirst({
@@ -55,7 +58,7 @@ async function setupAdminUser() {
           username: existingAdmin.username || 'admin',
           email: targetEmail,
           password: hashedPassword,
-          fullName: existingAdmin.fullName || 'System Administrator',
+          fullName: existingAdmin.fullName || 'UAS Administrator',
           role: 'admin',
           isVerified: true,
           isActive: true,
@@ -69,7 +72,7 @@ async function setupAdminUser() {
           username: 'admin',
           email: targetEmail,
           password: hashedPassword,
-          fullName: 'System Administrator',
+          fullName: 'UAS Administrator',
           role: 'admin',
           isVerified: true,
           isActive: true,
@@ -84,7 +87,7 @@ async function setupAdminUser() {
 
     console.log('👤 Username:', adminUser.username);
     console.log('📧 Email:', adminUser.email);
-    console.log('🔑 Password: PassAdmin@123!');
+    console.log('🔑 Password: (from ADMIN_PASSWORD env var)');
     
   } catch (error) {
     console.error('❌ Error creating admin user:', error);

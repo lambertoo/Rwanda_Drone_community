@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/email'
 import { appendSubmissionToSheet, hasGoogleSheetsAuth, UserGoogleTokens } from '@/lib/google-sheets'
 import { sanitizeSubmission, MAX_BODY_BYTES } from '@/lib/form-sanitize'
+import { isPublicWebhookUrl } from '@/lib/ssrf-guard'
 import crypto from 'crypto'
 
 export async function POST(
@@ -283,6 +284,10 @@ export async function POST(
       }
       for (const url of formSettings.webhooks as string[]) {
         if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) continue
+        if (!(await isPublicWebhookUrl(url))) {
+          console.warn('[FormSubmit] Blocked webhook to non-public host:', url)
+          continue
+        }
         fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-UAVRW-Event': 'form.submission' },

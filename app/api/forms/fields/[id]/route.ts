@@ -43,7 +43,7 @@ export async function PUT(
     const existingField = await prisma.formField.findFirst({
       where: { 
         id: fieldId,
-        section: { form: { userId: user.id } }
+        section: { form: { userId: user.userId } }
       }
     })
 
@@ -113,7 +113,7 @@ export async function DELETE(
     const existingField = await prisma.formField.findFirst({
       where: { 
         id: fieldId,
-        section: { form: { userId: user.id } }
+        section: { form: { userId: user.userId } }
       }
     })
 

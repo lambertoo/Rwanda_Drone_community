@@ -378,7 +378,7 @@ export default function ContentHub() {
                 <EmptyState icon={GraduationCap} label="No courses created yet" actionHref="/know-how?tab=courses" actionLabel="Create Course" />
               ) : courses.map(c => (
                 <div key={c.id} className="flex items-center gap-2 p-4 rounded-lg border hover:bg-muted/50 transition-colors">
-                  <Link href={`/know-how/courses/${c.slug}`} className="flex-1 min-w-0">
+                  <Link href={`/learn/${c.id}`} className="flex-1 min-w-0">
                     <h3 className="font-medium text-sm truncate">{c.title}</h3>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                       <span className="capitalize">{c.category}</span>
@@ -390,7 +390,7 @@ export default function ContentHub() {
                   <Badge variant={c.isPublished ? "default" : "secondary"} className="shrink-0 text-[10px]">
                     {c.isPublished ? "Published" : "Draft"}
                   </Badge>
-                  <ItemActions editHref={`/know-how/courses/${c.slug}`} onDelete={() => handleDelete("courses", c.id, c.title)} deleting={deleting === c.id} />
+                  <ItemActions editHref={`/learn/${c.id}`} onDelete={() => handleDelete("courses", c.id, c.title)} deleting={deleting === c.id} />
                 </div>
               ))}
             </div>
@@ -402,7 +402,7 @@ export default function ContentHub() {
               {enrollments.length === 0 ? (
                 <EmptyState icon={BookOpen} label="No courses enrolled yet" actionHref="/know-how?tab=courses" actionLabel="Browse Courses" />
               ) : enrollments.map(e => (
-                <Link key={e.id} href={`/know-how/courses/${e.course.slug}`} className="block p-4 rounded-lg border hover:bg-muted/50 transition-colors">
+                <Link key={e.id} href={`/learn/${e.course.id}`} className="block p-4 rounded-lg border hover:bg-muted/50 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="min-w-0">
                       <h3 className="font-medium text-sm truncate">{e.course.title}</h3>

@@ -74,12 +74,17 @@ export default function MarkdownEditor({
   }
 
   const renderMarkdown = (text: string) => {
-    // Simple markdown rendering for preview
-    return text
+    // Escape HTML first so raw tags in the source can't inject markup (XSS),
+    // then apply the markdown substitutions.
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+    return escaped
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm">$1</code>')
-      .replace(/^>\s*(.*$)/gm, '<blockquote class="border-l-4 border-border dark:border-gray-600 pl-4 italic text-muted-foreground dark:text-muted-foreground/70">$1</blockquote>')
+      .replace(/^&gt;\s*(.*$)/gm, '<blockquote class="border-l-4 border-border dark:border-gray-600 pl-4 italic text-muted-foreground dark:text-muted-foreground/70">$1</blockquote>')
       .replace(/^-\s*(.*$)/gm, '<li class="list-disc ml-4">$1</li>')
       .replace(/^\d+\.\s*(.*$)/gm, '<li class="list-decimal ml-4">$1</li>')
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>')

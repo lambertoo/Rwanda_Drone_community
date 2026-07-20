@@ -83,10 +83,14 @@ export async function GET(
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authResult = await requireAuth(request)
+    if (authResult instanceof NextResponse) return authResult
+    const { userId, email } = authResult.user
+
     const { id } = await params
     const project = await prisma.project.findUnique({
       where: { id },
@@ -97,6 +101,11 @@ export async function DELETE(
         { error: 'Project not found' },
         { status: 404 }
       )
+    }
+
+    const allowed = await canEdit(userId, email, 'PROJECT', id)
+    if (!allowed) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
     await prisma.project.delete({

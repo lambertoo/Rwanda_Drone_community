@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { optionalAuth } from "@/lib/auth-middleware"
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ) {
   try {
@@ -180,19 +181,22 @@ export async function GET(
       })
     }
 
+    const { user: viewer } = await optionalAuth(request)
+    const canSeeContact = viewer?.userId === profile.id || viewer?.role === "admin"
+
     const formattedProfile = {
       id: profile.id,
       fullName: profile.fullName,
       username: profile.username,
-      email: profile.email,
+      email: canSeeContact ? profile.email : undefined,
       bio: profile.bio || "No bio available",
       location: profile.location || "Location not specified",
       website: profile.website,
-      phone: profile.phone,
+      phone: canSeeContact ? profile.phone : undefined,
       avatar: profile.avatar,
       role: profile.role,
       organization: profile.organization,
-      pilotLicense: profile.pilotLicense,
+      pilotLicense: canSeeContact ? profile.pilotLicense : undefined,
       experience: profile.experience,
       specializations: profile.specializations,
       certifications: profile.certifications,

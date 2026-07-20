@@ -1,21 +1,18 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createNotification } from "@/lib/notifications"
+import { requireAuth } from "@/lib/auth-middleware"
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string; commentId: string }> }
 ) {
   try {
-    const { id, commentId } = await params
-    const { userId } = await request.json()
+    const auth = await requireAuth(request)
+    if (auth instanceof NextResponse) return auth
+    const userId = auth.user.userId
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'userId is required' },
-        { status: 400 }
-      )
-    }
+    const { id, commentId } = await params
 
     // Check if user already liked this comment
     const existingLike = await prisma.commentLike.findFirst({

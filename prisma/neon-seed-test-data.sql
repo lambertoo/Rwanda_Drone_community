@@ -1,40 +1,10 @@
 -- =============================================================================
 -- Test data for Neon DB (run this AFTER neon-init.sql in Neon SQL Editor)
 --
--- Admin user matches scripts/setup-admin-user.js
--- Login (email + password):
---   Email:    admin@uav.rw
---   Password: PassAdmin@123!
+-- The admin user is NOT seeded here. Provision it out-of-band with:
+--   ADMIN_EMAIL=... ADMIN_PASSWORD=... node scripts/setup-admin-user.js
+-- Never commit real credentials to this file.
 -- =============================================================================
-
--- 1. Admin user (bcrypt hash for "PassAdmin@123!" with 12 rounds, same as setup-admin-user.js)
-INSERT INTO "public"."users" (
-  "id", "username", "email", "password", "fullName",
-  "role", "isVerified", "isActive", "reputation", "location",
-  "bio", "website"
-) VALUES (
-  'clxxadmin000000000001',
-  'admin',
-  'admin@uav.rw',
-  '$2a$12$LvXzBqArsd.cIBqJFQ/dq.X8B7HfNnD9cTU4cwwd9QkP/ukNQ6KyO',
-  'System Administrator',
-  'admin',
-  true,
-  true,
-  100,
-  'UNKNOWN',
-  'System Administrator for Rwanda UAS Community Platform',
-  'https://rwandadrone.com'
-) ON CONFLICT ("email") DO UPDATE SET
-  "password" = EXCLUDED."password",
-  "fullName" = EXCLUDED."fullName",
-  "role" = EXCLUDED."role",
-  "isVerified" = EXCLUDED."isVerified",
-  "isActive" = EXCLUDED."isActive",
-  "reputation" = EXCLUDED."reputation",
-  "location" = EXCLUDED."location",
-  "bio" = EXCLUDED."bio",
-  "website" = EXCLUDED."website";
 
 -- 2. Forum category
 INSERT INTO "public"."forum_categories" ("id", "name", "description", "slug", "color")

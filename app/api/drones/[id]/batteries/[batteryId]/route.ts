@@ -66,11 +66,13 @@ export async function PUT(request: NextRequest, { params }: Params) {
       }
     }
 
-    const battery = await prisma.battery.update({
-      where: { id: batteryId },
+    const result = await prisma.battery.updateMany({
+      where: { id: batteryId, droneId: id },
       data,
     })
+    if (result.count === 0) return NextResponse.json({ error: 'Battery not found' }, { status: 404 })
 
+    const battery = await prisma.battery.findUnique({ where: { id: batteryId } })
     return NextResponse.json({ battery })
   } catch (error) {
     console.error('Error updating battery:', error)
@@ -88,7 +90,8 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     const err = await verifyOwnership(id, user.id)
     if (err) return NextResponse.json({ error: err }, { status: err === 'Forbidden' ? 403 : 404 })
 
-    await prisma.battery.delete({ where: { id: batteryId } })
+    const result = await prisma.battery.deleteMany({ where: { id: batteryId, droneId: id } })
+    if (result.count === 0) return NextResponse.json({ error: 'Battery not found' }, { status: 404 })
 
     return NextResponse.json({ success: true })
   } catch (error) {

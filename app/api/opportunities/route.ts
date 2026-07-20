@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getSession, getCurrentUser } from "@/lib/auth"
+import { getCurrentUser } from "@/lib/auth"
 import { cookies } from "next/headers"
 import { verifyToken, extractTokenFromRequest } from "@/lib/jwt-utils"
 

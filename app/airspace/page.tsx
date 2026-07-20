@@ -390,7 +390,7 @@ export default function AirspacePage() {
               <CardContent className="flex flex-wrap gap-3">
                 <Link href="/logbook/new"><Button size="sm">Log a Flight</Button></Link>
                 <Link href="/compliance"><Button size="sm" variant="outline">Check My Compliance</Button></Link>
-                <Link href="/safety/report"><Button size="sm" variant="outline">Report Incident</Button></Link>
+                <Link href="/safety#report"><Button size="sm" variant="outline">Report Incident</Button></Link>
                 <Link href="/equipment"><Button size="sm" variant="outline">My Drone Fleet</Button></Link>
               </CardContent>
             </Card>

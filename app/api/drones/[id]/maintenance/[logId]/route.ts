@@ -31,11 +31,13 @@ export async function PUT(request: NextRequest, { params }: Params) {
     if (body.performedBy !== undefined) data.performedBy = body.performedBy || null
     if (body.nextDueDate !== undefined) data.nextDueDate = body.nextDueDate ? new Date(body.nextDueDate) : null
 
-    const log = await prisma.droneMaintenance.update({
-      where: { id: logId },
+    const result = await prisma.droneMaintenance.updateMany({
+      where: { id: logId, droneId: id },
       data,
     })
+    if (result.count === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
+    const log = await prisma.droneMaintenance.findUnique({ where: { id: logId } })
     return NextResponse.json({ log })
   } catch (error) {
     console.error('Error updating maintenance log:', error)
@@ -53,7 +55,8 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     const err = await verifyOwnership(id, user.id)
     if (err) return NextResponse.json({ error: err }, { status: err === 'Forbidden' ? 403 : 404 })
 
-    await prisma.droneMaintenance.delete({ where: { id: logId } })
+    const result = await prisma.droneMaintenance.deleteMany({ where: { id: logId, droneId: id } })
+    if (result.count === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
     return NextResponse.json({ success: true })
   } catch (error) {
